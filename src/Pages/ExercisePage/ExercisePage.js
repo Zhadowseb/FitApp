@@ -1,15 +1,15 @@
 import { StatusBar } from 'expo-status-bar';
-import React, { use, useState } from 'react';
-import { View, Button } from 'react-native';
+import React, { useState } from 'react';
+import { View } from 'react-native';
 import {  SQLiteProvider } from 'expo-sqlite';
 import { initializeDatabase } from '../../Database/db';
-import { useNavigation } from '@react-navigation/native';
 
-import styles from './HomePageStyle';
+import styles from './ExercisePageStyle';
+import AddExercise from '../../Components/AddExercise/AddExercise';
+import ExerciseList from '../../Components/ExerciseList/ExerciseList';
 
 export default function App() {
 
-  const navigation = useNavigation();
   return (
     <SQLiteProvider
       databaseName='datab.db'
@@ -19,10 +19,8 @@ export default function App() {
 
       <View style={styles.container}>
 
-        <Button 
-          title = "Go to Exercise Page"
-          onPress={() => navigation.navigate('Exercise')} />
-        
+        <ExerciseList/>
+        <AddExercise/>
 
         <StatusBar style="auto" />
 

@@ -1,6 +1,15 @@
 
 export async function initializeDatabase(db) {
   await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS Program (
+      program_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      program_name TEXT,
+      start_date DATE,
+      end_date DATE,
+      status TEXT NOT NULL CHECK (status IN ('COMPLETE', 'ACTIVE', 'NOT_STARTED'))
+    );
+
+
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       first_name TEXT NOT NULL,

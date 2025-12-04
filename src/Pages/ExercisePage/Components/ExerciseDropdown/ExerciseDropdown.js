@@ -1,6 +1,5 @@
-// src/Components/ExerciseDropdown.js
 import { useEffect, useState } from "react";
-import { View, ActivityIndicator, StyleSheet, Text, FlatList } from "react-native";
+import { View, ActivityIndicator, Text, FlatList } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { Picker } from "@react-native-picker/picker";
 import styles from "./ExerciseDropdownStyle";

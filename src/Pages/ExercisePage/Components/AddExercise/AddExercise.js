@@ -1,4 +1,3 @@
-// src/Components/AddExercise/AddExercise.js
 import React, { useState } from "react";
 import { View, Text, TextInput, Button, Alert } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";

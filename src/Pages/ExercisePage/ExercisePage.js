@@ -1,8 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
 import { View } from 'react-native';
-import {  SQLiteProvider } from 'expo-sqlite';
-import { initializeDatabase } from '../../Database/db';
 
 import styles from './ExercisePageStyle';
 import AddExercise from './Components/AddExercise/AddExercise';
@@ -12,23 +9,14 @@ const ExercisePage = ({route}) =>  {
 
   const program_id = route.params.program_id;
   return (
+    <View style={styles.container}>
 
-    <SQLiteProvider
-      databaseName='datab.db'
-      onInit={initializeDatabase}
-      options={{ useNewConnection: false}}>
- 
+      <ExerciseList program_id ={program_id} />
+      <AddExercise program_id ={program_id} />
 
-      <View style={styles.container}>
+      <StatusBar style="auto" />
 
-        <ExerciseList program_id ={program_id} />
-        <AddExercise program_id ={program_id} />
-
-        <StatusBar style="auto" />
-
-      </View>
-
-    </SQLiteProvider>
+    </View>
   );
 }
 

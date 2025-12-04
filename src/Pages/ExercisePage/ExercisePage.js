@@ -6,7 +6,7 @@ import { initializeDatabase } from '../../Database/db';
 
 import styles from './ExercisePageStyle';
 import AddExercise from './Components/AddExercise/AddExercise';
-import ExerciseList from '../../Components/ExerciseList/ExerciseList';
+import ExerciseList from './Components/ExerciseList/ExerciseList';
 
 const ExercisePage = ({route}) =>  {
 

@@ -59,12 +59,12 @@ export default StyleSheet.create({
 
   // Status colors
   ACTIVE: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#ff8800ff",
   },
   NOT_STARTED: {
     backgroundColor: "#9E9E9E",
   },
   COMPLETE: {
-    backgroundColor: "#2196F3",
+    backgroundColor: "#4CAF50",
   },
 });

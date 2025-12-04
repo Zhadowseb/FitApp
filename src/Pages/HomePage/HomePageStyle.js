@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { Button, StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
   container: {
@@ -8,7 +8,10 @@ export default StyleSheet.create({
     marginBottom: 16,
     paddingTop: 30,
   },
-  loaderContainer: {
-    paddingVertical: 10,
+  button_spacing: {
+    padding: 12,
+    borderRadius: 8,
+    marginVertical: 10, 
+    marginHorizontal: 10, 
   },
 });

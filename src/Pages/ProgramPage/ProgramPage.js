@@ -5,7 +5,7 @@ import {  SQLiteProvider } from 'expo-sqlite';
 import { initializeDatabase } from '../../Database/db';
 import { useNavigation } from '@react-navigation/native';
 
-import styles from './HomePageStyle';
+import styles from './ProgramPageStyle';
 
 export default function App() {
 
@@ -19,19 +19,7 @@ export default function App() {
 
       <View style={styles.container}>
 
-        <View style={styles.button_spacing}>
-          <Button 
-            title = "Go to Exercise Page"
-            onPress={() => navigation.navigate('Exercise')} 
-            style={styles.button_spacing} />
-        </View>
-
-        <View style={styles.button_spacing}> 
-          <Button 
-            title = "Go to Program Page"
-            onPress={() => navigation.navigate('Program')} 
-            style={styles.button_spacing} />
-        </View>
+        
 
         <StatusBar style="auto" />
 

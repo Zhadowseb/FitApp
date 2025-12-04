@@ -5,8 +5,8 @@ import {  SQLiteProvider } from 'expo-sqlite';
 import { initializeDatabase } from '../../Database/db';
 import { useNavigation } from '@react-navigation/native';
 
-import ProgramList from '../../Components/ProgramList/ProgramList';
-import AddProgram from '../../Components/AddProgram/AddProgram';
+import ProgramList from './Components/ProgramList/ProgramList';
+import AddProgram from './Components/AddProgram/AddProgram';
 
 import styles from './ProgramPageStyle';
 

@@ -34,27 +34,43 @@ const ProgramList = () => {
 
   const renderItem = ({ item }) => (
     <View style={styles.card}>
-      <View style={styles.row}>
-        <Text style={styles.label}>Navn:</Text>
-        <Text style={styles.value}>{item.program_name}</Text>
-      </View>
 
-      <View style={styles.row}>
-        <Text style={styles.label}>Start:</Text>
-        <Text style={styles.value}>{item.start_date || "-"}</Text>
-      </View>
-
-      <View style={styles.row}>
-        <Text style={styles.label}>Slut:</Text>
-        <Text style={styles.value}>{item.end_date || "-"}</Text>
-      </View>
-
-      <View style={styles.statusRow}>
-        <Text style={styles.label}>Status:</Text>
-        <View style={[styles.statusBadge, styles[item.status]]}>
-          <Text style={styles.statusText}>{item.status}</Text>
+        <View style={styles.status_section}>
+            <View style={styles.header_status}>
+                <Text style={styles.label}>Status</Text>
+                <View style={[styles.statusBadge, styles[item.status]]}>
+                <Text style={styles.statusText}>{item.status}</Text>
+                </View>
+            </View>
         </View>
-      </View>
+
+        <View style={styles.body}>
+
+            <View style={styles.header}>
+
+                <View style={styles.program_name}>
+                    <Text style={styles.label}>Navn:</Text>
+                    <Text style={styles.value}>{item.program_name}</Text>
+                </View>
+
+            </View>
+
+            <View style={styles.dates_section}>
+
+                <View style={styles.start_date}>
+                    <Text style={styles.label}>Start:</Text>
+                    <Text style={styles.value}>{item.start_date || "-"}</Text>
+                </View>
+
+                <View style={styles.end_date}>
+                    <Text style={styles.label}>Slut:</Text>
+                    <Text style={styles.value}>{item.end_date || "-"}</Text>
+                </View>
+
+            </View>
+
+        </View>
+
     </View>
   );
 

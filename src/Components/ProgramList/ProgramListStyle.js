@@ -1,6 +1,42 @@
 import { StyleSheet } from "react-native";
 
 export default StyleSheet.create({
+
+
+    status_section:{
+        alignItems: "center",
+        flex: 0.2,
+    },
+
+    body: {
+        flexDirection: "column",
+        alignItems: "center",
+        flex: 0.8,
+    },
+
+    dates_section:{
+        flexDirection: "row",
+    },
+
+    start_date:{
+        flex: 0.5,
+        alignItems: "center",
+    },
+
+    end_date:{
+        flex: 0.5,
+        alignItems: "center",
+    },
+
+    program_name:{
+        alignItems: "center",
+    },
+
+    value:{
+        fontSize: 16,
+        fontWeight: "bold",
+    },
+
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -8,7 +44,12 @@ export default StyleSheet.create({
     paddingTop: 40,
   },
 
+  header: {
+    flexDirection: "row",
+  },
+
   card: {
+    flexDirection: "row",
     backgroundColor: "#fff",
     padding: 16,
     marginVertical: 10,
@@ -19,30 +60,6 @@ export default StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     shadowOffset: { height: 2, width: 0 },
-  },
-
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 4,
-  },
-
-  label: {
-    fontWeight: "bold",
-    fontSize: 14,
-    color: "#333",
-  },
-
-  value: {
-    fontSize: 14,
-    color: "#555",
-  },
-
-  statusRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 12,
-    alignItems: "center",
   },
 
   statusBadge: {

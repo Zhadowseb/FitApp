@@ -6,7 +6,10 @@ export async function initializeDatabase(db) {
       program_name TEXT,
       start_date DATE,
       end_date DATE,
-      status TEXT NOT NULL CHECK (status IN ('COMPLETE', 'ACTIVE', 'NOT_STARTED'))
+      status TEXT 
+        DEFAULT 'NOT_STARTED'
+        NOT NULL 
+        CHECK (status IN ('COMPLETE', 'ACTIVE', 'NOT_STARTED'))
     );
 
 

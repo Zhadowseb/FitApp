@@ -11,7 +11,7 @@ export default StyleSheet.create({
   button_spacing: {
     padding: 12,
     borderRadius: 8,
-    marginVertical: 10, 
-    marginHorizontal: 10, 
+    marginVertical: 5, 
+    marginHorizontal: 50, 
   },
 });

@@ -1,6 +1,6 @@
 // src/Components/ExerciseList/ExerciseList.js
-import { useState, useEffect } from "react";
-import { View, Text, ActivityIndicator, FlatList, RefreshControl } from "react-native";
+import { useState } from "react";
+import { View, Text, FlatList } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import styles from "./ExerciseListStyle";
 

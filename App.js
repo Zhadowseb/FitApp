@@ -1,5 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { SQLiteProvider } from 'expo-sqlite';
+import { initializeDatabase } from './src/Database/db';
 
 import HomePage from './src/Pages/HomePage/HomePage';
 import ExercisePage from './src/Pages/ExercisePage/ExercisePage';
@@ -10,15 +12,21 @@ const Stack = createNativeStackNavigator();
 export default function App() {
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName='HomePage'> 
+    <SQLiteProvider
+      databaseName="datab.db"
+      onInit={initializeDatabase}
+      options={{ useNewConnection: false }}>
 
-        <Stack.Screen name="HomePage" component={HomePage} />
-        <Stack.Screen name="ExercisePage" component={ExercisePage} />
-        <Stack.Screen name="ProgramPage" component={ProgramPage} />
+      <NavigationContainer>
+        <Stack.Navigator initialRouteName='HomePage'> 
 
-      </Stack.Navigator>
-        
-    </NavigationContainer>
+          <Stack.Screen name="HomePage" component={HomePage} />
+          <Stack.Screen name="ExercisePage" component={ExercisePage} />
+          <Stack.Screen name="ProgramPage" component={ProgramPage} />
+
+        </Stack.Navigator>
+          
+      </NavigationContainer>
+    </SQLiteProvider>
   );
 }

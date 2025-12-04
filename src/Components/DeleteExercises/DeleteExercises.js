@@ -20,7 +20,7 @@ const ClearDB = () => {
 
   return (
     <View style={styles.buttonContainer}>
-        <Button title="Clear out exercises" onPress={handleSubmit} />
+        <Button title="Clear out exercises (test button)" onPress={handleSubmit} />
     </View>
   );
 };

@@ -30,7 +30,6 @@ const ProgramList = () => {
     }
   };
 
-
   useEffect(() => {
     loadPrograms();
   }, []);
@@ -38,9 +37,9 @@ const ProgramList = () => {
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() =>
-        navigation.navigate("Exercise")
-      }>
+      onPress={() => {
+        navigation.navigate("ExercisePage", {program_id: item.program_id})
+      }}>
 
         <View style={styles.status_section}>
             <View style={styles.header_status}>

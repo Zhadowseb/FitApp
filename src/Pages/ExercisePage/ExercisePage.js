@@ -5,7 +5,7 @@ import {  SQLiteProvider } from 'expo-sqlite';
 import { initializeDatabase } from '../../Database/db';
 
 import styles from './ExercisePageStyle';
-import AddExercise from '../../Components/AddExercise/AddExercise';
+import AddExercise from './Components/AddExercise/AddExercise';
 import ExerciseList from '../../Components/ExerciseList/ExerciseList';
 
 const ExercisePage = ({route}) =>  {

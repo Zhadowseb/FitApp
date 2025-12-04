@@ -4,6 +4,7 @@ import { View, Button } from 'react-native';
 import {  SQLiteProvider } from 'expo-sqlite';
 import { initializeDatabase } from '../../Database/db';
 import { useNavigation } from '@react-navigation/native';
+import DeleteExercises from '../../Components/DeleteExercises/DeleteExercises';
 
 import styles from './HomePageStyle';
 
@@ -22,16 +23,18 @@ export default function App() {
         <View style={styles.button_spacing}>
           <Button 
             title = "Go to Exercise Page"
-            onPress={() => navigation.navigate('Exercise')} 
+            onPress={() => navigation.navigate('ExercisePage')} 
             style={styles.button_spacing} />
         </View>
 
         <View style={styles.button_spacing}> 
           <Button 
             title = "Go to Program Page"
-            onPress={() => navigation.navigate('Program')} 
+            onPress={() => navigation.navigate('ProgramPage')} 
             style={styles.button_spacing} />
         </View>
+
+        <DeleteExercises/>
 
         <StatusBar style="auto" />
 

@@ -38,6 +38,7 @@ export async function initializeDatabase(db) {
         
     CREATE TABLE IF NOT EXISTS Exercise (
         exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        program_id INTEGER DEFAULT 0,
         exercise_name TEXT NOT NULL,
         sets INTEGER NOT NULL
     );

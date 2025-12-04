@@ -8,9 +8,11 @@ import styles from './ExercisePageStyle';
 import AddExercise from '../../Components/AddExercise/AddExercise';
 import ExerciseList from '../../Components/ExerciseList/ExerciseList';
 
-export default function App() {
+const ExercisePage = ({route}) =>  {
 
+  const program_id = route.params.program_id;
   return (
+
     <SQLiteProvider
       databaseName='datab.db'
       onInit={initializeDatabase}
@@ -19,8 +21,8 @@ export default function App() {
 
       <View style={styles.container}>
 
-        <ExerciseList/>
-        <AddExercise/>
+        <ExerciseList program_id ={program_id} />
+        <AddExercise program_id ={program_id} />
 
         <StatusBar style="auto" />
 
@@ -29,3 +31,5 @@ export default function App() {
     </SQLiteProvider>
   );
 }
+
+export default ExercisePage;

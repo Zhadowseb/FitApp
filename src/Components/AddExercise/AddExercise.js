@@ -5,7 +5,7 @@ import { useSQLiteContext } from "expo-sqlite";
 import ExerciseDropdown from "../ExerciseDropdown/ExerciseDropdown";
 import styles from "./AddExerciseStyle";
 
-const AddExercise = () => {
+const AddExercise = ( {program_id} ) => {
   const db = useSQLiteContext();
 
   const [selectedExerciseName, setSelectedExerciseName] = useState(null);
@@ -27,9 +27,10 @@ const AddExercise = () => {
       }
 
       await db.runAsync(
-        `INSERT INTO Exercise (exercise_name, sets) VALUES (?, ?);`,
-        [selectedExerciseName, setsInt]
+        `INSERT INTO Exercise (program_id, exercise_name, sets) VALUES (?, ?, ?);`,
+        [program_id, selectedExerciseName, setsInt]
       );
+
 
       Alert.alert("Success", "Exercise tilføjet!");
       setSets("");

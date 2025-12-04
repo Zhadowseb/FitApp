@@ -1,10 +1,12 @@
 // src/Components/ExerciseList/ExerciseList.js
-import { useState, useEffect } from "react";
-import { View, Text, ActivityIndicator, FlatList, RefreshControl } from "react-native";
+import { useState } from "react";
+import { View, Text, FlatList } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
+import { useEffect } from "react";
+
 import styles from "./ExerciseListStyle";
 
-const ExerciseList = () => {
+const ExerciseList = ( {program_id} ) => {
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(false);
   const db = useSQLiteContext();
@@ -15,7 +17,8 @@ const ExerciseList = () => {
       console.log("Loading exercises from DB...");
 
       const rows = await db.getAllAsync(
-        "SELECT exercise_name, sets FROM Exercise;"
+        "SELECT program_id, exercise_name, sets FROM Exercise WHERE program_id = ?;",
+        [program_id]
       );
 
       setExercises(rows);
@@ -26,6 +29,9 @@ const ExerciseList = () => {
     }
   };
 
+  useEffect(() => {
+    loadExercises();
+  }, []);
 
   const renderItem = ({ item }) => (
     <View style={styles.row}>

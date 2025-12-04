@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { View, Text, FlatList, ActivityIndicator, TouchableOpacity } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
+import { useNavigation } from "@react-navigation/native";
+
 
 import styles from "./ProgramListStyle";
 
 
 const ProgramList = () => {
+  const navigation = useNavigation();
   const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(false);
   const db = useSQLiteContext();
@@ -27,13 +30,16 @@ const ProgramList = () => {
     }
   };
 
-
   useEffect(() => {
     loadPrograms();
   }, []);
 
   const renderItem = ({ item }) => (
-    <View style={styles.card}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => {
+        navigation.navigate("ExercisePage", {program_id: item.program_id})
+      }}>
 
         <View style={styles.status_section}>
             <View style={styles.header_status}>
@@ -71,7 +77,7 @@ const ProgramList = () => {
 
         </View>
 
-    </View>
+    </TouchableOpacity>
   );
 
   if (loading) {

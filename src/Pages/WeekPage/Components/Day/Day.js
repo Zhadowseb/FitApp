@@ -22,6 +22,7 @@ const Day = ( {day} ) => {
 
             <View style={styles.workouts}>
                 <Text> Workouts: ? </Text>
+                <Text> (if workout) Show Focus </Text>
             </View>
 
             <View style={styles.focus}>

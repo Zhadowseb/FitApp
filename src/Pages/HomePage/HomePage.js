@@ -19,6 +19,13 @@ export default function App() {
           style={styles.button_spacing} />
       </View>
 
+      <View style={styles.button_spacing}> 
+        <Button 
+          title = "Go to Week Page"
+          onPress={() => navigation.navigate('WeekPage')} 
+          style={styles.button_spacing} />
+      </View>
+
       <DeleteExercises/>
 
       <StatusBar style="auto" />

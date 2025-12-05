@@ -4,8 +4,9 @@ import { View, Text } from 'react-native';
 import styles from './WeekPageStyle';
 import Day from './Components/Day/Day';
 
-const WeekPage = () => {
+const WeekPage = ( {route} ) => {
 
+    const program_id = route.params.program_id;
     const weekDays = [
         'Monday', 
         'Tuesday', 
@@ -24,6 +25,10 @@ const WeekPage = () => {
 
             <Text>
                 Week Overview
+            </Text>
+
+            <Text>
+                #program_id: {program_id} (for testing)
             </Text>
 
             <Text>

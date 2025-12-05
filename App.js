@@ -6,6 +6,7 @@ import { initializeDatabase } from './src/Database/db';
 import HomePage from './src/Pages/HomePage/HomePage';
 import ExercisePage from './src/Pages/ExercisePage/ExercisePage';
 import ProgramPage from './src/Pages/ProgramPage/ProgramPage';
+import WeekPage from './src/Pages/WeekPage/WeekPage';
 
 const Stack = createNativeStackNavigator();
 
@@ -23,6 +24,7 @@ export default function App() {
           <Stack.Screen name="HomePage" component={HomePage} />
           <Stack.Screen name="ExercisePage" component={ExercisePage} />
           <Stack.Screen name="ProgramPage" component={ProgramPage} />
+          <Stack.Screen name="WeekPage" component={WeekPage} />
 
         </Stack.Navigator>
           

@@ -8,6 +8,7 @@ const WeekPage = ( {route} ) => {
 
     const program_id = route.params.program_id;
     const start_date = route.params.start_date;
+
     const weekDays = [
         'Monday', 
         'Tuesday', 
@@ -46,6 +47,7 @@ const WeekPage = ( {route} ) => {
                     day={day}
                     start_date={start_date}
                     index={index}
+                    program_id={program_id}
                     />
             ))}
 

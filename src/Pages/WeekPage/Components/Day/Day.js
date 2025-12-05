@@ -4,7 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 
 import styles from './DayStyle';
 
-const Day = ( {day, start_date, index} ) => {
+const Day = ( {day, start_date, index, program_id} ) => {
     
     const navigation = useNavigation();
 
@@ -15,7 +15,8 @@ const Day = ( {day, start_date, index} ) => {
             navigation.navigate("DayPage", {
                 day: day, 
                 start_date: start_date,
-                index: index})
+                index: index,
+                program_id: program_id})
             }}>
 
             <View style={styles.day}>

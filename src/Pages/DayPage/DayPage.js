@@ -1,8 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
-import { View, Text } from 'react-native';
+import { View, Text, Button } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 import styles from './DayPageStyle';
 
+//Convert to a js Date object, so that simple addition is controlled by js.
 function parseCustomDate(dateString) {
   const [day, month, year] = dateString.split(".").map(Number);
   return new Date(year, month - 1, day);
@@ -10,11 +12,11 @@ function parseCustomDate(dateString) {
 
 const DayPage = ( {route} ) => {
 
-    const {day, start_date, index} = route.params;
+    const navigation = useNavigation();
+    const {day, start_date, index, program_id} = route.params;
 
     const date = parseCustomDate(start_date);
-    date.setDate(date.getDate() + index);
-    console.log(date);
+    date.setDate(date.getDate() + (index));
     
     return (
 
@@ -22,10 +24,26 @@ const DayPage = ( {route} ) => {
 
             <View style={styles.header}>
 
+                <View> 
+                    <Text> {day} </Text> 
+                </View>
+
             </View>
 
             <View style={styles.body}>
-                <Text> test {day} {start_date} - {index} </Text>
+                <Text>  </Text>
+
+        
+
+            </View>
+
+            <View style={styles.footer}>
+                <Button 
+                    title = "New Workout"
+                    onPress={() => navigation.navigate('ExercisePage', {
+                        program_id: program_id} 
+                    )} 
+                    style={styles.buttonContainer} />
             </View>
 
         </View>

@@ -14,6 +14,15 @@ export default StyleSheet.create({
     },
 
     body: {
-        flex: 0.7,
+        flex: 0.6,
+    },
+
+    footer: {
+        flex: 0.1,
+    },
+
+    buttonContainer: {
+        marginTop: 10,
+        alignItems: "center",
     },
 });

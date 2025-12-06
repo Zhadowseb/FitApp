@@ -1,12 +1,12 @@
 // src/Components/ExerciseList/ExerciseList.js
 import { useState } from "react";
 import { View, Text, FlatList } from "react-native";
-import { useSQLiteContext } from "expo-sqlite";
+import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
 import { useEffect } from "react";
 
 import styles from "./ExerciseListStyle";
 
-const ExerciseList = ( {program_id} ) => {
+const ExerciseList = ( {workout_id} ) => {
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(false);
   const db = useSQLiteContext();
@@ -17,8 +17,8 @@ const ExerciseList = ( {program_id} ) => {
       console.log("Loading exercises from DB...");
 
       const rows = await db.getAllAsync(
-        "SELECT program_id, exercise_name, sets FROM Exercise WHERE program_id = ?;",
-        [program_id]
+        "SELECT exercise_name, sets FROM Exercise WHERE workout_id = ?;",
+        [workout_id]
       );
 
       setExercises(rows);

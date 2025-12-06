@@ -38,7 +38,9 @@ const ProgramList = () => {
     <TouchableOpacity
       style={styles.card}
       onPress={() => {
-        navigation.navigate("ExercisePage", {program_id: item.program_id})
+        navigation.navigate("WeekPage", {
+          program_id: item.program_id, 
+          start_date: item.start_date})
       }}>
 
         <View style={styles.status_section}>

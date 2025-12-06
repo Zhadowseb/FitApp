@@ -4,16 +4,19 @@ import { useNavigation } from "@react-navigation/native";
 
 import styles from './DayStyle';
 
-const Day = ( {day} ) => {
-
-
+const Day = ( {day, start_date, index, program_id} ) => {
+    
     const navigation = useNavigation();
 
     return (
         <TouchableOpacity
             style={styles.container_row}
             onPress={() => {
-            navigation.navigate("HomePage")
+            navigation.navigate("DayPage", {
+                day: day, 
+                start_date: start_date,
+                index: index,
+                program_id: program_id})
             }}>
 
             <View style={styles.day}>

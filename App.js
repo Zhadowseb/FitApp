@@ -7,11 +7,12 @@ import HomePage from './src/Pages/HomePage/HomePage';
 import ExercisePage from './src/Pages/ExercisePage/ExercisePage';
 import ProgramPage from './src/Pages/ProgramPage/ProgramPage';
 import WeekPage from './src/Pages/WeekPage/WeekPage';
+import DayPage from './src/Pages/DayPage/DayPage';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
-
+  
   return (
     <SQLiteProvider
       databaseName="datab.db"
@@ -25,6 +26,7 @@ export default function App() {
           <Stack.Screen name="ExercisePage" component={ExercisePage} />
           <Stack.Screen name="ProgramPage" component={ProgramPage} />
           <Stack.Screen name="WeekPage" component={WeekPage} />
+          <Stack.Screen name="DayPage" component={DayPage} />
 
         </Stack.Navigator>
           

@@ -4,7 +4,10 @@ import { View, Text } from 'react-native';
 import styles from './WeekPageStyle';
 import Day from './Components/Day/Day';
 
-const WeekPage = () => {
+const WeekPage = ( {route} ) => {
+
+    const program_id = route.params.program_id;
+    const start_date = route.params.start_date;
 
     const weekDays = [
         'Monday', 
@@ -23,7 +26,11 @@ const WeekPage = () => {
         <View style={styles.header}>
 
             <Text>
-                Week Overview
+                Week Overview (in testing)
+            </Text>
+
+            <Text>
+                #program_id: {program_id} #start_date: {start_date}
             </Text>
 
             <Text>
@@ -34,8 +41,14 @@ const WeekPage = () => {
 
         <View style={styles.body}>
             
-            {weekDays.map(day => (
-                <Day key={day} day={day}/>
+            {weekDays.map((day, index) => (
+                <Day 
+                    key={day} 
+                    day={day}
+                    start_date={start_date}
+                    index={index}
+                    program_id={program_id}
+                    />
             ))}
 
         </View>

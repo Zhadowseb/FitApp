@@ -38,7 +38,7 @@ export async function initializeDatabase(db) {
         
     CREATE TABLE IF NOT EXISTS Exercise (
         exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        program_id INTEGER DEFAULT 0,
+        workout_id INTEGER NOT NULL,
         exercise_name TEXT NOT NULL,
         sets INTEGER NOT NULL
     );
@@ -73,12 +73,12 @@ export async function initializeDatabase(db) {
     `SELECT COUNT(*) as count FROM Exercise_storage;`
   );
 
-  if (!check_exercises_init || check_exercises_init.count === 0) {
-    for(const name of standard_exercises){
-      await db.runAsync(
-        `INSERT INTO Exercise_storage (exercise_name) VALUES (?);`,
-        [name]);
-    }
-  }
+  /*
+  await db.execAsync(`
+    DROP TABLE IF EXISTS Workout;
+    DROP TABLE IF EXISTS Program;
+    DROP TABLE IF EXISTS Exercise;
+  `);
+  */
 
 }

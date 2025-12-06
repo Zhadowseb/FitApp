@@ -12,7 +12,7 @@ import DayPage from './src/Pages/DayPage/DayPage';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
-
+  
   return (
     <SQLiteProvider
       databaseName="datab.db"

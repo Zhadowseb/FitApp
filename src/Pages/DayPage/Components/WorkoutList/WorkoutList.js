@@ -13,8 +13,6 @@ const WorkoutList = ( {date} ) => {
   const [loading, setLoading] = useState(false);
   const db = useSQLiteContext();
 
-  console.log(date);
-
   const loadWorkouts = async () => {
     try {
       setLoading(true);

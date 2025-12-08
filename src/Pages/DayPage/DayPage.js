@@ -6,28 +6,10 @@ import { useSQLiteContext } from "expo-sqlite";
 import styles from './DayPageStyle';
 import WorkoutList from './Components/WorkoutList/WorkoutList';
 
-//Convert to a js Date object, so that simple addition is controlled by js.
-function parseCustomDate(dateString) {
-  const [day, month, year] = dateString.split(".").map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function formatDate(date) {
-  const d = date.getDate().toString().padStart(2, "0");
-  const m = (date.getMonth() + 1).toString().padStart(2, "0");
-  const y = date.getFullYear();
-  return `${d}-${m}-${y}`;
-}
-
 const DayPage = ( {route} ) => {
     const db = useSQLiteContext();
     const navigation = useNavigation();
-    const {day, start_date, index, program_id} = route.params;
-
-    const date = parseCustomDate(start_date);
-    date.setDate(date.getDate() + (index));
-    const danishDate = formatDate(date);
-
+    const {day, danishDate, index, program_id} = route.params;
 
     const handleNewWorkout = async () => {
         try {
@@ -74,7 +56,7 @@ const DayPage = ( {route} ) => {
 
                         navigation.navigate('ExercisePage', {
                             program_id: program_id,
-                            date: date,
+                            danishDate: danishDate,
                             workout_id: workout_id,
                         }); 
                     }} />

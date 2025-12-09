@@ -29,7 +29,8 @@ const SetPage = ( {route} ) =>  {
 
             setExerciseInfo(row);
             
-            const initial = Array.from({ length: row.sets }).map(() => ({
+            const initial = Array.from({ length: row.sets }).map((_, index) => ({
+                set_number: index + 1,
                 pause: "",
                 rpe: "",
                 weight: "",
@@ -45,6 +46,17 @@ const SetPage = ( {route} ) =>  {
             console.error("Error loading sets", error);
         } 
     };
+
+    const insertSetInfo = async () => {
+        try {
+
+            //We are missing inserting the info into the database first.
+            //Next we need to withdraw the information from the database
+            // - when reloading, the ExercisePage, så that information is remembered.
+        } catch (error) {
+            console.error("Error loading sets", error);
+        } 
+    }
 
     useEffect(() => {
         loadSetInfo();

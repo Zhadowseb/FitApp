@@ -10,7 +10,7 @@ export default StyleSheet.create({
         flex: 0.2,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#797979ff',
+        backgroundColor: '#c4c4c4ff',
     },
 
     headerText: {

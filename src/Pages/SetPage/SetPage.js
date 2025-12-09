@@ -2,7 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { View, Text, TextInput, ScrollView } from 'react-native';
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 import Checkbox from 'expo-checkbox';
 
@@ -17,11 +17,10 @@ const SetPage = ( {route} ) =>  {
 
     const [exerciseInfo, setExerciseInfo] = useState([]);
     const [inputs, setInputs] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const inputsRef = useRef(inputs); 
 
     const loadSetInfo = async () => {
         try {
-            setLoading(true);
 
             const row = await db.getFirstAsync(
             "SELECT exercise_name, sets FROM Exercise WHERE exercise_id = ?;",
@@ -44,14 +43,27 @@ const SetPage = ( {route} ) =>  {
 
         } catch (error) {
             console.error("Error loading sets", error);
-        } finally {
-            setLoading(false);
-        }
+        } 
     };
 
     useEffect(() => {
         loadSetInfo();
     }, []);
+
+    useEffect(() => {
+        inputsRef.current = inputs;
+    }, [inputs]);
+
+    useEffect(() => {
+        const unsub = navigation.addListener("beforeRemove", () => {
+            
+            console.log(inputsRef.current);
+            // fx saveSetsToDB();
+        });
+
+        return unsub;
+    }, [navigation]);
+
 
     const updateSet = (index, key, value) => {
         const updated = [...inputs];

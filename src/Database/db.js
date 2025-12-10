@@ -23,12 +23,20 @@ export async function initializeDatabase(db) {
 
     CREATE TABLE IF NOT EXISTS Sets (
         sets_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        set_number INTEGER NOT NULL,
         date TEXT,
+
         personal_record INTEGER NOT NULL DEFAULT 0,
+        
         exercise_id TEXT NOT NULL,
+        pause INTEGER,
         rpe INTEGER,
         weight INTEGER,
-        reps INTEGER
+        reps INTEGER,
+
+        done INTEGER NOT NULL DEFAULT 0,
+        failed INTEGER NOT NULL DEFAULT 0,
+        note TEXT
     );
 
     CREATE TABLE IF NOT EXISTS Exercise_storage (
@@ -75,9 +83,7 @@ export async function initializeDatabase(db) {
 
   /*
   await db.execAsync(`
-    DROP TABLE IF EXISTS Workout;
-    DROP TABLE IF EXISTS Program;
-    DROP TABLE IF EXISTS Exercise;
+    DROP TABLE IF EXISTS Sets;
   `);
   */
 

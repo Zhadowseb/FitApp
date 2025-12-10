@@ -23,11 +23,40 @@ const SetPage = ( {route} ) =>  {
         try {
 
             const row = await db.getFirstAsync(
-            "SELECT exercise_name, sets FROM Exercise WHERE exercise_id = ?;",
+                "SELECT exercise_name, sets FROM Exercise WHERE exercise_id = ?;",
                 [exercise_id]
             );
 
             setExerciseInfo(row);
+
+            const count_row = await db.getFirstAsync(
+                "SELECT COUNT(*) AS count FROM Sets WHERE exercise_id = ?;",
+                [exercise_id]
+            );
+
+            const existingCount = count_row?.count ?? 0;
+
+            if (existingCount > 0){
+
+                const savedSets = await db.getAllAsync(
+                    `SELECT set_number, pause, rpe, weight, reps, done, failed, note
+                        FROM Sets WHERE exercise_id = ? ORDER BY set_number ASC;`,
+                        [exercise_id]
+                );
+
+                console.log("");
+                console.log(savedSets);
+
+                const corrected = savedSets.map(s => ({
+                    ...s,
+                    done: s.done === 1,
+                    failed: s.failed === 1,
+                }));
+
+                setInputs(corrected);
+                //console.log(corrected);
+                return;
+            }
             
             const initial = Array.from({ length: row.sets }).map((_, index) => ({
                 set_number: index + 1,
@@ -49,10 +78,27 @@ const SetPage = ( {route} ) =>  {
 
     const insertSetInfo = async () => {
         try {
+            for (const set of inputs){
+                await db.runAsync(
+                    `INSERT INTO Sets 
+                        (set_number, exercise_id, pause, rpe, weight, reps, done, failed, note) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+                        [
+                            set.set_number,
+                            exercise_id,
+                            set.pause,
+                            set.rpe,
+                            set.weight,
+                            set.reps,
+                            set.done ? 1 : 0,
+                            set.failed ? 1 : 0,
+                            set.note
+                        ]
+                );
+            }
 
-            //We are missing inserting the info into the database first.
-            //Next we need to withdraw the information from the database
-            // - when reloading, the ExercisePage, så that information is remembered.
+            console.log("Alle sets er nu gemt!");
+
         } catch (error) {
             console.error("Error loading sets", error);
         } 
@@ -67,10 +113,9 @@ const SetPage = ( {route} ) =>  {
     }, [inputs]);
 
     useEffect(() => {
-        const unsub = navigation.addListener("beforeRemove", () => {
-            
-            console.log(inputsRef.current);
-            // fx saveSetsToDB();
+        const unsub = navigation.addListener("beforeRemove", async () => {
+         
+            await insertSetInfo();
         });
 
         return unsub;

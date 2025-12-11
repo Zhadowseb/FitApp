@@ -28,8 +28,13 @@ const SetPage = ( {route} ) =>  {
 
             const formatted = rows.map(r => ({
                 ...r,
+                pause: r.pause ?? "",
+                rpe: r.rpe ?? "",
+                weight: r.weight ?? "",
+                reps: r.reps ?? "",
+                note: r.note ?? "",
                 done: r.done === 1,
-                failed: r.failed === 1
+                failed: r.failed === 1,
             }));
 
             setInputs(formatted);
@@ -176,6 +181,7 @@ const SetPage = ( {route} ) =>  {
 
                         <TextInput
                             style={styles.input}
+                            placeholder="Weight"
                             keyboardType="numeric"
                             value={String(set.weight)}
                             onChangeText={(text) => updateSet(index, "weight", text)}

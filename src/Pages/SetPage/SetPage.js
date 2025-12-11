@@ -10,12 +10,12 @@ import styles from './SetPageStyle';
 
 const SetPage = ( {route} ) =>  {
 
-    const test = 5;
     const {exercise_id, exercise_name, sets} = route.params;
     const db = useSQLiteContext();
     const navigation = useNavigation();
 
     const [inputs, setInputs] = useState([]);
+    const [allDone, setAllDone] = useState(false);
     const inputsRef = useRef(inputs); 
 
     const loadSetInfo = async () => {
@@ -81,8 +81,6 @@ const SetPage = ( {route} ) =>  {
                     ]
                 );
             }
-
-            console.log("Sets opdateret!");
             
         } catch (error) {
             console.error("Error saving sets", error);
@@ -94,8 +92,6 @@ const SetPage = ( {route} ) =>  {
             const exists = await checkInitialized();
 
             if(!exists){
-
-                console.log("does not exist");
 
                 for (let i = 1; i <= sets; i++) {
                     await db.runAsync(
@@ -113,14 +109,14 @@ const SetPage = ( {route} ) =>  {
 
     useEffect(() => {
         inputsRef.current = inputs;
-        console.log("input update: ");
-        console.log(inputs);
-        console.log(" ");
+
+        const everythingDone = inputs.length > 0 && inputs.every(s => s.done === true);
+        setAllDone(everythingDone);
+
     }, [inputs]);
 
     useEffect(() => {
         const unsub = navigation.addListener("beforeRemove", async () => {
-
             await insertSetInfo(inputsRef.current);
         });
 
@@ -138,7 +134,7 @@ const SetPage = ( {route} ) =>  {
         <View style={styles.container}>
 
             <View style={styles.header}>
-                <Text style={styles.headerText}>
+                <Text style={[styles.headerText, allDone && { color: "green" }]}>
                     {exercise_name}
                 </Text>
             </View>

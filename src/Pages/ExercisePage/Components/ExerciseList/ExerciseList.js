@@ -23,39 +23,9 @@ const ExerciseList = ( {workout_id} ) => {
         [workout_id]
       );
 
-      const enriched = [];
-      for (const ex of rows) {
-        const doneRows = await db.getAllAsync(
-          "SELECT done FROM Sets WHERE exercise_id = ?;",
-          [ex.exercise_id]);
-
-        const isDone = doneRows.length > 0 && doneRows.every(r => r.done === 1);
-        enriched.push({
-          ...ex,
-          is_done: isDone,
-        });
-      }
-      setExercises(enriched);
-
+      setExercises(rows);
     } catch (error) {
       console.error("Error loading exercises", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const checkDoneSets = async (exercise_id) => {
-    try{
-      setLoading(true);
-      const rows = await db.getAllAsync(
-        "SELECT done FROM Sets WHERE exercise_id = ?;",
-        [exercise_id]
-      );
-
-      return rows.every(r => r.done === 1);
-
-    } catch (error) {
-      console.error("error getting done sets", error);
     } finally {
       setLoading(false);
     }
@@ -65,34 +35,25 @@ const ExerciseList = ( {workout_id} ) => {
     loadExercises();
   }, []);
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("focus", () => {
-      loadExercises();
-    });
-
-    return unsubscribe;
-  }, [navigation]);
-
   const renderItem = ({ item }) => (
 
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => {
-        navigation.navigate("SetPage", {
-          exercise_id: item.exercise_id,
-          exercise_name: item.exercise_name,
-          sets: item.sets})
-      }}>
+  <TouchableOpacity
+    style={styles.card}
+    onPress={() => {
+      navigation.navigate("SetPage", {
+        exercise_id: item.exercise_id,
+        exercise_name: item.exercise_name,
+        sets: item.sets})
+    }}>
 
-      <View style={styles.row}>
-        <Text style={[styles.left, item.is_done && { color: "green" }]}>
-          {item.exercise_name}
-        </Text>
+    <View style={styles.row}>
+      <Text style={styles.left}>{item.exercise_name}</Text>
+      <Text style={styles.right}>{item.sets}</Text>
+    </View>
 
-        <Text style={styles.right}>{item.sets}</Text>
-      </View>
 
-    </TouchableOpacity>
+  </TouchableOpacity>
+
   );
 
   return (

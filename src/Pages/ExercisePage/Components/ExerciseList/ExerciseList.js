@@ -41,7 +41,9 @@ const ExerciseList = ( {workout_id} ) => {
     style={styles.card}
     onPress={() => {
       navigation.navigate("SetPage", {
-        exercise_id: item.exercise_id})
+        exercise_id: item.exercise_id,
+        exercise_name: item.exercise_name,
+        sets: item.sets})
     }}>
 
     <View style={styles.row}>

@@ -8,114 +8,115 @@ import Checkbox from 'expo-checkbox';
 
 import styles from './SetPageStyle';
 
-
 const SetPage = ( {route} ) =>  {
 
-    const {exercise_id} = route.params;
+    const test = 5;
+    const {exercise_id, exercise_name, sets} = route.params;
     const db = useSQLiteContext();
     const navigation = useNavigation();
 
-    const [exerciseInfo, setExerciseInfo] = useState([]);
     const [inputs, setInputs] = useState([]);
     const inputsRef = useRef(inputs); 
 
     const loadSetInfo = async () => {
         try {
-
-            const row = await db.getFirstAsync(
-                "SELECT exercise_name, sets FROM Exercise WHERE exercise_id = ?;",
-                [exercise_id]
+            const rows = await db.getAllAsync(
+                `SELECT set_number, pause, rpe, weight, reps, done, failed, note FROM Sets 
+                    WHERE exercise_id=?;`,
+                    [exercise_id]
             );
 
-            setExerciseInfo(row);
-
-            const count_row = await db.getFirstAsync(
-                "SELECT COUNT(*) AS count FROM Sets WHERE exercise_id = ?;",
-                [exercise_id]
-            );
-
-            const existingCount = count_row?.count ?? 0;
-
-            if (existingCount > 0){
-
-                const savedSets = await db.getAllAsync(
-                    `SELECT set_number, pause, rpe, weight, reps, done, failed, note
-                        FROM Sets WHERE exercise_id = ? ORDER BY set_number ASC;`,
-                        [exercise_id]
-                );
-
-                console.log("");
-                console.log(savedSets);
-
-                const corrected = savedSets.map(s => ({
-                    ...s,
-                    done: s.done === 1,
-                    failed: s.failed === 1,
-                }));
-
-                setInputs(corrected);
-                //console.log(corrected);
-                return;
-            }
-            
-            const initial = Array.from({ length: row.sets }).map((_, index) => ({
-                set_number: index + 1,
-                pause: "",
-                rpe: "",
-                weight: "",
-                reps: "",
-                done: false,
-                failed: false,
-                note: ""
+            const formatted = rows.map(r => ({
+                ...r,
+                done: r.done === 1,
+                failed: r.failed === 1
             }));
 
-            setInputs(initial);
+            setInputs(formatted);
 
         } catch (error) {
             console.error("Error loading sets", error);
         } 
     };
 
-    const insertSetInfo = async () => {
+    const checkInitialized = async () => {
+        
+        const count_row = await db.getFirstAsync(
+            "SELECT COUNT(*) AS count FROM Sets WHERE exercise_id = ?;",
+            [exercise_id]
+        );
+
+        const existingCount = count_row?.count ?? 0;
+
+        if (existingCount > 0){
+            return true;
+        } else{
+            return false;
+        }
+    }
+
+    const insertSetInfo = async (data) => {
         try {
-            for (const set of inputs){
+            for (const set of data) {
+
                 await db.runAsync(
-                    `INSERT INTO Sets 
-                        (set_number, exercise_id, pause, rpe, weight, reps, done, failed, note) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-                        [
-                            set.set_number,
-                            exercise_id,
-                            set.pause,
-                            set.rpe,
-                            set.weight,
-                            set.reps,
-                            set.done ? 1 : 0,
-                            set.failed ? 1 : 0,
-                            set.note
-                        ]
+                    `UPDATE Sets 
+                        SET pause=?, rpe=?, weight=?, reps=?, done=?, failed=?, note=?
+                        WHERE exercise_id=? AND set_number=?;`,
+                    [
+                        set.pause,
+                        set.rpe,
+                        set.weight,
+                        set.reps,
+                        set.done ? 1 : 0,
+                        set.failed ? 1 : 0,
+                        set.note,
+                        exercise_id,
+                        set.set_number
+                    ]
                 );
             }
 
-            console.log("Alle sets er nu gemt!");
-
+            console.log("Sets opdateret!");
+            
         } catch (error) {
-            console.error("Error loading sets", error);
-        } 
-    }
+            console.error("Error saving sets", error);
+        }
+    };
 
     useEffect(() => {
-        loadSetInfo();
+        const load = async () => {
+            const exists = await checkInitialized();
+
+            if(!exists){
+
+                console.log("does not exist");
+
+                for (let i = 1; i <= sets; i++) {
+                    await db.runAsync(
+                        `INSERT INTO Sets (set_number, exercise_id) VALUES (?, ?);`,
+                        [i, exercise_id]
+                    );
+                }
+            }
+
+            await loadSetInfo();
+        }
+
+        load();
     }, []);
 
     useEffect(() => {
         inputsRef.current = inputs;
+        console.log("input update: ");
+        console.log(inputs);
+        console.log(" ");
     }, [inputs]);
 
     useEffect(() => {
         const unsub = navigation.addListener("beforeRemove", async () => {
-         
-            await insertSetInfo();
+
+            await insertSetInfo(inputsRef.current);
         });
 
         return unsub;
@@ -133,7 +134,7 @@ const SetPage = ( {route} ) =>  {
 
             <View style={styles.header}>
                 <Text style={styles.headerText}>
-                    {exerciseInfo.exercise_name}
+                    {exercise_name}
                 </Text>
             </View>
 
@@ -145,7 +146,7 @@ const SetPage = ( {route} ) =>  {
                         <TextInput
                             style={styles.input}
                             placeholder="note"
-                            value={set.note}
+                            value={String(set.note)}
                             onChangeText={(text) => updateSet(index, "note", text)}
                         />
 
@@ -153,7 +154,7 @@ const SetPage = ( {route} ) =>  {
                             style={styles.input}
                             placeholder="Pause"
                             keyboardType="numeric"
-                            value={set.pause}
+                            value={String(set.pause)}
                             onChangeText={(text) => updateSet(index, "pause", text)}
                         />
 
@@ -161,7 +162,7 @@ const SetPage = ( {route} ) =>  {
                             style={styles.input}
                             placeholder="RPE"
                             keyboardType="numeric"
-                            value={set.rpe}
+                            value={String(set.rpe)}
                             onChangeText={(text) => updateSet(index, "rpe", text)}
                         />
 
@@ -169,15 +170,14 @@ const SetPage = ( {route} ) =>  {
                             style={styles.input}
                             placeholder="Reps"
                             keyboardType="numeric"
-                            value={set.reps}
+                            value={String(set.reps)}
                             onChangeText={(text) => updateSet(index, "reps", text)}
                         />
 
                         <TextInput
                             style={styles.input}
-                            placeholder="Weight"
                             keyboardType="numeric"
-                            value={set.weight}
+                            value={String(set.weight)}
                             onChangeText={(text) => updateSet(index, "weight", text)}
                         />
 

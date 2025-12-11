@@ -14,8 +14,8 @@ export default function App() {
 
       <View style={styles.button_spacing}> 
         <Button 
-          title = "Go to your moms house"
-          onPress={() => navigation.navigate('ProgramPage')}
+          title = "Go to Program Page"
+          onPress={() => navigation.navigate('ProgramPage')} 
           style={styles.button_spacing} />
       </View>
 

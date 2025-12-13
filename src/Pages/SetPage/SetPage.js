@@ -124,8 +124,6 @@ const SetPage = ( {route} ) =>  {
                     WHERE exercise_id = ?`,
                     [allDone ? 1 : 0, exercise_id]
                 );
-
-                console.log("Exercise done updated:", allDone);
             } catch (error) {
                 console.error("Failed to update Exercise.done", error);
             }

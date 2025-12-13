@@ -19,43 +19,14 @@ const ExerciseList = ( {workout_id} ) => {
       console.log("Loading exercises from DB...");
 
       const rows = await db.getAllAsync(
-        "SELECT exercise_id, exercise_name, sets FROM Exercise WHERE workout_id = ?;",
+        "SELECT exercise_id, exercise_name, sets, done FROM Exercise WHERE workout_id = ?;",
         [workout_id]
       );
 
-      const enriched = [];
-      for (const ex of rows) {
-        const doneRows = await db.getAllAsync(
-          "SELECT done FROM Sets WHERE exercise_id = ?;",
-          [ex.exercise_id]);
-
-        const isDone = doneRows.length > 0 && doneRows.every(r => r.done === 1);
-        enriched.push({
-          ...ex,
-          is_done: isDone,
-        });
-      }
-      setExercises(enriched);
+      setExercises(rows);
 
     } catch (error) {
       console.error("Error loading exercises", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const checkDoneSets = async (exercise_id) => {
-    try{
-      setLoading(true);
-      const rows = await db.getAllAsync(
-        "SELECT done FROM Sets WHERE exercise_id = ?;",
-        [exercise_id]
-      );
-
-      return rows.every(r => r.done === 1);
-
-    } catch (error) {
-      console.error("error getting done sets", error);
     } finally {
       setLoading(false);
     }
@@ -85,7 +56,7 @@ const ExerciseList = ( {workout_id} ) => {
       }}>
 
       <View style={styles.row}>
-        <Text style={[styles.left, item.is_done && { color: "green" }]}>
+        <Text style={[styles.left, item.done && { color: "green" }]}>
           {item.exercise_name}
         </Text>
 

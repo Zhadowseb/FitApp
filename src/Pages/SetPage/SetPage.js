@@ -116,13 +116,32 @@ const SetPage = ( {route} ) =>  {
     }, [inputs]);
 
     useEffect(() => {
+        const updateExerciseDone = async () => {
+            try {
+                await db.runAsync(
+                    `UPDATE Exercise 
+                    SET done = ?
+                    WHERE exercise_id = ?`,
+                    [allDone ? 1 : 0, exercise_id]
+                );
+
+                console.log("Exercise done updated:", allDone);
+            } catch (error) {
+                console.error("Failed to update Exercise.done", error);
+            }
+        };
+
+        updateExerciseDone();
+
+    }, [allDone]);
+
+    useEffect(() => {
         const unsub = navigation.addListener("beforeRemove", async () => {
             await insertSetInfo(inputsRef.current);
         });
 
         return unsub;
     }, [navigation]);
-
 
     const updateSet = (index, key, value) => {
         const updated = [...inputs];

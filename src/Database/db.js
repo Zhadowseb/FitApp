@@ -12,15 +12,6 @@ export async function initializeDatabase(db) {
         CHECK (status IN ('COMPLETE', 'ACTIVE', 'NOT_STARTED'))
     );
 
-
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      first_name TEXT NOT NULL,
-      last_name TEXT NOT NULL,
-      email TEXT NOT NULL UNIQUE,
-      phone_number TEXT NOT NULL
-    );
-
     CREATE TABLE IF NOT EXISTS Sets (
         sets_id INTEGER PRIMARY KEY AUTOINCREMENT,
         set_number INTEGER NOT NULL,
@@ -53,7 +44,8 @@ export async function initializeDatabase(db) {
 
     CREATE TABLE IF NOT EXISTS Workout (
         workout_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date TEXT NOT NULL
+        date TEXT NOT NULL,
+        done INTEGER NOT NULL DEFAULT 0
     );
     
     CREATE TABLE IF NOT EXISTS Day (
@@ -83,8 +75,19 @@ export async function initializeDatabase(db) {
 
   /*
   await db.execAsync(`
-    DROP TABLE IF EXISTS Sets;
+    DROP TABLE IF EXISTS Workout;
   `);
   */
 
+  //Drop all tables:
+  /*
+  await db.execAsync(`
+    DROP TABLE IF EXISTS Program;
+    DROP TABLE IF EXISTS Sets;
+    DROP TABLE IF EXISTS Exercise_storage;
+    DROP TABLE IF EXISTS Exercise;
+    DROP TABLE IF EXISTS Workout;
+    DROP TABLE IF EXISTS Day;
+  `);
+  */
 }

@@ -42,8 +42,7 @@ const DayPage = ( {route} ) => {
             </View>
 
             <View style={styles.body}>
-                <Text>  </Text>
-
+                
                 <WorkoutList date={danishDate} />
 
             </View>

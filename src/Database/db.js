@@ -81,6 +81,14 @@ export async function initializeDatabase(db) {
     `SELECT COUNT(*) as count FROM Exercise_storage;`
   );
 
+  if (check_exercises_init.count === 0){
+    const placeholders = standard_exercises.map(() => "(?)").join(", ");
+    await db.runAsync(
+      `INSERT INTO Exercise_storage (exercise_name) VALUES ${placeholders};`,
+      standard_exercises
+    );
+  }
+
   /*
   await db.execAsync(`
     DROP TABLE IF EXISTS Sets;

@@ -53,12 +53,6 @@ const AddProgram = () => {
             value={end_date}
             onChangeText={set_End_date} />
 
-        <TextInput
-            style={styles.input}
-            placeholder="Status = ACTIVE/NOT_STARTED/COMPLETED"
-            value={status}
-            onChangeText={set_Status} />
-
 
       <View style={styles.buttonContainer}>
         <Button title="Add" onPress={handleSubmit} />

@@ -1,5 +1,5 @@
 // src/Components/ExerciseList/ExerciseList.js
-import { useState } from "react";
+import { use, useState } from "react";
 import { View, Text, FlatList, TouchableOpacity } from "react-native";
 import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
 import { useEffect } from "react";
@@ -9,6 +9,7 @@ import styles from "./ExerciseListStyle";
 
 const ExerciseList = ( {workout_id} ) => {
   const [exercises, setExercises] = useState([]);
+  const [allDone, setAllDone] = useState(false);
   const [loading, setLoading] = useState(false);
   const db = useSQLiteContext();
   const navigation = useNavigation();
@@ -24,6 +25,14 @@ const ExerciseList = ( {workout_id} ) => {
       );
 
       setExercises(rows);
+
+      const everythingDone = rows.length > 0 && rows.every(ex => ex.done === 1);
+      setAllDone(everythingDone);
+
+      await db.runAsync(
+        `UPDATE Workout SET done = ? WHERE workout_id = ?;`,
+        [everythingDone ? 1 : 0, workout_id]
+      );
 
     } catch (error) {
       console.error("Error loading exercises", error);

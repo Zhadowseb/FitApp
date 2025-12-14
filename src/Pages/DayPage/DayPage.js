@@ -46,10 +46,23 @@ const DayPage = ( {route} ) => {
         }
     };
 
+    const updateDayDone = async (isDone) => {
+        try {
+            await db.runAsync(
+                `UPDATE Day SET done = ? WHERE date = ?;`,
+                [isDone ? 1 : 0, danishDate]
+            );
+        } catch (error) {
+            console.error("Error updating Day.done", error);
+        }
+    };
+
     useEffect(() => {
         const unsub = navigation.addListener("focus", async () => {
             const result = await checkIfAllWorkoutsDone();
             setAllDone(result);
+
+            await updateDayDone(result);
         });
 
         return unsub;

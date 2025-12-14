@@ -53,7 +53,8 @@ export async function initializeDatabase(db) {
     CREATE TABLE IF NOT EXISTS Day (
         day_id INTEGER PRIMARY KEY AUTOINCREMENT,
         Weekday TEXT NOT NULL,
-        date TEXT NOT NULL
+        date TEXT NOT NULL,
+        done INTEGER NOT NULL DEFAULT 0
     );
 
     PRAGMA journal_mode = WAL;
@@ -85,9 +86,10 @@ export async function initializeDatabase(db) {
 
   /*
   await db.execAsync(`
-    DROP TABLE IF EXISTS Workout;
+    DROP TABLE IF EXISTS Day;
   `);
   */
+  
 
   //Drop all tables:
   /*

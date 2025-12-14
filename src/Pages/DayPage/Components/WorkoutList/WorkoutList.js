@@ -19,7 +19,7 @@ const WorkoutList = ( {date} ) => {
       console.log("Loading workouts from DB...");
 
       const rows = await db.getAllAsync(
-        "SELECT workout_id FROM Workout WHERE date = ?;",
+        "SELECT workout_id, done FROM Workout WHERE date = ?;",
         [date]
       );
 
@@ -43,7 +43,9 @@ const WorkoutList = ( {date} ) => {
             date: date
             })}>
 
-            <Text style={styles.left}>Workout #{item.workout_id}</Text>
+            <Text style={[styles.left, item.done === 1 && { color: "green" }]}>
+              Workout #{item.workout_id}
+            </Text>
         </TouchableOpacity>
     );
 

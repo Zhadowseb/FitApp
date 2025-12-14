@@ -1,5 +1,5 @@
 // src/Components/ExerciseList/ExerciseList.js
-import { useState } from "react";
+import { use, useState } from "react";
 import { View, Text, FlatList, TouchableOpacity } from "react-native";
 import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
 import { useEffect } from "react";
@@ -9,6 +9,7 @@ import styles from "./ExerciseListStyle";
 
 const ExerciseList = ( {workout_id} ) => {
   const [exercises, setExercises] = useState([]);
+  const [allDone, setAllDone] = useState(false);
   const [loading, setLoading] = useState(false);
   const db = useSQLiteContext();
   const navigation = useNavigation();
@@ -19,43 +20,22 @@ const ExerciseList = ( {workout_id} ) => {
       console.log("Loading exercises from DB...");
 
       const rows = await db.getAllAsync(
-        "SELECT exercise_id, exercise_name, sets FROM Exercise WHERE workout_id = ?;",
+        "SELECT exercise_id, exercise_name, sets, done FROM Exercise WHERE workout_id = ?;",
         [workout_id]
       );
 
-      const enriched = [];
-      for (const ex of rows) {
-        const doneRows = await db.getAllAsync(
-          "SELECT done FROM Sets WHERE exercise_id = ?;",
-          [ex.exercise_id]);
+      setExercises(rows);
 
-        const isDone = doneRows.length > 0 && doneRows.every(r => r.done === 1);
-        enriched.push({
-          ...ex,
-          is_done: isDone,
-        });
-      }
-      setExercises(enriched);
+      const everythingDone = rows.length > 0 && rows.every(ex => ex.done === 1);
+      setAllDone(everythingDone);
+
+      await db.runAsync(
+        `UPDATE Workout SET done = ? WHERE workout_id = ?;`,
+        [everythingDone ? 1 : 0, workout_id]
+      );
 
     } catch (error) {
       console.error("Error loading exercises", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const checkDoneSets = async (exercise_id) => {
-    try{
-      setLoading(true);
-      const rows = await db.getAllAsync(
-        "SELECT done FROM Sets WHERE exercise_id = ?;",
-        [exercise_id]
-      );
-
-      return rows.every(r => r.done === 1);
-
-    } catch (error) {
-      console.error("error getting done sets", error);
     } finally {
       setLoading(false);
     }
@@ -85,7 +65,7 @@ const ExerciseList = ( {workout_id} ) => {
       }}>
 
       <View style={styles.row}>
-        <Text style={[styles.left, item.is_done && { color: "green" }]}>
+        <Text style={[styles.left, item.done && { color: "green" }]}>
           {item.exercise_name}
         </Text>
 

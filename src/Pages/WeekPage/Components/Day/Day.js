@@ -23,31 +23,58 @@ const Day = ( {day, start_date, index, program_id} ) => {
     const db = useSQLiteContext();
     const navigation = useNavigation();
     const [workout_count, setWorkout_count] = useState(0);
+    const [workouts_done, setWorkouts_done] = useState(false);
 
     const date = parseCustomDate(start_date);
     date.setDate(date.getDate() + (index));
     const danishDate = formatDate(date);
 
-    const loadWorkoutCount = async () => {
+    const initDay = async () => {
         try {
-            const result = await db.getFirstAsync(
+            await db.runAsync(
+                `INSERT INTO Day (date, Weekday, done)
+                SELECT ?, ?, 0
+                WHERE NOT EXISTS (SELECT 1 FROM Day WHERE date = ?);`,
+                [danishDate, day, danishDate]
+            );
+        } catch (err) {
+            console.error("Error ensuring Day exists:", err);
+        }
+    };
+
+    const loadDayStatus = async () => {
+        try {
+            const count_row = await db.getFirstAsync(
                 `SELECT COUNT(*) AS workout_count FROM Workout WHERE date = ?;`,
                     [danishDate]
             );
-            setWorkout_count(result.workout_count);
+            setWorkout_count(count_row?.workout_count ?? 0);
+
+            const day_row = await db.getFirstAsync(
+                `SELECT done FROM Day WHERE date = ?`,
+                [danishDate]
+            );
+            setWorkouts_done(day_row?.done === 1);
 
         } catch (error) {
             console.error(error);
-            Alert.alert(
-            "Error",
-            error.message || "An error occured when trying to create a new workout."
-            );
+            Alert.alert("Error", error.message || "An error occured.");
         }
     };
 
     useEffect(() => {
-      loadWorkoutCount();
+      loadDayStatus();
     }, []);
+
+    useEffect(() => {
+        const unsub = navigation.addListener("focus", async () => {
+            await initDay();
+            await loadDayStatus();
+        });
+
+
+        return unsub;
+    }, [navigation]);
 
     return (
         <TouchableOpacity
@@ -60,9 +87,9 @@ const Day = ( {day, start_date, index, program_id} ) => {
                 program_id: program_id})
             }}>
 
-            <View style={styles.day}>
-                <Text> {day} </Text>    
-            </View>
+            <Text style={[styles.day, workouts_done && { color: "green" }]}>
+                {day}
+            </Text>
 
             <View style={styles.workouts}>
                 <Text> Workouts: {workout_count} </Text>

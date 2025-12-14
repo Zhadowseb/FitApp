@@ -56,7 +56,6 @@ const AddProgram = () => {
         <TextInput
             style={styles.input}
             placeholder="Status = ACTIVE/NOT_STARTED/COMPLETED"
-            keyboardType="numeric"
             value={status}
             onChangeText={set_Status} />
 

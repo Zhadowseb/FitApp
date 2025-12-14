@@ -1,7 +1,7 @@
-import { StatusBar } from 'expo-status-bar';
 import { View, Text, Button } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSQLiteContext } from "expo-sqlite";
+import { useState, useEffect } from "react";
 
 import styles from './DayPageStyle';
 import WorkoutList from './Components/WorkoutList/WorkoutList';
@@ -9,6 +9,7 @@ import WorkoutList from './Components/WorkoutList/WorkoutList';
 const DayPage = ( {route} ) => {
     const db = useSQLiteContext();
     const navigation = useNavigation();
+    const [allDone, setAllDone] = useState(false);
     const {day, danishDate, index, program_id} = route.params;
 
     const handleNewWorkout = async () => {
@@ -29,6 +30,31 @@ const DayPage = ( {route} ) => {
         }
     };
 
+    const checkIfAllWorkoutsDone = async () => {
+        try {
+            const rows = await db.getAllAsync(
+                `SELECT done FROM Workout WHERE date = ?;`,
+                [danishDate]
+            );
+
+            if (rows.length === 0) return false;
+
+            return rows.every(r => r.done === 1);
+        } catch (error) {
+            console.error("Error checking workout done state", error);
+            return false;
+        }
+    };
+
+    useEffect(() => {
+        const unsub = navigation.addListener("focus", async () => {
+            const result = await checkIfAllWorkoutsDone();
+            setAllDone(result);
+        });
+
+        return unsub;
+    }, [navigation]);
+
     return (
 
         <View style={styles.container}>
@@ -36,7 +62,9 @@ const DayPage = ( {route} ) => {
             <View style={styles.header}>
 
                 <View> 
-                    <Text> {day} </Text> 
+                    <Text style={[styles.headerText, allDone && { color: "green" }]}>
+                        {day}
+                    </Text>
                 </View>
 
             </View>

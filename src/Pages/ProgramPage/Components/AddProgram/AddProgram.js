@@ -15,8 +15,8 @@ const AddProgram = () => {
   const handleSubmit = async () => {
     try {
       await db.runAsync(
-        `INSERT INTO Program (program_name, start_date, end_date, status) VALUES (?, ?, ?, ?);`,
-        [program_name, start_date, end_date, status]
+        `INSERT INTO Program (program_name, start_date, end_date) VALUES (?, ?, ?);`,
+        [program_name, start_date, end_date]
       );
 
       Alert.alert("Success", "Exercise tilføjet!");

@@ -85,9 +85,9 @@ export async function initializeDatabase(db) {
 
   /*
   await db.execAsync(`
-    DROP TABLE IF EXISTS Exercise;
+    DROP TABLE IF EXISTS Workout;
   `);
-  /*
+  */
 
   //Drop all tables:
   /*

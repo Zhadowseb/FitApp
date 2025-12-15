@@ -20,6 +20,7 @@ export async function initializeDatabase(db) {
 
     CREATE TABLE IF NOT EXISTS Mesocycle(
         mesocycle_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        weeks INTEGER NOT NULL DEFAULT 0,
         goal TEXT DEFAULT "No goal"
     );
 

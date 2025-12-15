@@ -1,16 +1,35 @@
 import React, { useState } from "react";
-import { View } from "react-native";
+import { View, Button, Text } from "react-native";
 
 import styles from "./MesocyclePageStyle";
+import AddMesocycleStyle from "./Components/AddMesocycle/AddMesocycleStyle";
+import AddMesocycleModal from "./Components/AddMesocycle/AddMesocycle";
 
-const AddMesocycle = () => {
+const MesocyclePage = () => {
+    const [modalVisible, setModalVisible] = useState(false);
 
-  return (
-    <View style={styles.wrapper}>
+    const handleAdd = (data) => {
+        console.log("New mesocycle:", data);
 
+        // TODO: Insert into database
+        // await db.runAsync(...)
 
-    </View>
-  );
+        setModalVisible(false);
+    };
+
+    return (
+        <View style={styles.wrapper}>
+
+        <Button title="Add Mesocycle" onPress={() => setModalVisible(true)} />
+
+        <AddMesocycleModal
+            visible={modalVisible}
+            onClose={() => setModalVisible(false)}
+            onSubmit={handleAdd}
+        />
+
+        </View>
+    );
 };
 
-export default AddMesocycle;
+export default MesocyclePage;

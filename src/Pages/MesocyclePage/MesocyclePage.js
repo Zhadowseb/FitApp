@@ -13,4 +13,4 @@ const AddMesocycle = () => {
   );
 };
 
-export default AddProgram;
+export default AddMesocycle;

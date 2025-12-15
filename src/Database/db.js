@@ -1,6 +1,12 @@
 
 export async function initializeDatabase(db) {
   await db.execAsync(`
+    
+    CREATE TABLE IF NOT EXISTS Exercise_storage (
+        exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        exercise_name TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS Program (
       program_id INTEGER PRIMARY KEY AUTOINCREMENT,
       program_name TEXT,
@@ -10,6 +16,38 @@ export async function initializeDatabase(db) {
         DEFAULT 'NOT_STARTED'
         NOT NULL 
         CHECK (status IN ('COMPLETE', 'ACTIVE', 'NOT_STARTED'))
+    );
+
+    CREATE TABLE IF NOT EXISTS Mesocycle(
+        mesocycle_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        goal TEXT DEFAULT "No goal"
+    );
+
+    CREATE TABLE IF NOT EXISTS Week(
+        week_id INTEGER PRIMARY KEY AUTOINCREMENT
+    );
+
+    CREATE TABLE IF NOT EXISTS Day (
+        day_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        week_id INTEGER,
+        Weekday TEXT NOT NULL,
+        date TEXT,
+        done INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS Workout (
+        workout_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL,
+        done INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS Exercise (
+        exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        workout_id INTEGER NOT NULL,
+        exercise_name TEXT NOT NULL,
+        sets INTEGER NOT NULL,
+
+        done INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS Sets (
@@ -29,33 +67,7 @@ export async function initializeDatabase(db) {
         failed INTEGER NOT NULL DEFAULT 0,
         note TEXT
     );
-
-    CREATE TABLE IF NOT EXISTS Exercise_storage (
-        exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        exercise_name TEXT NOT NULL
-    );
-        
-    CREATE TABLE IF NOT EXISTS Exercise (
-        exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        workout_id INTEGER NOT NULL,
-        exercise_name TEXT NOT NULL,
-        sets INTEGER NOT NULL,
-
-        done INTEGER NOT NULL DEFAULT 0
-    );
-
-    CREATE TABLE IF NOT EXISTS Workout (
-        workout_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date TEXT NOT NULL,
-        done INTEGER NOT NULL DEFAULT 0
-    );
-    
-    CREATE TABLE IF NOT EXISTS Day (
-        day_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        Weekday TEXT NOT NULL,
-        date TEXT NOT NULL,
-        done INTEGER NOT NULL DEFAULT 0
-    );
+  
 
     PRAGMA journal_mode = WAL;
 

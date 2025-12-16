@@ -20,8 +20,9 @@ export async function initializeDatabase(db) {
 
     CREATE TABLE IF NOT EXISTS Mesocycle(
         mesocycle_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        program_id INTEGER NOT NULL,
         weeks INTEGER NOT NULL DEFAULT 0,
-        goal TEXT DEFAULT "No goal"
+        focus TEXT DEFAULT "No focus set"
     );
 
     CREATE TABLE IF NOT EXISTS Week(
@@ -99,7 +100,7 @@ export async function initializeDatabase(db) {
 
   /*
   await db.execAsync(`
-    DROP TABLE IF EXISTS Day;
+    DROP TABLE IF EXISTS Mesocycle;
   `);
   */
   

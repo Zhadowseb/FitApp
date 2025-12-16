@@ -3,14 +3,12 @@ import { Modal, View, Text, TextInput, Button } from "react-native";
 import styles from "./AddMesocycleStyle";
 
 export default function AddMesocycleModal({ visible, onClose, onSubmit }) {
-    
-  const [name, setName] = useState("");
+
   const [focus, setFocus] = useState("");
   const [weeks, setWeeks] = useState("");
 
   const handleSubmit = () => {
-    onSubmit({ name, focus, weeks: Number(weeks) });
-    setName("");
+    onSubmit({ focus, weeks: Number(weeks) });
     setFocus("");
     setWeeks("");
   };
@@ -19,19 +17,12 @@ export default function AddMesocycleModal({ visible, onClose, onSubmit }) {
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
-    >
+      animationType="fade">
+
       <View style={styles.overlay}>
         <View style={styles.modalBox}>
 
           <Text style={styles.title}>Add Mesocycle</Text>
-
-          <TextInput
-            placeholder="Mesocycle name"
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-          />
 
           <TextInput
             placeholder="Focus (e.g. Hypertrophy)"
@@ -49,8 +40,8 @@ export default function AddMesocycleModal({ visible, onClose, onSubmit }) {
           />
 
           <View style={styles.row}>
-            <Button title="Cancel" color="grey" onPress={onClose} />
-            <Button title="Add" onPress={handleSubmit} />
+            <Button title="Cancel" color="red" onPress={onClose} />
+            <Button title="Add" color="green" onPress={handleSubmit} />
           </View>
 
         </View>

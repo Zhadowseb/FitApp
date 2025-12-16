@@ -1,18 +1,27 @@
 import React, { useState } from "react";
 import { View, Button, Text } from "react-native";
+import { useSQLiteContext } from "expo-sqlite";
 
 import styles from "./MesocyclePageStyle";
-import AddMesocycleStyle from "./Components/AddMesocycle/AddMesocycleStyle";
 import AddMesocycleModal from "./Components/AddMesocycle/AddMesocycle";
 
-const MesocyclePage = () => {
+const MesocyclePage = ( {route} ) => {
+    const db = useSQLiteContext();
+
     const [modalVisible, setModalVisible] = useState(false);
 
-    const handleAdd = (data) => {
-        console.log("New mesocycle:", data);
+    const program_id = route.params;
 
-        // TODO: Insert into database
-        // await db.runAsync(...)
+    const handleAdd = async (data) => {
+        try {
+            await db.runAsync(
+                `INSERT INTO Mesocycle (program_id, weeks, focus) VALUES (?, ?, ?);`,
+                [program_id, data.weeks, data.focus]
+            );
+
+        } catch (error) {
+            console.error(error);
+        }
 
         setModalVisible(false);
     };

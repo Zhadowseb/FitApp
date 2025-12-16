@@ -39,8 +39,7 @@ const ProgramList = () => {
       style={styles.card}
       onPress={() => {
         navigation.navigate("MesocyclePage", {
-          program_id: item.program_id, 
-          start_date: item.start_date})
+          program_id: item.program_id})
       }}>
 
         <View style={styles.status_section}>

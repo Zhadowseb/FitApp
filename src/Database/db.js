@@ -22,11 +22,13 @@ export async function initializeDatabase(db) {
         mesocycle_id INTEGER PRIMARY KEY AUTOINCREMENT,
         program_id INTEGER NOT NULL,
         weeks INTEGER NOT NULL DEFAULT 0,
-        focus TEXT DEFAULT "No focus set"
+        focus TEXT DEFAULT "No focus set",
+        done INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS Week(
-        week_id INTEGER PRIMARY KEY AUTOINCREMENT
+        week_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        mesocycle_id
     );
 
     CREATE TABLE IF NOT EXISTS Day (

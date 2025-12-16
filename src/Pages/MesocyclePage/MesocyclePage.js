@@ -4,6 +4,7 @@ import { useSQLiteContext } from "expo-sqlite";
 
 import styles from "./MesocyclePageStyle";
 import AddMesocycleModal from "./Components/AddMesocycle/AddMesocycle";
+import MesocycleList from "./Components/MesocycleList/MesocycleList";
 
 const MesocyclePage = ( {route} ) => {
     const db = useSQLiteContext();
@@ -28,6 +29,9 @@ const MesocyclePage = ( {route} ) => {
 
     return (
         <View style={styles.wrapper}>
+
+        <MesocycleList 
+            program_id = {program_id}/>
 
         <Button title="Add Mesocycle" onPress={() => setModalVisible(true)} />
 

@@ -15,14 +15,24 @@ const MesocyclePage = ( {route} ) => {
 
     const handleAdd = async (data) => {
         try {
-            await db.runAsync(
+            const result = await db.runAsync(
                 `INSERT INTO Mesocycle (program_id, weeks, focus) VALUES (?, ?, ?);`,
                 [program_id, data.weeks, data.focus]
             );
+            
+            const newMesocycle_id = result.lastInsertRowId;
+
+            for (let week = 1; week <= data.weeks; week++){
+                await db.runAsync(
+                    `INSERT INTO Microcycle (mesocycle_id, week_number) VALUES (?, ?);`,
+                    [newMesocycle_id, week]
+                );
+            }
 
         } catch (error) {
             console.error(error);
         }
+
 
         setModalVisible(false);
     };

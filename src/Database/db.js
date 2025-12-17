@@ -26,9 +26,12 @@ export async function initializeDatabase(db) {
         done INTEGER NOT NULL DEFAULT 0
     );
 
-    CREATE TABLE IF NOT EXISTS Week(
-        week_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        mesocycle_id
+    CREATE TABLE IF NOT EXISTS Microcycle(
+        microcycle_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        mesocycle_id INTEGER NOT NULL,
+        week_number INTEGER NOT NULL,
+        focus TEXT DEFAULT "No focus set",
+        done INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS Day (
@@ -102,7 +105,8 @@ export async function initializeDatabase(db) {
 
   /*
   await db.execAsync(`
-    DROP TABLE IF EXISTS Mesocycle;
+    DROP TABLE IF EXISTS Microcycle;
+    DROP TABLE IF EXISTS Week;
   `);
   */
   

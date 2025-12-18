@@ -5,37 +5,24 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState } from "react";
 
 import styles from './DayStyle';
+import { calculateProgramDay } from "./dateCalculation";
 
-function parseCustomDate(dateString) {
-  const [day, month, year] = dateString.split(".").map(Number);
-  return new Date(year, month - 1, day);
-}
 
-function formatDate(date) {
-  const d = date.getDate().toString().padStart(2, "0");
-  const m = (date.getMonth() + 1).toString().padStart(2, "0");
-  const y = date.getFullYear();
-  return `${d}-${m}-${y}`;
-}
-
-const Day = ( {day, start_date, index, program_id} ) => {
+const Day = ( {day, index, program_id, microcycle_id} ) => {
     
     const db = useSQLiteContext();
     const navigation = useNavigation();
     const [workout_count, setWorkout_count] = useState(0);
     const [workouts_done, setWorkouts_done] = useState(false);
-
-    const date = parseCustomDate(start_date);
-    date.setDate(date.getDate() + (index));
-    const danishDate = formatDate(date);
+    const [program_day, setProgram_day] = useState(0);
 
     const initDay = async () => {
         try {
             await db.runAsync(
-                `INSERT INTO Day (date, Weekday, done)
-                SELECT ?, ?, 0
+                `INSERT INTO Day (microcycle_id, program_id, Weekday, date, done)
+                SELECT ?, ?, ?, ?, 0
                 WHERE NOT EXISTS (SELECT 1 FROM Day WHERE date = ?);`,
-                [danishDate, day, danishDate]
+                [microcycle_id, program_id, day, program_day, program_day]
             );
         } catch (err) {
             console.error("Error ensuring Day exists:", err);
@@ -46,13 +33,13 @@ const Day = ( {day, start_date, index, program_id} ) => {
         try {
             const count_row = await db.getFirstAsync(
                 `SELECT COUNT(*) AS workout_count FROM Workout WHERE date = ?;`,
-                    [danishDate]
+                    [program_day]
             );
             setWorkout_count(count_row?.workout_count ?? 0);
 
             const day_row = await db.getFirstAsync(
                 `SELECT done FROM Day WHERE date = ?`,
-                [danishDate]
+                [program_day]
             );
             setWorkouts_done(day_row?.done === 1);
 
@@ -63,6 +50,22 @@ const Day = ( {day, start_date, index, program_id} ) => {
     };
 
     useEffect(() => {
+        const loadDate = async () => {
+            const date = await calculateProgramDay({
+            db,
+            program_id,
+            microcycle_id,
+            weekdayIndex: index,
+            });
+
+            setProgram_day(date);
+        };
+
+        loadDate();
+    }, [microcycle_id, index]);
+
+
+    useEffect(() => {
       loadDayStatus();
     }, []);
 
@@ -71,8 +74,6 @@ const Day = ( {day, start_date, index, program_id} ) => {
             await initDay();
             await loadDayStatus();
         });
-
-
         return unsub;
     }, [navigation]);
 
@@ -82,14 +83,20 @@ const Day = ( {day, start_date, index, program_id} ) => {
             onPress={() => {
             navigation.navigate("DayPage", {
                 day: day, 
-                danishDate: danishDate,
+                program_day: program_day,
                 index: index,
                 program_id: program_id})
             }}>
 
-            <Text style={[styles.day, workouts_done && { color: "green" }]}>
-                {day}
-            </Text>
+            <View style={styles.day}>
+                <Text style={[workouts_done && { color: "green" }]}>
+                    {day}
+                </Text>
+
+                <Text>
+                    {program_day}
+                </Text>
+            </View>
 
             <View style={styles.workouts}>
                 <Text> Workouts: {workout_count} </Text>

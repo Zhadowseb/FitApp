@@ -5,18 +5,8 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState } from "react";
 
 import styles from './DayStyle';
+import { calculateProgramDay } from "./dateCalculation";
 
-function parseCustomDate(dateString) {
-  const [day, month, year] = dateString.split(".").map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function formatDate(date) {
-  const d = date.getDate().toString().padStart(2, "0");
-  const m = (date.getMonth() + 1).toString().padStart(2, "0");
-  const y = date.getFullYear();
-  return `${d}-${m}-${y}`;
-}
 
 const Day = ( {day, index, program_id, microcycle_id} ) => {
     
@@ -25,48 +15,6 @@ const Day = ( {day, index, program_id, microcycle_id} ) => {
     const [workout_count, setWorkout_count] = useState(0);
     const [workouts_done, setWorkouts_done] = useState(false);
     const [program_day, setProgram_day] = useState(0);
-
-    const calculate_date = async () => {
-        try {
-            const microcycle = await db.getFirstAsync(
-                `SELECT mesocycle_id, microcycle_number FROM Microcycle WHERE microcycle_id = ?;`,
-                [microcycle_id]
-            );
-
-            const mesocycle = await db.getFirstAsync(
-                `SELECT mesocycle_number FROM Mesocycle WHERE 
-                    mesocycle_id = ? AND 
-                    program_id = ?;`,
-                    [microcycle.mesocycle_id, program_id]
-            )
-
-            const row = await db.getFirstAsync(
-                `SELECT COALESCE( SUM(weeks), 0) AS total_weeks FROM Mesocycle
-                    WHERE program_id = ?
-                    AND mesocycle_number < ?;`,
-                    [program_id, mesocycle.mesocycle_number]
-            )
-
-            let week_count = row.total_weeks + microcycle.microcycle_number;
-
-            let newDate = (week_count * 7 + index) - 7;
-
-            const program = await db.getFirstAsync(
-                `SELECT start_date FROM Program WHERE program_id = ?;`,
-                [program_id]
-            );
-
-            const date = parseCustomDate(program.start_date);
-            date.setDate(date.getDate() + newDate);
-            const danishDate = formatDate(date);
-
-            setProgram_day(danishDate);
-        } catch (err) {
-            console.error("Error ensuring Day exists:", err);
-        }
-    }
-
-    calculate_date();
 
     const initDay = async () => {
         try {
@@ -102,6 +50,22 @@ const Day = ( {day, index, program_id, microcycle_id} ) => {
     };
 
     useEffect(() => {
+        const loadDate = async () => {
+            const date = await calculateProgramDay({
+            db,
+            program_id,
+            microcycle_id,
+            weekdayIndex: index,
+            });
+
+            setProgram_day(date);
+        };
+
+        loadDate();
+    }, [microcycle_id, index]);
+
+
+    useEffect(() => {
       loadDayStatus();
     }, []);
 
@@ -110,8 +74,6 @@ const Day = ( {day, index, program_id, microcycle_id} ) => {
             await initDay();
             await loadDayStatus();
         });
-
-
         return unsub;
     }, [navigation]);
 

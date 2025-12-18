@@ -38,7 +38,8 @@ const MesocycleList = ( {program_id} ) => {
       style={styles.card}
       onPress={() => {
         navigation.navigate("MicrocyclePage", {
-            mesocycle_id: item.mesocycle_id})
+            mesocycle_id: item.mesocycle_id,
+            program_id: item.program_id})
       }}>
 
         <View style={styles.status_section}>

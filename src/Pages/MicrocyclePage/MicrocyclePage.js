@@ -8,7 +8,7 @@ import MicrocycleList from "./Components/MicrocycleList/MicrocycleList";
 const MicrocyclePage = ( {route} ) => {
     const db = useSQLiteContext();
 
-    const {mesocycle_id} = route.params;
+    const {mesocycle_id, program_id} = route.params;
 
     return (
         <View style={styles.container}>

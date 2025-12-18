@@ -10,7 +10,7 @@ export async function initializeDatabase(db) {
     CREATE TABLE IF NOT EXISTS Program (
       program_id INTEGER PRIMARY KEY AUTOINCREMENT,
       program_name TEXT,
-      start_date DATE,
+      start_date TEXT NOT NULL,
       end_date DATE,
       status TEXT 
         DEFAULT 'NOT_STARTED'
@@ -21,6 +21,7 @@ export async function initializeDatabase(db) {
     CREATE TABLE IF NOT EXISTS Mesocycle(
         mesocycle_id INTEGER PRIMARY KEY AUTOINCREMENT,
         program_id INTEGER NOT NULL,
+        mesocycle_number INTEGER NOT NULL,
         weeks INTEGER NOT NULL DEFAULT 0,
         focus TEXT DEFAULT "No focus set",
         done INTEGER NOT NULL DEFAULT 0
@@ -29,16 +30,18 @@ export async function initializeDatabase(db) {
     CREATE TABLE IF NOT EXISTS Microcycle(
         microcycle_id INTEGER PRIMARY KEY AUTOINCREMENT,
         mesocycle_id INTEGER NOT NULL,
-        week_number INTEGER NOT NULL,
+        program_id INTEGER NOT NULL,
+        microcycle_number INTEGER NOT NULL,
         focus TEXT DEFAULT "No focus set",
         done INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS Day (
         day_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        week_id INTEGER,
+        microcycle_id INTEGER NOT NULL,
+        program_id INTEGER NOT NULL,
         Weekday TEXT NOT NULL,
-        date TEXT,
+        date TEXT NOT NULL,
         done INTEGER NOT NULL DEFAULT 0
     );
 
@@ -120,6 +123,9 @@ export async function initializeDatabase(db) {
     DROP TABLE IF EXISTS Exercise;
     DROP TABLE IF EXISTS Workout;
     DROP TABLE IF EXISTS Day;
+    DROP TABLE IF EXISTS Microcycle;
+    DROP TABLE IF EXISTS Mesocycle;
   `);
   */
+  
 }

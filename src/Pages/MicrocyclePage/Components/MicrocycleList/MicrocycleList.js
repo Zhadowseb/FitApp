@@ -4,7 +4,6 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 import Checkbox from "expo-checkbox";
 
-
 import styles from "./MicrocycleListStyle";
 
 
@@ -20,7 +19,7 @@ const MicrocycleList = ( {mesocycle_id} ) => {
       setLoading(true);
 
       const cycles = await db.getAllAsync(
-        "SELECT week_number, focus, done FROM Microcycle WHERE mesocycle_id = ?;",
+        "SELECT microcycle_id, microcycle_number, program_id, focus, done FROM Microcycle WHERE mesocycle_id = ?;",
         [mesocycle_id]
       );
 
@@ -41,14 +40,15 @@ const MicrocycleList = ( {mesocycle_id} ) => {
     <TouchableOpacity
       style={styles.card}
       onPress={() => {
-        navigation.navigate("HomePage", {
-            mesocycle_id: item.mesocycle_id})
+        navigation.navigate("WeekPage", {
+            microcycle_id: item.microcycle_id,
+            program_id: item.program_id})
       }}>
 
         <View style={styles.status_section}>
             <View style={styles.header_status}>
                 <Text style={styles.label}>Week</Text>
-                <Text> {item.week_number} </Text>
+                <Text> {item.microcycle_number} </Text>
             </View>
         </View>
 

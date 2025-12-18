@@ -11,21 +11,30 @@ const MesocyclePage = ( {route} ) => {
 
     const [modalVisible, setModalVisible] = useState(false);
 
-    const program_id = route.params;
+    const program_id = route.params.program_id;
 
     const handleAdd = async (data) => {
         try {
+
+            const row = await db.getFirstAsync(
+                `SELECT COUNT(*) AS count FROM Mesocycle WHERE program_id = ?;`,
+                [program_id]
+            );
+            const mesocycleCount = row?.count ?? 0;
+
+            console.log(mesocycleCount + 1);
+
             const result = await db.runAsync(
-                `INSERT INTO Mesocycle (program_id, weeks, focus) VALUES (?, ?, ?);`,
-                [program_id, data.weeks, data.focus]
+                `INSERT INTO Mesocycle (program_id, mesocycle_number, weeks, focus) VALUES (?, ?, ?, ?);`,
+                [program_id, (mesocycleCount + 1), data.weeks, data.focus]
             );
             
             const newMesocycle_id = result.lastInsertRowId;
 
             for (let week = 1; week <= data.weeks; week++){
                 await db.runAsync(
-                    `INSERT INTO Microcycle (mesocycle_id, week_number) VALUES (?, ?);`,
-                    [newMesocycle_id, week]
+                    `INSERT INTO Microcycle (mesocycle_id, program_id, microcycle_number) VALUES (?, ?, ?);`,
+                    [newMesocycle_id, program_id, week]
                 );
             }
 

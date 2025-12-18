@@ -10,6 +10,7 @@ import WeekPage from './src/Pages/WeekPage/WeekPage';
 import DayPage from './src/Pages/DayPage/DayPage';
 import SetPage from './src/Pages/SetPage/SetPage';
 import MesocyclePage from './src/Pages/MesocyclePage/MesocyclePage';
+import MicrocyclePage from './src/Pages/MicrocyclePage/MicrocyclePage';
 
 const Stack = createNativeStackNavigator();
 
@@ -31,6 +32,7 @@ export default function App() {
           <Stack.Screen name="DayPage" component={DayPage} />
           <Stack.Screen name="SetPage" component={SetPage} />
           <Stack.Screen name="MesocyclePage" component={MesocyclePage} />
+          <Stack.Screen name="MicrocyclePage" component={MicrocyclePage} />
 
         </Stack.Navigator>
           

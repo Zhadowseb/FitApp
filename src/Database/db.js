@@ -105,10 +105,10 @@ export async function initializeDatabase(db) {
 
   /*
   await db.execAsync(`
-    DROP TABLE IF EXISTS Microcycle;
-    DROP TABLE IF EXISTS Week;
+    DROP TABLE IF EXISTS Mesocycle;
   `);
   */
+  
   
 
   //Drop all tables:

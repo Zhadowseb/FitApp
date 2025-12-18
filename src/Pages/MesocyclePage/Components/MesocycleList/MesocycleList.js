@@ -18,10 +18,9 @@ const MesocycleList = ( {program_id} ) => {
       setLoading(true);
 
       const cycles = await db.getAllAsync(
-        "SELECT weeks, focus FROM Mesocycle WHERE program_id = ?;",
+        "SELECT mesocycle_id, weeks, focus FROM Mesocycle WHERE program_id = ?;",
         [program_id]
       );
-
       setMesocycles(cycles);
     } catch (error) {
       console.error("Error loading programs", error);
@@ -38,8 +37,7 @@ const MesocycleList = ( {program_id} ) => {
     <TouchableOpacity
       style={styles.card}
       onPress={() => {
-        navigation.navigate("WeekPage", {
-            program_id: item.program_id,
+        navigation.navigate("MicrocyclePage", {
             mesocycle_id: item.mesocycle_id})
       }}>
 

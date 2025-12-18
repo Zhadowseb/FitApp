@@ -39,18 +39,16 @@ const MesocyclePage = ( {route} ) => {
 
     return (
         <View style={styles.wrapper}>
+            <MesocycleList 
+                program_id = {program_id}/>
 
-        <MesocycleList 
-            program_id = {program_id}/>
+            <Button title="Add Mesocycle" onPress={() => setModalVisible(true)} />
 
-        <Button title="Add Mesocycle" onPress={() => setModalVisible(true)} />
-
-        <AddMesocycleModal
-            visible={modalVisible}
-            onClose={() => setModalVisible(false)}
-            onSubmit={handleAdd}
-        />
-
+            <AddMesocycleModal
+                visible={modalVisible}
+                onClose={() => setModalVisible(false)}
+                onSubmit={handleAdd}
+            />
         </View>
     );
 };

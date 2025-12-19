@@ -44,7 +44,6 @@ const Day = ( {day, index, program_id, microcycle_id} ) => {
             setWorkouts_done(day_row?.done === 1);
 
         } catch (error) {
-            console.error(error);
             Alert.alert("Error", error.message || "An error occured.");
         }
     };
@@ -64,10 +63,17 @@ const Day = ( {day, index, program_id, microcycle_id} ) => {
         loadDate();
     }, [microcycle_id, index]);
 
-
     useEffect(() => {
-      loadDayStatus();
-    }, []);
+        if (!program_day) return;
+
+        const run = async () => {
+            await initDay();
+            await loadDayStatus();
+        };
+
+        run();
+    }, [program_day]);
+
 
     useEffect(() => {
         const unsub = navigation.addListener("focus", async () => {
@@ -83,7 +89,7 @@ const Day = ( {day, index, program_id, microcycle_id} ) => {
             onPress={() => {
             navigation.navigate("DayPage", {
                 day: day, 
-                program_day: program_day,
+                date: program_day,
                 index: index,
                 program_id: program_id})
             }}>

@@ -10,23 +10,19 @@ const DayPage = ( {route} ) => {
     const db = useSQLiteContext();
     const navigation = useNavigation();
     const [allDone, setAllDone] = useState(false);
-    const {day, danishDate, index, program_id} = route.params;
+    const {day, date, index, program_id} = route.params;
 
     const handleNewWorkout = async () => {
         try {
             const result = await db.runAsync(
                 `INSERT INTO Workout (date) VALUES (?);`,
-                    [danishDate]
+                    [date]
             );
-            console.log("Added in new workout with date:", danishDate);
+            console.log("Added in new workout with date:", date);
             return result.lastInsertRowId;
 
         } catch (error) {
             console.error(error);
-            Alert.alert(
-            "Error",
-            error.message || "An error occured when trying to create a new workout."
-            );
         }
     };
 
@@ -34,7 +30,7 @@ const DayPage = ( {route} ) => {
         try {
             const rows = await db.getAllAsync(
                 `SELECT done FROM Workout WHERE date = ?;`,
-                [danishDate]
+                [date]
             );
 
             if (rows.length === 0) return false;
@@ -50,7 +46,7 @@ const DayPage = ( {route} ) => {
         try {
             await db.runAsync(
                 `UPDATE Day SET done = ? WHERE date = ?;`,
-                [isDone ? 1 : 0, danishDate]
+                [isDone ? 1 : 0, date]
             );
         } catch (error) {
             console.error("Error updating Day.done", error);
@@ -84,7 +80,7 @@ const DayPage = ( {route} ) => {
 
             <View style={styles.body}>
                 
-                <WorkoutList date={danishDate} />
+                <WorkoutList date={date} />
 
             </View>
 
@@ -96,7 +92,7 @@ const DayPage = ( {route} ) => {
 
                         navigation.navigate('ExercisePage', {
                             program_id: program_id,
-                            danishDate: danishDate,
+                            date: date,
                             workout_id: workout_id,
                         }); 
                     }} />

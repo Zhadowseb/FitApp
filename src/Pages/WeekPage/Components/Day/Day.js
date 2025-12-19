@@ -5,7 +5,8 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState } from "react";
 
 import styles from './DayStyle';
-import { calculateProgramDay } from "./dateCalculation";
+import { calculateProgramDay } from "./Utils/dateCalculation";
+import { initDay } from "./Utils/initDay";
 
 
 const Day = ( {day, index, program_id, microcycle_id} ) => {
@@ -15,19 +16,6 @@ const Day = ( {day, index, program_id, microcycle_id} ) => {
     const [workout_count, setWorkout_count] = useState(0);
     const [workouts_done, setWorkouts_done] = useState(false);
     const [program_day, setProgram_day] = useState(0);
-
-    const initDay = async () => {
-        try {
-            await db.runAsync(
-                `INSERT INTO Day (microcycle_id, program_id, Weekday, date, done)
-                SELECT ?, ?, ?, ?, 0
-                WHERE NOT EXISTS (SELECT 1 FROM Day WHERE date = ?);`,
-                [microcycle_id, program_id, day, program_day, program_day]
-            );
-        } catch (err) {
-            console.error("Error ensuring Day exists:", err);
-        }
-    };
 
     const loadDayStatus = async () => {
         try {
@@ -51,10 +39,10 @@ const Day = ( {day, index, program_id, microcycle_id} ) => {
     useEffect(() => {
         const loadDate = async () => {
             const date = await calculateProgramDay({
-            db,
-            program_id,
-            microcycle_id,
-            weekdayIndex: index,
+                db,
+                program_id,
+                microcycle_id,
+                weekdayIndex: index,
             });
 
             setProgram_day(date);
@@ -67,7 +55,13 @@ const Day = ( {day, index, program_id, microcycle_id} ) => {
         if (!program_day) return;
 
         const run = async () => {
-            await initDay();
+            await initDay({
+                db,
+                microcycle_id,
+                program_id,
+                day,
+                program_day
+            });
             await loadDayStatus();
         };
 

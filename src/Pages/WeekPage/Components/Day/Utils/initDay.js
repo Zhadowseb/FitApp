@@ -9,4 +9,4 @@ export async function initDay ({db, microcycle_id, program_id, day, program_day}
     } catch (err) {
         console.error("Error ensuring Day exists:", err);
     }
-};
+}

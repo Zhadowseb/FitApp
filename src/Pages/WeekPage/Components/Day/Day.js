@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import styles from './DayStyle';
 import { calculateProgramDay } from "./Utils/dateCalculation";
 import { initDay } from "./Utils/initDay";
+import { loadWorkoutCount, loadDayStatus } from "./Utils/loadDayStatus"
 
 
 const Day = ( {day, index, program_id, microcycle_id} ) => {
@@ -16,25 +17,6 @@ const Day = ( {day, index, program_id, microcycle_id} ) => {
     const [workout_count, setWorkout_count] = useState(0);
     const [workouts_done, setWorkouts_done] = useState(false);
     const [program_day, setProgram_day] = useState(0);
-
-    const loadDayStatus = async () => {
-        try {
-            const count_row = await db.getFirstAsync(
-                `SELECT COUNT(*) AS workout_count FROM Workout WHERE date = ?;`,
-                    [program_day]
-            );
-            setWorkout_count(count_row?.workout_count ?? 0);
-
-            const day_row = await db.getFirstAsync(
-                `SELECT done FROM Day WHERE date = ?`,
-                [program_day]
-            );
-            setWorkouts_done(day_row?.done === 1);
-
-        } catch (error) {
-            Alert.alert("Error", error.message || "An error occured.");
-        }
-    };
 
     useEffect(() => {
         const loadDate = async () => {
@@ -62,7 +44,16 @@ const Day = ( {day, index, program_id, microcycle_id} ) => {
                 day,
                 program_day
             });
-            await loadDayStatus();
+            
+            const getWorkout_count = await loadDayStatus({
+                program_day
+            });
+            setWorkout_count(getWorkout_count);
+            
+            const getDayStatus = await loadDayStatus({
+                program_day
+            });
+            setWorkout_done(getDayStatus);
         };
 
         run();

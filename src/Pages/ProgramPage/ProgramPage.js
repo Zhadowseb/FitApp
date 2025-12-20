@@ -1,5 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
-import { View } from 'react-native';
+import { View, Button } from 'react-native';
+import { useState } from "react";
+import { useSQLiteContext } from "expo-sqlite";
 
 import ProgramList from './Components/ProgramList/ProgramList';
 import AddProgram from './Components/AddProgram/AddProgram';
@@ -7,12 +9,39 @@ import AddProgram from './Components/AddProgram/AddProgram';
 import styles from './ProgramPageStyle';
 
 export default function App() {
+  const db = useSQLiteContext();
+
+  const [addProgram_Visible, set_addProgram_Visible] = useState(false);
+
+  const handleAdd = async (data) => {
+    try {
+      await db.runAsync(
+        `INSERT INTO Program (program_name, start_date, end_date, status) VALUES (?, ?, ?, ?);`,
+        [data.program_name, 
+          data.start_date, 
+          data.end_date, 
+          data.status]
+      );
+
+      set_addProgram_Visible(false);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return (
     <View style={styles.container}>
 
       <ProgramList/>
-      <AddProgram />
+
+      <Button 
+        title="Create new program" 
+        onPress={() => set_addProgram_Visible(true)}/>
+
+      <AddProgram 
+        visible={addProgram_Visible}
+        onClose={() => set_addProgram_Visible(false)}
+        onSubmit={handleAdd}/>
 
 
       <StatusBar style="auto" />

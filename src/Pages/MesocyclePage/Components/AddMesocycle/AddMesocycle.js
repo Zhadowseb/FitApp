@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Modal, View, Text, TextInput, Button } from "react-native";
 import styles from "./AddMesocycleStyle";
+import { Picker } from "@react-native-picker/picker";
 
 export default function AddMesocycleModal({ visible, onClose, onSubmit }) {
 
@@ -38,6 +39,10 @@ export default function AddMesocycleModal({ visible, onClose, onSubmit }) {
             value={weeks}
             onChangeText={setWeeks}
           />
+
+          <Picker>
+
+          </Picker>
 
           <View style={styles.row}>
             <Button title="Cancel" color="red" onPress={onClose} />

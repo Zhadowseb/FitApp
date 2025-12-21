@@ -20,6 +20,14 @@ export default StyleSheet.create({
         shadowOffset: { height: 2, width: 0 },
     },
 
+    rm_body: {
+        flex: 90,
+    },
+
+    rm_footer: {
+        flex: 15,
+    },
+
     pr_container: {
         flex: 1,
         backgroundColor: "#fff",

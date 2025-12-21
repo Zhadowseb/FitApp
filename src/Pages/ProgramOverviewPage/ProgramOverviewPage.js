@@ -1,13 +1,22 @@
-import { View, Text } from 'react-native';
+import { View, Text, Button } from 'react-native';
 import { useSQLiteContext } from "expo-sqlite";
+import { use, useState } from "react";
 
 import styles from './ProgramOverviewPageStyle';
 import Rm_List from './Components/Rm_List/Rm_List';
+
+import AddEstimatedSet from './Components/Rm_List/Components/AddEstimatedSet/AddEstimatedSet';
 
 const ProgramOverviewPage = ( {route} ) => {
     const db = useSQLiteContext();
 
     const program_id = route.params.program_id;
+
+    const [addEstimatedSet_visible, set_AddEstimatedSet_visible] = useState(false);
+
+    const handleAdd = async () => {
+
+    }
 
   return (
     <View style={styles.container}>
@@ -15,10 +24,21 @@ const ProgramOverviewPage = ( {route} ) => {
         <Text> Estimated 1 RM's </Text>
         <View style={styles.rm_container}>
 
-            <Rm_List
-                program_id = {program_id} />
+            <View style={styles.rm_body}>
+                <Rm_List
+                    program_id = {program_id} />
+            </View>
 
+            <View style={styles.rm_footer}>
+                <Button 
+                    title="Add 1 RM" 
+                    onPress={() => set_AddEstimatedSet_visible(true)}/>
 
+                <AddEstimatedSet 
+                    visible={addEstimatedSet_visible}
+                    onClose={() => set_AddEstimatedSet_visible(false)}
+                    onSubmit={handleAdd}/>
+            </View>
 
         </View>
 

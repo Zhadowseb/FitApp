@@ -1,4 +1,3 @@
-import { StatusBar } from 'expo-status-bar';
 import { View, Text } from 'react-native';
 import { useSQLiteContext } from "expo-sqlite";
 
@@ -10,7 +9,11 @@ const ProgramOverviewPage = () => {
   return (
     <View style={styles.container}>
 
-            <Text> New page created! </Text>
+        <View style={styles.rm_container}>
+
+        </View>
+
+        <Text> New page created! </Text>
 
     </View>
   );

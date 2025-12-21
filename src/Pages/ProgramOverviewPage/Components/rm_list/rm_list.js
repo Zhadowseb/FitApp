@@ -17,10 +17,9 @@ const rm_list = ( {program_id} ) => {
         try{
             setLoading(true);
             const estimated_sets = await db.getAllAsync(
-                `SELECT * FROM Estimated_Set WHERE program_id = ?;`,
+                `SELECT estimated_weight, exercise_name FROM Estimated_Set WHERE program_id = ?;`,
                 [program_id]
             );
-
             setEstimated_sets(estimated_sets);
         } catch(error) {
             console.error("Error loading estimated sets", error);
@@ -34,6 +33,16 @@ const rm_list = ( {program_id} ) => {
       style={styles.container}
       onPress={() => {
         navigation.navigate("HomePage")}}>
+
+        <View style={styles.item_container}>
+            <View style={styles.exercise_name}>
+                <Text> {item.exercise_name} </Text>
+            </View>
+
+            <View style={styles.estimated_weight}>
+                <Text> {item.estimated_weight} </Text>
+            </View>
+        </View>
 
     </TouchableOpacity>
   );

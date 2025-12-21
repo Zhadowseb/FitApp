@@ -23,6 +23,21 @@ export default StyleSheet.create({
   },
   rmHeader: {
     flex: 1,
-  }
+  },
+
+  item_container: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  
+  exercise_name: {
+    flex: 1,
+  },
+
+  estimated_weight: {
+    flex: 1,
+  },
+
+
 
 });

@@ -5,22 +5,22 @@ import { Picker } from "@react-native-picker/picker";
 import styles from "./AddEstimatedSetStyle";
 import ExerciseDropdown from "../../../../../../Components/ExerciseDropdown/ExerciseDropdown";
 
-export default function AddProgram({ visible, onClose, onSubmit }) {
+export default function AddEstimatedSet({ visible, onClose, onSubmit }) {
 
-    const [estimated_weight, set_estimated_weight] = useState(0);
+    const [estimated_weight, set_estimated_weight] = useState("");
     const [selectedExerciseName, set_selectedExerciseName] = useState("");
 
   const handleSubmit = () => {
     onSubmit({ selectedExerciseName, estimated_weight });
-    set_exercise_name("");
     set_selectedExerciseName("");
+    set_estimated_weight(0);
   };
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="fade">
+      animationType="fade" >
 
       <View style={styles.overlay}>
         <View style={styles.modalBox}>

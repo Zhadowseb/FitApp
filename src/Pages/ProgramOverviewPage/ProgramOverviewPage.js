@@ -14,8 +14,20 @@ const ProgramOverviewPage = ( {route} ) => {
 
     const [addEstimatedSet_visible, set_AddEstimatedSet_visible] = useState(false);
 
-    const handleAdd = async () => {
+    const handleAdd = async (data) => {
+        try {
+            await db.runAsync(
+                `INSERT INTO Estimated_set (program_id, exercise_name, estimated_weight) VALUES (?, ?, ?);`,
+                [program_id, 
+                data.selectedExerciseName, 
+                data.estimated_weight]
+            );
 
+            set_AddEstimatedSet_visible(false);
+        } catch (error) {
+            console.error(error);
+        }
+        set_AddEstimatedSet_visible(false);
     }
 
   return (

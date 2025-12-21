@@ -6,13 +6,19 @@ import { useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
 
 import styles from "./Rm_ListStyling"
+import AddEstimatedSet from "./Components/AddEstimatedSet/AddEstimatedSet";
 
 const rm_list = ( {program_id} ) => {
-  const db = useSQLiteContext();
-  const navigation = useNavigation();
+    const db = useSQLiteContext();
+    const navigation = useNavigation();
 
-  const [loading, setLoading] = useState(false);
-  const [estimated_sets, setEstimated_sets] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [addEstimatedSet_visible, set_AddEstimatedSet_visible] = useState(false);
+    const [estimated_sets, setEstimated_sets] = useState([]);
+
+    const handleAdd = async () => {
+
+    }
 
     const loadEstimated_Sets = async () => {
         try{
@@ -60,6 +66,14 @@ const rm_list = ( {program_id} ) => {
             }
             renderItem={renderItem}
         />
+        <Button 
+            title="Add 1 RM" 
+            onPress={() => set_AddEstimatedSet_visible(true)}/>
+
+        <AddEstimatedSet 
+            visible={addEstimatedSet_visible}
+            onClose={() => set_AddEstimatedSet_visible(false)}
+            onSubmit={handleAdd}/>
     </View>
   );
 };

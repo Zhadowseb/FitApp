@@ -14,7 +14,6 @@ const ExerciseDropdown = ({ selectedExerciseName, onChange }) => {
       setLoading(true);
       const rows = await db.getAllAsync(
         "SELECT exercise_name FROM Exercise_storage ORDER BY exercise_name;"
-        // eller FROM Exercise hvis det er dér navnene ligger
       );
       setExercises(rows);
 

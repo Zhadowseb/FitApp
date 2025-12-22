@@ -47,7 +47,11 @@ const ProgramOverviewPage = ( {route} ) => {
   return (
     <View style={styles.container}>
 
-        <View style={styles.rm_container}>
+        <View style={[styles.day_container, styles.card]}>
+
+        </View>
+
+        <View style={[styles.rm_container, styles.card]}>
             <Text> Estimated 1 RM's </Text>
             <View style={styles.rm_body}>
                 <Rm_List
@@ -67,7 +71,7 @@ const ProgramOverviewPage = ( {route} ) => {
 
         </View>
 
-        <View style={styles.pr_container} >
+        <View style={[styles.pr_container, styles.card]} >
             <Text> PR's during program </Text>
 
         </View>
@@ -78,9 +82,6 @@ const ProgramOverviewPage = ( {route} ) => {
                 color="red"
                 onPress={() => deleteProgram()}/>
         </View>
-
-
-
     </View>
   );
 };

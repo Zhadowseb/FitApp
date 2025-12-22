@@ -75,7 +75,7 @@ const ProgramOverviewPage = ( {route} ) => {
         <View style={styles.delete_button_container}>
             <Button 
                 title="Delete program"
-                style={styles.delete_button}
+                color="red"
                 onPress={() => deleteProgram()}/>
         </View>
 

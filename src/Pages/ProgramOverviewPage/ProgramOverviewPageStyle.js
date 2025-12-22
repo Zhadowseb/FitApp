@@ -44,11 +44,8 @@ export default StyleSheet.create({
 
     delete_button_container: {
         flex: 0.2,
-        backgroundColor: "#fff"
-    },
-    delete_button: {
-        flex: 1,
-        backgroundColor: 1,
+        backgroundColor: "#fff",
+        paddingHorizontal: 20,
     },
 
 });

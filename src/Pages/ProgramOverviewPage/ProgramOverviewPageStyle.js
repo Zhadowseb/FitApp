@@ -40,6 +40,15 @@ export default StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 4,
         shadowOffset: { height: 2, width: 0 },
-    }
+    },
+
+    delete_button_container: {
+        flex: 0.2,
+        backgroundColor: "#fff"
+    },
+    delete_button: {
+        flex: 1,
+        backgroundColor: 1,
+    },
 
 });

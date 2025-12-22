@@ -1,6 +1,7 @@
 import { View, Text, Button } from 'react-native';
 import { useSQLiteContext } from "expo-sqlite";
 import { use, useState } from "react";
+import { useNavigation } from "@react-navigation/native";
 
 import styles from './ProgramOverviewPageStyle';
 import Rm_List from './Components/Rm_List/Rm_List';
@@ -9,6 +10,7 @@ import AddEstimatedSet from './Components/Rm_List/Components/AddEstimatedSet/Add
 
 const ProgramOverviewPage = ( {route} ) => {
     const db = useSQLiteContext();
+    const navigation = useNavigation();
 
     const program_id = route.params.program_id;
 
@@ -30,12 +32,23 @@ const ProgramOverviewPage = ( {route} ) => {
         set_AddEstimatedSet_visible(false);
     }
 
+    const deleteProgram = async () => {
+        try{
+            await db.runAsync(
+                `DELETE FROM Program WHERE program_id = ?;`,
+                [program_id]
+            );
+        }catch (error) {
+            console.error(error);
+        }
+        navigation.navigate("ProgramPage");
+    }
+
   return (
     <View style={styles.container}>
 
-        <Text> Estimated 1 RM's </Text>
         <View style={styles.rm_container}>
-
+            <Text> Estimated 1 RM's </Text>
             <View style={styles.rm_body}>
                 <Rm_List
                     program_id = {program_id} />
@@ -54,10 +67,19 @@ const ProgramOverviewPage = ( {route} ) => {
 
         </View>
 
-        <Text> PR's during program </Text>
         <View style={styles.pr_container} >
+            <Text> PR's during program </Text>
 
         </View>
+
+        <View style={styles.delete_button_container}>
+            <Button 
+                title="Delete program"
+                style={styles.delete_button}
+                onPress={() => deleteProgram()}/>
+        </View>
+
+
 
     </View>
   );

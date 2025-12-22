@@ -10,13 +10,13 @@ const DayPage = ( {route} ) => {
     const db = useSQLiteContext();
     const navigation = useNavigation();
     const [allDone, setAllDone] = useState(false);
-    const {day, date, index, program_id} = route.params;
+    const {day_id, day, date, program_id} = route.params;
 
     const handleNewWorkout = async () => {
         try {
             const result = await db.runAsync(
-                `INSERT INTO Workout (date) VALUES (?);`,
-                    [date]
+                `INSERT INTO Workout (date, day_id) VALUES (?, ?);`,
+                    [date, day_id]
             );
             console.log("Added in new workout with date:", date);
             return result.lastInsertRowId;

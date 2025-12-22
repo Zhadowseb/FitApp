@@ -2,12 +2,12 @@ import { View, Text, Button } from 'react-native';
 import { useSQLiteContext } from "expo-sqlite";
 import { use, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-import { getTodaysDate } from '../../Utils/dateUtils';
 
 import styles from './ProgramOverviewPageStyle';
 import Rm_List from './Components/Rm_List/Rm_List';
 
 import AddEstimatedSet from './Components/Rm_List/Components/AddEstimatedSet/AddEstimatedSet';
+import TodayShortcut from './Components/TodayShortcut/TodayShortcut';
 
 const ProgramOverviewPage = ( {route} ) => {
     const db = useSQLiteContext();
@@ -45,29 +45,12 @@ const ProgramOverviewPage = ( {route} ) => {
         navigation.navigate("ProgramPage");
     }
 
-    const getTodaysWorkouts = async () => {
-        try{
-            const rows = await db.getAllAsync(
-            `SELECT day_id FROM Day WHERE program_id = ? AND date = ?;`,
-                [program_id, todaysdate]
-            );
-
-            navigation.navigate("DayPage", {
-                day_id: rows.day_id,
-                day: "1", 
-                date: getTodaysDate(),
-                program_id: program_id})
-
-        }catch (error) {
-            console.error(error);
-        }
-    }
-
   return (
     <View style={styles.container}>
 
         <View style={[styles.day_container, styles.card]}>
-
+            <TodayShortcut
+                program_id = {program_id}/>
         </View>
 
         <View style={[styles.rm_container, styles.card]}>

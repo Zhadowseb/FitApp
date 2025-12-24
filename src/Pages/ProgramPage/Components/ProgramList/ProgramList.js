@@ -38,7 +38,7 @@ const ProgramList = () => {
     <TouchableOpacity
       style={styles.card}
       onPress={() => {
-        navigation.navigate("MesocyclePage", {
+        navigation.navigate("ProgramOverviewPage", {
           program_id: item.program_id})
       }}>
 

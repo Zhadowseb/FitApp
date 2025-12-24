@@ -14,6 +14,7 @@ const Day = ( {day, index, program_id, microcycle_id} ) => {
     const navigation = useNavigation();
     const [workout_count, setWorkout_count] = useState(0);
     const [workouts_done, setWorkouts_done] = useState(false);
+    const [day_id, setDay_id] = useState(0);
     const [program_day, setProgram_day] = useState(0);
 
     const initDay = async () => {
@@ -24,6 +25,13 @@ const Day = ( {day, index, program_id, microcycle_id} ) => {
                 WHERE NOT EXISTS (SELECT 1 FROM Day WHERE date = ?);`,
                 [microcycle_id, program_id, day, program_day, program_day]
             );
+
+            const row = await db.getFirstAsync(
+                `SELECT day_id FROM Day WHERE date = ? AND program_id = ?;`,
+                [program_day, program_id]
+            );
+
+            setDay_id(row?.day_id);
         } catch (err) {
             console.error("Error ensuring Day exists:", err);
         }
@@ -88,9 +96,9 @@ const Day = ( {day, index, program_id, microcycle_id} ) => {
             style={styles.container_row}
             onPress={() => {
             navigation.navigate("DayPage", {
+                day_id: day_id,
                 day: day, 
                 date: program_day,
-                index: index,
                 program_id: program_id})
             }}>
 

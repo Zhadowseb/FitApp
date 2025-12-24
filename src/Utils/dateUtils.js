@@ -9,3 +9,9 @@ export function formatDate(date) {
   const y = date.getFullYear();
   return `${d}-${m}-${y}`;
 }
+
+export function getTodaysDate() {
+  const today = new Date();
+  return formatDate(today);
+}
+

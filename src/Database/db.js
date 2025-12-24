@@ -47,6 +47,7 @@ export async function initializeDatabase(db) {
 
     CREATE TABLE IF NOT EXISTS Workout (
         workout_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        day_id INTEGER NOT NULL,
         date TEXT NOT NULL,
         done INTEGER NOT NULL DEFAULT 0
     );
@@ -76,6 +77,13 @@ export async function initializeDatabase(db) {
         done INTEGER NOT NULL DEFAULT 0,
         failed INTEGER NOT NULL DEFAULT 0,
         note TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS Estimated_Set (
+        estimated_set_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        program_id INTEGER NOT NULL,
+        exercise_name TEXT NOT NULL,
+        estimated_weight INTEGER NOT NULL DEFAULT 0
     );
   
 

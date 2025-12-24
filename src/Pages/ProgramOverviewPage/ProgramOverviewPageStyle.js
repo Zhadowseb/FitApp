@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
 
-    //Card display.
+    //Main type styling.
     card: {
         backgroundColor: "#fff",
         marginVertical: 10,
@@ -15,6 +15,19 @@ export default StyleSheet.create({
         shadowOffset: { height: 2, width: 0 },
     },
 
+    container_header:{
+        borderTopLeftRadius: 10,
+        borderTopRightRadius: 10,
+        minHeight: 50,
+        padding: 16,
+        backgroundColor: "#d7d7d7ff",
+        borderColor: "#000000ff",
+        borderWidth: 1,
+        borderBottomWidth: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+
     //Main containers flex
     container: {
         padding: 16,
@@ -22,12 +35,10 @@ export default StyleSheet.create({
     day_container: {
         minHeight: 120,
         marginBottom: 12,
-        padding: 16,
     },
     rm_container: {
         minHeight: 400,
         marginBottom: 12,
-        padding: 16,
     },
     mesocycle_container: {
         minHeight: 400,
@@ -36,7 +47,6 @@ export default StyleSheet.create({
     pr_container: {
         minHeight: 400,
         marginBottom: 12,
-        padding: 16,
     },
     delete_button_container: {
         minHeight: 50,
@@ -46,22 +56,29 @@ export default StyleSheet.create({
         padding: 16,
     },
 
+    //Day containers
+    day_body: {
+        flex: 1,
+        padding: 16,
+    },
+    day_touchable: {
+        borderColor: "#000000ff",
+        borderWidth: 1,
+    },
+
     //RM containers
     rm_body: {
         flex: 300,
     },
 
     rm_footer: {
+        padding: 16,
+        alignItems: 'center',
         flex: 1,
     },
 
     //Mesocycle containers
 
-    mesocycle_container_header:{
-        backgroundColor: "#d7d7d7ff",
-        alignContent: "center",
-        justifyContent: "center",
-    },
 
     //PR containers
 

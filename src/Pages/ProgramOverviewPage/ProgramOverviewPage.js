@@ -50,13 +50,25 @@ const ProgramOverviewPage = ( {route} ) => {
     <ScrollView style={styles.container}>
 
         <View style={[styles.day_container, styles.card]}>
-            <TodayShortcut
-                program_id = {program_id}/>
+
+            <View style={styles.container_header}>
+                <Text> Today's Workout </Text>
+            </View>
+
+            <View style={styles.day_body}>    
+                <TodayShortcut
+                    program_id = {program_id}
+                    style = {styles.day_touchable}/>
+            </View>
         </View>
 
 
         <View style={[styles.rm_container, styles.card]}>
-            <Text> Estimated 1 RM's </Text>
+            
+            <View style={styles.container_header}>
+                <Text> Estimated 1 RM's </Text>
+            </View>
+
             <View style={styles.rm_body}>
                 <Rm_List
                     program_id = {program_id} />
@@ -81,10 +93,8 @@ const ProgramOverviewPage = ( {route} ) => {
                     program_id: program_id})
             }} >
 
-            <View style={styles.mesocycle_container_header}>
-                <Text>
-                    Mesocycle's
-                </Text>
+            <View style={styles.container_header}>
+                <Text> Mesocycle's </Text>
             </View>
             
             <MesocycleList 
@@ -94,7 +104,13 @@ const ProgramOverviewPage = ( {route} ) => {
 
 
         <View style={[styles.pr_container, styles.card]}>
-            <Text> pr_container! </Text>
+            <View style={styles.container_header}>
+                <Text> Program PR's </Text>
+            </View>
+
+            <Text>
+                coming soon...
+            </Text>
         </View>
 
 

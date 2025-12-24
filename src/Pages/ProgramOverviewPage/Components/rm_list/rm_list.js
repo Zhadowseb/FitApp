@@ -69,7 +69,7 @@ const rm_list = ( {program_id} ) => {
             </View>
 
             <View style={styles.estimated_weight}>
-                <Text> {item.estimated_weight} </Text>
+                <Text> {item.estimated_weight} kg </Text>
             </View>
         </View>
 
@@ -88,7 +88,7 @@ const rm_list = ( {program_id} ) => {
                 estimated_sets.length > 0 ? (
                 <View style={styles.headerRow}>
                     <Text style={[styles.exerciseHeader, styles.headerText]}>Exercise</Text>
-                    <Text style={[styles.rmHeader, styles.headerText]}> 1 RM</Text>
+                    <Text style={[styles.rmHeader, styles.headerText]}> 1 Rep Max (in kg)</Text>
                 </View>
                 ) : null
             }

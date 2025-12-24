@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity } from "react-native";
 import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 
-import styles from "./Rm_ListStyling"
+import styles from "./Rm_listStyle"
 import EditEstimatedSet from "./Components/EditEstimatedSet/EditEstimatedSet";
 
 const rm_list = ( {program_id} ) => {

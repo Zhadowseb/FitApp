@@ -114,7 +114,7 @@ const Day = ( {day, index, program_id, microcycle_id} ) => {
 
             <View style={styles.workouts}>
                 <Text> Workouts: {workout_count} </Text>
-                <Text> (if workout) Show Focus </Text>
+                <Text> </Text>
             </View>
 
             <View style={styles.focus}>

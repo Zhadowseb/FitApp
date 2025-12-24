@@ -7,7 +7,7 @@ export default StyleSheet.create({
     },
 
     header: {
-        flex: 0.05,
+        flex: 0.1,
         alignItems: 'center',
         justifyContent: 'center',
     },

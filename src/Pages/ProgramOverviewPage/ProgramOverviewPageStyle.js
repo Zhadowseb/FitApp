@@ -28,6 +28,10 @@ export default StyleSheet.create({
         minHeight: 400,
         marginBottom: 12,
     },
+    mesocycle_container: {
+        minHeight: 400,
+        marginBottom: 12,
+    },
     pr_container: {
         minHeight: 400,
         marginBottom: 12,

@@ -53,6 +53,7 @@ const ProgramOverviewPage = ( {route} ) => {
                 program_id = {program_id}/>
         </View>
 
+
         <View style={[styles.rm_container, styles.card]}>
             <Text> Estimated 1 RM's </Text>
             <View style={styles.rm_body}>
@@ -70,13 +71,19 @@ const ProgramOverviewPage = ( {route} ) => {
                     onClose={() => set_AddEstimatedSet_visible(false)}
                     onSubmit={handleAdd}/>
             </View>
-
         </View>
+
+
+        <View style={[styles.mesocycle_container, styles.card]}>
+            <Text> test! </Text>
+        </View>
+
 
         <View style={[styles.pr_container, styles.card]} >
             <Text> PR's during program </Text>
 
         </View>
+
 
         <View style={[styles.delete_button_container, styles.card]}>
             <Button 

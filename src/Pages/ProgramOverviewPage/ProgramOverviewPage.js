@@ -1,4 +1,4 @@
-import { View, Text, Button } from 'react-native';
+import { View, Text, Button, ScrollView } from 'react-native';
 import { useSQLiteContext } from "expo-sqlite";
 import { use, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
@@ -46,7 +46,7 @@ const ProgramOverviewPage = ( {route} ) => {
     }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
 
         <View style={[styles.day_container, styles.card]}>
             <TodayShortcut
@@ -78,13 +78,13 @@ const ProgramOverviewPage = ( {route} ) => {
 
         </View>
 
-        <View style={styles.delete_button_container}>
+        <View style={[styles.delete_button_container, styles.card]}>
             <Button 
                 title="Delete program"
                 color="red"
                 onPress={() => deleteProgram()}/>
         </View>
-    </View>
+    </ScrollView>
   );
 };
 

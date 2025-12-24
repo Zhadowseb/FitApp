@@ -7,7 +7,7 @@ export default StyleSheet.create({
         backgroundColor: "#fff",
         padding: 16,
         marginVertical: 10,
-        marginHorizontal: 16,
+        marginHorizontal: 10,
         borderRadius: 10,
         elevation: 3,
         shadowColor: "#000",
@@ -18,33 +18,37 @@ export default StyleSheet.create({
 
     //Main containers flex
     container: {
-        flex: 1,
+        padding: 16,
     },
     day_container: {
-        flex: 0.4,
+        minHeight: 120,
+        marginBottom: 12,
     },
     rm_container: {
-        flex: 1,
+        minHeight: 400,
+        marginBottom: 12,
+    },
+    pr_container: {
+        minHeight: 400,
+        marginBottom: 12,
     },
     delete_button_container: {
-        flex: 0.2,
+        minHeight: 50,
+        marginBottom: 12,
         backgroundColor: "#fff",
         paddingHorizontal: 20,
     },
 
     //RM containers
     rm_body: {
-        flex: 90,
+        flex: 300,
     },
 
     rm_footer: {
-        flex: 15,
+        flex: 1,
     },
 
     //PR containers
-    pr_container: {
-        flex: 1,
-    },
 
 
 });

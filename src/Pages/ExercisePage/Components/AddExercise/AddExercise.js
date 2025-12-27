@@ -5,7 +5,7 @@ import { useSQLiteContext } from "expo-sqlite";
 import ExerciseDropdown from "../../../../Components/ExerciseDropdown/ExerciseDropdown";
 import styles from "./AddExerciseStyle";
 
-const AddExercise = ( {workout_id, date} ) => {
+const AddExercise = ( {workout_id, date, onAdded} ) => {
   const db = useSQLiteContext();
 
   const [selectedExerciseName, setSelectedExerciseName] = useState(null);
@@ -37,6 +37,8 @@ const AddExercise = ( {workout_id, date} ) => {
       setSets("");
       setReps("");
       setWeight("");
+
+      onAdded?.();
       
     } catch (error) {
       Alert.alert("Input error", error.message);

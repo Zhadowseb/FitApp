@@ -9,8 +9,15 @@ import ExerciseList from './Components/ExerciseList/ExerciseList';
 const ExercisePage = ({route}) =>  {
 
   const [editMode, set_editMode] = useState(false);
+  const [refreshing, set_refreshing] = useState(0);
 
   const {workout_id, date} = route.params;
+
+  const handleExerciseAdded = () => {
+    set_refreshing(prev => prev + 1);
+  }
+
+
   return (
     <View style={styles.container}>
 
@@ -21,13 +28,16 @@ const ExercisePage = ({route}) =>  {
 
       <View style={styles.card}>
         <ExerciseList 
-          workout_id = {workout_id} />
+          workout_id = {workout_id}
+          refreshing = {refreshing} />
       </View> 
       
       {editMode && (
         <View style={styles.card}>
           <AddExercise 
-            workout_id = {workout_id} />
+            workout_id = {workout_id} 
+            date = {date}
+            onAdded = {handleExerciseAdded}/>
         </View>
       )}
 

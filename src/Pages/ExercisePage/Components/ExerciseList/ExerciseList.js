@@ -1,6 +1,6 @@
 // src/Components/ExerciseList/ExerciseList.js
 import { use, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, ScrollView } from "react-native";
 import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
 import { useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
@@ -10,7 +10,7 @@ import styles from "./ExerciseListStyle";
 import {checkUniformWeights, 
         checkUniformReps} from "./Utils/checkUniformSets";
 
-const ExerciseList = ( {workout_id} ) => {
+const ExerciseList = ( {workout_id, refreshing} ) => {
   const [exercises, setExercises] = useState([]);
   const [allDone, setAllDone] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -73,6 +73,10 @@ const ExerciseList = ( {workout_id} ) => {
 
   useEffect(() => {
     loadExercises();
+  }, [refreshing]);
+
+  useEffect(() => {
+    loadExercises();
   }, []);
 
   useEffect(() => {
@@ -83,7 +87,7 @@ const ExerciseList = ( {workout_id} ) => {
     return unsubscribe;
   }, [navigation]);
 
-  const renderItem = ({ item }) => (
+  const renderItem = (item) => (
 
     <TouchableOpacity
       style={styles.card}
@@ -131,15 +135,9 @@ const ExerciseList = ( {workout_id} ) => {
   );
 
   return (
-    <FlatList
-      style={styles.wrapper}
-      data={exercises}
-      keyExtractor={(_, index) => index.toString()}
-      refreshing={loading}
-      onRefresh={loadExercises}
+    <ScrollView style={styles.wrapper}>
 
-      ListHeaderComponent={
-        exercises.length > 0 ? (
+        {exercises.length > 0 && (
           <View style={styles.headerRow}>
             <Text style={[styles.exercise_name, styles.headerText]}>
               Exercise</Text>
@@ -153,13 +151,15 @@ const ExerciseList = ( {workout_id} ) => {
               Weight</Text>
             <Text style={[styles.headerText]}> Done </Text>
           </View>
-        ) : null
-      }
-      ListEmptyComponent={
-        !loading ? <Text>Ingen exercises fundet.</Text> : null
-      }
-      renderItem={renderItem}
-    />
+        )}
+
+      {exercises.length === 0 && !loading && (
+        <Text>Ingen exercises fundet.</Text>
+      )}
+
+      {exercises.map(renderItem)}
+
+    </ScrollView>
   );
 };
 

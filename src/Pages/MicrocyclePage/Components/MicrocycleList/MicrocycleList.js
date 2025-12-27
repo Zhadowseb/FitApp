@@ -42,6 +42,7 @@ const MicrocycleList = ( {mesocycle_id} ) => {
       onPress={() => {
         navigation.navigate("WeekPage", {
             microcycle_id: item.microcycle_id,
+            microcycle_number: item.microcycle_number,
             program_id: item.program_id})
       }}>
 

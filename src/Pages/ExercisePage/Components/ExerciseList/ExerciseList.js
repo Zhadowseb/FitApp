@@ -4,6 +4,7 @@ import { View, Text, FlatList, TouchableOpacity } from "react-native";
 import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
 import { useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
+import Checkbox from 'expo-checkbox';
 
 import styles from "./ExerciseListStyle";
 import {checkUniformWeights, 
@@ -117,6 +118,13 @@ const ExerciseList = ( {workout_id} ) => {
             <Text> {checkUniformWeights(item.sets)} </Text>
           </View>
 
+          <View style={[styles.exercise_done, styles.exercise_alignment]}>
+            <Checkbox
+              value={item.done}
+              color={item.done ? "#4CAF50" : "#ccc"}
+              style={styles.checkbox} />
+          </View>
+
         </View>
 
     </TouchableOpacity>
@@ -143,6 +151,7 @@ const ExerciseList = ( {workout_id} ) => {
               Reps</Text>
             <Text style={[styles.exercise_weight, styles.headerText]}>
               Weight</Text>
+            <Text style={[styles.headerText]}> Done </Text>
           </View>
         ) : null
       }

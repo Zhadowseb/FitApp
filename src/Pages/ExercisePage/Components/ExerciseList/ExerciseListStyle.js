@@ -46,9 +46,16 @@ export default StyleSheet.create({
   exercise_weight: {
     flex: 30,
   },
+  exercise_done: {
+    flex: 10,
+  },
 
   headerText: {
     fontWeight: "bold",
     alignContent: "center",
+  },
+
+  checkbox: {
+    marginRight: 8,
   },
 });

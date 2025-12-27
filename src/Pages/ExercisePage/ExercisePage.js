@@ -1,5 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
-import { View } from 'react-native';
+import { View, Button } from 'react-native';
+import { useState } from "react";
 
 import styles from './ExercisePageStyle';
 import AddExercise from './Components/AddExercise/AddExercise';
@@ -7,14 +8,28 @@ import ExerciseList from './Components/ExerciseList/ExerciseList';
 
 const ExercisePage = ({route}) =>  {
 
+  const [editMode, set_editMode] = useState(false);
+
   const {workout_id, date} = route.params;
   return (
     <View style={styles.container}>
 
-      <ExerciseList 
-        workout_id = {workout_id} />
-      <AddExercise 
-        workout_id = {workout_id} />
+      <Button 
+        title={editMode ? "Edit mode: ON" : "Edit mode: OFF"}
+        onPress={() => set_editMode(prev => !prev)}
+        />
+
+      <View style={styles.card}>
+        <ExerciseList 
+          workout_id = {workout_id} />
+      </View> 
+      
+      {editMode && (
+        <View style={styles.card}>
+          <AddExercise 
+            workout_id = {workout_id} />
+        </View>
+      )}
 
       <StatusBar style="auto" />
 

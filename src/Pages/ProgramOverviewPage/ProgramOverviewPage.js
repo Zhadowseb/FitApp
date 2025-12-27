@@ -4,9 +4,9 @@ import { use, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 
 import styles from './ProgramOverviewPageStyle';
-import Rm_List from './Components/Rm_list/Rm_list';
+import Rm_List from './Components/rm_list/Rm_list';
 
-import AddEstimatedSet from './Components/Rm_list/Components/AddEstimatedSet/AddEstimatedSet';
+import AddEstimatedSet from './Components/rm_list/Components/AddEstimatedSet/AddEstimatedSet';
 import TodayShortcut from './Components/TodayShortcut/TodayShortcut';
 import MesocycleList from '../MesocyclePage/Components/MesocycleList/MesocycleList';
 

@@ -116,7 +116,7 @@ export async function initializeDatabase(db) {
 
   /*
   await db.execAsync(`
-    DROP TABLE IF EXISTS Mesocycle;
+    DROP TABLE IF EXISTS Workout;
   `);
   */
   

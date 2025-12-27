@@ -17,7 +17,6 @@ const ExerciseList = ( {workout_id} ) => {
   const loadExercises = async () => {
     try {
       setLoading(true);
-      console.log("Loading exercises from DB...");
 
       const rows = await db.getAllAsync(
         "SELECT exercise_id, exercise_name, sets, done FROM Exercise WHERE workout_id = ?;",
@@ -64,13 +63,31 @@ const ExerciseList = ( {workout_id} ) => {
           sets: item.sets})
       }}>
 
-      <View style={styles.row}>
-        <Text style={[styles.left, item.done && { color: "green" }]}>
-          {item.exercise_name}
-        </Text>
+        <View style={styles.exercise_container}>
 
-        <Text style={styles.right}>{item.sets}</Text>
-      </View>
+          <View style={styles.exercise_name}>
+            <Text style={[styles.left, item.done && { color: "green" }]}>
+              {item.exercise_name}
+            </Text>
+          </View>
+
+          <View style={styles.exercise_sets}>
+            <Text> set </Text>
+          </View>
+
+          <View style={styles.exercise_x}>
+            <Text> x </Text>
+          </View>
+
+          <View style={styles.exercise_reps}>
+            <Text> reps </Text>
+          </View>
+
+          <View style={styles.exercise_weight}>
+            <Text style={styles.right}>{item.sets}</Text>
+          </View>
+
+        </View>
 
     </TouchableOpacity>
   );
@@ -86,8 +103,11 @@ const ExerciseList = ( {workout_id} ) => {
       ListHeaderComponent={
         exercises.length > 0 ? (
           <View style={styles.headerRow}>
-            <Text style={[styles.left, styles.headerText]}>Exercise</Text>
-            <Text style={[styles.right, styles.headerText]}>Sets</Text>
+            <Text style={[styles.exercise_name, styles.headerText]}>Exercise</Text>
+            <Text style={[styles.exercise_sets, styles.headerText]}>Sets</Text>
+            <Text style={[styles.exercise_x, styles.headerText]}> </Text>
+            <Text style={[styles.exercise_reps, styles.headerText]}>Reps</Text>
+            <Text style={[styles.exercise_weight, styles.headerText]}>Weight</Text>
           </View>
         ) : null
       }

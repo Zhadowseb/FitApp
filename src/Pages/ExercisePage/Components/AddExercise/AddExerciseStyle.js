@@ -1,5 +1,6 @@
 // src/Components/AddExerciseStyle.js
 import { StyleSheet } from "react-native";
+import ExerciseDropdown from "../../../../Components/ExerciseDropdown/ExerciseDropdown";
 
 export default StyleSheet.create({
   wrapper: {
@@ -39,4 +40,19 @@ export default StyleSheet.create({
   buttonContainer: {
     marginTop: 4,
   },
+
+  exercisedropdown: {
+    flex: 3,
+  },
+  sets: {
+    flex: 1,
+  },
+  reps: {
+    flex: 1,
+  },
+  weight: {
+    flex: 1,
+  },
+
+
 });

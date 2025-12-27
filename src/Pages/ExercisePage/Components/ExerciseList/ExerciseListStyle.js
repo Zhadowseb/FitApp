@@ -7,6 +7,11 @@ export default StyleSheet.create({
     paddingVertical: 8,
   },
 
+  exercise_container: {
+    flex: 1,
+    flexDirection: "row",
+  },
+
   headerRow: {
     flexDirection: "row",
     paddingVertical: 4,
@@ -15,23 +20,26 @@ export default StyleSheet.create({
     marginBottom: 4,
   },
 
-  row: {
-    flexDirection: "row",      // 🔴 to kolonner side om side
-    paddingVertical: 4,
-    borderBottomWidth: 1,
-    borderColor: "#eee",
-  },
+  //Columns pacing
 
-  left: {
-    flex: 2,
+  exercise_name: {
+    flex: 35,
   },
-
-  right: {
-    flex: 1,
-    textAlign: "right",
+  exercise_sets: {
+    flex: 20,
+  },
+  exercise_x: {
+    flex: 10,
+  },
+  exercise_reps: {
+    flex: 20,
+  },
+  exercise_weight: {
+    flex: 30,
   },
 
   headerText: {
     fontWeight: "bold",
+    alignContent: "center",
   },
 });

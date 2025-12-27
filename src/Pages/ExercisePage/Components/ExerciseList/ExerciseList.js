@@ -96,24 +96,24 @@ const ExerciseList = ( {workout_id} ) => {
         <View style={styles.exercise_container}>
 
           <View style={styles.exercise_name}>
-            <Text style={[styles.left, item.done && { color: "green" }]}>
+            <Text style={item.done && { color: "green" }}>
               {item.exercise_name}
             </Text>
           </View>
 
-          <View style={styles.exercise_sets}>
+          <View style={[styles.exercise_sets, styles.exercise_alignment]}>
             <Text> {item.sets.length} </Text>
           </View>
 
-          <View style={styles.exercise_x}>
+          <View style={[styles.exercise_x, styles.exercise_alignment]}>
             <Text> x </Text>
           </View>
 
-          <View style={styles.exercise_reps}>
+          <View style={[styles.exercise_reps, styles.exercise_alignment]}>
             <Text> {checkUniformReps(item.sets)} </Text>
           </View>
 
-          <View style={styles.exercise_weight}>
+          <View style={[styles.exercise_weight, styles.exercise_alignment]}>
             <Text> {checkUniformWeights(item.sets)} </Text>
           </View>
 
@@ -133,11 +133,16 @@ const ExerciseList = ( {workout_id} ) => {
       ListHeaderComponent={
         exercises.length > 0 ? (
           <View style={styles.headerRow}>
-            <Text style={[styles.exercise_name, styles.headerText]}>Exercise</Text>
-            <Text style={[styles.exercise_sets, styles.headerText]}>Sets</Text>
-            <Text style={[styles.exercise_x, styles.headerText]}> </Text>
-            <Text style={[styles.exercise_reps, styles.headerText]}>Reps</Text>
-            <Text style={[styles.exercise_weight, styles.headerText]}>Weight</Text>
+            <Text style={[styles.exercise_name, styles.headerText]}>
+              Exercise</Text>
+            <Text style={[styles.exercise_sets, styles.headerText]}>
+              Sets</Text>
+            <Text style={[styles.exercise_x, styles.headerText]}>
+               </Text>
+            <Text style={[styles.exercise_reps, styles.headerText]}>
+              Reps</Text>
+            <Text style={[styles.exercise_weight, styles.headerText]}>
+              Weight</Text>
           </View>
         ) : null
       }

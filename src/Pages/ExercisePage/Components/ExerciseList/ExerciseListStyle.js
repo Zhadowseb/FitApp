@@ -10,6 +10,11 @@ export default StyleSheet.create({
   exercise_container: {
     flex: 1,
     flexDirection: "row",
+    padding: 5,
+    borderBottomWidth: 1,
+    borderColor: "#dbdbdbff",
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   headerRow: {
@@ -21,9 +26,13 @@ export default StyleSheet.create({
   },
 
   //Columns pacing
+  exercise_alignment: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
 
   exercise_name: {
-    flex: 35,
+    flex: 50,
   },
   exercise_sets: {
     flex: 20,

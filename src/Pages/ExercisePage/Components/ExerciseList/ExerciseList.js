@@ -6,6 +6,8 @@ import { useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
 
 import styles from "./ExerciseListStyle";
+import {checkUniformWeights, 
+        checkUniformReps} from "./Utils/checkUniformSets";
 
 const ExerciseList = ( {workout_id} ) => {
   const [exercises, setExercises] = useState([]);
@@ -18,14 +20,42 @@ const ExerciseList = ( {workout_id} ) => {
     try {
       setLoading(true);
 
-      const rows = await db.getAllAsync(
-        "SELECT exercise_id, exercise_name, sets, done FROM Exercise WHERE workout_id = ?;",
+      const exercises = await db.getAllAsync(
+        `SELECT 
+          exercise_id, exercise_name, sets, done 
+          FROM Exercise WHERE workout_id = ?;`,
         [workout_id]
       );
 
-      setExercises(rows);
+      const sets = await db.getAllAsync(
+        `SELECT s.*
+        FROM Sets s
+        JOIN Exercise e ON e.exercise_id = s.exercise_id
+        WHERE e.workout_id = ?;`,
+        [workout_id]
+      );
 
-      const everythingDone = rows.length > 0 && rows.every(ex => ex.done === 1);
+      const setsByExercise = {};
+      for (const set of sets) {
+        if (!setsByExercise[set.exercise_id]) {
+          setsByExercise[set.exercise_id] = [];
+        }
+        setsByExercise[set.exercise_id].push(set);
+      }
+
+      const exercisesWithSets = exercises.map(ex => {
+          const exSets = setsByExercise[ex.exercise_id] ?? [];
+          return {
+            ...ex,
+            sets: exSets,
+            setCount: exSets.length,
+            allSetsDone:
+              exSets.length > 0 && exSets.every(s => s.done === 1),
+          };
+        });
+      setExercises(exercisesWithSets);
+
+      const everythingDone = exercises.length > 0 && exercises.every(ex => ex.done === 1);
       setAllDone(everythingDone);
 
       await db.runAsync(
@@ -72,7 +102,7 @@ const ExerciseList = ( {workout_id} ) => {
           </View>
 
           <View style={styles.exercise_sets}>
-            <Text> set </Text>
+            <Text> {item.sets.length} </Text>
           </View>
 
           <View style={styles.exercise_x}>
@@ -80,11 +110,11 @@ const ExerciseList = ( {workout_id} ) => {
           </View>
 
           <View style={styles.exercise_reps}>
-            <Text> reps </Text>
+            <Text> {checkUniformReps(item.sets)} </Text>
           </View>
 
           <View style={styles.exercise_weight}>
-            <Text style={styles.right}>{item.sets}</Text>
+            <Text> {checkUniformWeights(item.sets)} </Text>
           </View>
 
         </View>

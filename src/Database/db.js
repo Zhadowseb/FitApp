@@ -64,11 +64,11 @@ export async function initializeDatabase(db) {
     CREATE TABLE IF NOT EXISTS Sets (
         sets_id INTEGER PRIMARY KEY AUTOINCREMENT,
         set_number INTEGER NOT NULL,
+        exercise_id TEXT NOT NULL,
         date TEXT,
 
         personal_record INTEGER NOT NULL DEFAULT 0,
         
-        exercise_id TEXT NOT NULL,
         pause INTEGER,
         rpe INTEGER,
         weight INTEGER,

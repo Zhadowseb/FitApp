@@ -1,7 +1,13 @@
-// src/services/programDateService.js
 import { parseCustomDate, formatDate } from "../../../../Utils/dateUtils";
+import { getWeeksBeforeMesocycle } from "../../../../Utils/getWeeksBeforeMesocycle";
 
-export async function calculateProgramDay({db, program_id, microcycle_id, weekdayIndex,}) {
+export async function calculateProgramDay({
+  db, 
+  program_id, 
+  microcycle_id, 
+  weekdayIndex,
+}) {
+
   const microcycle = await db.getFirstAsync(
     `SELECT mesocycle_id, microcycle_number
      FROM Microcycle
@@ -17,16 +23,14 @@ export async function calculateProgramDay({db, program_id, microcycle_id, weekda
     [microcycle.mesocycle_id, program_id]
   );
 
-  const weeksBefore = await db.getFirstAsync(
-    `SELECT COALESCE(SUM(weeks), 0) AS total_weeks
-     FROM Mesocycle
-     WHERE program_id = ?
-       AND mesocycle_number < ?;`,
-    [program_id, mesocycle.mesocycle_number]
-  );
+  const weeksBefore = await getWeeksBeforeMesocycle({
+    db,
+    program_id,
+    mesocycle_number: mesocycle.mesocycle_number,
+  });
 
   const weekCount =
-    weeksBefore.total_weeks + microcycle.microcycle_number;
+    weeksBefore + microcycle.microcycle_number;
 
   const program = await db.getFirstAsync(
     `SELECT start_date FROM Program WHERE program_id = ?;`,

@@ -1,6 +1,6 @@
 // src/Components/ExerciseList/ExerciseList.js
 import { use, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, Button, TouchableOpacity, ScrollView } from "react-native";
 import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
 import { useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
@@ -10,7 +10,7 @@ import styles from "./ExerciseListStyle";
 import {checkUniformWeights, 
         checkUniformReps} from "./Utils/checkUniformSets";
 
-const ExerciseList = ( {workout_id, refreshing} ) => {
+const ExerciseList = ( {workout_id, editMode, refreshing} ) => {
   const [exercises, setExercises] = useState([]);
   const [allDone, setAllDone] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -87,6 +87,10 @@ const ExerciseList = ( {workout_id, refreshing} ) => {
     return unsubscribe;
   }, [navigation]);
 
+  const deleteExercise = () => {
+
+  }
+
   const renderItem = (item) => (
 
     <TouchableOpacity
@@ -123,10 +127,19 @@ const ExerciseList = ( {workout_id, refreshing} ) => {
           </View>
 
           <View style={[styles.exercise_done, styles.exercise_alignment]}>
-            <Checkbox
-              value={item.done}
-              color={item.done ? "#4CAF50" : "#ccc"}
-              style={styles.checkbox} />
+            {!editMode && (
+              <Checkbox
+                value={item.done}
+                color={item.done ? "#4CAF50" : "#ccc"}
+                style={styles.checkbox} />
+            )}
+            {editMode && (
+              <Button 
+                title={"x"}
+                color="red"
+                onPress={() => deleteExercise()}
+                />
+            )}
           </View>
 
         </View>
@@ -149,7 +162,12 @@ const ExerciseList = ( {workout_id, refreshing} ) => {
               Reps</Text>
             <Text style={[styles.exercise_weight, styles.headerText]}>
               Weight</Text>
-            <Text style={[styles.headerText]}> Done </Text>
+            {!editMode && (
+              <Text style={[styles.headerText]}> Done </Text>
+            )}
+            {editMode && (
+              <Text style={[styles.headerText]}> Delete </Text>
+            )}
           </View>
         )}
 

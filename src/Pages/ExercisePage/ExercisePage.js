@@ -29,6 +29,7 @@ const ExercisePage = ({route}) =>  {
       <View style={styles.card}>
         <ExerciseList 
           workout_id = {workout_id}
+          editMode = {editMode}
           refreshing = {refreshing} />
       </View> 
       

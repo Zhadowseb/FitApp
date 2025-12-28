@@ -143,7 +143,7 @@ const ExerciseList = ( {workout_id, editMode, refreshing} ) => {
               <Button 
                 title={"x"}
                 color="red"
-                onPress={() => deleteExercise()}
+                onPress={() => deleteExercise(item.exercise_id)}
                 />
             )}
           </View>

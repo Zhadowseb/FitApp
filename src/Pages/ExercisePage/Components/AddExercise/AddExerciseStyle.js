@@ -8,7 +8,11 @@ export default StyleSheet.create({
     paddingVertical: 8,
   },
 
-  // Dropdown + input ved siden af hinanden
+  // Dropdown
+  exerciseDropdown: {
+    flex: 1,
+  },
+  //input ved siden af hinanden
   row: {
     flexDirection: "row",
     alignItems: "center",

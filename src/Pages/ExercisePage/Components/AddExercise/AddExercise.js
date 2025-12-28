@@ -63,15 +63,18 @@ const AddExercise = ( {workout_id, date, onExerciseChange} ) => {
 
   return (
     <View style={styles.wrapper}>
-      <View style={styles.row}>
 
+      <View style={styles.exerciseDropdown}>
         <View style={styles.exercisedropdown}>
           <ExerciseDropdown
             selectedExerciseName={selectedExerciseName}
             onChange={setSelectedExerciseName}
           />
         </View>
+      </View>
 
+
+      <View style={styles.row}>
         <View style={styles.sets}>
           <TextInput
             style={styles.input}
@@ -106,6 +109,7 @@ const AddExercise = ( {workout_id, date, onExerciseChange} ) => {
       <View style={styles.buttonContainer}>
         <Button title="SAVE" onPress={handleSubmit} />
       </View>
+
     </View>
   );
 };

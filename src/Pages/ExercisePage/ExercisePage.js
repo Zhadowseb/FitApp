@@ -13,7 +13,7 @@ const ExercisePage = ({route}) =>  {
 
   const {workout_id, date} = route.params;
 
-  const handleExerciseAdded = () => {
+  const handleExerciseChange = () => {
     set_refreshing(prev => prev + 1);
   }
 
@@ -30,7 +30,8 @@ const ExercisePage = ({route}) =>  {
         <ExerciseList 
           workout_id = {workout_id}
           editMode = {editMode}
-          refreshing = {refreshing} />
+          refreshing = {refreshing} 
+          onExerciseChange = {handleExerciseChange}/>
       </View> 
       
       {editMode && (
@@ -38,7 +39,7 @@ const ExercisePage = ({route}) =>  {
           <AddExercise 
             workout_id = {workout_id} 
             date = {date}
-            onAdded = {handleExerciseAdded}/>
+            onExerciseChange = {handleExerciseChange}/>
         </View>
       )}
 

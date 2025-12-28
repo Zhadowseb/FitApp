@@ -10,7 +10,7 @@ import styles from "./ExerciseListStyle";
 import {checkUniformWeights, 
         checkUniformReps} from "./Utils/checkUniformSets";
 
-const ExerciseList = ( {workout_id, editMode, refreshing} ) => {
+const ExerciseList = ( {workout_id, editMode, refreshing, onExerciseChange} ) => {
   const [exercises, setExercises] = useState([]);
   const [allDone, setAllDone] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -92,6 +92,7 @@ const ExerciseList = ( {workout_id, editMode, refreshing} ) => {
       await db.runAsync(
         `DELETE FROM Exercise WHERE exercise_id = ?;`,
         [exercise_id]);
+      onExerciseChange?.();
     } catch (error) {
       console.error(error);
     }

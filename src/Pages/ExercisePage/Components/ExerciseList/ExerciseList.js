@@ -101,6 +101,7 @@ const ExerciseList = ( {workout_id, editMode, refreshing, onExerciseChange} ) =>
   const renderItem = (item) => (
 
     <TouchableOpacity
+      key={item.exercise_id}
       style={styles.card}
       onPress={() => {
         navigation.navigate("SetPage", {
@@ -112,7 +113,7 @@ const ExerciseList = ( {workout_id, editMode, refreshing, onExerciseChange} ) =>
         <View style={styles.exercise_container}>
 
           <View style={styles.exercise_name}>
-            <Text style={item.done && { color: "green" }}>
+            <Text style={[[item.done ? { color: "green" } : { color: "black" }]]}>
               {item.exercise_name}
             </Text>
           </View>
@@ -136,7 +137,7 @@ const ExerciseList = ( {workout_id, editMode, refreshing, onExerciseChange} ) =>
           <View style={[styles.exercise_done, styles.exercise_alignment]}>
             {!editMode && (
               <Checkbox
-                value={item.done}
+                value={item.done === 1}
                 color={item.done ? "#4CAF50" : "#ccc"}
                 style={styles.checkbox} />
             )}

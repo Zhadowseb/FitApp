@@ -87,9 +87,15 @@ const ExerciseList = ( {workout_id, editMode, refreshing} ) => {
     return unsubscribe;
   }, [navigation]);
 
-  const deleteExercise = () => {
-
-  }
+  const deleteExercise = async (exercise_id) => {
+    try {
+      await db.runAsync(
+        `DELETE FROM Exercise WHERE exercise_id = ?;`,
+        [exercise_id]);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const renderItem = (item) => (
 

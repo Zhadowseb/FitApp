@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { View, Button } from 'react-native';
+import { View, Button, ScrollView } from 'react-native';
 import { useState } from "react";
 
 import styles from './ExercisePageStyle';
@@ -19,7 +19,7 @@ const ExercisePage = ({route}) =>  {
 
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
 
       <Button 
         title={editMode ? "Edit mode: ON" : "Edit mode: OFF"}
@@ -44,7 +44,7 @@ const ExercisePage = ({route}) =>  {
 
       <StatusBar style="auto" />
 
-    </View>
+    </ScrollView>
   );
 }
 

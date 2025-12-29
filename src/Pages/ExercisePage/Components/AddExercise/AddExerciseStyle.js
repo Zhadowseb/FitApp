@@ -43,6 +43,7 @@ export default StyleSheet.create({
   // Knappen under rækken
   buttonContainer: {
     marginTop: 4,
+    margin: 10,
   },
 
   exercisedropdown: {

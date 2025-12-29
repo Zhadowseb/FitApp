@@ -71,4 +71,17 @@ export default StyleSheet.create({
   checkbox: {
     marginRight: 8,
   },
+
+  SetList_container: {
+    flexDirection: "row",
+    padding: 5,
+    width: "100%",
+  },
+  SetList_left: { 
+    width: "40%",
+  },
+  SetList_Right: {
+    width: "60%",
+  },
+
 });

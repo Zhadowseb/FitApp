@@ -7,6 +7,7 @@ import { useNavigation } from "@react-navigation/native";
 import Checkbox from 'expo-checkbox';
 
 import styles from "./ExerciseListStyle";
+import SetList from "./SetList/SetList";
 import {checkUniformWeights, 
         checkUniformReps} from "./Utils/checkUniformSets";
 
@@ -148,6 +149,17 @@ const ExerciseList = ( {workout_id, editMode, refreshing, onExerciseChange} ) =>
                 onPress={() => deleteExercise(item.exercise_id)}
                 />
             )}
+          </View>
+
+        </View>
+
+        <View style={styles.SetList_container}>
+          
+          <View style={styles.SetList_left}> 
+          </View>
+
+          <View style={styles.SetList_Right}>
+            <SetList sets={item.sets} />
           </View>
 
         </View>

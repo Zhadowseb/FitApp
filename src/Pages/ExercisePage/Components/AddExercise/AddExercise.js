@@ -107,7 +107,7 @@ const AddExercise = ( {workout_id, date, onExerciseChange} ) => {
       </View>
 
       <View style={styles.buttonContainer}>
-        <Button title="SAVE" onPress={handleSubmit} />
+        <Button title="ADD" onPress={handleSubmit} />
       </View>
 
     </View>

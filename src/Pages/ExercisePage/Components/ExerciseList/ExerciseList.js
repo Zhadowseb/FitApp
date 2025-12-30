@@ -172,8 +172,8 @@ const ExerciseList = ( {workout_id, editMode, refreshing, onExerciseChange} ) =>
           >
             <Text style={{ fontSize: 14 }}>
               {expandedExercises[item.exercise_id]
-                ? "▲ Skjul sets"
-                : "▼ Vis sets"}
+                ? "▲ Hide sets"
+                : "▼ Show sets"}
             </Text>
           </TouchableOpacity>
 

@@ -6,9 +6,9 @@ export default StyleSheet.create({
   card: {
       backgroundColor: "#fff",
       marginVertical: 10,
-      marginHorizontal: 10,
-      borderRadius: 10,
-      elevation: 3,
+      marginHorizontal: 0,
+      borderRadius: 5,
+      elevation: 20,
       shadowColor: "#000",
       shadowOpacity: 0.1,
       shadowRadius: 4,

@@ -1,10 +1,8 @@
 // src/Components/ExerciseList/ExerciseList.js
-import { use, useState } from "react";
-import { View, Text, Button, TouchableOpacity, ScrollView } from "react-native";
-import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
-import { useEffect } from "react";
+import { useState } from "react";
+import { View, Text, Button, TouchableOpacity } from "react-native";
+import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
-import Checkbox from 'expo-checkbox';
 
 import styles from "./EditModeOnStyle";
 import SetList from "../SetList/SetList";
@@ -81,18 +79,19 @@ const EditModeOn = ( {exercise, onExerciseChange} ) => {
       </TouchableOpacity>
 
       <View style={styles.SetList_container}>
-        <View style={styles.SetList_left} />
 
-        <View style={styles.SetList_Right}>
+        <View style={styles.SetList}>
           <TouchableOpacity
             onPress={() => toggleExpanded(exercise.exercise_id)}
             style={{ paddingVertical: 4 }}
           >
-            <Text style={{ fontSize: 14 }}>
-              {expandedExercises[exercise.exercise_id]
-                ? "▲ Hide sets"
-                : "▼ Show sets"}
-            </Text>
+            <View style={styles.expandable}>
+                <Text>
+                {expandedExercises[exercise.exercise_id]
+                    ? "▲ Hide sets"
+                    : "▼ Show sets"}
+                </Text>
+            </View>
           </TouchableOpacity>
 
           {expandedExercises[exercise.exercise_id] && (

@@ -6,27 +6,57 @@ export default StyleSheet.create({
     container: {
         flexDirection: "row",
         flex: 1,
+        width: "100%",
     },
 
+    pause: {
+        width: "20%",
+    },
     set: {
-        flex: 1,
+        width: "10%",
+        borderLeftColor: "#d3d3d3ff",
+        borderLeftWidth: 1,
     },
-
     x: {
-        flex: 1,
+        width: "5%",
+        borderLeftColor: "#d3d3d3ff",
+        borderLeftWidth: 1,
     },
-
     reps: {
-        flex: 1,
+        width: "15%",
+        borderLeftColor: "#d3d3d3ff",
+        borderLeftWidth: 1,
     },
-
     weight: {
-        flex: 1,
+        width: "20%",
+        borderLeftColor: "#d3d3d3ff",
+        borderLeftWidth: 1,
+    },
+    rpe: {
+        width: "15%",
+        borderLeftColor: "#d3d3d3ff",
+        borderLeftWidth: 1,
+    },
+    done: {
+        width: "15%",
+        borderLeftColor: "#d3d3d3ff",
+        borderLeftWidth: 1,
+    },  
+
+    override: {
+        borderLeftColor: "#ffffffff",
+        borderLeftWidth: 0,
+        borderBottomColor: "#d3d3d3ff",
+        borderBottomWidth: 1,
     },
 
-    done: {
-        flex: 1,
-    },  
+    text: {
+        alignContent: "center",
+        alignItems: "center",
+        fontWeight: "bold",
+        paddingBottom: 5,
+        paddingTop: 8,
+    },
 
 
 });

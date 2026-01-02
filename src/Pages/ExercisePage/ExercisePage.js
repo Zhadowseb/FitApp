@@ -3,7 +3,6 @@ import { View, Button, ScrollView } from 'react-native';
 import { useState } from "react";
 
 import styles from './ExercisePageStyle';
-import AddExercise from './Components/EditModeAdditions/AddExercise/AddExercise';
 import ExerciseList from './Components/ExerciseList/ExerciseList';
 import EditModeAdditions from './Components/EditModeAdditions/EditModeAdditions';
 

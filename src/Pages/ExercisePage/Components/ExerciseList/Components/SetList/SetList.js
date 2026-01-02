@@ -1,10 +1,14 @@
 // src/Components/ExerciseList/ExerciseList.js
 import { View, Text } from "react-native";
 import Checkbox from 'expo-checkbox';
+import { useSQLiteContext } from "expo-sqlite";
 
 import styles from "./SetListStyle";
   
-const SetList = ({ sets }) => {
+const SetList = ({ sets, onToggleSet }) => {
+
+  const db = useSQLiteContext();
+
   if (!sets || sets.length === 0) {
     return null;
   }
@@ -73,6 +77,7 @@ const SetList = ({ sets }) => {
               <Checkbox
                 value={set.done === 1}
                 color={set.done ? "#4CAF50" : "#ccc"}
+                onValueChange={(checked) => onToggleSet(set.sets_id, checked)}
                 style={styles.checkbox} />
             </View>
 

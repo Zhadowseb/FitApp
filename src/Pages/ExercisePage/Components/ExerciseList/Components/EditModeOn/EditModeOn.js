@@ -9,7 +9,7 @@ import SetList from "../SetList/SetList";
 import {checkUniformWeights, 
         checkUniformReps} from "../../Utils/checkUniformSets";
 
-const EditModeOn = ( {exercise, onExerciseChange} ) => {
+const EditModeOn = ( {exercise, onExerciseChange, update} ) => {
   const [expandedExercises, setExpandedExercises] = useState({});
 
   const db = useSQLiteContext();
@@ -83,8 +83,8 @@ const EditModeOn = ( {exercise, onExerciseChange} ) => {
         <View style={styles.SetList}>
           <TouchableOpacity
             onPress={() => toggleExpanded(exercise.exercise_id)}
-            style={{ paddingVertical: 4 }}
-          >
+            style={{ paddingVertical: 4 }}>
+
             <View style={styles.expandable}>
                 <Text>
                 {expandedExercises[exercise.exercise_id]
@@ -92,10 +92,12 @@ const EditModeOn = ( {exercise, onExerciseChange} ) => {
                     : "▼ Show sets"}
                 </Text>
             </View>
+
           </TouchableOpacity>
 
           {expandedExercises[exercise.exercise_id] && (
-            <SetList sets={exercise.sets} />
+            <SetList 
+                sets={exercise.sets} />
           )}
         </View>
       </View>

@@ -50,25 +50,24 @@ const ExerciseList = ( {workout_id, editMode, refreshing, onExerciseChange} ) =>
             ...ex,
             sets: exSets,
             setCount: exSets.length,
-            allSetsDone:
-              exSets.length > 0 && exSets.every(s => s.done === 1),
           };
         });
       setExercises(exercisesWithSets);
-
-      const everythingDone = exercises.length > 0 && exercises.every(ex => ex.done === 1);
-      setAllDone(everythingDone);
-
-      await db.runAsync(
-        `UPDATE Workout SET done = ? WHERE workout_id = ?;`,
-        [everythingDone ? 1 : 0, workout_id]
-      );
 
     } catch (error) {
       console.error("Error loading exercises", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const updateSetDone = async (set_id, done) => {
+    await db.runAsync(
+      `UPDATE Sets SET done = ? WHERE sets_id = ?`,
+      [done ? 1 : 0, set_id]
+    );
+
+    loadExercises(); 
   };
 
   useEffect(() => {
@@ -101,7 +100,8 @@ const ExerciseList = ( {workout_id, editMode, refreshing, onExerciseChange} ) =>
       {!editMode && (
         <View>  
           <EditModeOff
-            exercise={item} />
+            exercise={item} 
+            onToggleSet={updateSetDone} />
         </View>
       )}
 

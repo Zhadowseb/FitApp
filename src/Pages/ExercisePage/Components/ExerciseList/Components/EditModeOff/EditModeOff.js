@@ -9,7 +9,7 @@ import SetList from "../SetList/SetList";
 import {checkUniformWeights, 
         checkUniformReps} from "../../Utils/checkUniformSets";
 
-const EditModeOff = ( {exercise} ) => {
+const EditModeOff = ( {exercise, onToggleSet} ) => {
   const [expandedExercises, setExpandedExercises] = useState({});
 
   const navigation = useNavigation();
@@ -83,7 +83,9 @@ const EditModeOff = ( {exercise} ) => {
           </TouchableOpacity>
 
           {expandedExercises[exercise.exercise_id] && (
-            <SetList sets={exercise.sets} />
+            <SetList 
+              sets={exercise.sets}
+              onToggleSet={onToggleSet} />
           )}
         </View>
       </View>

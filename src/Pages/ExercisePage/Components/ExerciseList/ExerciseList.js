@@ -111,6 +111,16 @@ const ExerciseList = ( {workout_id, editMode, refreshing, onExerciseChange} ) =>
   const renderItem = (item) => (
     <View key={item.exercise_id} style={styles.card}>
 
+      {editMode && (
+        <View></View>
+      )}
+
+      {!editMode && (
+        <View></View>
+      )}
+
+      
+
       {/* 🔹 Exercise row – KUN navigation */}
       <TouchableOpacity
         onPress={() =>

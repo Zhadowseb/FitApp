@@ -14,6 +14,8 @@ const EditModeAdditions = ( {workout_id, date, onExerciseChange} ) => {
         date = {date}
         onExerciseChange = {onExerciseChange}/>
     </View>
+
+    
   );
 };
 

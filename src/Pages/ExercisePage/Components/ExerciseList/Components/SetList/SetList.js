@@ -29,12 +29,12 @@ const SetList = ({ sets }) => {
           <Text> Reps </Text>
         </View>
 
-        <View style={[styles.weight, styles.text, styles.override]}> 
-          <Text> Weight </Text>
-        </View>
-
         <View style={[styles.rpe, styles.text, styles.override]}> 
           <Text> RPE </Text>
+        </View>
+
+        <View style={[styles.weight, styles.text, styles.override]}> 
+          <Text> Weight </Text>
         </View>
 
         <View style={[styles.done, styles.text, styles.override]}> 
@@ -61,12 +61,12 @@ const SetList = ({ sets }) => {
                 <Text> {set.reps} </Text>
             </View>
 
-            <View style={[styles.weight, styles.text]}> 
-                <Text> {set.weight} </Text>
-            </View>
-
             <View style={[styles.rpe, styles.text]}> 
                 <Text> {set.rpe} </Text>
+            </View>
+
+            <View style={[styles.weight, styles.text]}> 
+                <Text> {set.weight} </Text>
             </View>
 
             <View style={[styles.done, styles.text]}> 

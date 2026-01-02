@@ -66,18 +66,20 @@ const EditModeOff = ( {exercise} ) => {
       </TouchableOpacity>
 
       <View style={styles.SetList_container}>
-        <View style={styles.SetList_left} />
 
-        <View style={styles.SetList_Right}>
+        <View style={styles.SetList}>
           <TouchableOpacity
             onPress={() => toggleExpanded(exercise.exercise_id)}
-            style={{ paddingVertical: 4 }}
-          >
-            <Text style={{ fontSize: 14 }}>
-              {expandedExercises[exercise.exercise_id]
-                ? "▲ Hide sets"
-                : "▼ Show sets"}
-            </Text>
+            style={{ paddingVertical: 4 }}>
+
+            <View style={styles.expandable}>
+                <Text>
+                {expandedExercises[exercise.exercise_id]
+                    ? "▲ Hide sets"
+                    : "▼ Show sets"}
+                </Text>
+            </View>
+
           </TouchableOpacity>
 
           {expandedExercises[exercise.exercise_id] && (

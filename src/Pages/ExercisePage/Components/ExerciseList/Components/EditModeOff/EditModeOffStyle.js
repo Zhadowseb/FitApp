@@ -77,11 +77,14 @@ export default StyleSheet.create({
     padding: 5,
     width: "100%",
   },
-  SetList_left: { 
-    width: "40%",
+  SetList: {
+    width: "100%",
   },
-  SetList_Right: {
-    width: "60%",
+
+  expandable: {
+    fontSize: 14,
+    alignContent: "center",
+    alignItems: "center",
   },
 
 });

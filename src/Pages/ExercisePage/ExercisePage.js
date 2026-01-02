@@ -3,8 +3,9 @@ import { View, Button, ScrollView } from 'react-native';
 import { useState } from "react";
 
 import styles from './ExercisePageStyle';
-import AddExercise from './Components/AddExercise/AddExercise';
+import AddExercise from './Components/EditModeAdditions/AddExercise/AddExercise';
 import ExerciseList from './Components/ExerciseList/ExerciseList';
+import EditModeAdditions from './Components/EditModeAdditions/EditModeAdditions';
 
 const ExercisePage = ({route}) =>  {
 
@@ -35,12 +36,10 @@ const ExercisePage = ({route}) =>  {
       </View> 
       
       {editMode && (
-        <View style={styles.card}>
-          <AddExercise 
-            workout_id = {workout_id} 
-            date = {date}
-            onExerciseChange = {handleExerciseChange}/>
-        </View>
+        <EditModeAdditions 
+          workout_id={workout_id}
+          date={date}
+          onExerciseChange={handleExerciseChange}/>
       )}
 
       <StatusBar style="auto" />

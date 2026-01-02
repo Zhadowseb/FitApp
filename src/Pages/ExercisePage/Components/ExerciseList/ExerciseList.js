@@ -1,20 +1,17 @@
 // src/Components/ExerciseList/ExerciseList.js
 import { use, useState } from "react";
-import { View, Text, Button, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
 import { useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
-import Checkbox from 'expo-checkbox';
 
 import styles from "./ExerciseListStyle";
-import SetList from "./SetList/SetList";
-import {checkUniformWeights, 
-        checkUniformReps} from "./Utils/checkUniformSets";
+
+import EditModeOff from "./Components/EditModeOff/EditModeOff"
+import EditModeOn from "./Components/EditModeOn/EditModeOn"
 
 const ExerciseList = ( {workout_id, editMode, refreshing, onExerciseChange} ) => {
   const [exercises, setExercises] = useState([]);
-  const [expandedExercises, setExpandedExercises] = useState({});
-  const [allDone, setAllDone] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const db = useSQLiteContext();
@@ -90,108 +87,24 @@ const ExerciseList = ( {workout_id, editMode, refreshing, onExerciseChange} ) =>
     return unsubscribe;
   }, [navigation]);
 
-  const deleteExercise = async (exercise_id) => {
-    try {
-      await db.runAsync(
-        `DELETE FROM Exercise WHERE exercise_id = ?;`,
-        [exercise_id]);
-      onExerciseChange?.();
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const toggleExpanded = (exercise_id) => {
-    setExpandedExercises(prev => ({
-      ...prev,
-      [exercise_id]: !prev[exercise_id],
-    }));
-  };
-
   const renderItem = (item) => (
-    <View key={item.exercise_id} style={styles.card}>
+    <View key={item.exercise_id}>
 
       {editMode && (
-        <View></View>
+        <View>
+          <EditModeOn
+            exercise={item}
+            onExerciseChange={onExerciseChange} />
+        </View>
       )}
 
       {!editMode && (
-        <View></View>
+        <View>  
+          <EditModeOff
+            exercise={item} />
+        </View>
       )}
 
-      
-
-      {/* 🔹 Exercise row – KUN navigation */}
-      <TouchableOpacity
-        onPress={() =>
-          navigation.navigate("SetPage", {
-            exercise_id: item.exercise_id,
-            exercise_name: item.exercise_name,
-            sets: item.sets,
-          })
-        }
-      >
-        <View style={styles.exercise_container}>
-          <View style={styles.exercise_name}>
-            <Text style={item.done ? { color: "green" } : { color: "black" }}>
-              {item.exercise_name}
-            </Text>
-          </View>
-
-          <View style={[styles.exercise_sets, styles.exercise_alignment]}>
-            <Text>{item.sets.length}</Text>
-          </View>
-
-          <View style={[styles.exercise_x, styles.exercise_alignment]}>
-            <Text>x</Text>
-          </View>
-
-          <View style={[styles.exercise_reps, styles.exercise_alignment]}>
-            <Text>{checkUniformReps(item.sets)}</Text>
-          </View>
-
-          <View style={[styles.exercise_weight, styles.exercise_alignment]}>
-            <Text>{checkUniformWeights(item.sets)}</Text>
-          </View>
-
-          <View style={[styles.exercise_done, styles.exercise_alignment]}>
-            {!editMode && (
-              <Checkbox
-                value={item.done === 1}
-                color={item.done ? "#4CAF50" : "#ccc"}
-              />
-            )}
-            {editMode && (
-              <Button
-                title="x"
-                color="red"
-                onPress={() => deleteExercise(item.exercise_id)}
-              />
-            )}
-          </View>
-        </View>
-      </TouchableOpacity>
-
-      <View style={styles.SetList_container}>
-        <View style={styles.SetList_left} />
-
-        <View style={styles.SetList_Right}>
-          <TouchableOpacity
-            onPress={() => toggleExpanded(item.exercise_id)}
-            style={{ paddingVertical: 4 }}
-          >
-            <Text style={{ fontSize: 14 }}>
-              {expandedExercises[item.exercise_id]
-                ? "▲ Hide sets"
-                : "▼ Show sets"}
-            </Text>
-          </TouchableOpacity>
-
-          {expandedExercises[item.exercise_id] && (
-            <SetList sets={item.sets} />
-          )}
-        </View>
-      </View>
     </View>
   );
 

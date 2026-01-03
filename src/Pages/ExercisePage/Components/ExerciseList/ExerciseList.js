@@ -67,6 +67,19 @@ const ExerciseList = ( {workout_id, editMode, refreshing, onExerciseChange} ) =>
       [done ? 1 : 0, set_id]
     );
 
+    await db.runAsync(
+      `UPDATE Exercise
+      SET done = 1
+      WHERE exercise_id = 
+      (SELECT exercise_id FROM Sets WHERE sets_id = ?)
+      AND NOT EXISTS (
+        SELECT 1
+        FROM Sets
+        WHERE Sets.exercise_id = Exercise.exercise_id
+          AND Sets.done = 0 )`,
+      [set_id]
+    );
+
     loadExercises(); 
   };
 

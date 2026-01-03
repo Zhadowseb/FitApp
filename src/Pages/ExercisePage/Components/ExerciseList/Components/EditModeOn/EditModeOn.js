@@ -45,9 +45,10 @@ const EditModeOn = ( {exercise, onExerciseChange, update} ) => {
           })
         }
       >
-        <View style={styles.exercise_container}>
+        <View style={[styles.exercise_container,
+          exercise.done ? styles.exercise_complete : styles.exercise_uncomplete]}>
           <View style={styles.exercise_name}>
-            <Text style={exercise.done ? { color: "green" } : { color: "black" }}>
+            <Text>
               {exercise.exercise_name}
             </Text>
           </View>

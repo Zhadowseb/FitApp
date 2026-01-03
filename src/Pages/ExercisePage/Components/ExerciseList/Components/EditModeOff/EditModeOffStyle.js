@@ -4,15 +4,16 @@ import { StyleSheet } from "react-native";
 export default StyleSheet.create({
 
   card: {
-      backgroundColor: "#fff",
-      marginVertical: 10,
-      marginHorizontal: 0,
-      borderRadius: 5,
-      elevation: 20,
-      shadowColor: "#000",
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      shadowOffset: { height: 2, width: 0 },
+    backgroundColor: "#fff",
+    marginVertical: 10,
+    marginHorizontal: 0,
+    borderRadius: 5,
+    elevation: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { height: 2, width: 0 },
+    overflow: "hidden",
   },
   
   wrapper: {
@@ -28,6 +29,14 @@ export default StyleSheet.create({
     borderColor: "#dbdbdbff",
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
+  },
+
+  exercise_complete: {
+    backgroundColor: "#00d134ff",
+  },
+  exercise_uncomplete: {
+    backgroundColor: "#ffffffff",
   },
 
   headerRow: {

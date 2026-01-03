@@ -9,6 +9,7 @@ import styles from "./ExerciseListStyle";
 
 import EditModeOff from "./Components/EditModeOff/EditModeOff"
 import EditModeOn from "./Components/EditModeOn/EditModeOn"
+import Title from "./Components/Title/Title";
 
 const ExerciseList = ( {workout_id, editMode, refreshing, onExerciseChange} ) => {
   const [exercises, setExercises] = useState([]);
@@ -80,6 +81,7 @@ const ExerciseList = ( {workout_id, editMode, refreshing, onExerciseChange} ) =>
       [set_id]
     );
 
+
     loadExercises(); 
   };
 
@@ -122,36 +124,12 @@ const ExerciseList = ( {workout_id, editMode, refreshing, onExerciseChange} ) =>
   );
 
   return (
-    <ScrollView style={styles.wrapper}>
-
-        {exercises.length > 0 && (
-          <View style={styles.headerRow}>
-            <Text style={[styles.exercise_name, styles.headerText]}>
-              Exercise</Text>
-            <Text style={[styles.exercise_sets, styles.headerText]}>
-              Sets</Text>
-            <Text style={[styles.exercise_x, styles.headerText]}>
-               </Text>
-            <Text style={[styles.exercise_reps, styles.headerText]}>
-              Reps</Text>
-            <Text style={[styles.exercise_weight, styles.headerText]}>
-              Weight</Text>
-            {!editMode && (
-              <Text style={[styles.headerText]}> Done </Text>
-            )}
-            {editMode && (
-              <Text style={[styles.headerText]}> Delete </Text>
-            )}
-          </View>
-        )}
-
-      {exercises.length === 0 && !loading && (
-        <Text>Ingen exercises fundet.</Text>
-      )}
-
-      {exercises.map(renderItem)}
-
-    </ScrollView>
+    <Title
+      exercises={exercises}
+      loading={loading}
+      editMode={editMode}
+      renderItem={renderItem}
+    />
   );
 };
 

@@ -7,7 +7,6 @@ import styles from "./SetListStyle";
   
 const SetList = ({ sets, onToggleSet }) => {
 
-  const db = useSQLiteContext();
 
   if (!sets || sets.length === 0) {
     return null;

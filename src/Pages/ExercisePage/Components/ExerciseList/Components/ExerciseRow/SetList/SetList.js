@@ -1,5 +1,5 @@
 // src/Components/ExerciseList/ExerciseList.js
-import { View, Text, TextInput } from "react-native";
+import { View, Text, TextInput, Button } from "react-native";
 import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
 import { useState, useEffect } from "react";
 
@@ -60,6 +60,17 @@ const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
       `UPDATE Sets SET weight = ? WHERE sets_id = ?`,
       [weight, sets_id] );
     updateUI?.();
+  };
+
+  const deleteSet = async (sets_id) => {
+    try {
+      await db.runAsync(
+        `DELETE FROM Sets WHERE sets_id = ?;`,
+        [sets_id]);
+      updateUI?.();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -142,13 +153,21 @@ const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
             </View>
 
             <View style={[styles.done, styles.text]}> 
-              <Checkbox
-                value={set.done === 1}
-                color={set.done ? "#4CAF50" : "#ccc"}
-                onValueChange={(checked) => onToggleSet(set.sets_id, checked)}
-                style={styles.checkbox} />
-            </View>
 
+              {editMode ?
+                <Button
+                  title="x"
+                  color="red"
+                  onPress={() => deleteSet(set.sets_id)}
+                />
+                :
+                <Checkbox
+                  value={set.done === 1}
+                  color={set.done ? "#4CAF50" : "#ccc"}
+                  onValueChange={(checked) => onToggleSet(set.sets_id, checked)}
+                  style={styles.checkbox} />
+              }
+            </View>
         </View>
       ))}
     </View>

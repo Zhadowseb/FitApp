@@ -6,7 +6,7 @@ import { useNavigation } from "@react-navigation/native";
 import Checkbox from 'expo-checkbox';
 
 import styles from "./ExerciseRowStyle";
-import SetList from "../SetList/SetList";
+import SetList from "./SetList/SetList";
 import {checkUniformWeights, 
         checkUniformReps} from "../../Utils/checkUniformSets";
 

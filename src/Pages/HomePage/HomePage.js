@@ -1,7 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { View, Button } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import DeleteExercises from '../../Components/DeleteExercises/DeleteExercises';
 
 import styles from './HomePageStyle';
 
@@ -18,8 +17,6 @@ export default function App() {
           onPress={() => navigation.navigate('ProgramPage')} 
           style={styles.button_spacing} />
       </View>
-
-      <DeleteExercises/>
 
       <StatusBar style="auto" />
 

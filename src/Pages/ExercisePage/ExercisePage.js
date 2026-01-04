@@ -1,10 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
-import { View, Button } from 'react-native';
+import { View, Button, ScrollView } from 'react-native';
 import { useState } from "react";
 
 import styles from './ExercisePageStyle';
-import AddExercise from './Components/AddExercise/AddExercise';
 import ExerciseList from './Components/ExerciseList/ExerciseList';
+import EditModeAdditions from './Components/EditModeAdditions/EditModeAdditions';
 
 const ExercisePage = ({route}) =>  {
 
@@ -13,13 +13,13 @@ const ExercisePage = ({route}) =>  {
 
   const {workout_id, date} = route.params;
 
-  const handleExerciseAdded = () => {
+  const handleExerciseChange = () => {
     set_refreshing(prev => prev + 1);
   }
 
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
 
       <Button 
         title={editMode ? "Edit mode: ON" : "Edit mode: OFF"}
@@ -29,21 +29,21 @@ const ExercisePage = ({route}) =>  {
       <View style={styles.card}>
         <ExerciseList 
           workout_id = {workout_id}
-          refreshing = {refreshing} />
+          editMode = {editMode}
+          refreshing = {refreshing} 
+          updateUI = {handleExerciseChange}/>
       </View> 
       
       {editMode && (
-        <View style={styles.card}>
-          <AddExercise 
-            workout_id = {workout_id} 
-            date = {date}
-            onAdded = {handleExerciseAdded}/>
-        </View>
+        <EditModeAdditions 
+          workout_id={workout_id}
+          date={date}
+          onExerciseChange={handleExerciseChange}/>
       )}
 
       <StatusBar style="auto" />
 
-    </View>
+    </ScrollView>
   );
 }
 

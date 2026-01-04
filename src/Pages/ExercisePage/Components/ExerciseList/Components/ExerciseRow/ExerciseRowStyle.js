@@ -13,6 +13,7 @@ export default StyleSheet.create({
       shadowOpacity: 0.1,
       shadowRadius: 4,
       shadowOffset: { height: 2, width: 0 },
+      overflow: "hidden",
   },
   
   wrapper: {
@@ -28,6 +29,14 @@ export default StyleSheet.create({
     borderColor: "#dbdbdbff",
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
+  },
+  
+  exercise_complete: {
+    backgroundColor: "#00d134ff",
+  },
+  exercise_uncomplete: {
+    backgroundColor: "#ffffffff",
   },
 
   headerRow: {
@@ -77,11 +86,14 @@ export default StyleSheet.create({
     padding: 5,
     width: "100%",
   },
-  SetList_left: { 
-    width: "40%",
+  SetList: {
+    width: "100%",
   },
-  SetList_Right: {
-    width: "60%",
+
+  expandable: {
+    fontSize: 14,
+    alignContent: "center",
+    alignItems: "center",
   },
 
 });

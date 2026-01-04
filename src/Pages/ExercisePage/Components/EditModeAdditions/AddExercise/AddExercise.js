@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import { View, Text, TextInput, Button, Alert } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 
-import ExerciseDropdown from "../../../../Components/ExerciseDropdown/ExerciseDropdown";
+import ExerciseDropdown from "../../../../../Components/ExerciseDropdown/ExerciseDropdown";
 import styles from "./AddExerciseStyle";
 
-const AddExercise = ( {workout_id, date, onAdded} ) => {
+const AddExercise = ( {workout_id, date, onExerciseChange} ) => {
   const db = useSQLiteContext();
 
   const [selectedExerciseName, setSelectedExerciseName] = useState(null);
@@ -38,7 +38,7 @@ const AddExercise = ( {workout_id, date, onAdded} ) => {
       setReps("");
       setWeight("");
 
-      onAdded?.();
+      onExerciseChange?.();
       
     } catch (error) {
       Alert.alert("Input error", error.message);
@@ -63,15 +63,18 @@ const AddExercise = ( {workout_id, date, onAdded} ) => {
 
   return (
     <View style={styles.wrapper}>
-      <View style={styles.row}>
 
+      <View style={styles.exerciseDropdown}>
         <View style={styles.exercisedropdown}>
           <ExerciseDropdown
             selectedExerciseName={selectedExerciseName}
             onChange={setSelectedExerciseName}
           />
         </View>
+      </View>
 
+
+      <View style={styles.row}>
         <View style={styles.sets}>
           <TextInput
             style={styles.input}
@@ -104,8 +107,9 @@ const AddExercise = ( {workout_id, date, onAdded} ) => {
       </View>
 
       <View style={styles.buttonContainer}>
-        <Button title="SAVE" onPress={handleSubmit} />
+        <Button title="ADD" onPress={handleSubmit} />
       </View>
+
     </View>
   );
 };

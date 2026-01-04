@@ -1,6 +1,6 @@
 // src/Components/AddExerciseStyle.js
 import { StyleSheet } from "react-native";
-import ExerciseDropdown from "../../../../Components/ExerciseDropdown/ExerciseDropdown";
+import ExerciseDropdown from "../../../../../Components/ExerciseDropdown/ExerciseDropdown";
 
 export default StyleSheet.create({
   wrapper: {
@@ -8,7 +8,11 @@ export default StyleSheet.create({
     paddingVertical: 8,
   },
 
-  // Dropdown + input ved siden af hinanden
+  // Dropdown
+  exerciseDropdown: {
+    flex: 1,
+  },
+  //input ved siden af hinanden
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -39,6 +43,7 @@ export default StyleSheet.create({
   // Knappen under rækken
   buttonContainer: {
     marginTop: 4,
+    margin: 10,
   },
 
   exercisedropdown: {

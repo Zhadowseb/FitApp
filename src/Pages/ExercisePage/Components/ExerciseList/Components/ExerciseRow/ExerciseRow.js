@@ -10,7 +10,7 @@ import SetList from "../SetList/SetList";
 import {checkUniformWeights, 
         checkUniformReps} from "../../Utils/checkUniformSets";
 
-const EditModeOn = ( {exercise, onExerciseChange, onToggleSet, editMode} ) => {
+const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} ) => {
   const [expandedExercises, setExpandedExercises] = useState({});
 
   const db = useSQLiteContext();
@@ -28,7 +28,7 @@ const EditModeOn = ( {exercise, onExerciseChange, onToggleSet, editMode} ) => {
       await db.runAsync(
         `DELETE FROM Exercise WHERE exercise_id = ?;`,
         [exercise_id]);
-      onExerciseChange?.();
+      updateUI?.();
     } catch (error) {
       console.error(error);
     }
@@ -108,7 +108,9 @@ const EditModeOn = ( {exercise, onExerciseChange, onToggleSet, editMode} ) => {
             <SetList 
                 sets={exercise.sets}
                 onToggleSet={onToggleSet}
-                editMode={true} />
+                updateWeight={updateWeight}
+                updateUI={updateUI}
+                editMode={editMode} />
           )}
         </View>
       </View>
@@ -116,4 +118,4 @@ const EditModeOn = ( {exercise, onExerciseChange, onToggleSet, editMode} ) => {
   );
 };
 
-export default EditModeOn;
+export default ExerciseRow;

@@ -10,7 +10,7 @@ import styles from "./ExerciseListStyle";
 import ExerciseRow from "./Components/ExerciseRow/ExerciseRow"
 import Title from "./Components/Title/Title";
 
-const ExerciseList = ( {workout_id, editMode, refreshing, onExerciseChange} ) => {
+const ExerciseList = ( {workout_id, editMode, refreshing, updateUI} ) => {
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -90,7 +90,6 @@ const ExerciseList = ( {workout_id, editMode, refreshing, onExerciseChange} ) =>
       );
     }
 
-
     loadExercises(); 
   };
 
@@ -115,9 +114,10 @@ const ExerciseList = ( {workout_id, editMode, refreshing, onExerciseChange} ) =>
 
       <ExerciseRow 
         exercise={item}
-        onExerciseChange={onExerciseChange}
+        updateUI={updateUI}
         onToggleSet={updateSetDone}
-        editMode={editMode}/>
+        editMode={editMode}
+        refreshing={refreshing}/>
     </View>
   );
 

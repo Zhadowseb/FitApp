@@ -31,7 +31,7 @@ const ExercisePage = ({route}) =>  {
           workout_id = {workout_id}
           editMode = {editMode}
           refreshing = {refreshing} 
-          onExerciseChange = {handleExerciseChange}/>
+          updateUI = {handleExerciseChange}/>
       </View> 
       
       {editMode && (

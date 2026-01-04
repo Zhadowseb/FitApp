@@ -10,7 +10,7 @@ export default StyleSheet.create({
     },
 
     pause: {
-        width: "20%",
+        width: "15%",
     },
     set: {
         width: "10%",
@@ -23,7 +23,7 @@ export default StyleSheet.create({
         borderLeftWidth: 1,
     },
     reps: {
-        width: "15%",
+        width: "17%",
         borderLeftColor: "#d3d3d3ff",
         borderLeftWidth: 1,
     },
@@ -33,7 +33,7 @@ export default StyleSheet.create({
         borderLeftWidth: 1,
     },
     rpe: {
-        width: "15%",
+        width: "17%",
         borderLeftColor: "#d3d3d3ff",
         borderLeftWidth: 1,
     },

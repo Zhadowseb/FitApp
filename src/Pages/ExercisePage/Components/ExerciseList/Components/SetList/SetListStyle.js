@@ -10,7 +10,7 @@ export default StyleSheet.create({
     },
 
     pause: {
-        width: "20%",
+        width: "15%",
     },
     set: {
         width: "10%",
@@ -23,7 +23,7 @@ export default StyleSheet.create({
         borderLeftWidth: 1,
     },
     reps: {
-        width: "15%",
+        width: "17%",
         borderLeftColor: "#d3d3d3ff",
         borderLeftWidth: 1,
     },
@@ -33,7 +33,7 @@ export default StyleSheet.create({
         borderLeftWidth: 1,
     },
     rpe: {
-        width: "15%",
+        width: "17%",
         borderLeftColor: "#d3d3d3ff",
         borderLeftWidth: 1,
     },
@@ -65,9 +65,19 @@ export default StyleSheet.create({
         paddingHorizontal: 6,
         paddingVertical: 2,
         backgroundColor: "#f9f9f9",
-        minWidth: 40,
         textAlign: "center",
     },
-
+    widthPause: {
+        minWidth: 35,
+    },
+    widthReps: {
+        minWidth: 35,
+    },
+    widthRPE: {
+        minWidth: 35,
+    },
+    widthWeight: {
+        minWidth: 45,
+    },
 
 });

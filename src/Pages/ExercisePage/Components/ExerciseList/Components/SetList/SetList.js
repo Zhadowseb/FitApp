@@ -1,12 +1,11 @@
 // src/Components/ExerciseList/ExerciseList.js
-import { View, Text } from "react-native";
+import { View, Text, TextInput } from "react-native";
 import Checkbox from 'expo-checkbox';
-import { useSQLiteContext } from "expo-sqlite";
 
 import styles from "./SetListStyle";
 import Title from "./Title/Title";
   
-const SetList = ({ sets, onToggleSet }) => {
+const SetList = ({ sets, onToggleSet, editMode }) => {
 
 
   if (!sets || sets.length === 0) {
@@ -42,7 +41,11 @@ const SetList = ({ sets, onToggleSet }) => {
             </View>
 
             <View style={[styles.weight, styles.text]}> 
-                <Text> {set.weight} </Text>
+                {editMode ? 
+                  <Text> {set.weight} </Text>
+                  :
+                  <TextInput 
+                    placeholder="test"/>}
             </View>
 
             <View style={[styles.done, styles.text]}> 

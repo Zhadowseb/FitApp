@@ -1,17 +1,19 @@
 // src/Components/ExerciseList/ExerciseList.js
 import { useState } from "react";
 import { View, Text, Button, TouchableOpacity } from "react-native";
+import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 import Checkbox from 'expo-checkbox';
 
-import styles from "./EditModeOffStyle";
+import styles from "./ExerciseRowStyle";
 import SetList from "../SetList/SetList";
 import {checkUniformWeights, 
         checkUniformReps} from "../../Utils/checkUniformSets";
 
-const EditModeOff = ( {exercise, onToggleSet} ) => {
+const EditModeOn = ( {exercise, onExerciseChange, onToggleSet, editMode} ) => {
   const [expandedExercises, setExpandedExercises] = useState({});
 
+  const db = useSQLiteContext();
   const navigation = useNavigation();
 
   const toggleExpanded = (exercise_id) => {
@@ -19,6 +21,17 @@ const EditModeOff = ( {exercise, onToggleSet} ) => {
       ...prev,
       [exercise_id]: !prev[exercise_id],
     }));
+  };
+
+  const deleteExercise = async (exercise_id) => {
+    try {
+      await db.runAsync(
+        `DELETE FROM Exercise WHERE exercise_id = ?;`,
+        [exercise_id]);
+      onExerciseChange?.();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -58,10 +71,18 @@ const EditModeOff = ( {exercise, onToggleSet} ) => {
           </View>
 
           <View style={[styles.exercise_done, styles.exercise_alignment]}>
+            {editMode ?
+              <Button
+                title="x"
+                color="red"
+                onPress={() => deleteExercise(exercise.exercise_id)}
+              />
+              :
               <Checkbox
                 value={exercise.done === 1}
                 color={exercise.done ? "#4CAF50" : "#ccc"}
               />
+            }
           </View>
         </View>
       </TouchableOpacity>
@@ -85,8 +106,9 @@ const EditModeOff = ( {exercise, onToggleSet} ) => {
 
           {expandedExercises[exercise.exercise_id] && (
             <SetList 
-              sets={exercise.sets}
-              onToggleSet={onToggleSet} />
+                sets={exercise.sets}
+                onToggleSet={onToggleSet}
+                editMode={true} />
           )}
         </View>
       </View>
@@ -94,4 +116,4 @@ const EditModeOff = ( {exercise, onToggleSet} ) => {
   );
 };
 
-export default EditModeOff;
+export default EditModeOn;

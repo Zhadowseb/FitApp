@@ -7,8 +7,7 @@ import { useNavigation } from "@react-navigation/native";
 
 import styles from "./ExerciseListStyle";
 
-import EditModeOff from "./Components/EditModeOff/EditModeOff"
-import EditModeOn from "./Components/EditModeOn/EditModeOn"
+import ExerciseRow from "./Components/ExerciseRow/ExerciseRow"
 import Title from "./Components/Title/Title";
 
 const ExerciseList = ( {workout_id, editMode, refreshing, onExerciseChange} ) => {
@@ -114,22 +113,11 @@ const ExerciseList = ( {workout_id, editMode, refreshing, onExerciseChange} ) =>
   const renderItem = (item) => (
     <View key={item.exercise_id}>
 
-      {editMode && (
-        <View>
-          <EditModeOn
-            exercise={item}
-            onExerciseChange={onExerciseChange} />
-        </View>
-      )}
-
-      {!editMode && (
-        <View>  
-          <EditModeOff
-            exercise={item} 
-            onToggleSet={updateSetDone} />
-        </View>
-      )}
-
+      <ExerciseRow 
+        exercise={item}
+        onExerciseChange={onExerciseChange}
+        onToggleSet={updateSetDone}
+        editMode={editMode}/>
     </View>
   );
 

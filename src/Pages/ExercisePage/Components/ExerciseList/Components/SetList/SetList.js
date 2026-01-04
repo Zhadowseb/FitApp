@@ -76,6 +76,7 @@ const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
                   <Text> {set.weight} </Text>
                   :
                   <TextInput
+                    style={styles.editableInput}
                     value={String(set.weight ?? "")}
                     onChangeText={(text) =>
                       updateLocalSet(set.sets_id, { weight: text })

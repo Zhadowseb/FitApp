@@ -58,5 +58,16 @@ export default StyleSheet.create({
         paddingTop: 8,
     },
 
+    editableInput: {
+        borderWidth: 1,
+        borderColor: "#ccc",
+        borderRadius: 4,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        backgroundColor: "#f9f9f9",
+        minWidth: 40,
+        textAlign: "center",
+    },
+
 
 });

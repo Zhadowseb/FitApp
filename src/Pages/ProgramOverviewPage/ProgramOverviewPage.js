@@ -2,6 +2,7 @@ import { View, Text, Button, ScrollView, TouchableOpacity } from 'react-native';
 import { useSQLiteContext } from "expo-sqlite";
 import { use, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import styles from './ProgramOverviewPageStyle';
 import Rm_List from './Components/rm_list/Rm_list';
@@ -13,6 +14,7 @@ import MesocycleList from '../MesocyclePage/Components/MesocycleList/MesocycleLi
 const ProgramOverviewPage = ( {route} ) => {
     const db = useSQLiteContext();
     const navigation = useNavigation();
+    const insets = useSafeAreaInsets();
 
     const program_id = route.params.program_id;
 
@@ -49,7 +51,7 @@ const ProgramOverviewPage = ( {route} ) => {
   return (
     <ScrollView 
         style={styles.container}
-        contentContainerStyle={{ paddingBottom: 50}}>
+        contentContainerStyle={{ paddingBottom: insets.bottom + 15}}>
 
         <View style={[styles.day_container, styles.card]}>
 

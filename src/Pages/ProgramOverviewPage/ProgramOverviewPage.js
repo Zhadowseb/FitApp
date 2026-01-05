@@ -47,7 +47,9 @@ const ProgramOverviewPage = ( {route} ) => {
     }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: 50}}>
 
         <View style={[styles.day_container, styles.card]}>
 

@@ -31,6 +31,7 @@ export default StyleSheet.create({
     //Main containers flex
     container: {
         padding: 16,
+        paddingBottom: 100,
     },
     day_container: {
         minHeight: 120,

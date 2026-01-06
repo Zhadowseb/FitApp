@@ -19,7 +19,6 @@ const DayPage = ( {route} ) => {
                 `INSERT INTO Workout (date, day_id) VALUES (?, ?);`,
                     [date, day_id]
             );
-            console.log("Added in new workout with date:", date);
             return result.lastInsertRowId;
 
         } catch (error) {

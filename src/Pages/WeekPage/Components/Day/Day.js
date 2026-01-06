@@ -77,7 +77,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
             navigation.navigate("DayPage", {
                 day_id: day_id,
                 day: day, 
-                date: program_day,
+                date: date,
                 program_id: program_id})
             }}>
 

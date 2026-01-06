@@ -1,6 +1,6 @@
 // src/Components/ExerciseList/ExerciseList.js
 import { useState } from "react";
-import { View, Text, FlatList, TouchableOpacity } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, Button } from "react-native";
 import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
 import { useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
@@ -8,7 +8,7 @@ import { useNavigation } from "@react-navigation/native";
 import styles from "./WorkoutListStyle";
 
 const WorkoutList = ( {date} ) => {
-    const navigation = useNavigation();
+  const navigation = useNavigation();
   const [workouts, setWorkouts] = useState([]);
   const [loading, setLoading] = useState(false);
   const db = useSQLiteContext();
@@ -16,10 +16,9 @@ const WorkoutList = ( {date} ) => {
   const loadWorkouts = async () => {
     try {
       setLoading(true);
-      console.log("Loading workouts from DB...");
 
       const rows = await db.getAllAsync(
-        "SELECT workout_id, done FROM Workout WHERE date = ?;",
+        "SELECT workout_id, done, date, day_id FROM Workout WHERE date = ?;",
         [date]
       );
 
@@ -30,6 +29,17 @@ const WorkoutList = ( {date} ) => {
       setLoading(false);
     }
   };
+
+  const deleteWorkout = async (workout_id) => {
+      try{
+          await db.runAsync(
+              `DELETE FROM Workout WHERE workout_id = ?;`,
+              [workout_id]
+          );
+      }catch (error) {
+          console.error(error);
+      }
+  }
 
   useEffect(() => {
     loadWorkouts();
@@ -46,6 +56,14 @@ const WorkoutList = ( {date} ) => {
             <Text style={[styles.left, item.done === 1 && { color: "green" }]}>
               Workout #{item.workout_id}
             </Text>
+
+              <Button 
+                  title = "Delete Workout"
+                  color = "red"
+                  onPress={ () => {
+                    deleteWorkout(item.workout_id);
+                  }} />
+
         </TouchableOpacity>
     );
 

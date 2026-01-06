@@ -17,6 +17,7 @@ const ProgramOverviewPage = ( {route} ) => {
     const insets = useSafeAreaInsets();
 
     const program_id = route.params.program_id;
+    const start_date = route.params.start_date;
 
     const [addEstimatedSet_visible, set_AddEstimatedSet_visible] = useState(false);
 
@@ -94,7 +95,8 @@ const ProgramOverviewPage = ( {route} ) => {
                 style={[styles.mesocycle_container, styles.card]}
                 onPress={() => {
                     navigation.navigate("MesocyclePage", {
-                    program_id: program_id})
+                    program_id: program_id,
+                    start_date: start_date})
             }} >
 
             <View style={styles.container_header}>

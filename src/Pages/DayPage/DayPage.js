@@ -11,6 +11,7 @@ const DayPage = ( {route} ) => {
     const navigation = useNavigation();
     const [allDone, setAllDone] = useState(false);
     const {day_id, day, date, program_id} = route.params;
+    console.log(route.params);
 
     const handleNewWorkout = async () => {
         try {

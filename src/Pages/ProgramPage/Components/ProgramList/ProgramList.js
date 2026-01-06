@@ -39,7 +39,8 @@ const ProgramList = () => {
       style={styles.card}
       onPress={() => {
         navigation.navigate("ProgramOverviewPage", {
-          program_id: item.program_id})
+          program_id: item.program_id,
+          start_date: item.start_date})
       }}>
 
         <View style={styles.status_section}>

@@ -8,30 +8,24 @@ import styles from './DayStyle';
 import { calculateProgramDay } from "./dateCalculation";
 
 
-const Day = ( {day, index, program_id, microcycle_id} ) => {
+const Day = ( {day, program_id, microcycle_id} ) => {
     
     const db = useSQLiteContext();
     const navigation = useNavigation();
     const [workout_count, setWorkout_count] = useState(0);
     const [workouts_done, setWorkouts_done] = useState(false);
     const [day_id, setDay_id] = useState(0);
+    const [date, setDate] = useState("");
     const [program_day, setProgram_day] = useState(0);
 
     const initDay = async () => {
         try {
-            await db.runAsync(
-                `INSERT INTO Day (microcycle_id, program_id, Weekday, date, done)
-                SELECT ?, ?, ?, ?, 0
-                WHERE NOT EXISTS (SELECT 1 FROM Day WHERE date = ?);`,
-                [microcycle_id, program_id, day, program_day, program_day]
-            );
-
             const row = await db.getFirstAsync(
-                `SELECT day_id FROM Day WHERE date = ? AND program_id = ?;`,
-                [program_day, program_id]
+                `SELECT day_id, date FROM Day WHERE Weekday = ? AND microcycle_id = ?;`,
+                [day, microcycle_id]
             );
-
-            setDay_id(row?.day_id);
+                setDay_id(row?.day_id);
+                setDate(row?.date);
         } catch (err) {
             console.error("Error ensuring Day exists:", err);
         }
@@ -55,21 +49,6 @@ const Day = ( {day, index, program_id, microcycle_id} ) => {
             Alert.alert("Error", error.message || "An error occured.");
         }
     };
-
-    useEffect(() => {
-        const loadDate = async () => {
-            const date = await calculateProgramDay({
-            db,
-            program_id,
-            microcycle_id,
-            weekdayIndex: index,
-            });
-
-            setProgram_day(date);
-        };
-
-        loadDate();
-    }, [microcycle_id, index]);
 
     useEffect(() => {
         if (!program_day) return;
@@ -108,7 +87,7 @@ const Day = ( {day, index, program_id, microcycle_id} ) => {
                 </Text>
 
                 <Text>
-                    {program_day}
+                    {date}
                 </Text>
             </View>
 

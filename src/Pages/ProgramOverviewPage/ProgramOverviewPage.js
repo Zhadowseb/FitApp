@@ -2,6 +2,7 @@ import { View, Text, Button, ScrollView, TouchableOpacity } from 'react-native';
 import { useSQLiteContext } from "expo-sqlite";
 import { use, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import styles from './ProgramOverviewPageStyle';
 import Rm_List from './Components/rm_list/Rm_list';
@@ -13,8 +14,10 @@ import MesocycleList from '../MesocyclePage/Components/MesocycleList/MesocycleLi
 const ProgramOverviewPage = ( {route} ) => {
     const db = useSQLiteContext();
     const navigation = useNavigation();
+    const insets = useSafeAreaInsets();
 
     const program_id = route.params.program_id;
+    const start_date = route.params.start_date;
 
     const [addEstimatedSet_visible, set_AddEstimatedSet_visible] = useState(false);
 
@@ -47,7 +50,9 @@ const ProgramOverviewPage = ( {route} ) => {
     }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 15}}>
 
         <View style={[styles.day_container, styles.card]}>
 
@@ -90,7 +95,8 @@ const ProgramOverviewPage = ( {route} ) => {
                 style={[styles.mesocycle_container, styles.card]}
                 onPress={() => {
                     navigation.navigate("MesocyclePage", {
-                    program_id: program_id})
+                    program_id: program_id,
+                    start_date: start_date})
             }} >
 
             <View style={styles.container_header}>

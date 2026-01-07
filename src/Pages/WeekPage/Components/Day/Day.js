@@ -3,8 +3,11 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { useNavigation } from "@react-navigation/native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState } from "react";
+import Svg, {Polygon, Defs, LinearGradient, Stop} from "react-native-svg"
 
 import styles from './DayStyle';
+import globalStyles from "../../../../Utils/GlobalStyling/Style"
+
 import { calculateProgramDay } from "./dateCalculation";
 
 
@@ -70,9 +73,28 @@ const Day = ( {day, program_id, microcycle_id} ) => {
         return unsub;
     }, [navigation]);
 
+
+    const SlantedDivider = () => (
+    <Svg width={24} height="100%" viewBox="0 0 24 100">
+        <Defs>
+        <LinearGradient id="grad" x1="0" y1="0" x2="1" y2="0">
+            <Stop offset="0%" stopColor="#9e9e9e" />
+            <Stop offset="100%" stopColor="#8a8a8a" />
+        </LinearGradient>
+        </Defs>
+
+        <Polygon
+        points="0,0 24,0 8,100 0,100"
+        fill="url(#grad)"
+        stroke="#000"
+        strokeWidth={1}
+        />
+    </Svg>
+    );
+
     return (
         <TouchableOpacity
-            style={styles.container_row}
+            style={[styles.container_row, styles.card]}
             onPress={() => {
             navigation.navigate("DayPage", {
                 day_id: day_id,
@@ -90,6 +112,8 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                     {date}
                 </Text>
             </View>
+
+            <SlantedDivider />
 
             <View style={styles.workouts}>
                 <Text> Workouts: {workout_count} </Text>

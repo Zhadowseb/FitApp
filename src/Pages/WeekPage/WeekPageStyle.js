@@ -14,5 +14,6 @@ export default StyleSheet.create({
 
     body: {
         flex: 0.9,
+        paddingBottom: 40,
     },
 });

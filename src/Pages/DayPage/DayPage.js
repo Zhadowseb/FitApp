@@ -76,6 +76,12 @@ const DayPage = ( {route} ) => {
                     </Text>
                 </View>
 
+                <View>
+                    <Text>
+                        {date}
+                    </Text>
+                </View>
+
             </View>
 
             <View style={styles.body}>

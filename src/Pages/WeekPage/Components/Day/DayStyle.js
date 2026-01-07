@@ -13,27 +13,25 @@ export default StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     shadowOffset: { height: 2, width: 0 },
+    position: "relative",
+    borderWidth: 1.5,
+    borderColor: "#000000ff"
   },
 
   day: {
     flex: 1,
-    borderTopLeftRadius: 15,
-    borderBottomLeftRadius: 15,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
     backgroundColor: '#929292ff',
     alignItems: 'center',
     fontColor: '#ca1010ff',
     justifyContent: 'center',
-    borderColor: '#000000',
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderLeftWidth: 1,
+    overflow: "show",
   },
 
   workouts: {
     flex: 1,
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
   },
 
   focus: {
@@ -41,9 +39,10 @@ export default StyleSheet.create({
     alignItems: 'center',
     borderTopRightRadius: 15,
     borderBottomRightRadius: 15,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderRightWidth: 1,
+  },
+
+  text: {
+    zIndex: 2,
   },
 
   svg: {
@@ -52,6 +51,13 @@ export default StyleSheet.create({
     borderColor: '#000000',
   },
 
+  slantedDivider: {
+    position: 'absolute',
+    left: 50,          // justér så den sidder korrekt
+    top: 0,
+    bottom: 0,
+    zIndex: 1,
+  },
 
   container_row: {
     flex: 0.9,

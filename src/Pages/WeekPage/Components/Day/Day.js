@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { useNavigation } from "@react-navigation/native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState } from "react";
-import Svg, {Polygon, Defs, LinearGradient, Stop} from "react-native-svg"
+import Svg, {Polygon, Defs, LinearGradient, Stop, Line} from "react-native-svg"
 
 import styles from './DayStyle';
 import globalStyles from "../../../../Utils/GlobalStyling/Style"
@@ -74,20 +74,23 @@ const Day = ( {day, program_id, microcycle_id} ) => {
     }, [navigation]);
 
 
-    const SlantedDivider = () => (
-    <Svg width={24} height="100%" viewBox="0 0 24 100">
+    const SlantedDivider = ({style}) => (
+    <Svg 
+        style={style}
+        width={150} 
+        height="100%"  
+        viewBox="0 0 24 100"
+        pointerEvents="none" >
         <Defs>
-        <LinearGradient id="grad" x1="0" y1="0" x2="1" y2="0">
-            <Stop offset="0%" stopColor="#9e9e9e" />
-            <Stop offset="100%" stopColor="#8a8a8a" />
-        </LinearGradient>
+            <LinearGradient id="grad" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0%" stopColor="#929292ff" />
+                <Stop offset="100%" stopColor="#ffffffff" />
+            </LinearGradient>
         </Defs>
 
         <Polygon
-        points="0,0 24,0 8,100 0,100"
-        fill="url(#grad)"
-        stroke="#000"
-        strokeWidth={1}
+            points="-40,0 24,0  6,100 -40,100"
+            fill="url(#grad)"
         />
     </Svg>
     );
@@ -103,19 +106,22 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                 program_id: program_id})
             }}>
 
-            <View style={styles.day}>
-                <Text style={[workouts_done && { color: "green" }]}>
-                    {day}
-                </Text>
 
-                <Text>
-                    {date}
-                </Text>
+            <SlantedDivider style={styles.slantedDivider} /> 
+
+            <View style={styles.day}>
+                <View style={styles.text}>
+                    <Text style={[workouts_done && { color: "green" }]}>
+                        {day}
+                    </Text>
+
+                    <Text>
+                        {date}
+                    </Text>
+                </View>
             </View>
 
-            <SlantedDivider />
-
-            <View style={styles.workouts}>
+            <View style={[styles.workouts, styles.text]}>
                 <Text> Workouts: {workout_count} </Text>
                 <Text> (if workout) Show Focus </Text>
             </View>

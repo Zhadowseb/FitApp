@@ -1,6 +1,6 @@
 // src/Components/AddExerciseStyle.js
 import { StyleSheet } from "react-native";
-import ExerciseDropdown from "../../../../../Components/ExerciseDropdown/ExerciseDropdown";
+import ExerciseDropdown from "../../../../../Resources/Components/ExerciseDropdown/ExerciseDropdown";
 
 export default StyleSheet.create({
   wrapper: {

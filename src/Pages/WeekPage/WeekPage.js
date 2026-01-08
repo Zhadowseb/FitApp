@@ -5,6 +5,8 @@ import { getWeeksBeforeMesocycle } from '../../Utils/getWeeksBeforeMesocycle';
 import { useEffect, useState } from "react";
 
 import styles from './WeekPageStyle';
+import globalStyles from "../../Utils/GlobalStyling/Style"
+
 import Day from './Components/Day/Day';
 
 const WeekPage = ( {route} ) => {

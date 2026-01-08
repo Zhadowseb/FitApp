@@ -11,7 +11,6 @@ const DayPage = ( {route} ) => {
     const navigation = useNavigation();
     const [allDone, setAllDone] = useState(false);
     const {day_id, day, date, program_id} = route.params;
-    console.log(route.params);
 
     const handleNewWorkout = async () => {
         try {
@@ -19,7 +18,6 @@ const DayPage = ( {route} ) => {
                 `INSERT INTO Workout (date, day_id) VALUES (?, ?);`,
                     [date, day_id]
             );
-            console.log("Added in new workout with date:", date);
             return result.lastInsertRowId;
 
         } catch (error) {
@@ -74,6 +72,12 @@ const DayPage = ( {route} ) => {
                 <View> 
                     <Text style={[styles.headerText, allDone && { color: "green" }]}>
                         {day}
+                    </Text>
+                </View>
+
+                <View>
+                    <Text>
+                        {date}
                     </Text>
                 </View>
 

@@ -3,7 +3,7 @@ import { Modal, View, Text, TextInput, Button } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 
 import styles from "./AddEstimatedSetStyle";
-import ExerciseDropdown from "../../../../../../Components/ExerciseDropdown/ExerciseDropdown";
+import ExerciseDropdown from "../../../../../../Resources/Components/ExerciseDropdown/ExerciseDropdown";
 
 export default function AddEstimatedSet({ visible, onClose, onSubmit }) {
 

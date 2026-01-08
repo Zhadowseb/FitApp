@@ -13,6 +13,12 @@ export default StyleSheet.create({
         backgroundColor: '#797979ff',
     },
 
+    headerText: {
+        fontSize: 22,
+        fontWeight: 700,
+        color: "#ffffffff"
+    },
+
     body: {
         flex: 0.6,
     },

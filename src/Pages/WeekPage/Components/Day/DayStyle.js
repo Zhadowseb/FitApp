@@ -32,6 +32,7 @@ export default StyleSheet.create({
   workouts: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: "center",
   },
 
   focus: {

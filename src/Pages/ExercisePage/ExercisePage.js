@@ -2,6 +2,9 @@ import { StatusBar } from 'expo-status-bar';
 import { View, Button, ScrollView, Text, TouchableOpacity } from 'react-native';
 import { useState } from "react";
 import { Switch } from "react-native";
+import { useSQLiteContext } from "expo-sqlite";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
 
 import styles from './ExercisePageStyle';
 import ExerciseList from './Components/ExerciseList/ExerciseList';
@@ -9,9 +12,8 @@ import EditModeAdditions from './Components/EditModeAdditions/EditModeAdditions'
 import WorkoutLabel from "../../Resources/Components/WorkoutLabel/WorkoutLabel";
 import { WORKOUT_ICONS } from '../../Resources/Icons';
 
-
-
 const ExercisePage = ({route}) =>  {
+  const db = useSQLiteContext();
 
   const [editMode, set_editMode] = useState(false);
   const [refreshing, set_refreshing] = useState(0);
@@ -27,6 +29,52 @@ const ExercisePage = ({route}) =>  {
   const handleLabel = ({id}) => {
     set_Label(id)
   };
+
+  const loadLabel = async () => {
+    try {
+      const row = await db.getFirstAsync(
+        `SELECT label FROM Workout WHERE workout_id = ?;`,
+        [workout_id]
+      );
+
+      if (row?.label != null) {
+        set_Label(row.label);
+      } else {
+        set_Label(null);
+      }
+    } catch (err) {
+      console.error("Failed to load label:", err);
+    }
+  };
+
+  const saveLabel = async () => {
+    try {
+      await db.runAsync(
+        `UPDATE Workout 
+        SET label = ? 
+        WHERE workout_id = ?;`,
+        [label, workout_id]
+      );
+    } catch (err) {
+      console.error("Failed to save label:", err);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadLabel();
+    }, [workout_id])
+  );  
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        if (label !== null) {
+          saveLabel();
+        }
+      };
+    }, [label, workout_id])
+  );
 
   const SelectedIcon =
     WORKOUT_ICONS.find(item => item.id === label)?.Icon;
@@ -94,7 +142,6 @@ const ExercisePage = ({route}) =>  {
       )}
 
       <StatusBar style="auto" />
-
     </ScrollView>
   );
 }

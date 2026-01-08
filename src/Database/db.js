@@ -49,6 +49,7 @@ export async function initializeDatabase(db) {
         workout_id INTEGER PRIMARY KEY AUTOINCREMENT,
         day_id INTEGER NOT NULL,
         date TEXT NOT NULL,
+        label TEXT, 
         done INTEGER NOT NULL DEFAULT 0
     );
 

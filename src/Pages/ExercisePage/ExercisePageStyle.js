@@ -14,6 +14,8 @@ export default StyleSheet.create({
   },
   label: {
     flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   info: {
     flex: 2,

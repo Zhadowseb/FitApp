@@ -9,7 +9,6 @@ function ArmMuscle({width, height, backgroundColor}) {
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      {...props}
     >
       <Path fill={backgroundColor} d="M0 0H24V24H0z" />
       <Path

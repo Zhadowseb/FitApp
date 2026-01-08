@@ -3,6 +3,9 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { useNavigation } from "@react-navigation/native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
+
 
 import styles from './DayStyle';
 import SlantedDivider from "../../../../Resources/Figures/SlantedDivider"
@@ -17,77 +20,54 @@ const Day = ( {day, program_id, microcycle_id} ) => {
     const [day_id, setDay_id] = useState(0);
     const [date, setDate] = useState("");
     const [focusText, setFocusText] = useState("Rest");
-
-    const initDay = async () => {
+    
+    const loadDay = async () => {
         try {
-            const row = await db.getFirstAsync(
+            const dayRow = await db.getFirstAsync(
                 `SELECT day_id, date FROM Day WHERE Weekday = ? AND microcycle_id = ?;`,
                 [day, microcycle_id]
             );
-                setDay_id(row?.day_id);
-                setDate(row?.date);
-        } catch (err) {
-            console.error("Error ensuring Day exists:", err);
-        }
-    };
 
-    useEffect(() => {
-        const run = async () => {
-            await initDay();
-    };
-        run();
-    }, [microcycle_id, day]);
+            if (!dayRow?.day_id) return;
 
-    useEffect(() => {
-        const unsub = navigation.addListener("focus", async () => {
-            await initDay();
-            await loadDayStatus();
-        });
-        return unsub;
-    }, [navigation]);
+            setDay_id(dayRow.day_id);
+            setDate(dayRow.date);
 
-    useEffect(() => {
-        if (!day_id) return;
-
-        loadDayStatus();
-    }, [day_id]);
-
-
-    const loadDayStatus = async () => {
-        try {
-            // 1. Hent antal workouts for dagen
             const countRow = await db.getFirstAsync(
                 `SELECT COUNT(*) AS workout_count FROM Workout WHERE day_id = ?;`,
-                [day_id]
+                [dayRow.day_id]
             );
 
             const count = countRow?.workout_count ?? 0;
             setWorkout_count(count);
 
-            // 2. Afgør focus
-            if (count === 0) { setFocusText("Rest"); } 
+            if (count === 0) {setFocusText("Rest"); } 
             else if (count === 1) {
                 const labelRow = await db.getFirstAsync(
                     `SELECT label FROM Workout WHERE day_id = ? LIMIT 1;`,
-                    [day_id]
-                );
-                console.log(labelRow);
-                setFocusText(labelRow?.label ?? "Workout");
-            } 
-            else {
-                setFocusText("Multiple workouts");
-            }
-
-            // 3. Done-status (som før)
-            const dayRow = await db.getFirstAsync(
-                `SELECT done FROM Day WHERE day_id = ?;`,
-                [day_id]
+                    [dayRow.day_id]
             );
-            setWorkouts_done(dayRow?.done === 1);
-        } catch (error) {
-            console.error("Error loading day status:", error);
+                setFocusText(labelRow?.label ?? "Workout");
+            } else { setFocusText("Multiple workouts"); }
+
+            const doneRow = await db.getFirstAsync(
+                `SELECT done FROM Day WHERE day_id = ?;`,
+                [dayRow.day_id]
+            );
+            setWorkouts_done(doneRow?.done === 1);
+
+        } catch (err) {
+            console.error("Error loading day:", err);
         }
     };
+
+    useFocusEffect(
+        useCallback(() => {
+            loadDay();
+        }, [day, microcycle_id])
+    );
+
+
 
     const SelectedIcon =
         WORKOUT_ICONS.find(item => item.id === focusText)?.Icon;

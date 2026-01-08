@@ -24,7 +24,8 @@ export default function App() {
       options={{ useNewConnection: false }}>
 
       <NavigationContainer>
-        <Stack.Navigator initialRouteName='HomePage'> 
+        <Stack.Navigator initialRouteName='HomePage'
+          screenOptions={{ headerShown: true}}> 
 
           <Stack.Screen name="HomePage" component={HomePage} />
           <Stack.Screen name="ProgramPage" component={ProgramPage} />

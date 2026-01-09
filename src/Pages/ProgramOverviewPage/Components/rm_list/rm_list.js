@@ -1,12 +1,14 @@
-import { use, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity } from "react-native";
+import { use, useState, useEffect } from "react";
+import { View, Text, FlatList, TouchableOpacity, ScrollView, RefreshControl } from "react-native";
 import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
 
 import styles from "./Rm_listStyle"
 import EditEstimatedSet from "./Components/EditEstimatedSet/EditEstimatedSet";
 
-const rm_list = ( {program_id} ) => {
+const rm_list = ( {program_id, refreshKey, refresh} ) => {
     const db = useSQLiteContext();
     const navigation = useNavigation();
 
@@ -24,6 +26,7 @@ const rm_list = ( {program_id} ) => {
                 [program_id]
             );
             setEstimated_sets(estimated_sets);
+            refresh();
         } catch(error) {
             console.error("Error loading estimated sets", error);
         } finally {
@@ -37,7 +40,7 @@ const rm_list = ( {program_id} ) => {
                 `UPDATE Estimated_set SET estimated_weight = ? WHERE estimated_set_id = ?;`,
                 [data.estimated_weight, data.id]
             );
-
+            refresh();
         } catch (error) {
             console.error(error);
         } finally { setLoading(false); }
@@ -49,63 +52,79 @@ const rm_list = ( {program_id} ) => {
                 `DELETE FROM Estimated_set WHERE estimated_set_id = ?;`,
                 [data.id]
             );
-
+            refresh();
         } catch (error) {
             console.error(error);
         } finally { setLoading(false); }
     }
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-        style={styles.container}
-        onPress={() => {
-            setSelectedSet(item);
-            set_editEstimatedSet_visible(true);
-        }}>
+    useEffect(() => {
+         loadEstimated_Sets();
+    }, [program_id, refreshKey]);
 
-        <View style={styles.item_container}>
-            <View style={styles.exercise_name}>
-                <Text> {item.exercise_name} </Text>
-            </View>
+    useFocusEffect(
+        useCallback(() => {
+            loadEstimated_Sets();
+        }, [program_id])
+    );
 
-            <View style={styles.estimated_weight}>
-                <Text> {item.estimated_weight} kg </Text>
-            </View>
-        </View>
-
-    </TouchableOpacity>
-  );
-
-  return (
+    return (
     <View>
-        <FlatList
-            style={styles.wrapper}
-            data={estimated_sets}
-            refreshing={loading}
-            onRefresh={loadEstimated_Sets}
+        <ScrollView
+            nestedScrollEnabled 
+            style={styles.wrapper} >
+        
+        {/* Header */}
+        {estimated_sets.length > 0 && (
+            <View style={styles.headerRow}>
+                <Text style={[styles.exerciseHeader, styles.headerText]}>
+                    Exercise
+                </Text>
+                
+                <Text style={[styles.rmHeader, styles.headerText]}>
+                    1 Rep Max (in kg)
+                </Text>
+            </View>
+        )}
 
-            ListHeaderComponent={
-                estimated_sets.length > 0 ? (
-                <View style={styles.headerRow}>
-                    <Text style={[styles.exerciseHeader, styles.headerText]}>Exercise</Text>
-                    <Text style={[styles.rmHeader, styles.headerText]}> 1 Rep Max (in kg)</Text>
+        {/* Empty state */}
+        {!loading && estimated_sets.length === 0 && (
+            <Text>No 1 RM have been set.</Text>
+        )}
+
+        {/* List items */}
+        {estimated_sets.map(item => (
+            <TouchableOpacity
+                key={item.estimated_set_id}
+                style={styles.container}
+                onPress={() => {
+                    setSelectedSet(item);
+                    set_editEstimatedSet_visible(true);
+                }}>
+                <View style={styles.item_container}>
+                    <View style={styles.exercise_name}>
+                        <Text>{item.exercise_name}</Text>
+                    </View>
+
+                    <View style={styles.estimated_weight}>
+                        <Text>{item.estimated_weight} kg</Text>
+                    </View>
                 </View>
-                ) : null
-            }
-            ListEmptyComponent={
-                !loading ? <Text> No 1 RM have been set. </Text> : null
-            }
-            renderItem={renderItem}
-        />
+            </TouchableOpacity>
+        ))}
+        </ScrollView>
 
         <EditEstimatedSet
-                visible = {editEstimatedSet_visible}
-                estimatedSet = {selectedSet}
-                onClose = {() => set_editEstimatedSet_visible(false)} 
-                onSubmit = {handleSubmit}
-                onDelete = {handleDelete} /> 
+            visible={editEstimatedSet_visible}
+            estimatedSet={selectedSet}
+            onClose={() => set_editEstimatedSet_visible(false)}
+            onSubmit={handleSubmit}
+            onDelete={handleDelete}
+            refreshKey={refreshKey}
+        />
     </View>
-  );
+    );
+
 };
 
 export default rm_list;

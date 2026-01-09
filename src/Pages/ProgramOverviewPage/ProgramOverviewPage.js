@@ -20,6 +20,7 @@ const ProgramOverviewPage = ( {route} ) => {
     const start_date = route.params.start_date;
 
     const [addEstimatedSet_visible, set_AddEstimatedSet_visible] = useState(false);
+    const [rmRefreshKey, setRmRefreshKey] = useState(0);
 
     const handleAdd = async (data) => {
         try {
@@ -30,6 +31,7 @@ const ProgramOverviewPage = ( {route} ) => {
                 data.estimated_weight]
             );
 
+            refresh();
             set_AddEstimatedSet_visible(false);
         } catch (error) {
             console.error(error);
@@ -43,10 +45,16 @@ const ProgramOverviewPage = ( {route} ) => {
                 `DELETE FROM Program WHERE program_id = ?;`,
                 [program_id]
             );
+
+            refresh();
         }catch (error) {
             console.error(error);
         }
         navigation.navigate("ProgramPage");
+    }
+
+    const refresh = () => {
+        setRmRefreshKey(prev => prev + 1);
     }
 
   return (
@@ -76,7 +84,9 @@ const ProgramOverviewPage = ( {route} ) => {
 
             <View style={styles.rm_body}>
                 <Rm_List
-                    program_id = {program_id} />
+                    program_id = {program_id}
+                    refreshKey = {rmRefreshKey}
+                    refresh = {refresh} />
             </View>
 
             <View style={styles.rm_footer}>

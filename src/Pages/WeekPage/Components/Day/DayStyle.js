@@ -32,11 +32,13 @@ export default StyleSheet.create({
   workouts: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: "center",
   },
 
   focus: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: "center",
     borderTopRightRadius: 15,
     borderBottomRightRadius: 15,
   },

@@ -61,37 +61,107 @@ const ExerciseList = ( {workout_id, editMode, refreshing, updateUI} ) => {
     }
   };
 
-  const updateSetDone = async (set_id, done) => {
-    await db.runAsync(
-      `UPDATE Sets SET done = ? WHERE sets_id = ?`,
-      [done ? 1 : 0, set_id]
-    );
+  const updateSetDone = async (sets_id, done) => {
+    await db.execAsync("BEGIN TRANSACTION");
 
-    if (!done) {
+    try {
+      // 1. Opdater selve sættet
       await db.runAsync(
-        `UPDATE Exercise
-        SET done = 0
+        `UPDATE Sets SET done = ? WHERE sets_id = ?`,
+        [done ? 1 : 0, sets_id]
+      );
+
+      // 2. Opdater Exercise.done (sandhed = alle sets done)
+      await db.runAsync(
+        `
+        UPDATE Exercise
+        SET done = (
+          NOT EXISTS (
+            SELECT 1
+            FROM Sets
+            WHERE Sets.exercise_id = Exercise.exercise_id
+              AND Sets.done = 0
+          )
+        )
         WHERE exercise_id = (
-          SELECT exercise_id FROM Sets WHERE sets_id = ? )`,
-        [set_id]
+          SELECT exercise_id FROM Sets WHERE sets_id = ?
+        )
+        `,
+        [sets_id]
       );
-    } else {
-      await db.runAsync(
-        `UPDATE Exercise
-        SET done = 1
-        WHERE exercise_id = 
-        (SELECT exercise_id FROM Sets WHERE sets_id = ?)
-        AND NOT EXISTS (
-          SELECT 1
-          FROM Sets
-          WHERE Sets.exercise_id = Exercise.exercise_id
-            AND Sets.done = 0 )`,
-        [set_id]
-      );
-    }
 
-    loadExercises(); 
+      // 3. Opdater Workout.done (sandhed = alle exercises done)
+      await db.runAsync(
+        `
+        UPDATE Workout
+        SET done = (
+          NOT EXISTS (
+            SELECT 1
+            FROM Exercise
+            WHERE Exercise.workout_id = Workout.workout_id
+              AND Exercise.done = 0
+          )
+        )
+        WHERE workout_id = ?
+        `,
+        [workout_id]
+      );
+
+      // 4. Opdater Day.done (sandhed = alle workouts done)
+      await db.runAsync(
+        `
+        UPDATE Day
+        SET done = (
+          NOT EXISTS (
+            SELECT 1
+            FROM Workout
+            WHERE Workout.day_id = Day.day_id
+              AND Workout.done = 0
+          )
+        )
+        WHERE day_id = (
+          SELECT day_id FROM Workout WHERE workout_id = ?
+        )
+        `,
+        [workout_id]
+      );
+
+      await db.runAsync(
+        `
+        UPDATE Microcycle
+        SET done = (
+          NOT EXISTS (
+            SELECT 1
+            FROM Workout
+            JOIN Day ON Day.day_id = Workout.day_id
+            WHERE Day.microcycle_id = Microcycle.microcycle_id
+              AND Workout.done = 0
+          )
+        )
+        WHERE microcycle_id = (
+          SELECT Day.microcycle_id
+          FROM Day
+          JOIN Workout ON Workout.day_id = Day.day_id
+          WHERE Workout.workout_id = ?
+        )
+        `,
+        [workout_id]
+      );
+
+      // 5. Commit hvis ALT lykkes
+      await db.execAsync("COMMIT");
+
+      // 6. Reload UI
+      loadExercises();
+
+    } catch (error) {
+      // Hvis bare én query fejler → rollback alt
+      await db.execAsync("ROLLBACK");
+      console.error("updateSetDone failed:", error);
+      throw error;
+    }
   };
+
 
   useEffect(() => {
     loadExercises();

@@ -5,7 +5,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import styles from './ProgramOverviewPageStyle';
-import Rm_List from './Components/rm_list/Rm_list';
+import Rm_List from './Components/rm_list/rm_list';
 
 import AddEstimatedSet from './Components/rm_list/Components/AddEstimatedSet/AddEstimatedSet';
 import TodayShortcut from './Components/TodayShortcut/TodayShortcut';

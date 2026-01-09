@@ -60,4 +60,14 @@ export default StyleSheet.create({
     alignItems: "center",
     paddingTop: 40,
   },
+
+  checkbox_header: {
+    flex: 1,
+  },
+
+  checkbox_container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });

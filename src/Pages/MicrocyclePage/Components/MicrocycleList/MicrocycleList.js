@@ -60,11 +60,13 @@ const MicrocycleList = ( {mesocycle_id} ) => {
         </View>
 
         <View style={styles.done}>
+
+            <Text>
+                Status
+            </Text>
             <Checkbox
               value={item.done === 1}
-              disabled={true}
-              color={item.done === 1 ? "#4CAF50" : "#ccc"}
-              style={{ marginRight: 8 }} />
+              color={item.done ? "#4CAF50" : "#ccc"} />
         </View>
 
     </TouchableOpacity>

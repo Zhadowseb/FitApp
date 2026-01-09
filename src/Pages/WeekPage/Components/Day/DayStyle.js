@@ -38,6 +38,7 @@ export default StyleSheet.create({
   focus: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: "center",
     borderTopRightRadius: 15,
     borderBottomRightRadius: 15,
   },

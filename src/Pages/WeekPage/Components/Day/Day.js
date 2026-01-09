@@ -103,12 +103,18 @@ const Day = ( {day, program_id, microcycle_id} ) => {
 
             <View style={styles.focus}>
                 <Text> Focus: </Text>
-                <Text> {focusText} </Text>
-                <SelectedIcon
-                  width={30}
-                  height={30}
-                  backgroundColor="#fff"
-                />
+                <View style={{justifyContent: "center", alignItems: "center"}}>
+                    <Text> {focusText} </Text>
+                </View>
+
+                {SelectedIcon && (
+                    <View style={[styles.card, {padding: 4}]}>
+                        <SelectedIcon
+                            width={30}
+                            height={30}
+                            backgroundColor="#fff"
+                    />
+                    </View> )}
             </View>
 
             <StatusBar style="auto" />

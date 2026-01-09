@@ -31,6 +31,8 @@ export default StyleSheet.create({
 
   done: {
     flex: 0.2,
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   weeks: {

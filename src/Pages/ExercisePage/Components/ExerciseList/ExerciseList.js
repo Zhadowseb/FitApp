@@ -149,14 +149,36 @@ const ExerciseList = ( {workout_id, editMode, refreshing, updateUI} ) => {
         [workout_id]
       );
 
-      // 5. Commit hvis ALT lykkes
+      // 6. Update Mesocycle.done (true = all microcycles done)
+      await db.runAsync(
+        `
+        UPDATE Mesocycle
+        SET done = (
+          NOT EXISTS (
+            SELECT 1
+            FROM Microcycle
+            WHERE Microcycle.mesocycle_id = Mesocycle.mesocycle_id
+              AND Microcycle.done = 0
+          )
+        )
+        WHERE mesocycle_id = (
+          SELECT Microcycle.mesocycle_id
+          FROM Microcycle
+          JOIN Day ON Day.microcycle_id = Microcycle.microcycle_id
+          JOIN Workout ON Workout.day_id = Day.day_id
+          WHERE Workout.workout_id = ?
+        )
+        `,
+        [workout_id]
+      );
+
+
       await db.execAsync("COMMIT");
 
-      // 6. Reload UI
+      //Reloades ui
       loadExercises();
 
     } catch (error) {
-      // Hvis bare én query fejler → rollback alt
       await db.execAsync("ROLLBACK");
       console.error("updateSetDone failed:", error);
       throw error;

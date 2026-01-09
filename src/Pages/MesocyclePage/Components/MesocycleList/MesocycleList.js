@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
+import Checkbox from 'expo-checkbox';
 
 import styles from "./MesocycleListStyle";
 
@@ -16,7 +17,7 @@ const MesocycleList = ({ program_id }) => {
     try {
       setLoading(true);
       const cycles = await db.getAllAsync(
-        "SELECT mesocycle_id, weeks, focus FROM Mesocycle WHERE program_id = ?;",
+        "SELECT mesocycle_id, weeks, focus, done FROM Mesocycle WHERE program_id = ?;",
         [program_id]
       );
       setMesocycles(cycles);
@@ -54,8 +55,18 @@ const MesocycleList = ({ program_id }) => {
         >
           <View style={styles.status_section}>
             <View style={styles.header_status}>
-              <Text style={styles.label}>Status</Text>
-              <Text>(to do status bar here)</Text>
+
+              <View style={styles.checkbox_header}>
+                <Text style={styles.label}>Status</Text>
+              </View>
+
+              <View style={styles.checkbox_container}>
+                <Checkbox
+                  value={item.done === 1}
+                  color={item.done ? "#4CAF50" : "#ccc"}
+                />
+              </View>
+            
             </View>
           </View>
 

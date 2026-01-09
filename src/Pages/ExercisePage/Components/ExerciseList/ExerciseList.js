@@ -65,13 +65,13 @@ const ExerciseList = ( {workout_id, editMode, refreshing, updateUI} ) => {
     await db.execAsync("BEGIN TRANSACTION");
 
     try {
-      // 1. Opdater selve sættet
+      // 1. Update the set ticket off
       await db.runAsync(
         `UPDATE Sets SET done = ? WHERE sets_id = ?`,
         [done ? 1 : 0, sets_id]
       );
 
-      // 2. Opdater Exercise.done (sandhed = alle sets done)
+      // 2. Update Exercise.done (true = all sets done)
       await db.runAsync(
         `
         UPDATE Exercise
@@ -90,7 +90,7 @@ const ExerciseList = ( {workout_id, editMode, refreshing, updateUI} ) => {
         [sets_id]
       );
 
-      // 3. Opdater Workout.done (sandhed = alle exercises done)
+      // 3. Update Workout.done (true = all exercises done)
       await db.runAsync(
         `
         UPDATE Workout
@@ -107,7 +107,7 @@ const ExerciseList = ( {workout_id, editMode, refreshing, updateUI} ) => {
         [workout_id]
       );
 
-      // 4. Opdater Day.done (sandhed = alle workouts done)
+      // 4. Update Day.done (true = all workouts done)
       await db.runAsync(
         `
         UPDATE Day
@@ -126,6 +126,7 @@ const ExerciseList = ( {workout_id, editMode, refreshing, updateUI} ) => {
         [workout_id]
       );
 
+      // 5. Update Microcycle.done (true = all workouts done)
       await db.runAsync(
         `
         UPDATE Microcycle

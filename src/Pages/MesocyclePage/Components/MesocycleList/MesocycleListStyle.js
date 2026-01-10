@@ -17,6 +17,7 @@ export default StyleSheet.create({
 
   status_section: {
     alignItems: "center",
+    justifyContent: "center",
     flex: 0.2,
     borderRightWidth: 1,
     borderColor: "#b9b9b9ff",
@@ -55,18 +56,15 @@ export default StyleSheet.create({
 
 
   loadingContainer: {
-    flex: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingTop: 40,
   },
 
   checkbox_header: {
-    flex: 1,
   },
 
   checkbox_container: {
-    flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },

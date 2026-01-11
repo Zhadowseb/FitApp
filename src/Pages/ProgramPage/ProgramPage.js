@@ -12,6 +12,11 @@ export default function App() {
   const db = useSQLiteContext();
 
   const [addProgram_Visible, set_addProgram_Visible] = useState(false);
+  const [refreshKey, set_refreshKey] = useState(0);
+
+  const refresh = () => {
+      set_refreshKey(prev => prev + 1);
+  }
 
   const handleAdd = async (data) => {
     try {
@@ -24,6 +29,7 @@ export default function App() {
       );
 
       set_addProgram_Visible(false);
+      refresh();
     } catch (error) {
       console.error(error);
     }
@@ -32,7 +38,8 @@ export default function App() {
   return (
     <View style={styles.container}>
 
-      <ProgramList/>
+      <ProgramList
+        refreshKey={refreshKey}/>
 
       <Button 
         title="Create new program" 

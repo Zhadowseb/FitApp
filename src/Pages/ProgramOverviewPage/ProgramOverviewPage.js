@@ -22,6 +22,10 @@ const ProgramOverviewPage = ( {route} ) => {
     const [addEstimatedSet_visible, set_AddEstimatedSet_visible] = useState(false);
     const [rmRefreshKey, setRmRefreshKey] = useState(0);
 
+    const refresh = () => {
+        setRmRefreshKey(prev => prev + 1);
+    }
+
     const handleAdd = async (data) => {
         try {
             await db.runAsync(
@@ -112,11 +116,6 @@ const ProgramOverviewPage = ( {route} ) => {
 
         navigation.navigate("ProgramPage");
     };
-
-
-    const refresh = () => {
-        setRmRefreshKey(prev => prev + 1);
-    }
 
   return (
     <ScrollView 

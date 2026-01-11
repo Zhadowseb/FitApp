@@ -6,7 +6,7 @@ import Checkbox from 'expo-checkbox';
 
 import styles from "./MesocycleListStyle";
 
-const MesocycleList = ({ program_id }) => {
+const MesocycleList = ({ program_id, refreshKey }) => {
   const [mesocycles, setMesocycles] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -30,7 +30,7 @@ const MesocycleList = ({ program_id }) => {
 
   useEffect(() => {
     loadMesocycles();
-  }, [program_id]);
+  }, [refreshKey]);
 
   if (loading) {
     return (

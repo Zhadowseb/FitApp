@@ -3,7 +3,7 @@ import { View, Button, Text } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 
 import styles from "./MesocyclePageStyle";
-import AddMesocycleModal from "./Components/AddMesocycle/AddMesocycle";
+import AddMesocycleModal from "./Components/AddMesocycle/AddMesocycleModal";
 import MesocycleList from "./Components/MesocycleList/MesocycleList";
 import { parseCustomDate, formatDate } from "../../Utils/dateUtils";
 
@@ -11,9 +11,14 @@ const MesocyclePage = ( {route} ) => {
     const db = useSQLiteContext();
 
     const [modalVisible, setModalVisible] = useState(false);
+    const [refreshKey, set_refreshKey] = useState(0);
 
     const program_id = route.params.program_id;
     const start_date = route.params.start_date;
+
+    const refresh = () => {
+        set_refreshKey(prev => prev + 1);
+    }
 
     const weekDays = [
         'Monday', 
@@ -70,6 +75,8 @@ const MesocyclePage = ( {route} ) => {
                 }
             }
 
+            refresh();
+
         } catch (error) {
             console.error(error);
         }
@@ -80,7 +87,8 @@ const MesocyclePage = ( {route} ) => {
     return (
         <View style={styles.wrapper}>
             <MesocycleList 
-                program_id = {program_id}/>
+                program_id = {program_id}
+                refreshKey = {refreshKey}/>
 
             <Button title="Add Mesocycle" onPress={() => setModalVisible(true)} />
 

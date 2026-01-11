@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Modal, View, Text, TextInput, Button } from "react-native";
-import styles from "./AddMesocycleStyle";
+import styles from "./AddMesocycleModalStyle";
 import { Picker } from "@react-native-picker/picker";
 
 export default function AddMesocycleModal({ visible, onClose, onSubmit }) {

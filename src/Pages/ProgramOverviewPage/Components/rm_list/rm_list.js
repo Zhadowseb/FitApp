@@ -2,8 +2,6 @@ import { use, useState, useEffect } from "react";
 import { View, Text, FlatList, TouchableOpacity, ScrollView, RefreshControl } from "react-native";
 import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
-import { useFocusEffect } from "@react-navigation/native";
-import { useCallback } from "react";
 
 import styles from "./Rm_listStyle"
 import EditEstimatedSet from "./Components/EditEstimatedSet/EditEstimatedSet";
@@ -26,7 +24,6 @@ const rm_list = ( {program_id, refreshKey, refresh} ) => {
                 [program_id]
             );
             setEstimated_sets(estimated_sets);
-            refresh();
         } catch(error) {
             console.error("Error loading estimated sets", error);
         } finally {
@@ -61,12 +58,6 @@ const rm_list = ( {program_id, refreshKey, refresh} ) => {
     useEffect(() => {
          loadEstimated_Sets();
     }, [program_id, refreshKey]);
-
-    useFocusEffect(
-        useCallback(() => {
-            loadEstimated_Sets();
-        }, [program_id])
-    );
 
     return (
     <View>

@@ -43,6 +43,7 @@ const WeekPage = ( {route} ) => {
             
             {weekDays.map((day) => (
                 <Day 
+                    key={day}
                     day={day}
                     program_id={program_id}
                     microcycle_id={microcycle_id}

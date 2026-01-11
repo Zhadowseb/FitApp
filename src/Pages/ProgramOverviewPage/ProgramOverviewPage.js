@@ -22,6 +22,10 @@ const ProgramOverviewPage = ( {route} ) => {
     const [addEstimatedSet_visible, set_AddEstimatedSet_visible] = useState(false);
     const [rmRefreshKey, setRmRefreshKey] = useState(0);
 
+    const refresh = () => {
+        setRmRefreshKey(prev => prev + 1);
+    }
+
     const handleAdd = async (data) => {
         try {
             await db.runAsync(
@@ -40,22 +44,78 @@ const ProgramOverviewPage = ( {route} ) => {
     }
 
     const deleteProgram = async () => {
-        try{
-            await db.runAsync(
-                `DELETE FROM Program WHERE program_id = ?;`,
+        await db.execAsync("BEGIN TRANSACTION");
+
+        try {
+            await db.runAsync(`
+            DELETE FROM Sets
+            WHERE exercise_id IN (
+                SELECT e.exercise_id
+                FROM Exercise e
+                JOIN Workout w ON w.workout_id = e.workout_id
+                JOIN Day d ON d.day_id = w.day_id
+                JOIN Microcycle mc ON mc.microcycle_id = d.microcycle_id
+                JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
+                WHERE m.program_id = ?)`, 
                 [program_id]
             );
 
-            refresh();
-        }catch (error) {
-            console.error(error);
-        }
-        navigation.navigate("ProgramPage");
-    }
+            await db.runAsync(`
+            DELETE FROM Exercise
+            WHERE workout_id IN (
+                SELECT w.workout_id
+                FROM Workout w
+                JOIN Day d ON d.day_id = w.day_id
+                JOIN Microcycle mc ON mc.microcycle_id = d.microcycle_id
+                JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
+                WHERE m.program_id = ?)`, 
+                [program_id]
+            );
 
-    const refresh = () => {
-        setRmRefreshKey(prev => prev + 1);
-    }
+            await db.runAsync(`
+            DELETE FROM Workout
+            WHERE day_id IN (
+                SELECT d.day_id
+                FROM Day d
+                JOIN Microcycle mc ON mc.microcycle_id = d.microcycle_id
+                JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
+                WHERE m.program_id = ?)`, 
+                [program_id]);
+
+            await db.runAsync(`
+            DELETE FROM Day
+            WHERE microcycle_id IN (
+                SELECT mc.microcycle_id
+                FROM Microcycle mc
+                JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
+                WHERE m.program_id = ?)`, 
+                [program_id]);
+
+            await db.runAsync(`
+            DELETE FROM Microcycle
+            WHERE mesocycle_id IN (
+                SELECT mesocycle_id FROM Mesocycle WHERE program_id = ?)`, 
+                [program_id]);
+
+            await db.runAsync(
+            `DELETE FROM Mesocycle WHERE program_id = ?`,
+                [program_id]
+            );
+
+            await db.runAsync(
+            `DELETE FROM Program WHERE program_id = ?`,
+                [program_id]
+            );
+
+            await db.execAsync("COMMIT");
+
+        } catch (e) {
+            await db.execAsync("ROLLBACK");
+            throw e;
+        }
+
+        navigation.navigate("ProgramPage");
+    };
 
   return (
     <ScrollView 

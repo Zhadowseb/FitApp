@@ -3,6 +3,8 @@ import { useSQLiteContext } from "expo-sqlite";
 import { use, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
 
 import styles from './ProgramOverviewPageStyle';
 import Rm_List from './Components/rm_list/rm_list';
@@ -20,11 +22,17 @@ const ProgramOverviewPage = ( {route} ) => {
     const start_date = route.params.start_date;
 
     const [addEstimatedSet_visible, set_AddEstimatedSet_visible] = useState(false);
-    const [rmRefreshKey, setRmRefreshKey] = useState(0);
+    const [refreshKey, set_refreshKey] = useState(0);
 
     const refresh = () => {
-        setRmRefreshKey(prev => prev + 1);
+        set_refreshKey(prev => prev + 1);
     }
+
+    useFocusEffect(
+        useCallback(() => {
+            refresh();
+        }, [])
+    );
 
     const handleAdd = async (data) => {
         try {
@@ -145,7 +153,7 @@ const ProgramOverviewPage = ( {route} ) => {
             <View style={styles.rm_body}>
                 <Rm_List
                     program_id = {program_id}
-                    refreshKey = {rmRefreshKey}
+                    refreshKey = {refreshKey}
                     refresh = {refresh} />
             </View>
 
@@ -174,7 +182,8 @@ const ProgramOverviewPage = ( {route} ) => {
             </View>
             
             <MesocycleList 
-                program_id = {program_id}/>
+                program_id = {program_id}
+                refreshKey= {refreshKey} />
 
         </TouchableOpacity>
 

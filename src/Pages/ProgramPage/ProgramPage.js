@@ -21,6 +21,7 @@ export default function App() {
 
   const handleAdd = async (data) => {
     try {
+      console.log(formatDate(data.start_date));
       await db.runAsync(
         `INSERT INTO Program (program_name, start_date, status) VALUES (?, ?, ?);`,
         [data.program_name, 

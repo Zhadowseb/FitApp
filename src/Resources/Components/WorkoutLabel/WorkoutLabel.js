@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Modal, View, TouchableOpacity,Text, Button } from "react-native";
-import { WORKOUT_ICONS } from "../../Icons/index";
+import { WORKOUT_ICONS } from "../../Icons/WorkoutLabels/index";
 
 import styles from "./WorkoutLabelStyle";
 

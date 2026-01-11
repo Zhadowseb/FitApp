@@ -9,7 +9,7 @@ import { useCallback } from "react";
 
 import styles from './DayStyle';
 import SlantedDivider from "../../../../Resources/Figures/SlantedDivider"
-import { WORKOUT_ICONS } from '../../../../Resources/Icons';
+import { WORKOUT_ICONS } from '../../../../Resources/Icons/WorkoutLabels/index';
 
 const Day = ( {day, program_id, microcycle_id} ) => {
     

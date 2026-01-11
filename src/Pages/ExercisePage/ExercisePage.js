@@ -10,7 +10,7 @@ import styles from './ExercisePageStyle';
 import ExerciseList from './Components/ExerciseList/ExerciseList';
 import EditModeAdditions from './Components/EditModeAdditions/EditModeAdditions';
 import WorkoutLabel from "../../Resources/Components/WorkoutLabel/WorkoutLabel";
-import { WORKOUT_ICONS } from '../../Resources/Icons';
+import { WORKOUT_ICONS } from '../../Resources/Icons/WorkoutLabels';
 
 const ExercisePage = ({route}) =>  {
   const db = useSQLiteContext();

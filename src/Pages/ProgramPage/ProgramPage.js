@@ -5,6 +5,7 @@ import { useSQLiteContext } from "expo-sqlite";
 
 import ProgramList from './Components/ProgramList/ProgramList';
 import AddProgram from './Components/AddProgram/AddProgram';
+import { formatDate } from '../../Utils/dateUtils';
 
 import styles from './ProgramPageStyle';
 
@@ -21,10 +22,9 @@ export default function App() {
   const handleAdd = async (data) => {
     try {
       await db.runAsync(
-        `INSERT INTO Program (program_name, start_date, end_date, status) VALUES (?, ?, ?, ?);`,
+        `INSERT INTO Program (program_name, start_date, status) VALUES (?, ?, ?);`,
         [data.program_name, 
-          data.start_date, 
-          data.end_date, 
+          formatDate(data.start_date), 
           data.status]
       );
 

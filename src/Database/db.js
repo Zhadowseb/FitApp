@@ -11,7 +11,6 @@ export async function initializeDatabase(db) {
       program_id INTEGER PRIMARY KEY AUTOINCREMENT,
       program_name TEXT,
       start_date TEXT NOT NULL,
-      end_date DATE,
       status TEXT 
         DEFAULT 'NOT_STARTED'
         NOT NULL 

@@ -23,7 +23,7 @@ const ProgramList = ({ refreshKey }) => {
       setLoading(true);
 
       const rows = await db.getAllAsync(
-        `SELECT program_id, program_name, start_date, end_date, status
+        `SELECT program_id, program_name, start_date, status
          FROM Program;`
       );
 
@@ -78,15 +78,8 @@ const ProgramList = ({ refreshKey }) => {
             </View>
 
             <View style={styles.dates_section}>
-              <View style={styles.start_date}>
                 <Text style={styles.label}>Start:</Text>
                 <Text style={styles.value}>{item.start_date}</Text>
-              </View>
-
-              <View style={styles.end_date}>
-                <Text style={styles.label}>Slut:</Text>
-                <Text style={styles.value}>{item.end_date}</Text>
-              </View>
             </View>
           </View>
         </TouchableOpacity>

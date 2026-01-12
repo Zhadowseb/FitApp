@@ -12,6 +12,7 @@ import WeekPage from './src/Pages/WeekPage/WeekPage';
 import DayPage from './src/Pages/DayPage/DayPage';
 import ExercisePage from './src/Pages/ExercisePage/ExercisePage';
 import SetPage from './src/Pages/SetPage/SetPage';
+import ExerciseStoragePage from "./src/Pages/ExerciseStoragePage/ExerciseStoragePage";
 
 const Stack = createNativeStackNavigator();
 
@@ -36,6 +37,7 @@ export default function App() {
           <Stack.Screen name="DayPage" component={DayPage} />
           <Stack.Screen name="ExercisePage" component={ExercisePage} />
           <Stack.Screen name="SetPage" component={SetPage} />
+          <Stack.Screen name="ExerciseStoragePage" component={ExerciseStoragePage} />
 
         </Stack.Navigator>
           

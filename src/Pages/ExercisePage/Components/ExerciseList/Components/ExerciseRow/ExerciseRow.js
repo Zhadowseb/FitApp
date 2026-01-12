@@ -10,6 +10,9 @@ import SetList from "./SetList/SetList";
 import {checkUniformWeights, 
         checkUniformReps} from "../../Utils/checkUniformSets";
 
+import ArrowUp from "../../../../../../Resources/Icons/UI-icons/ArrowUp";
+import ArrowDown from "../../../../../../Resources/Icons/UI-icons/ArrowDown";
+
 const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} ) => {
   const [expandedExercises, setExpandedExercises] = useState({});
 
@@ -96,9 +99,10 @@ const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} 
               style={{ paddingVertical: 4 }}>
 
               <View style={styles.expandable}>
-                <Text>
-                  Show sets
-                </Text>
+                <ArrowDown
+                  width={24}
+                  height={24}/>
+
               </View>
 
             </TouchableOpacity>
@@ -116,10 +120,11 @@ const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} 
               <TouchableOpacity
                 onPress={() => toggleExpanded(exercise.exercise_id)}
                 style={styles.hideset}>
+
+                <ArrowUp
+                  width={24}
+                  height={24}/>
                 
-                <Text>
-                  Hide sets
-                </Text>
               </TouchableOpacity>
 
             </View>

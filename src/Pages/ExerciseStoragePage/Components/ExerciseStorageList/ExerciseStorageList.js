@@ -1,17 +1,55 @@
 import { StatusBar } from 'expo-status-bar';
-import { View, Button } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Button, ScrollView, Text } from 'react-native';
+import { useSQLiteContext } from "expo-sqlite";
+import { useState, useEffect } from "react";
 
-import styles from './ExerciseStoragePageStyle';
+import styles from './ExerciseStorageListStyle';
 
-const ExerciseStorageList = ( ) => {
+const ExerciseStorageList = ( {refreshKey} ) => {
 
-  return (
+    const db = useSQLiteContext();
 
-    <View style={styles.container}>
+    const [exercises, set_exercises] = useState([]);
 
-    </View>
-  );
+    const loadExerciseStorage = async () => {
+        try {
+            const rows = await db.getAllAsync(
+                `SELECT exercise_name FROM Exercise_storage;`
+            );
+
+            set_exercises(rows);
+        } catch (error) {
+            console.error("Error loading exercise_storage", error);
+        } finally {
+        }
+    };
+
+    useEffect(() => {
+        loadExerciseStorage();
+    }, [refreshKey]);
+
+    
+    return (
+        <View style={styles.card}>
+            <View style={styles.header}>
+                <Text>
+                    Available Exercises:
+                </Text>
+            </View>
+
+            <View style={styles.body}>
+                <ScrollView>
+                    {exercises.map((exercise) => (
+                        <View key={exercise.exercise_name}>
+                            <Text> {exercise.exercise_name} </Text>
+                        </View>
+                    ))}
+
+                </ScrollView>
+            </View>
+
+        </View>
+    );
 };
 
 export default ExerciseStorageList;

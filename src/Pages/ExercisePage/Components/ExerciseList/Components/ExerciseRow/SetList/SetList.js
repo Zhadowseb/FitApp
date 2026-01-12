@@ -79,7 +79,7 @@ const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
       <Title />
 
       {localSets.map((set) => (
-        <View key={set.set_id} style={styles.container}>
+        <View key={set.sets_id} style={styles.container}>
             <View style={[styles.pause, styles.text]}> 
                 {!editMode ? 
                   <Text> {set.pause} </Text>

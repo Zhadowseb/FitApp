@@ -18,6 +18,14 @@ export default function App() {
           style={styles.button_spacing} />
       </View>
 
+      <View style={styles.button_spacing}>
+        <Button
+          title = "Edit Exercise Choices" 
+          onPress={() => navigation.navigate("ExerciseStoragePage")}
+          style={styles.button_spacing}/>
+      </View>
+         
+
       <StatusBar style="auto" />
 
     </View>

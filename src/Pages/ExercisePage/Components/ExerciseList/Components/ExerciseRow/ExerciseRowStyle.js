@@ -96,4 +96,9 @@ export default StyleSheet.create({
     alignItems: "center",
   },
 
+  hideset: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
 });

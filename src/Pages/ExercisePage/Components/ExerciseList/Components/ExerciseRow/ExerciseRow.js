@@ -10,6 +10,9 @@ import SetList from "./SetList/SetList";
 import {checkUniformWeights, 
         checkUniformReps} from "../../Utils/checkUniformSets";
 
+import ArrowUp from "../../../../../../Resources/Icons/UI-icons/ArrowUp";
+import ArrowDown from "../../../../../../Resources/Icons/UI-icons/ArrowDown";
+
 const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} ) => {
   const [expandedExercises, setExpandedExercises] = useState({});
 
@@ -90,27 +93,41 @@ const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} 
       <View style={styles.SetList_container}>
 
         <View style={styles.SetList}>
-          <TouchableOpacity
-            onPress={() => toggleExpanded(exercise.exercise_id)}
-            style={{ paddingVertical: 4 }}>
+          {!expandedExercises[exercise.exercise_id] && (
+            <TouchableOpacity
+              onPress={() => toggleExpanded(exercise.exercise_id)}
+              style={{ paddingVertical: 4 }}>
 
-            <View style={styles.expandable}>
-                <Text>
-                {expandedExercises[exercise.exercise_id]
-                    ? "▲ Hide sets"
-                    : "▼ Show sets"}
-                </Text>
-            </View>
+              <View style={styles.expandable}>
+                <ArrowDown
+                  width={24}
+                  height={24}/>
 
-          </TouchableOpacity>
+              </View>
+
+            </TouchableOpacity>
+          )}
 
           {expandedExercises[exercise.exercise_id] && (
-            <SetList 
-                sets={exercise.sets}
-                onToggleSet={onToggleSet}
-                updateWeight={updateWeight}
-                updateUI={updateUI}
-                editMode={editMode} />
+            <View>
+              <SetList 
+                  sets={exercise.sets}
+                  onToggleSet={onToggleSet}
+                  updateWeight={updateWeight}
+                  updateUI={updateUI}
+                  editMode={editMode} />
+
+              <TouchableOpacity
+                onPress={() => toggleExpanded(exercise.exercise_id)}
+                style={styles.hideset}>
+
+                <ArrowUp
+                  width={24}
+                  height={24}/>
+                
+              </TouchableOpacity>
+
+            </View>
           )}
         </View>
       </View>

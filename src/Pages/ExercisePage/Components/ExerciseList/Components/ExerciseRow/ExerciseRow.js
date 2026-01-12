@@ -90,27 +90,39 @@ const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} 
       <View style={styles.SetList_container}>
 
         <View style={styles.SetList}>
-          <TouchableOpacity
-            onPress={() => toggleExpanded(exercise.exercise_id)}
-            style={{ paddingVertical: 4 }}>
+          {!expandedExercises[exercise.exercise_id] && (
+            <TouchableOpacity
+              onPress={() => toggleExpanded(exercise.exercise_id)}
+              style={{ paddingVertical: 4 }}>
 
-            <View style={styles.expandable}>
+              <View style={styles.expandable}>
                 <Text>
-                {expandedExercises[exercise.exercise_id]
-                    ? "▲ Hide sets"
-                    : "▼ Show sets"}
+                  Show sets
                 </Text>
-            </View>
+              </View>
 
-          </TouchableOpacity>
+            </TouchableOpacity>
+          )}
 
           {expandedExercises[exercise.exercise_id] && (
-            <SetList 
-                sets={exercise.sets}
-                onToggleSet={onToggleSet}
-                updateWeight={updateWeight}
-                updateUI={updateUI}
-                editMode={editMode} />
+            <View>
+              <SetList 
+                  sets={exercise.sets}
+                  onToggleSet={onToggleSet}
+                  updateWeight={updateWeight}
+                  updateUI={updateUI}
+                  editMode={editMode} />
+
+              <TouchableOpacity
+                onPress={() => toggleExpanded(exercise.exercise_id)}
+                style={styles.hideset}>
+                
+                <Text>
+                  Hide sets
+                </Text>
+              </TouchableOpacity>
+
+            </View>
           )}
         </View>
       </View>

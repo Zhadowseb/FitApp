@@ -60,6 +60,19 @@ const Day = ( {day, program_id, microcycle_id} ) => {
         }
     };
 
+    const handleNewWorkout = async () => {
+        try {
+            const result = await db.runAsync(
+                `INSERT INTO Workout (date, day_id) VALUES (?, ?);`,
+                    [date, day_id]
+            );
+            return result.lastInsertRowId;
+
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     useFocusEffect(
         useCallback(() => {
             loadDay();
@@ -118,8 +131,14 @@ const Day = ( {day, program_id, microcycle_id} ) => {
 
             <TouchableOpacity
                 style={styles.options}
-                onPress={() => {
+                onPress={async () => {
+                    const workout_id = await handleNewWorkout();
 
+                    navigation.navigate('ExercisePage', {
+                        program_id: program_id,
+                        date: date,
+                        workout_id: workout_id,
+                    }); 
                 }}>
 
                 <ThreeDots

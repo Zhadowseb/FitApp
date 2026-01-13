@@ -16,6 +16,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
     
     const db = useSQLiteContext();
     const navigation = useNavigation();
+    const [workouts, set_workouts] = useState([]);
     const [workout_count, setWorkout_count] = useState(0);
     const [workouts_done, setWorkouts_done] = useState(false);
     const [day_id, setDay_id] = useState(0);
@@ -34,21 +35,18 @@ const Day = ( {day, program_id, microcycle_id} ) => {
             setDay_id(dayRow.day_id);
             setDate(dayRow.date);
 
-            const countRow = await db.getFirstAsync(
-                `SELECT COUNT(*) AS workout_count FROM Workout WHERE day_id = ?;`,
-                [dayRow.day_id]
+            const workouts = await db.getAllAsync(
+                `SELECT workout_id, label, done, day_id FROM Workout WHERE day_id = 
+                (SELECT day_id FROM Day WHERE Weekday = ? AND microcycle_id = ?);`,
+                [day, microcycle_id]
             );
+            set_workouts(workouts);
+            setWorkout_count(workouts.length);
 
-            const count = countRow?.workout_count ?? 0;
-            setWorkout_count(count);
+            if (workout_count === 0) {setFocusText("Rest"); } 
+            else if (workout_count === 1) {
 
-            if (count === 0) {setFocusText("Rest"); } 
-            else if (count === 1) {
-                const labelRow = await db.getFirstAsync(
-                    `SELECT label FROM Workout WHERE day_id = ? LIMIT 1;`,
-                    [dayRow.day_id]
-            );
-                setFocusText(labelRow?.label ?? "Workout");
+                setFocusText(workouts[0].label);
             } else { setFocusText("Multiple workouts"); }
 
             const doneRow = await db.getFirstAsync(
@@ -77,11 +75,11 @@ const Day = ( {day, program_id, microcycle_id} ) => {
         <TouchableOpacity
             style={[styles.container_row, styles.card]}
             onPress={() => {
-            navigation.navigate("DayPage", {
-                day_id: day_id,
-                day: day, 
-                date: date,
-                program_id: program_id})
+                if(workout_count === 1){
+                    navigation.navigate("ExercisePage", {
+                        workout_id: workouts[0].workout_id,
+                        date: date,})   
+                }
             }}>
 
             <SlantedDivider style={styles.slantedDivider} /> 
@@ -121,7 +119,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
             <TouchableOpacity
                 style={styles.options}
                 onPress={() => {
-                    
+
                 }}>
 
                 <ThreeDots

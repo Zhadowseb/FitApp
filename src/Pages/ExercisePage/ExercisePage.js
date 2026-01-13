@@ -60,6 +60,17 @@ const ExercisePage = ({route}) =>  {
     }
   };
 
+  const deleteWorkout = async (workout_id) => {
+      try{
+          await db.runAsync(
+              `DELETE FROM Workout WHERE workout_id = ?;`,
+              [workout_id]
+          );
+      }catch (error) {
+          console.error(error);
+      }
+  }
+
   useFocusEffect(
     useCallback(() => {
       loadLabel();
@@ -138,7 +149,8 @@ const ExercisePage = ({route}) =>  {
         <EditModeAdditions 
           workout_id={workout_id}
           date={date}
-          onExerciseChange={handleExerciseChange}/>
+          onExerciseChange={handleExerciseChange}
+          deleteWorkout={deleteWorkout}/>
       )}
 
       <StatusBar style="auto" />

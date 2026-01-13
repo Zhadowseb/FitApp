@@ -10,6 +10,7 @@ import { useCallback } from "react";
 import styles from './DayStyle';
 import SlantedDivider from "../../../../Resources/Figures/SlantedDivider"
 import { WORKOUT_ICONS } from '../../../../Resources/Icons/WorkoutLabels/index';
+import ThreeDots from '../../../../Resources/Icons/UI-icons/ThreeDots';
 
 const Day = ( {day, program_id, microcycle_id} ) => {
     
@@ -116,6 +117,18 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                     />
                     </View> )}
             </View>
+
+            <TouchableOpacity
+                style={styles.options}
+                onPress={() => {
+                    
+                }}>
+
+                <ThreeDots
+                    width={24}
+                    height={24}/>
+
+            </TouchableOpacity>
 
             <StatusBar style="auto" />
         </TouchableOpacity>

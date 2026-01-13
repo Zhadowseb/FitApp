@@ -30,7 +30,7 @@ export default StyleSheet.create({
   },
 
   workouts: {
-    flex: 1,
+    flex: 0.8,
     alignItems: 'center',
     justifyContent: "center",
   },
@@ -41,6 +41,13 @@ export default StyleSheet.create({
     justifyContent: "center",
     borderTopRightRadius: 15,
     borderBottomRightRadius: 15,
+  },
+
+  options: {
+    flex: 0.2,
+    alignItems: 'center',
+    justifyContent: "center",
+    marginRight: 5,
   },
 
   text: {

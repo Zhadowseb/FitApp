@@ -18,7 +18,6 @@ const Day = ( {day, program_id, microcycle_id} ) => {
     const db = useSQLiteContext();
     const navigation = useNavigation();
     const [workouts, set_workouts] = useState([]);
-    const [workout_count, setWorkout_count] = useState(0);
     const [workouts_done, setWorkouts_done] = useState(false);
     const [day_id, setDay_id] = useState(0);
     const [date, setDate] = useState("");
@@ -44,10 +43,9 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                 [day, microcycle_id]
             );
             set_workouts(workouts);
-            setWorkout_count(workouts.length);
 
-            if (workout_count === 0) {setFocusText("Rest"); } 
-            else if (workout_count === 1) {
+            if (workouts.length === 0) {setFocusText("Rest"); } 
+            else if (workouts.length === 1) {
 
                 setFocusText(workouts[0].label);
             } else { 
@@ -94,11 +92,11 @@ const Day = ( {day, program_id, microcycle_id} ) => {
         <TouchableOpacity
             style={[styles.container_row, styles.card]}
             onPress={() => {
-                if(workout_count === 1){
+                if(workouts.length === 1){
                     navigation.navigate("ExercisePage", {
                         workout_id: workouts[0].workout_id,
                         date: date,})   
-                } else if (workout_count > 1){
+                } else if (workouts.length > 1){
 
                     set_PickWorkoutModal_visible(true);
                 }
@@ -119,7 +117,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
             </View>
 
             <View style={[styles.workouts, styles.text]}>
-                <Text> Workouts: {workout_count} </Text>
+                <Text> Workouts: {workouts.length} </Text>
             </View>
 
             <View style={styles.focus}>

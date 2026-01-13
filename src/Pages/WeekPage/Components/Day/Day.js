@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Modal } from 'react-native';
 import { useNavigation } from "@react-navigation/native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState } from "react";
@@ -11,6 +11,7 @@ import styles from './DayStyle';
 import SlantedDivider from "../../../../Resources/Figures/SlantedDivider"
 import { WORKOUT_ICONS } from '../../../../Resources/Icons/WorkoutLabels/index';
 import ThreeDots from '../../../../Resources/Icons/UI-icons/ThreeDots';
+import PickWorkoutModal from './PickWorkoutModal/PickWorkoutModal';
 
 const Day = ( {day, program_id, microcycle_id} ) => {
     
@@ -22,6 +23,8 @@ const Day = ( {day, program_id, microcycle_id} ) => {
     const [day_id, setDay_id] = useState(0);
     const [date, setDate] = useState("");
     const [focusText, setFocusText] = useState("Rest");
+
+    const [PickWorkoutModal_visible, set_PickWorkoutModal_visible] = useState(false);
     
     const loadDay = async () => {
         try {
@@ -47,7 +50,9 @@ const Day = ( {day, program_id, microcycle_id} ) => {
             else if (workout_count === 1) {
 
                 setFocusText(workouts[0].label);
-            } else { setFocusText("Multiple workouts"); }
+            } else { 
+                setFocusText("Multiple workouts"); 
+            }
 
             const doneRow = await db.getFirstAsync(
                 `SELECT done FROM Day WHERE day_id = ?;`,
@@ -85,6 +90,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
         WORKOUT_ICONS.find(item => item.id === focusText)?.Icon;
 
     return (
+        <>
         <TouchableOpacity
             style={[styles.container_row, styles.card]}
             onPress={() => {
@@ -92,6 +98,9 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                     navigation.navigate("ExercisePage", {
                         workout_id: workouts[0].workout_id,
                         date: date,})   
+                } else if (workout_count > 1){
+
+                    set_PickWorkoutModal_visible(true);
                 }
             }}>
 
@@ -147,8 +156,17 @@ const Day = ( {day, program_id, microcycle_id} ) => {
 
             </TouchableOpacity>
 
+
             <StatusBar style="auto" />
         </TouchableOpacity>
+        
+        <PickWorkoutModal 
+            workouts={workouts}
+            visible={PickWorkoutModal_visible}
+            onClose={() => set_PickWorkoutModal_visible(false)}
+            />
+        
+        </>
     );
 };
 

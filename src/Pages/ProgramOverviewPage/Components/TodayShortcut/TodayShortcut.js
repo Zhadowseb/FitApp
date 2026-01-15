@@ -7,6 +7,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { getTodaysDate } from '../../../../Utils/dateUtils';
 
 import styles from "./TodayShortcutStyle"
+import { ThemedTitle, ThemedCard, ThemedView, ThemedText } 
+  from "../../../../Resources/Components";
 
 const TodayShortcut = ( {program_id} ) => {
     const db = useSQLiteContext();
@@ -62,18 +64,18 @@ const TodayShortcut = ( {program_id} ) => {
                 <View style={styles.container_left}>
 
                     <View style={styles.today}>
-                        <Text> Go to today </Text>
+                        <ThemedText> Go to today </ThemedText>
                     </View>
 
                     <View style={styles.today_date}>
-                        <Text> {getTodaysDate()} </Text>
+                        <ThemedText> {getTodaysDate()} </ThemedText>
                     </View>
 
                 </View>
 
-                <View style={styles.container_right}>
+                <ThemedCard>
                     
-                    <Text> Workouts: </Text>
+                    <ThemedText> Workouts: </ThemedText>
 
                     {workouts_done ? (
                         <Ionicons 
@@ -81,11 +83,11 @@ const TodayShortcut = ( {program_id} ) => {
                             size={50}
                             color="green" />
                     ) : (
-                        <Text>
+                        <ThemedText>
                             {workout_count}
-                        </Text>
+                        </ThemedText>
                     )}
-                </View>
+                </ThemedCard>
 
 
             </View>

@@ -13,6 +13,11 @@ import {checkUniformWeights,
 import ArrowUp from "../../../../../../Resources/Icons/UI-icons/ArrowUp";
 import ArrowDown from "../../../../../../Resources/Icons/UI-icons/ArrowDown";
 
+import {ThemedCard,
+        ThemedText} 
+  from "../../../../../../Resources/Components";
+
+
 const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} ) => {
   const [expandedExercises, setExpandedExercises] = useState({});
 
@@ -38,7 +43,7 @@ const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} 
   };
 
   return (
-    <View key={exercise.exercise_id} style={styles.card}>
+    <ThemedCard key={exercise.exercise_id}>
 
       <TouchableOpacity
         onPress={() =>
@@ -52,25 +57,25 @@ const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} 
         <View style={[styles.exercise_container,
           exercise.done ? styles.exercise_complete : styles.exercise_uncomplete]}>
           <View style={styles.exercise_name}>
-            <Text>
+            <ThemedText>
               {exercise.exercise_name}
-            </Text>
+            </ThemedText>
           </View>
 
           <View style={[styles.exercise_sets, styles.exercise_alignment]}>
-            <Text>{exercise.sets.length}</Text>
+            <ThemedText>{exercise.sets.length}</ThemedText>
           </View>
 
           <View style={[styles.exercise_x, styles.exercise_alignment]}>
-            <Text>x</Text>
+            <ThemedText>x</ThemedText>
           </View>
 
           <View style={[styles.exercise_reps, styles.exercise_alignment]}>
-            <Text>{checkUniformReps(exercise.sets)}</Text>
+            <ThemedText>{checkUniformReps(exercise.sets)}</ThemedText>
           </View>
 
           <View style={[styles.exercise_weight, styles.exercise_alignment]}>
-            <Text>{checkUniformWeights(exercise.sets)}</Text>
+            <ThemedText>{checkUniformWeights(exercise.sets)}</ThemedText>
           </View>
 
           <View style={[styles.exercise_done, styles.exercise_alignment]}>
@@ -131,7 +136,7 @@ const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} 
           )}
         </View>
       </View>
-    </View>
+    </ThemedCard>
   );
 };
 

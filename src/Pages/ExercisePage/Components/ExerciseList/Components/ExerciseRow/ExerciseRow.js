@@ -43,7 +43,10 @@ const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} 
   };
 
   return (
-    <ThemedCard key={exercise.exercise_id}>
+    <ThemedCard key={exercise.exercise_id}
+      style={{
+        marginHorizontal: 1,
+        paddingBottom: 0}}>
 
       <TouchableOpacity
         onPress={() =>

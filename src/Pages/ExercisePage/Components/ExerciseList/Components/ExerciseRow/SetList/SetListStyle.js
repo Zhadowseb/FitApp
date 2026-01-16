@@ -14,32 +14,32 @@ export default StyleSheet.create({
     },
     set: {
         width: "10%",
-        borderLeftColor: "#d3d3d3ff",
+        borderLeftColor: "#555555ff",
         borderLeftWidth: 1,
     },
     x: {
         width: "5%",
-        borderLeftColor: "#d3d3d3ff",
+        borderLeftColor: "#555555ff",
         borderLeftWidth: 1,
     },
     reps: {
         width: "17%",
-        borderLeftColor: "#d3d3d3ff",
+        borderLeftColor: "#555555ff",
         borderLeftWidth: 1,
     },
     weight: {
         width: "20%",
-        borderLeftColor: "#d3d3d3ff",
+        borderLeftColor: "#555555ff",
         borderLeftWidth: 1,
     },
     rpe: {
         width: "17%",
-        borderLeftColor: "#d3d3d3ff",
+        borderLeftColor: "#555555ff",
         borderLeftWidth: 1,
     },
     done: {
         width: "15%",
-        borderLeftColor: "#d3d3d3ff",
+        borderLeftColor: "#555555ff",
         borderLeftWidth: 1,
     },  
 

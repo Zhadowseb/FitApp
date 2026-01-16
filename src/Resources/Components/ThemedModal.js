@@ -70,6 +70,7 @@ const styles = StyleSheet.create({
     width: "90%",
     borderRadius: 16,
     padding: 20,
+    maxHeight: 400,
   },
 
   title: {

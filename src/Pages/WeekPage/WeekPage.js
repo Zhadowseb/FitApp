@@ -8,6 +8,8 @@ import styles from './WeekPageStyle';
 
 import Day from './Components/Day/Day';
 
+import { ThemedText, ThemedView } from "../../Resources/Components";
+
 const WeekPage = ( {route} ) => {
     const db = useSQLiteContext();
 
@@ -25,16 +27,16 @@ const WeekPage = ( {route} ) => {
         'Sunday'];
 
   return (
-    <View style={styles.container}>
+    <ThemedView>
 
         <View style={styles.header}>
 
-            <Text>
+            <ThemedText>
                 Week Overview 
-            </Text>
+            </ThemedText>
 
-            <Text> Mesocyle Week: {microcycle_number} </Text>
-            <Text> Total Week: </Text>
+            <ThemedText> Mesocyle Week: {microcycle_number} </ThemedText>
+            <ThemedText> Total Week: </ThemedText>
 
         </View>
 
@@ -51,9 +53,7 @@ const WeekPage = ( {route} ) => {
 
         </View>
 
-        <StatusBar style="auto" />
-
-    </View>
+    </ThemedView>
   );
 };
 

@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import { View, Button, Text } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 
 import styles from "./MicrocyclePageStyle";
 import MicrocycleList from "./Components/MicrocycleList/MicrocycleList";
 
+import { ThemedButton, ThemedCard, ThemedView } from "../../Resources/Components";
+
 const MicrocyclePage = ( {route} ) => {
     const db = useSQLiteContext();
-    const insets = useSafeAreaInsets();
     const navigation = useNavigation();
 
     const {mesocycle_id, program_id} = route.params;
@@ -89,25 +89,18 @@ const MicrocyclePage = ( {route} ) => {
 
 
     return (
-        <View 
-            style={[
-                styles.container,
-                { paddingBottom: insets.bottom }
-            ]}
-        >
-
+        <ThemedView>
+            
             <MicrocycleList
                 mesocycle_id={mesocycle_id} />
 
+            <ThemedButton 
+                title="Delete Mesocycle"
+                variant="danger"
+                width={220}
+                onPress={() => deleteMesocycle()}/>
 
-            <View style={[styles.delete_button_container, styles.card]}>
-                <Button 
-                    title="Delete Mesocycle"
-                    color="red"
-                    onPress={() => deleteMesocycle()}/>
-            </View>
-
-        </View>
+        </ThemedView>
     );
 };
 

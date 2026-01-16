@@ -6,6 +6,7 @@ import Checkbox from "expo-checkbox";
 
 import styles from "./MicrocycleListStyle";
 
+import { ThemedCard, ThemedText } from "../../../../Resources/Components";
 
 const MicrocycleList = ( {mesocycle_id} ) => {
   const db = useSQLiteContext();
@@ -38,36 +39,36 @@ const MicrocycleList = ( {mesocycle_id} ) => {
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
-      style={styles.card}
       onPress={() => {
         navigation.navigate("WeekPage", {
             microcycle_id: item.microcycle_id,
             microcycle_number: item.microcycle_number,
             program_id: item.program_id})
       }}>
+        <ThemedCard>
+          <View style={styles.status_section}>
+              <View style={styles.header_status}>
+                  <ThemedText style={styles.label}>Week</ThemedText>
+                  <ThemedText> {item.microcycle_number} </ThemedText>
+              </View>
+          </View>
 
-        <View style={styles.status_section}>
-            <View style={styles.header_status}>
-                <Text style={styles.label}>Week</Text>
-                <Text> {item.microcycle_number} </Text>
-            </View>
-        </View>
+          <View style={styles.body}>
+              <ThemedText>
+                  focus: {item.focus}
+              </ThemedText>
+          </View>
 
-        <View style={styles.body}>
-            <Text>
-                focus: {item.focus}
-            </Text>
-        </View>
+          <View style={styles.done}>
 
-        <View style={styles.done}>
-
-            <Text>
-                Status
-            </Text>
-            <Checkbox
-              value={item.done === 1}
-              color={item.done ? "#4CAF50" : "#ccc"} />
-        </View>
+              <ThemedText>
+                  Status
+              </ThemedText>
+              <Checkbox
+                value={item.done === 1}
+                color={item.done ? "#4CAF50" : "#ccc"} />
+          </View>
+        </ThemedCard>
 
     </TouchableOpacity>
   );

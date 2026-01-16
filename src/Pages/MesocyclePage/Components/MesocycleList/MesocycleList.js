@@ -58,6 +58,7 @@ const MesocycleList = ({ program_id, refreshKey }) => {
             style={{
               width: 200,
               height: 250,
+              flexDirection: "row",
             }}>
             <View style={styles.status_section}>
               <View style={styles.header_status}>

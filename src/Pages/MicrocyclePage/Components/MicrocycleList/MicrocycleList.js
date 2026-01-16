@@ -45,7 +45,7 @@ const MicrocycleList = ( {mesocycle_id} ) => {
             microcycle_number: item.microcycle_number,
             program_id: item.program_id})
       }}>
-        <ThemedCard>
+        <ThemedCard style={{flexDirection: "row"}}>
           <View style={styles.status_section}>
               <View style={styles.header_status}>
                   <ThemedText style={styles.label}>Week</ThemedText>

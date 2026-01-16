@@ -2,11 +2,6 @@ import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
 
-  header: {
-    flex: 1,
-    flexDirection: "row",
-  },
-
   editmode: {
     flex: 1,
     justifyContent: "center",
@@ -21,13 +16,6 @@ export default StyleSheet.create({
     flex: 2,
   },
 
-  container: {
-    borderWidth: 1,
-    borderRadius: 8,
-    borderColor: "#ccc",
-    marginBottom: 16,
-    paddingTop: 30,
-  },
   loaderContainer: {
     paddingVertical: 10,
   },

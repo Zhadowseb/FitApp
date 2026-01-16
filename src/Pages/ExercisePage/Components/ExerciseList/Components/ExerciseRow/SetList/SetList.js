@@ -7,6 +7,11 @@ import Checkbox from 'expo-checkbox';
 
 import styles from "./SetListStyle";
 import Title from "./Title/Title";
+
+
+import {ThemedCard,
+        ThemedText} 
+  from "../../../../../../../Resources/Components";
   
 const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
   if (!sets || sets.length === 0) {
@@ -82,7 +87,7 @@ const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
         <View key={set.sets_id} style={styles.container}>
             <View style={[styles.pause, styles.text]}> 
                 {!editMode ? 
-                  <Text> {set.pause} </Text>
+                  <ThemedText> {set.pause} </ThemedText>
                   :
                 <TextInput
                   style={[styles.editableInput, styles.widthPause]}
@@ -97,16 +102,16 @@ const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
             </View>
   
             <View style={[styles.set, styles.text]}>  
-                <Text> {set.set_number} </Text>
+                <ThemedText> {set.set_number} </ThemedText>
             </View>
 
             <View style={[styles.x, styles.text]}> 
-                <Text> x </Text>
+                <ThemedText> x </ThemedText>
             </View>
 
             <View style={[styles.reps, styles.text]}> 
                 {!editMode ? 
-                  <Text> {set.reps} </Text>
+                  <ThemedText> {set.reps} </ThemedText>
                   :
                 <TextInput
                   style={[styles.editableInput, styles.widthReps]}
@@ -122,7 +127,7 @@ const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
 
             <View style={[styles.rpe, styles.text]}> 
                 {!editMode ? 
-                  <Text> {set.rpe} </Text>
+                  <ThemedText> {set.rpe} </ThemedText>
                   :
                 <TextInput
                   style={[styles.editableInput, styles.widthRPE]}
@@ -138,7 +143,7 @@ const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
 
             <View style={[styles.weight, styles.text]}> 
                 {!editMode ? 
-                  <Text> {set.weight} </Text>
+                  <ThemedText> {set.weight} </ThemedText>
                   :
                   <TextInput
                     style={[styles.editableInput, styles.widthWeight]}

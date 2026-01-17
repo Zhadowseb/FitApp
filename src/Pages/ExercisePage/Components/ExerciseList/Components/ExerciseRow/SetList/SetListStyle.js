@@ -16,26 +16,36 @@ export default StyleSheet.create({
         width: "10%",
         borderLeftColor: "#555555ff",
         borderLeftWidth: 1,
+        alignContent: "center",
+        alignItems: "center",
     },
     x: {
         width: "5%",
         borderLeftColor: "#555555ff",
         borderLeftWidth: 1,
+        alignContent: "center",
+        alignItems: "center",
     },
     reps: {
         width: "17%",
         borderLeftColor: "#555555ff",
         borderLeftWidth: 1,
+        alignContent: "center",
+        alignItems: "center",
     },
     weight: {
         width: "20%",
         borderLeftColor: "#555555ff",
         borderLeftWidth: 1,
+        alignContent: "center",
+        alignItems: "center",
     },
     rpe: {
         width: "17%",
         borderLeftColor: "#555555ff",
         borderLeftWidth: 1,
+        alignContent: "center",
+        alignItems: "center",
     },
     done: {
         width: "15%",
@@ -53,19 +63,21 @@ export default StyleSheet.create({
     text: {
         alignContent: "center",
         alignItems: "center",
-        fontWeight: "bold",
         paddingBottom: 5,
         paddingTop: 8,
     },
 
     editableInput: {
         borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 4,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        backgroundColor: "#f9f9f9",
+        paddingVertical: 1,
         textAlign: "center",
+        fontSize: 14,
+    },
+
+    input: {
+        alignItems: "center",
+        justifyContent: "center",
+        marginTop: 7,
     },
     widthPause: {
         minWidth: 35,

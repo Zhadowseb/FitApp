@@ -10,7 +10,9 @@ import Title from "./Title/Title";
 
 
 import {ThemedCard,
-        ThemedText} 
+        ThemedText,
+        ThemedTextInput,
+        ThemedButton} 
   from "../../../../../../../Resources/Components";
   
 const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
@@ -85,12 +87,13 @@ const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
 
       {localSets.map((set) => (
         <View key={set.sets_id} style={styles.container}>
-            <View style={[styles.pause, styles.text]}> 
+            <View style={styles.pause}> 
                 {!editMode ? 
-                  <ThemedText> {set.pause} </ThemedText>
+                  <ThemedText style={styles.text}> {set.pause} </ThemedText>
                   :
-                <TextInput
-                  style={[styles.editableInput, styles.widthPause]}
+                <ThemedTextInput
+                  style={[styles.widthPause, styles.input]}
+                  inputStyle={styles.editableInput}
                   value={String(set.pause ?? "")}
                   onChangeText={(text) =>
                     updateLocalSet(set.sets_id, { pause: text })
@@ -109,12 +112,13 @@ const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
                 <ThemedText> x </ThemedText>
             </View>
 
-            <View style={[styles.reps, styles.text]}> 
+            <View style={styles.reps}> 
                 {!editMode ? 
-                  <ThemedText> {set.reps} </ThemedText>
+                  <ThemedText style={styles.text}> {set.reps} </ThemedText>
                   :
-                <TextInput
-                  style={[styles.editableInput, styles.widthReps]}
+                <ThemedTextInput
+                  style={[styles.widthReps, styles.input]}
+                  inputStyle={styles.editableInput}
                   value={String(set.reps ?? "")}
                   onChangeText={(text) =>
                     updateLocalSet(set.sets_id, { reps: text })
@@ -125,12 +129,13 @@ const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
                 />}
             </View>
 
-            <View style={[styles.rpe, styles.text]}> 
+            <View style={styles.rpe}> 
                 {!editMode ? 
-                  <ThemedText> {set.rpe} </ThemedText>
+                  <ThemedText style={styles.text}> {set.rpe} </ThemedText>
                   :
-                <TextInput
-                  style={[styles.editableInput, styles.widthRPE]}
+                <ThemedTextInput
+                  style={[styles.widthRPE, styles.input]}
+                  inputStyle={styles.editableInput}
                   value={String(set.rpe ?? "")}
                   onChangeText={(text) =>
                     updateLocalSet(set.sets_id, { rpe: text })
@@ -141,12 +146,13 @@ const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
                 />}
             </View>
 
-            <View style={[styles.weight, styles.text]}> 
+            <View style={styles.weight}> 
                 {!editMode ? 
-                  <ThemedText> {set.weight} </ThemedText>
+                  <ThemedText style={styles.text}> {set.weight} </ThemedText>
                   :
-                  <TextInput
-                    style={[styles.editableInput, styles.widthWeight]}
+                  <ThemedTextInput
+                    style={[styles.widthWeight, styles.input]}
+                    inputStyle={styles.editableInput}
                     value={String(set.weight ?? "")}
                     onChangeText={(text) =>
                       updateLocalSet(set.sets_id, { weight: text })
@@ -160,9 +166,15 @@ const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
             <View style={[styles.done, styles.text]}> 
 
               {editMode ?
-                <Button
+                <ThemedButton
                   title="x"
-                  color="red"
+                  variant="danger"
+                  style={{
+                    paddingVertical: 1,
+                    paddingHorizontal: 1,
+                    height: 25,
+                    width: 25,
+                  }}
                   onPress={() => deleteSet(set.sets_id)}
                 />
                 :

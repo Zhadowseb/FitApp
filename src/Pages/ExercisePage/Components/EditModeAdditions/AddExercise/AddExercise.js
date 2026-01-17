@@ -5,6 +5,13 @@ import { useSQLiteContext } from "expo-sqlite";
 import ExerciseDropdown from "../../../../../Resources/Components/ExerciseDropdown/ExerciseDropdown";
 import styles from "./AddExerciseStyle";
 
+import {ThemedCard, 
+        ThemedButton, 
+        ThemedText,
+        ThemedView,  
+        ThemedTextInput} 
+  from "../../../../../Resources/Components";
+
 const AddExercise = ( {workout_id, date, onExerciseChange} ) => {
   const db = useSQLiteContext();
 
@@ -62,7 +69,7 @@ const AddExercise = ( {workout_id, date, onExerciseChange} ) => {
   }
 
   return (
-    <View style={styles.wrapper}>
+    <View>
 
       <View style={styles.exerciseDropdown}>
         <View style={styles.exercisedropdown}>
@@ -76,8 +83,7 @@ const AddExercise = ( {workout_id, date, onExerciseChange} ) => {
 
       <View style={styles.row}>
         <View style={styles.sets}>
-          <TextInput
-            style={styles.input}
+          <ThemedTextInput
             placeholder="sets"
             keyboardType="numeric"
             value={sets}
@@ -86,8 +92,7 @@ const AddExercise = ( {workout_id, date, onExerciseChange} ) => {
         </View>
 
         <View style={styles.reps}>
-          <TextInput
-            style={styles.input}
+          <ThemedTextInput
             placeholder="reps"
             keyboardType="numeric"
             value={reps}
@@ -96,8 +101,7 @@ const AddExercise = ( {workout_id, date, onExerciseChange} ) => {
         </View>
 
         <View style={styles.weight}>
-          <TextInput
-            style={styles.input}
+          <ThemedTextInput
             placeholder="weight"
             keyboardType="numeric"
             value={weight}
@@ -106,9 +110,12 @@ const AddExercise = ( {workout_id, date, onExerciseChange} ) => {
         </View>
       </View>
 
-      <View style={styles.buttonContainer}>
-        <Button title="ADD" onPress={handleSubmit} />
-      </View>
+      <ThemedButton 
+        title="ADD" 
+        variant="primary"
+        width={150}
+        style={{marginBottom: 5}}
+        onPress={handleSubmit} />
 
     </View>
   );

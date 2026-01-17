@@ -6,27 +6,40 @@ import { useNavigation } from "@react-navigation/native";
 import styles from './EditModeAdditionsStyle';
 import AddExercise from './AddExercise/AddExercise';
 
+import {ThemedCard, 
+        ThemedButton, 
+        ThemedText,
+        ThemedView,  } 
+  from "../../../../Resources/Components";
+
 const EditModeAdditions = ( {workout_id, date, onExerciseChange, deleteWorkout} ) => {
 
   const navigation = useNavigation();
 
   return (
-    <View style={styles.card}>
-      <AddExercise 
-        workout_id = {workout_id} 
-        date = {date}
-        onExerciseChange = {onExerciseChange}/>
+    <ThemedView>
 
+      <ThemedCard>
+        <AddExercise 
+          workout_id = {workout_id} 
+          date = {date}
+          onExerciseChange = {onExerciseChange}/>
 
-      <Button
-        title="Delete Workout"
-        color="red"
-        onPress={() => {
-          deleteWorkout(workout_id);
-          navigation.goBack();
-        }}
-      />
-    </View>
+      </ThemedCard>
+
+      <ThemedCard>
+        <ThemedButton
+          title="Delete Workout"
+          variant='danger'
+          width={150}
+          onPress={() => {
+            deleteWorkout(workout_id);
+            navigation.goBack();
+          }}
+        />
+      </ThemedCard>
+      
+    </ThemedView>
     
   );
 };

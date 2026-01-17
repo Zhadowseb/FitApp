@@ -14,7 +14,8 @@ import ArrowUp from "../../../../../../Resources/Icons/UI-icons/ArrowUp";
 import ArrowDown from "../../../../../../Resources/Icons/UI-icons/ArrowDown";
 
 import {ThemedCard,
-        ThemedText} 
+        ThemedText,
+        ThemedButton} 
   from "../../../../../../Resources/Components";
 
 
@@ -83,9 +84,17 @@ const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} 
 
           <View style={[styles.exercise_done, styles.exercise_alignment]}>
             {editMode ?
-              <Button
+              <ThemedButton
                 title="x"
-                color="red"
+                variant="danger"
+                style={{
+                  paddingVertical: 0,
+                  paddingHorizontal: 0,
+                  marginRight: 5,
+                  marginBottom: 3,
+                  height: 25,
+                  width: 25,
+                }}
                 onPress={() => deleteExercise(exercise.exercise_id)}
               />
               :

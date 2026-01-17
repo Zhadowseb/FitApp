@@ -4,6 +4,7 @@ import { Picker } from "@react-native-picker/picker";
 
 import styles from "./AddEstimatedSetStyle";
 import ExerciseDropdown from "../../../../../../Resources/Components/ExerciseDropdown/ExerciseDropdown";
+import { ThemedButton, ThemedModal, ThemedTextInput } from "../../../../../../Resources/Components";
 
 export default function AddEstimatedSet({ visible, onClose, onSubmit }) {
 
@@ -17,36 +18,26 @@ export default function AddEstimatedSet({ visible, onClose, onSubmit }) {
   };
 
   return (
-    <Modal
+    <ThemedModal
       visible={visible}
-      transparent
-      animationType="fade" >
-
-      <View style={styles.overlay}>
-        <View style={styles.modalBox}>
-
-          <Text style={styles.title}>Add new estimated 1 RM</Text>
+      onClose={onClose}
+      title="Add new estimated 1 RM" >
 
           <ExerciseDropdown
             selectedExerciseName={selectedExerciseName}
             onChange={set_selectedExerciseName} />
 
-          <TextInput
+          <ThemedTextInput
             placeholder="Estimated Weight"
-            
             keyboardType="numeric"
-            style={styles.input}
             value={estimated_weight}
             onChangeText={set_estimated_weight}
           />
 
           <View style={styles.row}>
-            <Button title="Cancel" color="red" onPress={onClose} />
-            <Button title="Add" color="green" onPress={handleSubmit} />
+            <ThemedButton variant="danger" title="Close" onPress={onClose} />
+            <ThemedButton variant="primary" title="Add" onPress={handleSubmit} />
           </View>
-
-        </View>
-      </View>
-    </Modal>
+    </ThemedModal>
   );
 }

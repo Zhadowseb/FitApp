@@ -1,42 +1,45 @@
 import { View, Text, ScrollView } from "react-native";
 import styles from "./TitleStyle";
 
+import {ThemedText} 
+  from "../../../../../../Resources/Components";
+
 const Title = ({exercises,loading,editMode,renderItem}) => {
   return (
     <ScrollView style={styles.wrapper}>
 
       {exercises.length > 0 && (
         <View style={styles.headerRow}>
-          <Text style={[styles.exercise_name, styles.headerText]}>
+          <ThemedText style={[styles.exercise_name, styles.headerText]}>
             Exercise
-          </Text>
+          </ThemedText>
 
-          <Text style={[styles.exercise_sets, styles.headerText]}>
+          <ThemedText style={[styles.exercise_sets, styles.headerText]}>
             Sets
-          </Text>
+          </ThemedText>
 
-          <Text style={[styles.exercise_x, styles.headerText]} />
+          <ThemedText style={[styles.exercise_x, styles.headerText]} />
 
-          <Text style={[styles.exercise_reps, styles.headerText]}>
+          <ThemedText style={[styles.exercise_reps, styles.headerText]}>
             Reps
-          </Text>
+          </ThemedText>
 
-          <Text style={[styles.exercise_weight, styles.headerText]}>
+          <ThemedText style={[styles.exercise_weight, styles.headerText]}>
             Weight
-          </Text>
+          </ThemedText>
 
           {!editMode && (
-            <Text style={[styles.headerText]}>Done</Text>
+            <ThemedText style={[styles.headerText]}>Done</ThemedText>
           )}
 
           {editMode && (
-            <Text style={[styles.headerText]}>Delete</Text>
+            <ThemedText style={[styles.headerText]}>Delete</ThemedText>
           )}
         </View>
       )}
 
       {exercises.length === 0 && !loading && (
-        <Text>Ingen exercises fundet.</Text>
+        <ThemedText>Ingen exercises fundet.</ThemedText>
       )}
 
       {exercises.map(renderItem)}

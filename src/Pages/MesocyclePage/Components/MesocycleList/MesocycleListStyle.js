@@ -19,7 +19,6 @@ export default StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     flex: 0.2,
-    borderRightWidth: 1,
     borderColor: "#b9b9b9ff",
     paddingRight: 10,
   },

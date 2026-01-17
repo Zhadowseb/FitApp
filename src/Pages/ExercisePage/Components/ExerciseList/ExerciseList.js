@@ -10,6 +10,9 @@ import styles from "./ExerciseListStyle";
 import ExerciseRow from "./Components/ExerciseRow/ExerciseRow"
 import Title from "./Components/Title/Title";
 
+import {ThemedTitle} 
+  from "../../../../Resources/Components";
+
 const ExerciseList = ( {workout_id, editMode, refreshing, updateUI} ) => {
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(false);

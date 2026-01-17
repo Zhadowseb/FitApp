@@ -13,6 +13,8 @@ import { WORKOUT_ICONS } from '../../../../Resources/Icons/WorkoutLabels/index';
 import ThreeDots from '../../../../Resources/Icons/UI-icons/ThreeDots';
 import PickWorkoutModal from './PickWorkoutModal/PickWorkoutModal';
 
+import { ThemedCard, ThemedText, ThemedView } from "../../../../Resources/Components";
+
 const Day = ( {day, program_id, microcycle_id} ) => {
     
     const db = useSQLiteContext();
@@ -89,74 +91,78 @@ const Day = ( {day, program_id, microcycle_id} ) => {
 
     return (
         <>
-        <TouchableOpacity
-            style={[styles.container_row, styles.card]}
-            onPress={() => {
-                if(workouts.length === 1){
-                    navigation.navigate("ExercisePage", {
-                        workout_id: workouts[0].workout_id,
-                        date: date,})   
-                } else if (workouts.length > 1){
-
-                    set_PickWorkoutModal_visible(true);
-                }
-            }}>
-
-            <SlantedDivider style={styles.slantedDivider} /> 
-
-            <View style={styles.day}>
-                <View style={styles.text}>
-                    <Text style={[workouts_done && { color: "green" }]}>
-                        {day}
-                    </Text>
-
-                    <Text>
-                        {date}
-                    </Text>
-                </View>
-            </View>
-
-            <View style={[styles.workouts, styles.text]}>
-                <Text> Workouts: {workouts.length} </Text>
-            </View>
-
-            <View style={styles.focus}>
-                <Text> Focus: </Text>
-                <View style={{justifyContent: "center", alignItems: "center"}}>
-                    <Text> {focusText} </Text>
-                </View>
-
-                {SelectedIcon && (
-                    <View style={[styles.card, {padding: 4}]}>
-                        <SelectedIcon
-                            width={30}
-                            height={30}
-                            backgroundColor="#fff"
-                    />
-                    </View> )}
-            </View>
-
+        <ThemedCard
+            style={{
+            flex: 1}}>
+            
             <TouchableOpacity
-                style={styles.options}
-                onPress={async () => {
-                    const workout_id = await handleNewWorkout();
+                style={{flex: 1, flexDirection: "row"}}
+                onPress={() => {
+                    if(workouts.length === 1){
+                        navigation.navigate("ExercisePage", {
+                            workout_id: workouts[0].workout_id,
+                            date: date,})   
+                    } else if (workouts.length > 1){
 
-                    navigation.navigate('ExercisePage', {
-                        program_id: program_id,
-                        date: date,
-                        workout_id: workout_id,
-                    }); 
+                        set_PickWorkoutModal_visible(true);
+                    }
                 }}>
 
-                <ThreeDots
-                    width={24}
-                    height={24}/>
+                <View style={styles.day}>
+                    <View style={styles.text}>
+                        <ThemedText style={[workouts_done && { color: "green" }]}>
+                            {day}
+                        </ThemedText>
+
+                        <ThemedText>
+                            {date}
+                        </ThemedText>
+                    </View>
+                </View>
+
+                <View style={[styles.workouts, styles.text]}>
+                    <ThemedText> Workouts: {workouts.length} </ThemedText>
+                </View>
+
+                <View style={styles.focus}>
+                    <ThemedText> Focus: </ThemedText>
+                    <View style={{justifyContent: "center", alignItems: "center"}}>
+                        <ThemedText> {focusText} </ThemedText>
+                    </View>
+
+                    {SelectedIcon && (
+                        <View style={[styles.card, {padding: 4}]}>
+                            <SelectedIcon
+                                width={24}
+                                height={24}
+                                backgroundColor="#fff"
+                        />
+                        </View> )}
+                </View>
+
+                <TouchableOpacity
+                    style={styles.options}
+                    onPress={async () => {
+                        const workout_id = await handleNewWorkout();
+
+                        navigation.navigate('ExercisePage', {
+                            program_id: program_id,
+                            date: date,
+                            workout_id: workout_id,
+                        }); 
+                    }}>
+
+                    <ThreeDots
+                        width={24}
+                        height={24}/>
+
+                </TouchableOpacity>
+
+
+                <StatusBar style="auto" />
 
             </TouchableOpacity>
-
-
-            <StatusBar style="auto" />
-        </TouchableOpacity>
+        </ThemedCard>
         
         <PickWorkoutModal 
             workouts={workouts}

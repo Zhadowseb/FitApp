@@ -1,7 +1,13 @@
 import * as React from "react"
 import Svg, { Path } from "react-native-svg"
+import {useColorScheme} from "react-native"
+import { Colors } from "../../GlobalStyling/colors"
 
 function ArrowDown({width, height}) {
+
+  const colorScheme = useColorScheme()
+  const theme = Colors[colorScheme] ?? Colors.light
+ 
   return (
     <Svg
       xmlns="http://www.w3.org/2000/svg"
@@ -10,7 +16,7 @@ function ArrowDown({width, height}) {
       height={height}
       color="currentColor"
       fill="none"
-      stroke="currentColor"
+      stroke={theme.primary}
       strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"

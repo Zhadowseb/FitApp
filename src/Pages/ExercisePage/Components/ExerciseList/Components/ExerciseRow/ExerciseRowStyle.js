@@ -24,7 +24,6 @@ export default StyleSheet.create({
   exercise_container: {
     flex: 1,
     flexDirection: "row",
-    padding: 5,
     borderBottomWidth: 1,
     borderColor: "#dbdbdbff",
     justifyContent: "center",
@@ -34,9 +33,6 @@ export default StyleSheet.create({
   
   exercise_complete: {
     backgroundColor: "#00d134ff",
-  },
-  exercise_uncomplete: {
-    backgroundColor: "#ffffffff",
   },
 
   headerRow: {

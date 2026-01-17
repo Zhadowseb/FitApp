@@ -12,6 +12,14 @@ import EditModeAdditions from './Components/EditModeAdditions/EditModeAdditions'
 import WorkoutLabel from "../../Resources/Components/WorkoutLabel/WorkoutLabel";
 import { WORKOUT_ICONS } from '../../Resources/Icons/WorkoutLabels';
 
+import { ThemedTitle, 
+        ThemedCard, 
+        ThemedView, 
+        ThemedText, 
+        ThemedButton, 
+        ThemedModal } 
+  from "../../Resources/Components";
+
 const ExercisePage = ({route}) =>  {
   const db = useSQLiteContext();
 
@@ -91,21 +99,26 @@ const ExercisePage = ({route}) =>  {
     WORKOUT_ICONS.find(item => item.id === label)?.Icon;
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView>
 
-      <View style={[styles.card, styles.header]}>
+      <ThemedView style={{
+        flex: 1,
+        flexDirection: "row",
+      }}>
 
-        <View style={styles.info}>
+        <ThemedCard style={styles.info}>
+          <ThemedText>
+             Info... (coming soon)
+          </ThemedText>
+        </ThemedCard>
 
-        </View>
-
-        <View style={[styles.label, styles.card]}>
+        <ThemedCard style={styles.label}>
          <TouchableOpacity
           onPress={() => set_labelModal_visible(true)}>
           
             {SelectedIcon ? (
               <View style={styles.label}>
-                <Text> {label} </Text>
+                <ThemedText> {label} </ThemedText>
                 <SelectedIcon
                   width={50}
                   height={50}
@@ -113,9 +126,9 @@ const ExercisePage = ({route}) =>  {
                 />
               </View>
             ) : (
-              <Text style={{ opacity: 0.5 }}>
+              <ThemedText style={{ opacity: 0.5 }}>
                 Add label
-              </Text>
+              </ThemedText>
             )}
 
           </TouchableOpacity> 
@@ -124,18 +137,18 @@ const ExercisePage = ({route}) =>  {
             visible={labelModal_visible}
             onClose={() => set_labelModal_visible(false)}
             onSubmit={handleLabel}/>
-        </View>
+        </ThemedCard>
 
-        <View style={[styles.editmode, styles.card]}>
-          <Text style={{paddingTop: 20,}}>
+        <ThemedCard style={styles.editmode}>
+          <ThemedText style={{paddingTop: 20,}}>
             Edit mode
-          </Text>
+          </ThemedText>
 
           <Switch
             value={editMode}
             onValueChange={set_editMode} />
-        </View>
-      </View>
+        </ThemedCard>
+      </ThemedView>
 
       <View >
         <ExerciseList 

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { View, ActivityIndicator, Text, FlatList } from "react-native";
+import { View, ActivityIndicator } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
-import { Picker } from "@react-native-picker/picker";
+
 import styles from "./ExerciseDropdownStyle";
+import { ThemedPicker, ThemedText } from "../";
 
 const ExerciseDropdown = ({ selectedExerciseName, onChange }) => {
   const [exercises, setExercises] = useState([]);
@@ -12,13 +13,16 @@ const ExerciseDropdown = ({ selectedExerciseName, onChange }) => {
   const loadExercises = async () => {
     try {
       setLoading(true);
+
       const rows = await db.getAllAsync(
         "SELECT exercise_name FROM Exercise_storage ORDER BY exercise_name;"
       );
+
       setExercises(rows);
 
-      if (!selectedExerciseName && rows.length > 0 && typeof onChange === "function") {
-        onChange(rows[0].exercise_name);
+      // Sæt default hvis intet valgt
+      if (!selectedExerciseName && rows.length > 0) {
+        onChange?.(rows[0].exercise_name);
       }
     } catch (error) {
       console.error("Error loading exercises", error);
@@ -40,27 +44,20 @@ const ExerciseDropdown = ({ selectedExerciseName, onChange }) => {
   }
 
   if (exercises.length === 0) {
-    return <Text>Ingen øvelser fundet.</Text>;
+    return <ThemedText>Ingen øvelser fundet.</ThemedText>;
   }
 
   return (
     <View style={styles.container}>
-      <Picker
-        selectedValue={selectedExerciseName}
-        onValueChange={(value) => {
-          if (typeof onChange === "function") {
-            onChange(value);
-          }
-        }}
-      >
-        {exercises.map((ex, index) => (
-          <Picker.Item
-            key={index}
-            label={ex.exercise_name}
-            value={ex.exercise_name}   // 👈 vi bruger nu navnet som value
-          />
-        ))}
-      </Picker>
+      <ThemedPicker
+        value={selectedExerciseName}
+        onChange={onChange}
+        placeholder="Select exercise"
+        items={exercises.map(ex => ({
+          label: ex.exercise_name,
+          value: ex.exercise_name,
+        }))}
+      />
     </View>
   );
 };

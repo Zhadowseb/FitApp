@@ -7,7 +7,11 @@ import ProgramList from './Components/ProgramList/ProgramList';
 import AddProgram from './Components/AddProgram/AddProgram';
 import { formatDate } from '../../Utils/dateUtils';
 
+import { ThemedTitle, ThemedCard, ThemedView, ThemedText, ThemedButton } 
+  from "../../Resources/Components";
+
 import styles from './ProgramPageStyle';
+
 
 export default function App() {
   const db = useSQLiteContext();
@@ -36,12 +40,13 @@ export default function App() {
   };
 
   return (
-    <View style={styles.container}>
+    <ThemedView safe={true}>
 
       <ProgramList
         refreshKey={refreshKey}/>
 
-      <Button 
+      <ThemedButton
+        width={200} 
         title="Create new program" 
         onPress={() => set_addProgram_Visible(true)}/>
 
@@ -51,8 +56,7 @@ export default function App() {
         onSubmit={handleAdd}/>
 
 
-      <StatusBar style="auto" />
 
-    </View>
+    </ThemedView>
   );
 }

@@ -34,18 +34,22 @@ export default StyleSheet.create({
         paddingBottom: 100,
     },
     day_container: {
+        padding: 0,
         minHeight: 120,
         marginBottom: 12,
     },
     rm_container: {
+        padding: 0,
         minHeight: 400,
         marginBottom: 12,
     },
     mesocycle_container: {
-        minHeight: 400,
+        padding: 0,
+        minHeight: 50,
         marginBottom: 12,
     },
     pr_container: {
+        padding: 0,
         minHeight: 400,
         marginBottom: 12,
     },

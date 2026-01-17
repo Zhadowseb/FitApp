@@ -10,6 +10,8 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 
 import styles from "./ProgramListStyle";
+import ThemedCard from "../../../../Resources/Components/ThemedCard";
+import ThemedText from "../../../../Resources/Components/ThemedText";
 
 const ProgramList = ({ refreshKey }) => {
   const navigation = useNavigation();
@@ -50,39 +52,40 @@ const ProgramList = ({ refreshKey }) => {
   return (
     <ScrollView contentContainerStyle={styles.listContainer}>
       {programs.map((item) => (
-        <TouchableOpacity
-          key={item.program_id}
-          style={styles.card}
-          onPress={() =>
-            navigation.navigate("ProgramOverviewPage", {
-              program_id: item.program_id,
-              start_date: item.start_date,
-            })
-          }
-        >
-          {/* Status */}
-          <View style={styles.status_section}>
-            <View style={styles.header_status}>
-              <Text style={styles.label}>Status</Text>
-              <View style={[styles.statusBadge, styles[item.status]]}>
-                <Text style={styles.statusText}>{item.status}</Text>
+        <ThemedCard>
+          <TouchableOpacity
+            key={item.program_id}
+            onPress={() =>
+              navigation.navigate("ProgramOverviewPage", {
+                program_id: item.program_id,
+                start_date: item.start_date,
+              })
+            }
+          >
+            {/* Status */}
+            <View style={styles.status_section}>
+              <View style={styles.header_status}>
+                <ThemedText style={styles.label}>Status</ThemedText>
+                <View style={[styles.statusBadge, styles[item.status]]}>
+                  <ThemedText style={styles.statusText}>{item.status}</ThemedText>
+                </View>
               </View>
             </View>
-          </View>
 
-          {/* Body */}
-          <View style={styles.body}>
-            <View style={styles.program_name}>
-              <Text style={styles.label}>Navn:</Text>
-              <Text style={styles.value}>{item.program_name}</Text>
-            </View>
+            {/* Body */}
+            <View style={styles.body}>
+              <View style={styles.program_name}>
+                <ThemedText style={styles.label}>Navn:</ThemedText>
+                <ThemedText style={styles.value}>{item.program_name}</ThemedText>
+              </View>
 
-            <View style={styles.dates_section}>
-                <Text style={styles.label}>Start:</Text>
-                <Text style={styles.value}>{item.start_date}</Text>
+              <View style={styles.dates_section}>
+                  <ThemedText style={styles.label}>Start:</ThemedText>
+                  <ThemedText style={styles.value}>{item.start_date}</ThemedText>
+              </View>
             </View>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </ThemedCard>
       ))}
 
       {programs.length === 0 && (

@@ -2,27 +2,10 @@ import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
 
-  card: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    marginVertical: 3,
-    marginHorizontal: 10,
-    borderRadius: 15,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { height: 2, width: 0 },
-    position: "relative",
-    borderWidth: 1.5,
-    borderColor: "#000000ff"
-  },
-
   day: {
     flex: 1,
     borderTopLeftRadius: 12,
     borderBottomLeftRadius: 12,
-    backgroundColor: '#929292ff',
     alignItems: 'center',
     fontColor: '#ca1010ff',
     justifyContent: 'center',

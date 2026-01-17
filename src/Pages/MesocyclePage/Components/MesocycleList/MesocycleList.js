@@ -5,6 +5,8 @@ import { useNavigation } from "@react-navigation/native";
 import Checkbox from 'expo-checkbox';
 
 import styles from "./MesocycleListStyle";
+import { ThemedTitle, ThemedCard, ThemedView, ThemedText, ThemedButton } 
+  from "../../../../Resources/Components";
 
 const MesocycleList = ({ program_id, refreshKey }) => {
   const [mesocycles, setMesocycles] = useState([]);
@@ -41,11 +43,10 @@ const MesocycleList = ({ program_id, refreshKey }) => {
   }
 
   return (
-    <ScrollView>
+    <ScrollView horizontal>
       {mesocycles.map(item => (
         <TouchableOpacity
           key={item.mesocycle_id}
-          style={styles.card}
           onPress={() => {
             navigation.navigate("MicrocyclePage", {
               mesocycle_id: item.mesocycle_id,
@@ -53,32 +54,40 @@ const MesocycleList = ({ program_id, refreshKey }) => {
             });
           }}
         >
-          <View style={styles.status_section}>
-            <View style={styles.header_status}>
+          <ThemedCard
+            style={{
+              width: 200,
+              height: 250,
+              flexDirection: "row",
+            }}>
+            <View style={styles.status_section}>
+              <View style={styles.header_status}>
 
-              <View style={styles.checkbox_header}>
-                <Text style={styles.label}>Status</Text>
+                <View style={styles.checkbox_header}>
+                  <ThemedText style={styles.label}>Status</ThemedText>
+                </View>
+
+                <View style={styles.checkbox_container}>
+                  <Checkbox
+                    value={item.done === 1}
+                    color={item.done ? "#4CAF50" : "#ccc"}
+                  />
+                </View>
+              
+              </View>
+            </View>
+
+            <View style={styles.body}>
+              <View style={styles.focus}>
+                <ThemedText>Mesocycle focus: {item.focus}</ThemedText>
               </View>
 
-              <View style={styles.checkbox_container}>
-                <Checkbox
-                  value={item.done === 1}
-                  color={item.done ? "#4CAF50" : "#ccc"}
-                />
+              <View style={styles.weeks}>
+                <ThemedText>Weeks: {item.weeks}</ThemedText>
               </View>
-            
             </View>
-          </View>
+          </ThemedCard>
 
-          <View style={styles.body}>
-            <View style={styles.focus}>
-              <Text>Mesocycle focus: {item.focus}</Text>
-            </View>
-
-            <View style={styles.weeks}>
-              <Text>Weeks: {item.weeks}</Text>
-            </View>
-          </View>
         </TouchableOpacity>
       ))}
 

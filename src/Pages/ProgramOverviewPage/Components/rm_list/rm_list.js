@@ -6,6 +6,9 @@ import { useNavigation } from "@react-navigation/native";
 import styles from "./Rm_listStyle"
 import EditEstimatedSet from "./Components/EditEstimatedSet/EditEstimatedSet";
 
+import { ThemedTitle, ThemedCard, ThemedView, ThemedText } 
+  from "../../../../Resources/Components";
+
 const rm_list = ( {program_id, refreshKey, refresh} ) => {
     const db = useSQLiteContext();
     const navigation = useNavigation();
@@ -68,19 +71,19 @@ const rm_list = ( {program_id, refreshKey, refresh} ) => {
         {/* Header */}
         {estimated_sets.length > 0 && (
             <View style={styles.headerRow}>
-                <Text style={[styles.exerciseHeader, styles.headerText]}>
+                <ThemedText style={[styles.exerciseHeader, styles.headerText]}>
                     Exercise
-                </Text>
+                </ThemedText>
                 
-                <Text style={[styles.rmHeader, styles.headerText]}>
+                <ThemedText style={[styles.rmHeader, styles.headerText]}>
                     1 Rep Max (in kg)
-                </Text>
+                </ThemedText>
             </View>
         )}
 
         {/* Empty state */}
         {!loading && estimated_sets.length === 0 && (
-            <Text>No 1 RM have been set.</Text>
+            <ThemedText>No 1 RM have been set.</ThemedText>
         )}
 
         {/* List items */}
@@ -94,11 +97,11 @@ const rm_list = ( {program_id, refreshKey, refresh} ) => {
                 }}>
                 <View style={styles.item_container}>
                     <View style={styles.exercise_name}>
-                        <Text>{item.exercise_name}</Text>
+                        <ThemedText>{item.exercise_name}</ThemedText>
                     </View>
 
                     <View style={styles.estimated_weight}>
-                        <Text>{item.estimated_weight} kg</Text>
+                        <ThemedText>{item.estimated_weight} kg</ThemedText>
                     </View>
                 </View>
             </TouchableOpacity>

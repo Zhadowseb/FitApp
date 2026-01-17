@@ -13,6 +13,14 @@ import AddEstimatedSet from './Components/rm_list/Components/AddEstimatedSet/Add
 import TodayShortcut from './Components/TodayShortcut/TodayShortcut';
 import MesocycleList from '../MesocyclePage/Components/MesocycleList/MesocycleList';
 
+import { ThemedTitle, 
+        ThemedCard, 
+        ThemedView, 
+        ThemedText, 
+        ThemedButton, 
+        ThemedModal } 
+  from "../../Resources/Components";
+
 const ProgramOverviewPage = ( {route} ) => {
     const db = useSQLiteContext();
     const navigation = useNavigation();
@@ -126,86 +134,78 @@ const ProgramOverviewPage = ( {route} ) => {
     };
 
   return (
-    <ScrollView 
-        style={styles.container}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 15}}>
+    <ThemedView>
+        <ScrollView 
+            style={styles.container}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 15}}>
 
-        <View style={[styles.day_container, styles.card]}>
+            <ThemedTitle type="h2"> Today's Workout </ThemedTitle>
+            <ThemedCard style={styles.day_container}>
 
-            <View style={styles.container_header}>
-                <Text> Today's Workout </Text>
-            </View>
+                <View style={styles.day_body}>    
+                    <TodayShortcut
+                        program_id = {program_id}
+                        style = {styles.day_touchable}/>
+                </View>
+            </ThemedCard>
 
-            <View style={styles.day_body}>    
-                <TodayShortcut
-                    program_id = {program_id}
-                    style = {styles.day_touchable}/>
-            </View>
-        </View>
+            <ThemedTitle type="h2"> Estimated 1 RM's </ThemedTitle>
+            <ThemedCard style={styles.rm_container}>
 
+                <View style={styles.rm_body}>
+                    <Rm_List
+                        program_id = {program_id}
+                        refreshKey = {refreshKey}
+                        refresh = {refresh} />
+                </View>
 
-        <View style={[styles.rm_container, styles.card]}>
-            
-            <View style={styles.container_header}>
-                <Text> Estimated 1 RM's </Text>
-            </View>
+                <View style={styles.rm_footer}>
+                    <ThemedButton 
+                        title="Add 1 RM" 
+                        onPress={() => set_AddEstimatedSet_visible(true)}/>
 
-            <View style={styles.rm_body}>
-                <Rm_List
-                    program_id = {program_id}
-                    refreshKey = {refreshKey}
-                    refresh = {refresh} />
-            </View>
+                    <AddEstimatedSet 
+                        visible={addEstimatedSet_visible}
+                        onClose={() => set_AddEstimatedSet_visible(false)}
+                        onSubmit={handleAdd}/>
+                </View>
+            </ThemedCard>
 
-            <View style={styles.rm_footer}>
-                <Button 
-                    title="Add 1 RM" 
-                    onPress={() => set_AddEstimatedSet_visible(true)}/>
+            <ThemedTitle type="h2"> Mesocycle's </ThemedTitle>
+            <ThemedView>
+                <TouchableOpacity
+                        style={[styles.mesocycle_container]}
+                        onPress={() => {
+                            navigation.navigate("MesocyclePage", {
+                            program_id: program_id,
+                            start_date: start_date})
+                    }} >
+                    
+                    <MesocycleList 
+                        program_id = {program_id}
+                        refreshKey= {refreshKey} />
 
-                <AddEstimatedSet 
-                    visible={addEstimatedSet_visible}
-                    onClose={() => set_AddEstimatedSet_visible(false)}
-                    onSubmit={handleAdd}/>
-            </View>
-        </View>
+                </TouchableOpacity>
+            </ThemedView>
 
-        <TouchableOpacity
-                style={[styles.mesocycle_container, styles.card]}
-                onPress={() => {
-                    navigation.navigate("MesocyclePage", {
-                    program_id: program_id,
-                    start_date: start_date})
-            }} >
+            <ThemedTitle type="h2"> Program PR's </ThemedTitle>
+            <ThemedCard style={styles.pr_container}>
 
-            <View style={styles.container_header}>
-                <Text> Mesocycle's </Text>
-            </View>
-            
-            <MesocycleList 
-                program_id = {program_id}
-                refreshKey= {refreshKey} />
-
-        </TouchableOpacity>
-
-
-        <View style={[styles.pr_container, styles.card]}>
-            <View style={styles.container_header}>
-                <Text> Program PR's </Text>
-            </View>
-
-            <Text>
-                coming soon...
-            </Text>
-        </View>
+                <ThemedText>
+                    coming soon...
+                </ThemedText>
+            </ThemedCard>
 
 
-        <View style={[styles.delete_button_container, styles.card]}>
-            <Button 
+        
+            <ThemedButton 
                 title="Delete program"
-                color="red"
+                variant='danger'
+                width={250}
                 onPress={() => deleteProgram()}/>
-        </View>
-    </ScrollView>
+            
+        </ScrollView>
+    </ThemedView>
   );
 };
 

@@ -13,6 +13,12 @@ import {checkUniformWeights,
 import ArrowUp from "../../../../../../Resources/Icons/UI-icons/ArrowUp";
 import ArrowDown from "../../../../../../Resources/Icons/UI-icons/ArrowDown";
 
+import {ThemedCard,
+        ThemedText,
+        ThemedButton} 
+  from "../../../../../../Resources/Components";
+
+
 const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} ) => {
   const [expandedExercises, setExpandedExercises] = useState({});
 
@@ -38,7 +44,10 @@ const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} 
   };
 
   return (
-    <View key={exercise.exercise_id} style={styles.card}>
+    <ThemedCard key={exercise.exercise_id}
+      style={{
+        marginHorizontal: 1,
+        paddingBottom: 0}}>
 
       <TouchableOpacity
         onPress={() =>
@@ -52,32 +61,40 @@ const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} 
         <View style={[styles.exercise_container,
           exercise.done ? styles.exercise_complete : styles.exercise_uncomplete]}>
           <View style={styles.exercise_name}>
-            <Text>
+            <ThemedText>
               {exercise.exercise_name}
-            </Text>
+            </ThemedText>
           </View>
 
           <View style={[styles.exercise_sets, styles.exercise_alignment]}>
-            <Text>{exercise.sets.length}</Text>
+            <ThemedText>{exercise.sets.length}</ThemedText>
           </View>
 
           <View style={[styles.exercise_x, styles.exercise_alignment]}>
-            <Text>x</Text>
+            <ThemedText>x</ThemedText>
           </View>
 
           <View style={[styles.exercise_reps, styles.exercise_alignment]}>
-            <Text>{checkUniformReps(exercise.sets)}</Text>
+            <ThemedText>{checkUniformReps(exercise.sets)}</ThemedText>
           </View>
 
           <View style={[styles.exercise_weight, styles.exercise_alignment]}>
-            <Text>{checkUniformWeights(exercise.sets)}</Text>
+            <ThemedText>{checkUniformWeights(exercise.sets)}</ThemedText>
           </View>
 
           <View style={[styles.exercise_done, styles.exercise_alignment]}>
             {editMode ?
-              <Button
+              <ThemedButton
                 title="x"
-                color="red"
+                variant="danger"
+                style={{
+                  paddingVertical: 0,
+                  paddingHorizontal: 0,
+                  marginRight: 5,
+                  marginBottom: 3,
+                  height: 25,
+                  width: 25,
+                }}
                 onPress={() => deleteExercise(exercise.exercise_id)}
               />
               :
@@ -131,7 +148,7 @@ const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} 
           )}
         </View>
       </View>
-    </View>
+    </ThemedCard>
   );
 };
 

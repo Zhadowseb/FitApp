@@ -1,8 +1,12 @@
 import React, { useState } from "react";
-import { Modal, View, TouchableOpacity,Text, Button } from "react-native";
+import { Modal, View, TouchableOpacity,Text, Button, ScrollView } from "react-native";
 import { WORKOUT_ICONS } from "../../Icons/WorkoutLabels/index";
 
 import styles from "./WorkoutLabelStyle";
+
+
+import {ThemedButton, ThemedModal, ThemedText} 
+  from "../../Components";
 
 export default function AddProgram({ visible, onClose, onSubmit }) {
     
@@ -12,46 +16,34 @@ export default function AddProgram({ visible, onClose, onSubmit }) {
     };
 
     return (
-        <Modal
-        visible={visible}
-        transparent
-        animationType="fade">
-            
+        <ThemedModal
+            visible={visible}
+            title="Give your workout a label!">
 
-            <View style={styles.overlay}>
-                <View style={styles.modalBox}>
+            <ScrollView
+                horizontal>
+                {WORKOUT_ICONS.map(({ id, Icon }) => (
+                    <TouchableOpacity
+                        key={id}
+                        style={styles.icon}
+                        onPress={() => handleSubmit(id)}>
 
-                    <Text style={{paddingBottom: 20}}>
-                        Give your workout a label!
-                    </Text>
+                        <ThemedText> {id} </ThemedText>
 
-                    <View style={{flexDirection: "row"}}>
-                        {WORKOUT_ICONS.map(({ id, Icon }) => (
-                            <TouchableOpacity
-                                key={id}
-                                style={styles.icon}
-                                onPress={() => handleSubmit(id)}>
+                        <Icon 
+                            width={50}
+                            height={50}
+                            backgroundColor={"#fff"} />
+                    </TouchableOpacity>
+                ))}
+            </ScrollView>
 
-                                <Text> {id} </Text>
+            <ThemedButton 
+                title="Cancel" 
+                variant="danger"
+                width={100} 
+                onPress={onClose} />
 
-                                <Icon 
-                                    width={50}
-                                    height={50}
-                                    backgroundColor={"#fff"} />
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-
-                    <View style={styles.button_container}>
-                        <Button 
-                            title="Cancel" 
-                            color="red" 
-                            onPress={onClose} />
-                    </View>
-
-                </View>
-            </View>
-
-        </Modal>
+        </ThemedModal>
     );
 }

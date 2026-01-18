@@ -6,6 +6,9 @@ import { useNavigation } from "@react-navigation/native";
 
 import styles from "./PickWorkoutModalStyle";
 
+import {ThemedText, 
+        ThemedModal } from "../../../../../Resources/Components";
+
 const PickWorkoutModal = ({ workouts, visible, onClose, onSubmit }) => {
   if(!visible) return null;
 
@@ -14,62 +17,41 @@ const PickWorkoutModal = ({ workouts, visible, onClose, onSubmit }) => {
 
   return (
 
-    <Modal
+    <ThemedModal
       visible={visible}
-      transparent
-      animationType="fade">
+      title="Pick a workout">
 
-      <View style={styles.overlay}>
-        <View style={styles.modalBox}>
+      <ScrollView style={styles.wrapper}>
 
-          <ScrollView style={styles.wrapper}>
-
-            {/* Header */}
-            {workouts.length > 0 && (
-              <View style={styles.headerRow}>
-                <Text style={[styles.left, styles.headerText]}>
-                  Workouts
-                </Text>
-              </View>
-            )}
-
-            {/* Items */}
-            {workouts.map((item) => (
-              <TouchableOpacity
-                key={item.workout_id}
-                style={styles.row}
-                onPress={() => {
-                    navigation.navigate("ExercisePage", {
-                      workout_id: item.workout_id,
-                      date: item.date,
-                    })
-                    onClose();
-                  }
-                }
-              >
-                <Text
-                  style={[
-                    styles.left,
-                    item.done === 1 && { color: "green" },
-                  ]}
-                >
-                  Workout #{item.workout_id}
-                </Text>
-                
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          <Button
-            title="Close"
-            color="gray"
+        {/* Items */}
+        {workouts.map((item) => (
+          <TouchableOpacity
+            key={item.workout_id}
+            style={styles.row}
             onPress={() => {
-              onClose();
-            }}   />        
+                navigation.navigate("ExercisePage", {
+                  workout_id: item.workout_id,
+                  date: item.date,
+                })
+                onClose();
+              }
+            }
+          >
+            <ThemedText
+              style={[
+                styles.left,
+                item.done === 1 && { color: "green" },
+              ]}
+            >
+              Workout #{item.workout_id}
+            </ThemedText>
 
-        </View>
-      </View>
-    </Modal>
+            <ThemedText> {item.label} </ThemedText>
+            
+          </TouchableOpacity>
+        ))}
+      </ScrollView>   
+    </ThemedModal>
 
   );
 };

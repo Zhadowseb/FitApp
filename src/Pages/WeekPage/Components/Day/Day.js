@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
 
-
 import styles from './DayStyle';
 import SlantedDivider from "../../../../Resources/Figures/SlantedDivider"
 import { WORKOUT_ICONS } from '../../../../Resources/Icons/WorkoutLabels/index';
@@ -27,6 +26,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
     const [focusText, setFocusText] = useState("Rest");
 
     const [PickWorkoutModal_visible, set_PickWorkoutModal_visible] = useState(false);
+    const [OptionsBottomsheet_visible, set_OptionsBottomsheet_visible] = useState(false);
     
     const loadDay = async () => {
         try {
@@ -52,7 +52,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
 
                 setFocusText(workouts[0].label);
             } else { 
-                setFocusText("Multiple workouts"); 
+                setFocusText("..."); 
             }
 
             const doneRow = await db.getFirstAsync(
@@ -126,7 +126,6 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                 </View>
 
                 <View style={styles.focus}>
-                    <ThemedText> Focus: </ThemedText>
                     <View style={{justifyContent: "center", alignItems: "center"}}>
                         <ThemedText> {focusText} </ThemedText>
                     </View>
@@ -144,7 +143,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                 <TouchableOpacity
                     style={styles.options}
                     onPress={async () => {
-                        set_PickWorkoutModal_visible(true);
+                        set_OptionsBottomsheet_visible(true);
                     }}>
 
                     <ThreeDots
@@ -160,8 +159,8 @@ const Day = ( {day, program_id, microcycle_id} ) => {
         </ThemedCard>
 
         <ThemedBottomSheet
-            visible={PickWorkoutModal_visible}
-            onClose={() => set_PickWorkoutModal_visible(false)} >
+            visible={OptionsBottomsheet_visible}
+            onClose={() => set_OptionsBottomsheet_visible(false)} >
 
             <View style={styles.bottomsheet_title}>
                 <ThemedText> {day} </ThemedText>
@@ -172,7 +171,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                 <TouchableOpacity 
                     style={{flexDirection: "row"}}
                     onPress={async () => {
-                        set_PickWorkoutModal_visible(false);
+                        set_OptionsBottomsheet_visible(false);
                         const workout_id = await handleNewWorkout();
 
                         navigation.navigate('ExercisePage', {
@@ -192,13 +191,11 @@ const Day = ( {day, program_id, microcycle_id} ) => {
 
         </ThemedBottomSheet>
 
-        {/* 
         <PickWorkoutModal 
             workouts={workouts}
             visible={PickWorkoutModal_visible}
             onClose={() => set_PickWorkoutModal_visible(false)}
             />
-        */}
         
         </>
     );

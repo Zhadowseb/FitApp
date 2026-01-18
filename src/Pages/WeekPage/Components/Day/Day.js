@@ -13,7 +13,7 @@ import { WORKOUT_ICONS } from '../../../../Resources/Icons/WorkoutLabels/index';
 import ThreeDots from '../../../../Resources/Icons/UI-icons/ThreeDots';
 import PickWorkoutModal from './PickWorkoutModal/PickWorkoutModal';
 
-import { ThemedCard, ThemedText, ThemedView } from "../../../../Resources/Components";
+import { ThemedCard, ThemedText, ThemedView, ThemedBottomSheet } from "../../../../Resources/Components";
 
 const Day = ( {day, program_id, microcycle_id} ) => {
     
@@ -143,6 +143,10 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                 <TouchableOpacity
                     style={styles.options}
                     onPress={async () => {
+                        set_PickWorkoutModal_visible(true);
+
+
+                        /*
                         const workout_id = await handleNewWorkout();
 
                         navigation.navigate('ExercisePage', {
@@ -150,6 +154,8 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                             date: date,
                             workout_id: workout_id,
                         }); 
+
+                        */
                     }}>
 
                     <ThreeDots
@@ -163,12 +169,20 @@ const Day = ( {day, program_id, microcycle_id} ) => {
 
             </TouchableOpacity>
         </ThemedCard>
-        
+
+        <ThemedBottomSheet
+            visible={PickWorkoutModal_visible}
+            onClose={() => set_PickWorkoutModal_visible(false)} >
+                
+        </ThemedBottomSheet>
+
+        {/* 
         <PickWorkoutModal 
             workouts={workouts}
             visible={PickWorkoutModal_visible}
             onClose={() => set_PickWorkoutModal_visible(false)}
             />
+        */}
         
         </>
     );

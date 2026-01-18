@@ -11,6 +11,7 @@ import styles from './DayStyle';
 import SlantedDivider from "../../../../Resources/Figures/SlantedDivider"
 import { WORKOUT_ICONS } from '../../../../Resources/Icons/WorkoutLabels/index';
 import ThreeDots from '../../../../Resources/Icons/UI-icons/ThreeDots';
+import Plus from '../../../../Resources/Icons/UI-icons/Plus';
 import PickWorkoutModal from './PickWorkoutModal/PickWorkoutModal';
 
 import { ThemedCard, ThemedText, ThemedView, ThemedBottomSheet } from "../../../../Resources/Components";
@@ -144,18 +145,6 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                     style={styles.options}
                     onPress={async () => {
                         set_PickWorkoutModal_visible(true);
-
-
-                        /*
-                        const workout_id = await handleNewWorkout();
-
-                        navigation.navigate('ExercisePage', {
-                            program_id: program_id,
-                            date: date,
-                            workout_id: workout_id,
-                        }); 
-
-                        */
                     }}>
 
                     <ThreeDots
@@ -173,6 +162,33 @@ const Day = ( {day, program_id, microcycle_id} ) => {
         <ThemedBottomSheet
             visible={PickWorkoutModal_visible}
             onClose={() => set_PickWorkoutModal_visible(false)} >
+
+            <View style={styles.bottomsheet_title}>
+                <ThemedText> {day} </ThemedText>
+                <ThemedText> {date} </ThemedText>
+            </View>
+
+            <View style={styles.bottomsheet_body}>
+                <TouchableOpacity 
+                    style={{flexDirection: "row"}}
+                    onPress={async () => {
+                        set_PickWorkoutModal_visible(false);
+                        const workout_id = await handleNewWorkout();
+
+                        navigation.navigate('ExercisePage', {
+                            program_id: program_id,
+                            date: date,
+                            workout_id: workout_id,
+                        }); 
+                    }}>
+                    <Plus
+                        width={24}
+                        height={24}/>
+                    <ThemedText style={styles.option_text}> 
+                        Add workout to day 
+                    </ThemedText>
+                </TouchableOpacity>
+            </View>
 
         </ThemedBottomSheet>
 

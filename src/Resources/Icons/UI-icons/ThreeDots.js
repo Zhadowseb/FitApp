@@ -1,27 +1,29 @@
 import * as React from "react"
-import Svg, { Path } from "react-native-svg"
+import Svg, { G, Path } from "react-native-svg"
 import {useColorScheme} from "react-native"
 import { Colors } from "../../GlobalStyling/colors"
 
-function ThreeDots({width, height}) {
+function SvgComponent({width, height}) {
 
   const colorScheme = useColorScheme()
   const theme = Colors[colorScheme] ?? Colors.light
 
   return (
     <Svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
       width={width}
       height={height}
-      color="currentColor"
+      viewBox="-0.16 -0.16 16.32 16.32"
       fill="none"
-      stroke={theme.primary}
-      strokeWidth={1.5}
+      xmlns="http://www.w3.org/2000/svg"
+      stroke="#000"
+      strokeWidth={0.00016}
     >
-      <Path d="M15.5 6.5a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0zM22 17.5a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0zM9 17.5a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0z" />
+      <G fill={theme.primary}>
+        <Path d="M8 12a2 2 0 110 4 2 2 0 010-4zM8 6a2 2 0 110 4 2 2 0 010-4zM10 2a2 2 0 10-4 0 2 2 0 004 0z" />
+      </G>
     </Svg>
   )
 }
 
-export default ThreeDots
+export default SvgComponent
+

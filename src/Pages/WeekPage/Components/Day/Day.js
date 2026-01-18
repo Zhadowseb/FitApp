@@ -159,8 +159,8 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                     }}>
 
                     <ThreeDots
-                        width={24}
-                        height={24}/>
+                        width={"20"}
+                        height={"20"}/>
 
                 </TouchableOpacity>
 
@@ -173,7 +173,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
         <ThemedBottomSheet
             visible={PickWorkoutModal_visible}
             onClose={() => set_PickWorkoutModal_visible(false)} >
-                
+
         </ThemedBottomSheet>
 
         {/* 

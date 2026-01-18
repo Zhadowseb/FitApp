@@ -19,7 +19,8 @@ const PickWorkoutModal = ({ workouts, visible, onClose, onSubmit }) => {
 
     <ThemedModal
       visible={visible}
-      title="Pick a workout">
+      title="Pick a workout"
+      onClose={onClose}>
 
       <ScrollView style={styles.wrapper}>
 

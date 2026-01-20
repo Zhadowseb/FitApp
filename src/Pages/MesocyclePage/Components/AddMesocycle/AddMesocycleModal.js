@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { Modal, View, Text, TextInput, Button } from "react-native";
 import styles from "./AddMesocycleModalStyle";
-import { Picker } from "@react-native-picker/picker";
+
+import { ThemedTextInput, ThemedCard, ThemedView, ThemedText, ThemedButton, ThemedModal } 
+  from "../../../../Resources/Components";
 
 export default function AddMesocycleModal({ visible, onClose, onSubmit }) {
 
@@ -15,42 +17,28 @@ export default function AddMesocycleModal({ visible, onClose, onSubmit }) {
   };
 
   return (
-    <Modal
+    <ThemedModal
       visible={visible}
-      transparent
-      animationType="fade">
+      title="Add Mesocycle" >
 
-      <View style={styles.overlay}>
-        <View style={styles.modalBox}>
+        <ThemedTextInput
+          placeholder="Focus (e.g. Hypertrophy)"
+          value={focus}
+          onChangeText={setFocus}
+        />
 
-          <Text style={styles.title}>Add Mesocycle</Text>
+        <ThemedTextInput
+          placeholder="Weeks"
+          keyboardType="numeric"
+          value={weeks}
+          onChangeText={setWeeks}
+        />
 
-          <TextInput
-            placeholder="Focus (e.g. Hypertrophy)"
-            style={styles.input}
-            value={focus}
-            onChangeText={setFocus}
-          />
-
-          <TextInput
-            placeholder="Weeks"
-            keyboardType="numeric"
-            style={styles.input}
-            value={weeks}
-            onChangeText={setWeeks}
-          />
-
-          <Picker>
-
-          </Picker>
-
-          <View style={styles.row}>
-            <Button title="Cancel" color="red" onPress={onClose} />
-            <Button title="Add" color="green" onPress={handleSubmit} />
-          </View>
-
+        <View style={styles.row}>
+          <ThemedButton title="Cancel" variant="danger" onPress={onClose} />
+          <ThemedButton title="Add" variant="primary" onPress={handleSubmit} />
         </View>
-      </View>
-    </Modal>
+
+    </ThemedModal>
   );
 }

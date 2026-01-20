@@ -11,7 +11,7 @@ const PickWorkoutModal = ({
   workouts = [],
   visible,
   onClose,
-  onSubmit, // 👈 callback til parent
+  onSubmit,
 }) => {
   return (
     <ThemedModal
@@ -25,7 +25,7 @@ const PickWorkoutModal = ({
             key={item.workout_id}
             style={styles.row}
             onPress={() => {
-              onSubmit?.(item);   // 👈 returnér workout
+              onSubmit?.(item); 
               onClose();
             }}
           >

@@ -6,3 +6,4 @@ export { default as ThemedButton } from "./ThemedButton";
 export { default as ThemedModal } from "./ThemedModal";
 export { default as ThemedTextInput } from "./ThemedTextInput";
 export { default as ThemedPicker } from "./ThemedPicker";
+export { default as ThemedBottomSheet } from "./ThemedBottomSheet";

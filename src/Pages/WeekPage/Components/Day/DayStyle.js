@@ -75,7 +75,12 @@ export default StyleSheet.create({
     paddingLeft: 10,
     fontWeight: 600,
     fontSize: 16,
-  }
+  },
+
+  option: {
+    flexDirection: "row",
+    paddingTop: 20,
+  },
 
 
 });

@@ -88,6 +88,7 @@ const MesocyclePage = ( {route} ) => {
         <View style={styles.wrapper}>
             <MesocycleList 
                 program_id = {program_id}
+                start_date = {start_date}
                 refreshKey = {refreshKey}/>
 
             <Button title="Add Mesocycle" onPress={() => setModalVisible(true)} />

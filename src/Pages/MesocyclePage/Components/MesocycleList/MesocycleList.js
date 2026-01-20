@@ -5,15 +5,29 @@ import { useNavigation } from "@react-navigation/native";
 import Checkbox from 'expo-checkbox';
 
 import styles from "./MesocycleListStyle";
+import AddMesocycleModal from "../AddMesocycle/AddMesocycleModal";
 import { ThemedTitle, ThemedCard, ThemedView, ThemedText, ThemedButton } 
   from "../../../../Resources/Components";
+import Plus from "../../../../Resources/Icons/UI-icons/Plus"
+import { parseCustomDate, formatDate } from "../../../../Utils/dateUtils";
 
-const MesocycleList = ({ program_id, refreshKey }) => {
+const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
   const [mesocycles, setMesocycles] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const db = useSQLiteContext();
   const navigation = useNavigation();
+
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const weekDays = [
+      'Monday', 
+      'Tuesday', 
+      'Wednesday', 
+      'Thursday', 
+      'Friday', 
+      'Saturday', 
+      'Sunday'];
 
   const loadMesocycles = async () => {
     try {
@@ -30,6 +44,61 @@ const MesocycleList = ({ program_id, refreshKey }) => {
     }
   };
 
+  const handleAdd = async (data) => {
+      try {
+
+          //Checking what mesocycle number this is
+          const row = await db.getFirstAsync(
+              `SELECT COUNT(*) AS count FROM Mesocycle WHERE program_id = ?;`,
+              [program_id]
+          );
+          const mesocycleCount = row?.count ?? 0;
+
+          //Insert new mesocycle
+          const result = await db.runAsync(
+              `INSERT INTO Mesocycle (program_id, mesocycle_number, weeks, focus) VALUES (?, ?, ?, ?);`,
+              [program_id, (mesocycleCount + 1), data.weeks, data.focus]
+          );
+
+          const weeksBefore = await db.getAllAsync(
+              `SELECT COUNT(*) AS count FROM Microcycle WHERE program_id = ?;`,
+              [program_id]
+          )
+          const weekCount = weeksBefore?.count ?? null;
+
+          //Add in weeks to database
+          const newMesocycle_id = result.lastInsertRowId;
+          for (let week = 1; week <= data.weeks; week++){
+              const microcycle_result = await db.runAsync(
+                  `INSERT INTO Microcycle (mesocycle_id, program_id, microcycle_number) VALUES (?, ?, ?);`,
+                  [newMesocycle_id, program_id, week]
+              );
+              
+              const microcycle_id = microcycle_result.lastInsertRowId;
+              for(let day = 1; day <= 7; day++){
+
+
+                  const current_day = (weekCount * 7) + (week * 7 - 7) + (day - 1)
+
+                  const date = parseCustomDate(start_date);
+                  date.setDate(date.getDate() + current_day);
+
+                  await db.runAsync(
+                      `INSERT INTO Day (microcycle_id, program_id, Weekday, date) VALUES (?,?,?,?);`,
+                      [microcycle_id, program_id, weekDays[day-1], formatDate(date)]
+                  )
+              }
+          }
+
+          refresh();
+
+      } catch (error) {
+          console.error(error);
+      }
+
+      setModalVisible(false);
+  };
+
   useEffect(() => {
     loadMesocycles();
   }, [refreshKey]);
@@ -43,6 +112,7 @@ const MesocycleList = ({ program_id, refreshKey }) => {
   }
 
   return (
+    <>
     <ScrollView horizontal>
       {mesocycles.map(item => (
         <TouchableOpacity
@@ -96,7 +166,38 @@ const MesocycleList = ({ program_id, refreshKey }) => {
           No mesocycles found.
         </Text>
       )}
+
+      <TouchableOpacity
+        onPress={ () => {
+          setModalVisible(true)
+        }} >
+
+        <ThemedCard
+          style={
+          {justifyContent: "center",
+            alignItems: "center", 
+            width: 200,
+            height: 250,
+            borderWidth: 1,
+            backgroundColor: "currentColor"}}>
+
+          <Plus
+            width={24}
+            height={24}/>
+
+        </ThemedCard>
+
+      </TouchableOpacity>
     </ScrollView>
+
+    
+    <AddMesocycleModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSubmit={handleAdd}
+    />
+
+    </>
   );
 };
 

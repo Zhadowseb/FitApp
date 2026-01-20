@@ -183,7 +183,9 @@ const ProgramOverviewPage = ( {route} ) => {
                     
                     <MesocycleList 
                         program_id = {program_id}
-                        refreshKey= {refreshKey} />
+                        start_date={start_date}
+                        refreshKey= {refreshKey} 
+                        refresh={refresh}/>
 
                 </TouchableOpacity>
             </ThemedView>

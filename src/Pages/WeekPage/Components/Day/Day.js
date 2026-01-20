@@ -108,23 +108,91 @@ const Day = ( {day, program_id, microcycle_id} ) => {
     );
 
     const copyWorkoutToDate = async (workoutId, date) => {
-        const targetDay = await db.getFirstAsync(
-            `SELECT day_id FROM Day WHERE date = ? AND program_id = ?`,
-            [formatDate(date), program_id]
-        );
 
-        if (!targetDay?.day_id) {
-            console.warn("No day found for date");
-            return;
+        await db.execAsync("BEGIN TRANSACTION");
+
+        try{
+            const targetDay = await db.getFirstAsync(
+                `SELECT day_id FROM Day WHERE date = ? AND program_id = ?`,
+                [formatDate(date), program_id]
+            );
+
+            if (!targetDay?.day_id) {
+                console.warn("No day found for date");
+                return;
+            }
+
+            const newWorkout = await db.runAsync(
+                `INSERT INTO Workout (date, day_id, label)
+                SELECT ?, ?, label FROM Workout WHERE workout_id = ?`,
+                [formatDate(date), targetDay.day_id, workoutId]
+            );
+
+            const oldExercises = await db.getAllAsync(
+                `SELECT * FROM Exercise WHERE workout_id = ?`,
+                [workoutId]
+            );
+
+
+            const exerciseIdMap = {}; // { oldId: newId }
+
+            for (const ex of oldExercises) {
+                const result = await db.runAsync(
+                    `INSERT INTO Exercise (workout_id, exercise_name, sets, done)
+                    VALUES (?, ?, ?, 0)`,[
+                    newWorkout.lastInsertRowId,
+                    ex.exercise_name,
+                    ex.sets, ]
+                );
+                exerciseIdMap[ex.exercise_id] = result.lastInsertRowId;
+            }
+
+            for (const oldExerciseId in exerciseIdMap) {
+                const newExerciseId = exerciseIdMap[oldExerciseId];
+
+                const oldSets = await db.getAllAsync(
+                    `SELECT * FROM Sets WHERE exercise_id = ?`,
+                    [oldExerciseId]
+                );
+
+                for (const s of oldSets) {
+                    await db.runAsync(
+                    `INSERT INTO Sets (
+                        set_number,
+                        exercise_id,
+                        date,
+                        personal_record,
+                        pause,
+                        rpe,
+                        weight,
+                        reps,
+                        done,
+                        failed,
+                        note
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)`,
+                    [
+                        s.set_number,
+                        newExerciseId,
+                        s.date,
+                        s.personal_record,
+                        s.pause,
+                        s.rpe,
+                        s.weight,
+                        s.reps,
+                        s.note,
+                    ]
+                    );
+                }
+            }
+
+            await db.execAsync("COMMIT");
+
+        } catch (err) {
+            await db.execAsync("ROLLBACK");
+            console.error("Copy workout failed:", err);
+            throw err;
         }
 
-        const result = await db.runAsync(
-            `INSERT INTO Workout (date, day_id, label)
-            SELECT ?, ?, label FROM Workout WHERE workout_id = ?`,
-            [formatDate(date), targetDay.day_id, workoutId]
-        );
-
-        console.log("New workout id:", result.lastInsertRowId);
     };
 
 

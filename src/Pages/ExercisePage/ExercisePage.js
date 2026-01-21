@@ -99,75 +99,77 @@ const ExercisePage = ({route}) =>  {
     WORKOUT_ICONS.find(item => item.id === label)?.Icon;
 
   return (
-    <ScrollView>
+    <ThemedView>
+      <ScrollView>
 
-      <ThemedView style={{
-        flex: 1,
-        flexDirection: "row",
-      }}>
+        <View style={{
+          flex: 1,
+          flexDirection: "row",
+        }}>
 
-        <ThemedCard style={styles.info}>
-          <ThemedText>
-             Info... (coming soon)
-          </ThemedText>
-        </ThemedCard>
+          <ThemedCard style={styles.info}>
+            <ThemedText>
+              Info... (coming soon)
+            </ThemedText>
+          </ThemedCard>
 
-        <ThemedCard style={styles.label}>
-         <TouchableOpacity
-          onPress={() => set_labelModal_visible(true)}>
-          
-            {SelectedIcon ? (
-              <View style={styles.label}>
-                <ThemedText> {label} </ThemedText>
-                <SelectedIcon
-                  width={50}
-                  height={50}
-                  backgroundColor="#fff"
-                />
-              </View>
-            ) : (
-              <ThemedText style={{ opacity: 0.5 }}>
-                Add label
-              </ThemedText>
-            )}
+          <ThemedCard style={styles.label}>
+          <TouchableOpacity
+            onPress={() => set_labelModal_visible(true)}>
+            
+              {SelectedIcon ? (
+                <View style={styles.label}>
+                  <ThemedText> {label} </ThemedText>
+                  <SelectedIcon
+                    width={50}
+                    height={50}
+                    backgroundColor="#fff"
+                  />
+                </View>
+              ) : (
+                <ThemedText style={{ opacity: 0.5 }}>
+                  Add label
+                </ThemedText>
+              )}
 
-          </TouchableOpacity> 
+            </TouchableOpacity> 
 
-          <WorkoutLabel 
-            visible={labelModal_visible}
-            onClose={() => set_labelModal_visible(false)}
-            onSubmit={handleLabel}/>
-        </ThemedCard>
+            <WorkoutLabel 
+              visible={labelModal_visible}
+              onClose={() => set_labelModal_visible(false)}
+              onSubmit={handleLabel}/>
+          </ThemedCard>
 
-        <ThemedCard style={styles.editmode}>
-          <ThemedText style={{paddingTop: 20,}}>
-            Edit mode
-          </ThemedText>
+          <ThemedCard style={styles.editmode}>
+            <ThemedText style={{paddingTop: 20,}}>
+              Edit mode
+            </ThemedText>
 
-          <Switch
-            value={editMode}
-            onValueChange={set_editMode} />
-        </ThemedCard>
-      </ThemedView>
+            <Switch
+              value={editMode}
+              onValueChange={set_editMode} />
+          </ThemedCard>
+        </View>
 
-      <View >
-        <ExerciseList 
-          workout_id = {workout_id}
-          editMode = {editMode}
-          refreshing = {refreshing} 
-          updateUI = {handleExerciseChange}/>
-      </View> 
-      
-      {editMode && (
-        <EditModeAdditions 
-          workout_id={workout_id}
-          date={date}
-          onExerciseChange={handleExerciseChange}
-          deleteWorkout={deleteWorkout}/>
-      )}
+        <View >
+          <ExerciseList 
+            workout_id = {workout_id}
+            editMode = {editMode}
+            refreshing = {refreshing} 
+            updateUI = {handleExerciseChange}/>
+        </View> 
+        
+        {editMode && (
+          <EditModeAdditions 
+            workout_id={workout_id}
+            date={date}
+            onExerciseChange={handleExerciseChange}
+            deleteWorkout={deleteWorkout}/>
+        )}
 
-      <StatusBar style="auto" />
-    </ScrollView>
+        <StatusBar style="auto" />
+      </ScrollView>
+    </ThemedView>
   );
 }
 

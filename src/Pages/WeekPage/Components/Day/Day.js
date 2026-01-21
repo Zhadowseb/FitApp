@@ -6,15 +6,19 @@ import { useEffect, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
 import DateTimePicker from '@react-native-community/datetimepicker';
+import PickWorkoutModal from './Components/PickWorkoutModal/PickWorkoutModal';
 
 import styles from './DayStyle';
 import SlantedDivider from "../../../../Resources/Figures/SlantedDivider"
 import { WORKOUT_ICONS } from '../../../../Resources/Icons/WorkoutLabels/index';
+
+//Icons:
 import ThreeDots from '../../../../Resources/Icons/UI-icons/ThreeDots';
 import Plus from '../../../../Resources/Icons/UI-icons/Plus';
 import Copy from '../../../../Resources/Icons/UI-icons/Copy';
-import PickWorkoutModal from './Components/PickWorkoutModal/PickWorkoutModal';
+import CircularProgress from '../../../../Resources/Components/CircularProgress';
 
+//Themed components and utility
 import { ThemedCard, ThemedText, ThemedBottomSheet } from "../../../../Resources/Components";
 import { formatDate } from '../../../../Utils/dateUtils';
 
@@ -200,7 +204,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
     //Render:
     return (
         <>
-        <ThemedCard style={{flex: 1}}>
+        <ThemedCard style={styles.card}>
             
             <TouchableOpacity
                 style={{flex: 1, flexDirection: "row"}}
@@ -215,6 +219,17 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                         set_pickWorkoutModal_visible(true);
                     }
                 }}>
+
+                {workouts.length !== 0 &&
+                    <View style={styles.circle}>
+                        <CircularProgress
+                            size = {60}
+                            strokeWidth = {3} 
+                            text= {"test" + workouts.length}
+                            progressPercent = {5}
+                        />
+                    </View>
+                };
 
                 <View style={styles.day}>
                     <View style={styles.text}>

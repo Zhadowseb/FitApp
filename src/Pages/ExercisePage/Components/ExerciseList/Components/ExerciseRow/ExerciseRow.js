@@ -46,18 +46,11 @@ const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} 
   return (
     <ThemedCard key={exercise.exercise_id}
       style={{
-        marginHorizontal: 1,
-        paddingBottom: 0}}>
+        marginHorizontal: 1}}>
 
       <TouchableOpacity
-        onPress={() =>
-          navigation.navigate("SetPage", {
-            exercise_id: exercise.exercise_id,
-            exercise_name: exercise.exercise_name,
-            sets: exercise.sets,
-          })
-        }
-      >
+        onPress={() => toggleExpanded(exercise.exercise_id)}>
+        
         <View style={[styles.exercise_container,
           exercise.done ? styles.exercise_complete : styles.exercise_uncomplete]}>
           <View style={styles.exercise_name}>
@@ -102,52 +95,31 @@ const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} 
                 value={exercise.done === 1}
                 color={exercise.done ? "#4CAF50" : "#ccc"}
               />
+            
             }
           </View>
         </View>
-      </TouchableOpacity>
 
-      <View style={styles.SetList_container}>
+        {expandedExercises[exercise.exercise_id] && (
+          <View>
+            <SetList 
+                sets={exercise.sets}
+                onToggleSet={onToggleSet}
+                updateWeight={updateWeight}
+                updateUI={updateUI}
+                editMode={editMode} />
 
-        <View style={styles.SetList}>
-          {!expandedExercises[exercise.exercise_id] && (
             <TouchableOpacity
               onPress={() => toggleExpanded(exercise.exercise_id)}
-              style={{ paddingVertical: 4 }}>
-
-              <View style={styles.expandable}>
-                <ArrowDown
-                  width={24}
-                  height={24}/>
-
-              </View>
-
+              style={styles.hideset}>
+              
             </TouchableOpacity>
-          )}
 
-          {expandedExercises[exercise.exercise_id] && (
-            <View>
-              <SetList 
-                  sets={exercise.sets}
-                  onToggleSet={onToggleSet}
-                  updateWeight={updateWeight}
-                  updateUI={updateUI}
-                  editMode={editMode} />
+          </View>
+        )}
 
-              <TouchableOpacity
-                onPress={() => toggleExpanded(exercise.exercise_id)}
-                style={styles.hideset}>
+      </TouchableOpacity>
 
-                <ArrowUp
-                  width={24}
-                  height={24}/>
-                
-              </TouchableOpacity>
-
-            </View>
-          )}
-        </View>
-      </View>
     </ThemedCard>
   );
 };

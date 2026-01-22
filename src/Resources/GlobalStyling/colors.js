@@ -3,10 +3,13 @@ export const Colors = {
 
     dark: {
         primary: "#f7742eff",
+        primaryLight: "rgb(237, 178, 146)",
         secondary: "#60daacff",
+        secondaryLight: "rgb(178, 214, 200)",
         danger: "#ba0000ff",
         
         text: "#d4d4d4",
+        quietText: "rgb(81, 76, 73)",
         title: "#fff",
         background: "#0E0F12",
         cardBackground: "#1b1918ff",

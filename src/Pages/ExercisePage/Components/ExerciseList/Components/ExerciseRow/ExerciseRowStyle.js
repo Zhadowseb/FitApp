@@ -24,8 +24,6 @@ export default StyleSheet.create({
   exercise_container: {
     flex: 1,
     flexDirection: "row",
-    borderBottomWidth: 1,
-    borderColor: "#dbdbdbff",
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",

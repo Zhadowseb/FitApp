@@ -11,9 +11,8 @@ export default StyleSheet.create({
   headerRow: {
     flexDirection: "row",
     paddingVertical: 4,
-    borderBottomWidth: 1,
-    borderColor: "#ccc",
-    marginBottom: 4,
+    marginLeft: 12,
+    marginRight: 8,
   },
 
 

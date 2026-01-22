@@ -150,6 +150,9 @@ const ExercisePage = ({route}) =>  {
           flexDirection: "row",
         }}>
 
+
+
+
           <View style={{alignItems: "center"}}>
             <ThemedTitle
               type="h2">
@@ -167,46 +170,56 @@ const ExercisePage = ({route}) =>  {
               />
 
             </ThemedCard>
-
           </View>
 
-          <ThemedCard style={styles.label}>
-          <TouchableOpacity
-            onPress={() => set_labelModal_visible(true)}>
-            
-              {SelectedIcon ? (
-                <View style={styles.label}>
-                  <ThemedText> {label} </ThemedText>
-                  <SelectedIcon
-                    width={50}
-                    height={50}
-                    backgroundColor="#fff"
-                  />
-                </View>
-              ) : (
-                <ThemedText style={{ opacity: 0.5 }}>
-                  Add label
-                </ThemedText>
-              )}
 
-            </TouchableOpacity> 
+          <View style={{alignItems: "center"}}>
+            <ThemedTitle type="h2">
+                Type
+            </ThemedTitle>
 
-            <WorkoutLabel 
-              visible={labelModal_visible}
-              onClose={() => set_labelModal_visible(false)}
-              onSubmit={handleLabel}/>
-          </ThemedCard>
+            <ThemedCard style={styles.label}>
+            <TouchableOpacity
+              onPress={() => set_labelModal_visible(true)}>
+              
+                {SelectedIcon ? (
+                  <View style={styles.label}>
+                    <ThemedText> {label} </ThemedText>
+                    <SelectedIcon
+                      width={50}
+                      height={50}
+                      backgroundColor="#fff"
+                    />
+                  </View>
+                ) : (
+                  <ThemedText style={{ opacity: 0.5 }}>
+                    Add label
+                  </ThemedText>
+                )}
+
+              </TouchableOpacity> 
+
+              <WorkoutLabel 
+                visible={labelModal_visible}
+                onClose={() => set_labelModal_visible(false)}
+                onSubmit={handleLabel}/>
+            </ThemedCard>
+          </View>
+
+          <View style={{alignItems: "center"}}>
+            <ThemedTitle type="h2">
+                Edit
+            </ThemedTitle>
+
+            <ThemedCard style={styles.editmode}>
+
+              <Switch
+                value={editMode}
+                onValueChange={set_editMode} />
+            </ThemedCard>
+          </View>
 
 
-          <ThemedCard style={styles.editmode}>
-            <ThemedText style={{paddingTop: 20}}>
-              Edit mode
-            </ThemedText>
-
-            <Switch
-              value={editMode}
-              onValueChange={set_editMode} />
-          </ThemedCard>
         </View>
 
         <View >

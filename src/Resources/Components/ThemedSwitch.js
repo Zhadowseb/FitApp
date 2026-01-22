@@ -8,10 +8,10 @@ const ThemedSwitch = ( {style, ...props} ) => {
 
     return (
         <Switch 
-            thumbColor={props.value ? theme.secondary : "rgb(236, 182, 153)"}
+            thumbColor={props.value ? theme.secondary : theme.primary}
             trackColor={{
-                true: "rgb(31, 126, 89)", 
-                false: "rgb(163, 104, 73)"
+                true: theme.secondaryLight, 
+                false: theme.primaryLight
             }}
             style={
                 [{

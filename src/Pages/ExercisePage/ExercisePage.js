@@ -30,7 +30,7 @@ const ExercisePage = ({route}) =>  {
   const [totalSets, set_totalSets] = useState(0);
   const [doneSets, set_doneSets] = useState(0);
 
-  const {workout_id, date} = route.params;
+  const {workout_id, day, date} = route.params;
 
   const handleExerciseChange = () => {
     set_refreshing(prev => prev + 1);
@@ -148,16 +148,25 @@ const ExercisePage = ({route}) =>  {
           flexDirection: "row",
         }}>
 
+          <View style={styles.info}>
+            <ThemedCard style={styles.info}>
+              <ThemedText>
+                {day}
+              </ThemedText>             
+              <ThemedText>
+                {date}
+              </ThemedText>
+            </ThemedCard>
+          </View>
 
 
-
-          <View style={{alignItems: "center"}}>
+          <View style={{alignItems: "center", justifyContent: "center"}}>
             <ThemedTitle
               type="h2">
                 Sets
             </ThemedTitle>
 
-            <ThemedCard style={styles.info}>
+            <ThemedCard style={styles.sets}>
 
               <CircularProgress
                 size = {100}
@@ -171,51 +180,52 @@ const ExercisePage = ({route}) =>  {
           </View>
 
 
-          <View style={{alignItems: "center"}}>
-            <ThemedTitle type="h2">
-                Type
-            </ThemedTitle>
+          <View style={{flexDirection: "column"}}>
+            <View style={{alignItems: "center"}}>
 
-            <ThemedCard style={styles.label}>
-            <TouchableOpacity
-              onPress={() => set_labelModal_visible(true)}>
-              
-                {SelectedIcon ? (
-                  <View style={styles.label}>
-                    <ThemedText> {label} </ThemedText>
-                    <SelectedIcon
-                      width={50}
-                      height={50}
-                      backgroundColor="#fff"
-                    />
-                  </View>
-                ) : (
-                  <ThemedText style={{ opacity: 0.5 }}>
-                    Add label
-                  </ThemedText>
-                )}
+              <ThemedCard style={styles.label}>
+              <TouchableOpacity
+                onPress={() => set_labelModal_visible(true)}>
+                
+                  {SelectedIcon ? (
+                    <View style={styles.label}>
+                      <ThemedText> {label} </ThemedText>
+                      <SelectedIcon
+                        width={50}
+                        height={50}
+                        backgroundColor="#fff"
+                      />
+                    </View>
+                  ) : (
+                    <ThemedText style={{ opacity: 0.5 }}>
+                      Add label
+                    </ThemedText>
+                  )}
 
-              </TouchableOpacity> 
+                </TouchableOpacity> 
 
-              <WorkoutLabel 
-                visible={labelModal_visible}
-                onClose={() => set_labelModal_visible(false)}
-                onSubmit={handleLabel}/>
-            </ThemedCard>
+                <WorkoutLabel 
+                  visible={labelModal_visible}
+                  onClose={() => set_labelModal_visible(false)}
+                  onSubmit={handleLabel}/>
+              </ThemedCard>
+            </View>
+
+            <View style={{alignItems: "center"}}>
+              <ThemedTitle type="h3">
+                  Mode
+              </ThemedTitle>
+
+              <ThemedCard style={styles.editmode}>
+
+                <ThemedSwitch
+                  value={editMode}
+                  onValueChange={set_editMode} />
+              </ThemedCard>
+            </View>
+
           </View>
 
-          <View style={{alignItems: "center"}}>
-            <ThemedTitle type="h2">
-                Edit
-            </ThemedTitle>
-
-            <ThemedCard style={styles.editmode}>
-
-              <ThemedSwitch
-                value={editMode}
-                onValueChange={set_editMode} />
-            </ThemedCard>
-          </View>
 
 
         </View>

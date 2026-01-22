@@ -208,6 +208,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                     if(workouts.length === 1){
                         navigation.navigate("ExercisePage", {
                             workout_id: workouts[0].workout_id,
+                            day: day,
                             date: date,})   
                     } else if (workouts.length > 1){
 

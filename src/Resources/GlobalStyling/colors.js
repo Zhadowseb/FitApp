@@ -3,7 +3,9 @@ export const Colors = {
 
     dark: {
         primary: "#f7742eff",
+        primaryLight: "rgb(237, 178, 146)",
         secondary: "#60daacff",
+        secondaryLight: "rgb(178, 214, 200)",
         danger: "#ba0000ff",
         
         text: "#d4d4d4",

@@ -1,10 +1,8 @@
 import { StatusBar } from 'expo-status-bar';
-import { View, Button, ScrollView, Text, TouchableOpacity } from 'react-native';
-import { useState } from "react";
-import { Switch } from "react-native";
+import { View, Button, ScrollView, Text, TouchableOpacity, Switch } from 'react-native';
+import { useState, useCallback } from "react";
 import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
-import { useCallback } from "react";
 
 import styles from './ExercisePageStyle';
 import ExerciseList from './Components/ExerciseList/ExerciseList';
@@ -17,7 +15,7 @@ import { ThemedTitle,
         ThemedCard, 
         ThemedView, 
         ThemedText, 
-        ThemedButton, 
+        ThemedSwitch, 
         ThemedModal } 
   from "../../Resources/Components";
 
@@ -213,7 +211,7 @@ const ExercisePage = ({route}) =>  {
 
             <ThemedCard style={styles.editmode}>
 
-              <Switch
+              <ThemedSwitch
                 value={editMode}
                 onValueChange={set_editMode} />
             </ThemedCard>

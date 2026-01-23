@@ -2,6 +2,19 @@ import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
 
+  circle: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  card: {
+    flex: 1,
+    marginVertical: 3,
+    marginHorizontal: 5,
+    borderRadius: 30,
+    padding: 5,
+  },
+
   day: {
     flex: 1,
     borderTopLeftRadius: 12,

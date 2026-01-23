@@ -9,6 +9,8 @@ import styles from './HomePageStyle';
 import { ThemedTitle, ThemedCard, ThemedView, ThemedText, ThemedButton, ThemedBouncyCheckbox } 
   from "../../Resources/Components";
 
+import CircularProgress from '../../Resources/Components/CircularProgress';
+
 export default function App() {
 
   const navigation = useNavigation();
@@ -27,6 +29,13 @@ export default function App() {
           title = "Edit Exercise Choices" 
           onPress={() => navigation.navigate("ExerciseStoragePage")}/>
       </View>
+
+      <CircularProgress
+        size = {100}
+        strokeWidth = {3} 
+        text= "test"
+        progressPercent = {5}
+      />
 
       <StatusBar style="auto" />
 

@@ -2,10 +2,11 @@ import { StatusBar } from 'expo-status-bar';
 import { View, Button, useColorScheme } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
+
 import styles from './HomePageStyle';
 
 //Custom themed components
-import { ThemedTitle, ThemedCard, ThemedView, ThemedText, ThemedButton } 
+import { ThemedTitle, ThemedCard, ThemedView, ThemedText, ThemedButton, ThemedBouncyCheckbox } 
   from "../../Resources/Components";
 
 import CircularProgress from '../../Resources/Components/CircularProgress';

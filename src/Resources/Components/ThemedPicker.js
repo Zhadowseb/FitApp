@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { View, StyleSheet, Pressable, ScrollView } from "react-native";
 import { useColorScheme } from "react-native";
 
@@ -11,14 +11,29 @@ const ThemedPicker = ({
   items = [],
   onChange,
   placeholder = "Select",
+  title = "Pick",
   style,
 }) => {
   const [open, setOpen] = useState(false);
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
 
+  /**
+   * Normalize items:
+   * ["Deload"] -> { label: "Deload", value: "Deload" }
+   */
+  const normalizedItems = useMemo(
+    () =>
+      items.map(item =>
+        typeof item === "string"
+          ? { label: item, value: item }
+          : item
+      ),
+    [items]
+  );
+
   const selectedLabel =
-    items.find(i => i.value === value)?.label ?? placeholder;
+    normalizedItems.find(i => i.value === value)?.label ?? placeholder;
 
   return (
     <>
@@ -34,31 +49,28 @@ const ThemedPicker = ({
           style,
         ]}
       >
-        <ThemedText>
-          {selectedLabel}
-        </ThemedText>
+        <ThemedText>{selectedLabel}</ThemedText>
       </Pressable>
 
       {/* Modal */}
       <ThemedModal
         visible={open}
         onClose={() => setOpen(false)}
-        title="Select exercise"
+        title={title}
       >
-
         <ScrollView style={styles.scrollview}>
-            {items.map(item => (
+          {normalizedItems.map(item => (
             <Pressable
-                key={item.value}
-                onPress={() => {
+              key={item.value}
+              onPress={() => {
                 onChange?.(item.value);
                 setOpen(false);
-                }}
-                style={styles.option}
+              }}
+              style={styles.option}
             >
-                <ThemedText>{item.label}</ThemedText>
+              <ThemedText>{item.label}</ThemedText>
             </Pressable>
-            ))}
+          ))}
         </ScrollView>
       </ThemedModal>
     </>
@@ -66,6 +78,7 @@ const ThemedPicker = ({
 };
 
 export default ThemedPicker;
+
 
 const styles = StyleSheet.create({
   input: {

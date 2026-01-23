@@ -14,6 +14,12 @@ const MicrocyclePage = ( {route} ) => {
 
     const {mesocycle_id, program_id} = route.params;
 
+    const [refreshing, set_refreshing] = useState(0);
+
+    const updateUI = () => {
+        set_refreshing(prev => prev + 1);
+    }
+
     const deleteMesocycle = async () => {
         await db.execAsync("BEGIN TRANSACTION");
 
@@ -92,7 +98,9 @@ const MicrocyclePage = ( {route} ) => {
         <ThemedView>
             
             <MicrocycleList
-                mesocycle_id={mesocycle_id} />
+                mesocycle_id={mesocycle_id} 
+                refreshKey={refreshing}
+                updateui={updateUI}/>
 
             <ThemedButton 
                 title="Delete Mesocycle"

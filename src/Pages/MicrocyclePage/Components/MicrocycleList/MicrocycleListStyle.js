@@ -1,26 +1,13 @@
 import { StyleSheet } from "react-native";
 
 export default StyleSheet.create({
-  card: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    padding: 16,
-    marginVertical: 10,
-    marginHorizontal: 16,
-    borderRadius: 10,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { height: 2, width: 0 },
-  },
 
   status_section: {
     alignItems: "center",
     flex: 0.2,
-    borderRightWidth: 1,
-    borderColor: "#b9b9b9ff",
     paddingRight: 10,
+    flexDirection: "row",
+    
   },
 
   body: {
@@ -30,9 +17,9 @@ export default StyleSheet.create({
   },
 
   done: {
-    flex: 0.2,
     justifyContent: "center",
     alignItems: "center",
+    margin: 15,
   },
 
   weeks: {
@@ -42,6 +29,7 @@ export default StyleSheet.create({
 
   header_status: {
     alignItems: "center",
+    flexDirection: "column",
   },
 
   label: {
@@ -56,5 +44,33 @@ export default StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingTop: 40,
+  },
+
+  bottomsheet_title: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#2e2e2eff",
+    paddingBottom: 30,
+  },
+  bottomsheet_body: {
+    justifyContent: "center",
+    padding: 20,
+    paddingLeft: 0,
+  },
+
+  option_text: {
+    paddingLeft: 10,
+    fontWeight: 600,
+    fontSize: 16,
+  },
+
+  option: {
+    flexDirection: "row",
+    paddingTop: 20,
+  },
+
+  options: {
+    flex: 0.2,
+    alignItems: 'center',
+    justifyContent: "center",
   },
 });

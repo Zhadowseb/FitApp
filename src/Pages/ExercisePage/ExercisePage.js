@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { View, Button, ScrollView, Text, TouchableOpacity, Switch } from 'react-native';
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
 
@@ -126,17 +126,15 @@ const ExercisePage = ({route}) =>  {
     }, [label, workout_id])
   );
 
+  useEffect(() => {
+    loadCompletedSets();
+    loadTotalSets();
+  }, [refreshing]);
+
+
   const SelectedIcon =
     WORKOUT_ICONS.find(item => item.id === label)?.Icon;
 
-
-/*
-            <ThemedText>
-              Total Weight liftet.
-              Date.
-            </ThemedText>
-
-*/
 
   return (
     <ThemedView>

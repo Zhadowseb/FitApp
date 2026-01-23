@@ -180,6 +180,7 @@ const ExerciseList = ( {workout_id, editMode, refreshing, updateUI} ) => {
 
       //Reloades ui
       loadExercises();
+      updateUI();
 
     } catch (error) {
       await db.execAsync("ROLLBACK");

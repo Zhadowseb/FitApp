@@ -30,13 +30,6 @@ export default function App() {
           onPress={() => navigation.navigate("ExerciseStoragePage")}/>
       </View>
 
-      <CircularProgress
-        size = {100}
-        strokeWidth = {3} 
-        text= "test"
-        progressPercent = {5}
-      />
-
       <StatusBar style="auto" />
 
     </ThemedView>

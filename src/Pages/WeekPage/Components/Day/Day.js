@@ -221,17 +221,6 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                     }
                 }}>
 
-                {workouts.length !== 0 &&
-                    <View style={styles.circle}>
-                        <CircularProgress
-                            size = {60}
-                            strokeWidth = {3} 
-                            text= {"test" + workouts.length}
-                            progressPercent = {5}
-                        />
-                    </View>
-                };
-
                 <View style={styles.day}>
                     <View style={styles.text}>
                         <ThemedText style={[workouts_done && { color: "green" }]}>

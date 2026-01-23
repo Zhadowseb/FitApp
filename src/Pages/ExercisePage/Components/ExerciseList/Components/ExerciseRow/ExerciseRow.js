@@ -3,7 +3,9 @@ import { useState } from "react";
 import { View, Text, Button, TouchableOpacity } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
-import Checkbox from 'expo-checkbox';
+import { useColorScheme } from "react-native";
+import { Colors } from "../../../../../../Resources/GlobalStyling/colors";
+
 
 import styles from "./ExerciseRowStyle";
 import SetList from "./SetList/SetList";
@@ -15,11 +17,15 @@ import ArrowDown from "../../../../../../Resources/Icons/UI-icons/ArrowDown";
 
 import {ThemedCard,
         ThemedText,
-        ThemedButton} 
+        ThemedButton,
+        ThemedBouncyCheckbox} 
   from "../../../../../../Resources/Components";
 
 
 const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} ) => {
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme] ?? Colors.light;
+  
   const [expandedExercises, setExpandedExercises] = useState({});
 
   const db = useSQLiteContext();
@@ -51,8 +57,7 @@ const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} 
       <TouchableOpacity
         onPress={() => toggleExpanded(exercise.exercise_id)}>
         
-        <View style={[styles.exercise_container,
-          exercise.done ? styles.exercise_complete : styles.exercise_uncomplete]}>
+        <View style={styles.exercise_container}>
           <View style={styles.exercise_name}>
             <ThemedText>
               {exercise.exercise_name}
@@ -91,10 +96,14 @@ const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} 
                 onPress={() => deleteExercise(exercise.exercise_id)}
               />
               :
-              <Checkbox
+              <ThemedBouncyCheckbox
                 value={exercise.done === 1}
-                color={exercise.done ? "#4CAF50" : "#ccc"}
+                size= "20"
+                edgeSize={2}
+                disabled
+                checkmarkColor={theme.cardBackground}
               />
+
             
             }
           </View>

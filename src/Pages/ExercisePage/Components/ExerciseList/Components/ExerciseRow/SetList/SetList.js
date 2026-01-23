@@ -2,8 +2,8 @@
 import { View, Text, TextInput, Button } from "react-native";
 import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
 import { useState, useEffect } from "react";
-
-import Checkbox from 'expo-checkbox';
+import { useColorScheme } from "react-native";
+import { Colors } from "../../../../../../../Resources/GlobalStyling/colors";
 
 import styles from "./SetListStyle";
 import Title from "./Title/Title";
@@ -12,10 +12,14 @@ import Title from "./Title/Title";
 import {ThemedCard,
         ThemedText,
         ThemedTextInput,
-        ThemedButton} 
+        ThemedButton,
+        ThemedBouncyCheckbox} 
   from "../../../../../../../Resources/Components";
   
 const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme] ?? Colors.light;
+
   if (!sets || sets.length === 0) {
     return null;
   }
@@ -178,11 +182,18 @@ const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
                   onPress={() => deleteSet(set.sets_id)}
                 />
                 :
-                <Checkbox
-                  value={set.done === 1}
-                  color={set.done ? "#4CAF50" : "#ccc"}
-                  onValueChange={(checked) => onToggleSet(set.sets_id, checked)}
-                  style={styles.checkbox} />
+                <View style={{justifyContent:"center"}}>
+                  <ThemedBouncyCheckbox
+                    value={set.done === 1}
+                    onChange={(checked) => onToggleSet(set.sets_id, checked)}
+                    size={18}
+                    edgeSize={2}
+                    checkmarkColor={theme.cardBackground}
+                  />
+                </View>
+
+
+                  
               }
             </View>
         </View>

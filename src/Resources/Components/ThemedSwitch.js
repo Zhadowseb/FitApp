@@ -26,14 +26,3 @@ const ThemedSwitch = ( {style, ...props} ) => {
 }
 
 export default ThemedSwitch
-
-/*
-
-
-              <Switch
-                value={editMode}
-                onValueChange={set_editMode} 
-                thumbColor = "#e20e0e" 
-                trackColor= {{true: "red", false: "blue"}}/>
-
-*/

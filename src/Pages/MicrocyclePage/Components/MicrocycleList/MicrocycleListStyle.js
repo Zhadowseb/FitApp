@@ -4,7 +4,7 @@ export default StyleSheet.create({
 
   status_section: {
     alignItems: "center",
-    flex: 0.2,
+    flex: 0.5,
     paddingRight: 10,
     flexDirection: "row",
     
@@ -14,6 +14,11 @@ export default StyleSheet.create({
     flexDirection: "column",
     alignItems: "center",
     flex: 0.8,
+  },
+
+  focus: {
+    justifyContent: "center",
+    alignItems: "center"
   },
 
   done: {

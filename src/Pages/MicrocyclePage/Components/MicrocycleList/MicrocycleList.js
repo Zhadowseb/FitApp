@@ -8,7 +8,7 @@ import ThreeDots from "../../../../Resources/Icons/UI-icons/ThreeDots"
 import Plus from "../../../../Resources/Icons/UI-icons/Plus";
 import Copy from "../../../../Resources/Icons/UI-icons/Copy";
 import CalenderPastePicker from "../../../../Resources/Components/CalenderPastePicker/CalenderPasteModal";
-
+import CircularProgression from "../../../../Resources/Components/CircularProgression"
 
 import styles from "./MicrocycleListStyle";
 
@@ -22,12 +22,13 @@ import { ThemedCard,
 const MicrocycleList = ( {program_id, mesocycle_id, refreshKey, updateui} ) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
-
   const db = useSQLiteContext();
   const navigation = useNavigation();
 
   const [microcycles, setMicrocycles] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const [workoutCounts, setWorkoutCounts] = useState({});
 
   const [selectedWeek, set_selectedWeek] = useState(0);
   const [OptionsBottomsheet_visible, set_OptionsBottomsheet_visible] = useState(false);
@@ -174,6 +175,30 @@ const MicrocycleList = ( {program_id, mesocycle_id, refreshKey, updateui} ) => {
     }
   };
 
+  const getWorkoutCounts = async (microcycle_id) => {
+    const total = await db.getFirstAsync(
+      `SELECT COUNT(*) AS count
+      FROM Workout w
+      JOIN Day d ON w.day_id = d.day_id
+      WHERE d.microcycle_id = ?`,
+      [microcycle_id]
+    );
+
+    const done = await db.getFirstAsync(
+      `SELECT COUNT(*) AS count
+      FROM Workout w
+      JOIN Day d ON w.day_id = d.day_id
+      WHERE d.microcycle_id = ?
+        AND w.done = 1`,
+      [microcycle_id]
+    );
+
+    return {
+      total: total.count,
+      done: done.count,
+    };
+  };
+
 
 
 
@@ -185,81 +210,117 @@ const MicrocycleList = ( {program_id, mesocycle_id, refreshKey, updateui} ) => {
     loadMicrocycles();
   }, []);
 
+  useEffect(() => {
+    const loadCounts = async () => {
+      const result = {};
+
+      for (const mc of microcycles) {
+        result[mc.microcycle_id] =
+          await getWorkoutCounts(mc.microcycle_id);
+      }
+
+      setWorkoutCounts(result);
+    };
+
+    if (microcycles.length > 0) {
+      loadCounts();
+    }
+  }, [microcycles]);
+
   /*
   Add in total sets for each exercise.
   Add in total weight liftet for week.
   */
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      onPress={() => {
-        navigation.navigate("WeekPage", {
-            microcycle_id: item.microcycle_id,
-            microcycle_number: item.microcycle_number,
-            program_id: item.program_id})
-      }}>
-        <ThemedCard style={{flexDirection: "row"}}>
-          <View style={styles.status_section}>
+  const renderItem = ({ item }) => {
 
-              <View style={styles.done}>
-                  <ThemedBouncyCheckbox
-                    value={item.done === 1}
-                    size={24}
-                    edgeSize={2}
-                    disabled
-                    checkmarkColor={theme.cardBackground} />
-              </View>              
+    const counts =
+      workoutCounts[item.microcycle_id] ?? { total: 0, done: 0 };
 
-              <View style={styles.header_status}>
-                  <ThemedText style={styles.label}>Week</ThemedText>
-                  <ThemedText> {item.microcycle_number} </ThemedText>
-              </View>
+    const progress =
+      counts.total > 0
+        ? (counts.done / counts.total) * 100
+        : 0;
 
-          </View>
+    return (
+      <TouchableOpacity
+        onPress={() => {
+          navigation.navigate("WeekPage", {
+              microcycle_id: item.microcycle_id,
+              microcycle_number: item.microcycle_number,
+              program_id: item.program_id})
+        }}>
+          <ThemedCard style={{flexDirection: "row", paddingTop: "0", paddingBottom: "0",}}>
+            <View style={styles.status_section}>
 
-          <View style={styles.body}>
+                <View style={styles.done}>
+                    <ThemedBouncyCheckbox
+                      value={item.done === 1}
+                      size={24}
+                      edgeSize={2}
+                      disabled
+                      checkmarkColor={theme.cardBackground} />
+                </View>              
 
-              <View style={styles.focus}>
-                <ThemedPicker
-                  value={item.focus}
-                  onChange={ (newFocus) => {
-                    updateFocus(item.microcycle_id, newFocus);
-                  }}
-                  placeholder="Focus"
-                  title="Select Week Focus"
-                  items={[
-                    "Progressive Overload",
-                    "Volume",
-                    "Intensity",
-                    "Technique",
-                    "Speed / Power",
-                    "Easy / Recovery",
-                    "Deload",
-                    "Max Test",
-                  ]}
+                <View style={styles.header_status}>
+                    <ThemedText style={styles.label}>Week</ThemedText>
+                    <ThemedText> {item.microcycle_number} </ThemedText>
+                </View>
+
+                <CircularProgression
+                  size = {60}
+                  strokeWidth = {5} 
+                  text= {`${counts.done}/${counts.total}`}
+                  textSize = {16}
+                  progressPercent = {progress}
                 />
-              </View>
-          </View>
 
-          <View style={{justifyContent: "center"}}>
-            <TouchableOpacity
-                style={styles.options}
-                onPress={async () => {
-                    set_selectedWeek(item);
-                    set_OptionsBottomsheet_visible(true);
-                    copyWeek(item.microcycle_id, selectedWeek.microcycle_id);
-                }}>
+            </View>
 
-                <ThreeDots
-                    width={"20"}
-                    height={"20"}/>
+            <View style={styles.body}>
 
-            </TouchableOpacity>   
-          </View>
-        </ThemedCard>
+                <View style={styles.focus}>
+                  <ThemedPicker
+                    value={item.focus}
+                    onChange={ (newFocus) => {
+                      updateFocus(item.microcycle_id, newFocus);
+                    }}
+                    placeholder="Focus"
+                    title="Select Week Focus"
+                    items={[
+                      "Progressive Overload",
+                      "Volume",
+                      "Intensity",
+                      "Technique",
+                      "Speed / Power",
+                      "Easy / Recovery",
+                      "Deload",
+                      "Max Test",
+                    ]}
+                  />
+                </View>
+            </View>
 
-    </TouchableOpacity>
-  );
+            <View style={{justifyContent: "center"}}>
+              <TouchableOpacity
+                  style={styles.options}
+                  onPress={async () => {
+                      set_selectedWeek(item);
+                      set_OptionsBottomsheet_visible(true);
+                      copyWeek(item.microcycle_id, selectedWeek.microcycle_id);
+                  }}>
+
+                  <ThreeDots
+                      width={"20"}
+                      height={"20"}/>
+
+              </TouchableOpacity>   
+            </View>
+          </ThemedCard>
+
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <>

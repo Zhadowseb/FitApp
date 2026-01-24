@@ -9,7 +9,7 @@ import ExerciseList from './Components/ExerciseList/ExerciseList';
 import EditModeAdditions from './Components/EditModeAdditions/EditModeAdditions';
 import WorkoutLabel from "../../Resources/Components/WorkoutLabel/WorkoutLabel";
 import { WORKOUT_ICONS } from '../../Resources/Icons/WorkoutLabels';
-import CircularProgress from '../../Resources/Components/CircularProgression';
+import CircularProgression from '../../Resources/Components/CircularProgression';
 
 import { ThemedTitle, 
         ThemedCard, 
@@ -166,7 +166,7 @@ const ExercisePage = ({route}) =>  {
 
             <ThemedCard style={styles.sets}>
 
-              <CircularProgress
+              <CircularProgression
                 size = {100}
                 strokeWidth = {10} 
                 text= {doneSets + "/" + totalSets}

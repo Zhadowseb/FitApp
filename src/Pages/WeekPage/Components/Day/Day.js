@@ -16,7 +16,6 @@ import { WORKOUT_ICONS } from '../../../../Resources/Icons/WorkoutLabels/index';
 import ThreeDots from '../../../../Resources/Icons/UI-icons/ThreeDots';
 import Plus from '../../../../Resources/Icons/UI-icons/Plus';
 import Copy from '../../../../Resources/Icons/UI-icons/Copy';
-import CircularProgress from '../../../../Resources/Components/CircularProgress';
 
 //Themed components and utility
 import { ThemedCard, ThemedText, ThemedBottomSheet } from "../../../../Resources/Components";

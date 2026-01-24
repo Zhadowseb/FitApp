@@ -52,16 +52,14 @@ const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} 
   return (
     <ThemedCard key={exercise.exercise_id}
       style={{
-        marginHorizontal: 1}}>
+        marginHorizontal: 0}}>
 
       <TouchableOpacity
         onPress={() => toggleExpanded(exercise.exercise_id)}>
         
         <View style={styles.exercise_container}>
           <View style={styles.exercise_name}>
-            <ThemedText>
-              {exercise.exercise_name}
-            </ThemedText>
+            <ThemedText> {exercise.exercise_name} </ThemedText>
           </View>
 
           <View style={[styles.exercise_sets, styles.exercise_alignment]}>

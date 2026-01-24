@@ -20,7 +20,7 @@ export default StyleSheet.create({
 
     override: {
         borderLeftWidth: 0,
-        borderBottomColor: "#d3d3d3ff",
+        borderBottomColor: "#555555ff",
         borderBottomWidth: 1,
         justifyContent: "center",
         alignItems: "center",

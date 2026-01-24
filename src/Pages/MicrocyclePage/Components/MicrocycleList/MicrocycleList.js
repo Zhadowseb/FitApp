@@ -7,6 +7,7 @@ import { Colors } from "../../../../Resources/GlobalStyling/colors";
 import ThreeDots from "../../../../Resources/Icons/UI-icons/ThreeDots"
 import Plus from "../../../../Resources/Icons/UI-icons/Plus";
 import Copy from "../../../../Resources/Icons/UI-icons/Copy";
+import CalenderPastePicker from "../../../../Resources/Components/CalenderPastePicker/CalenderPasteModal";
 
 
 import styles from "./MicrocycleListStyle";
@@ -18,7 +19,7 @@ import { ThemedCard,
         ThemedPicker,
         ThemedTitle } from "../../../../Resources/Components";
 
-const MicrocycleList = ( {mesocycle_id, refreshKey, updateui} ) => {
+const MicrocycleList = ( {program_id, mesocycle_id, refreshKey, updateui} ) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
 
@@ -30,6 +31,8 @@ const MicrocycleList = ( {mesocycle_id, refreshKey, updateui} ) => {
 
   const [selectedWeek, set_selectedWeek] = useState(0);
   const [OptionsBottomsheet_visible, set_OptionsBottomsheet_visible] = useState(false);
+  const [showCalendarPicker, set_ShowCalendarPicker] = useState(false);
+
 
   const loadMicrocycles = async () => {
     try {
@@ -172,6 +175,8 @@ const MicrocycleList = ( {mesocycle_id, refreshKey, updateui} ) => {
   };
 
 
+
+
   useEffect(() => {
     loadMicrocycles();
   }, [refreshKey]);
@@ -242,6 +247,7 @@ const MicrocycleList = ( {mesocycle_id, refreshKey, updateui} ) => {
                 onPress={async () => {
                     set_selectedWeek(item);
                     set_OptionsBottomsheet_visible(true);
+                    copyWeek(item.microcycle_id, selectedWeek.microcycle_id);
                 }}>
 
                 <ThreeDots
@@ -276,7 +282,7 @@ const MicrocycleList = ( {mesocycle_id, refreshKey, updateui} ) => {
           <TouchableOpacity 
               style={styles.option}
               onPress={async () => {
-                copyWeek(73, 74);
+                set_ShowCalendarPicker(true);
               }}>
 
               <Copy
@@ -291,6 +297,18 @@ const MicrocycleList = ( {mesocycle_id, refreshKey, updateui} ) => {
       </View>
 
     </ThemedBottomSheet>
+    
+    {showCalendarPicker && (
+      <CalenderPastePicker 
+        program_id={program_id}
+        visible={showCalendarPicker}
+        close={ (returned) => {
+          set_selectedWeek(returned); 
+          set_ShowCalendarPicker(false);
+        }} 
+        version="microcycle"/>
+    )}
+    
     </>
   );
 

@@ -98,6 +98,7 @@ const MicrocyclePage = ( {route} ) => {
         <ThemedView>
             
             <MicrocycleList
+                program_id={program_id}
                 mesocycle_id={mesocycle_id} 
                 refreshKey={refreshing}
                 updateui={updateUI}/>

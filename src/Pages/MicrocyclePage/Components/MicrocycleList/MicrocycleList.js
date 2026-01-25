@@ -9,6 +9,8 @@ import Plus from "../../../../Resources/Icons/UI-icons/Plus";
 import Copy from "../../../../Resources/Icons/UI-icons/Copy";
 import CalenderPastePicker from "../../../../Resources/Components/CalenderPastePicker/CalenderPasteModal";
 import CircularProgression from "../../../../Resources/Components/CircularProgression"
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
 
 import styles from "./MicrocycleListStyle";
 
@@ -201,34 +203,34 @@ const MicrocycleList = ( {program_id, mesocycle_id, refreshKey, updateui} ) => {
     };
   };
 
+  const loadCounts = async () => {
+    const result = {};
 
+    for (const mc of microcycles) {
+      result[mc.microcycle_id] =
+        await getWorkoutCounts(mc.microcycle_id);
+    }
 
+    setWorkoutCounts(result);
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadMicrocycles();
+
+    }, [mesocycle_id, refreshKey])
+  );
 
   useEffect(() => {
-    loadMicrocycles();
+    loadCounts();
   }, [refreshKey]);
 
   useEffect(() => {
-    loadMicrocycles();
-  }, []);
+    if (microcycles.length === 0) return;
 
-  useEffect(() => {
-    const loadCounts = async () => {
-      const result = {};
-
-      for (const mc of microcycles) {
-        result[mc.microcycle_id] =
-          await getWorkoutCounts(mc.microcycle_id);
-      }
-
-      setWorkoutCounts(result);
-    };
-
-    if (microcycles.length > 0) {
-      loadCounts();
-    }
+    loadCounts();
   }, [microcycles]);
-
+  
   /*
   Add in total sets for each exercise.
   Add in total weight liftet for week.
@@ -378,6 +380,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, refreshKey, updateui} ) => {
         close={ (returned) => {
           set_ShowCalendarPicker(false);
           copyWeek(selectedWeek.microcycle_id, returned.microcycle_id);
+          updateui();
         }} 
         version="microcycle"/>
     )}

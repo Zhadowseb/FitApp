@@ -13,12 +13,14 @@ export default StyleSheet.create({
   body: {
     flexDirection: "column",
     alignItems: "center",
+    justifyContent: "center",
     flex: 0.8,
   },
 
   focus: {
+    flex: 8,
     justifyContent: "center",
-    alignItems: "center"
+    alignItems: "center",
   },
 
   done: {
@@ -52,6 +54,7 @@ export default StyleSheet.create({
   },
 
   bottomsheet_title: {
+    flexDirection: "row",
     borderBottomWidth: 1,
     borderBottomColor: "#2e2e2eff",
     paddingBottom: 30,

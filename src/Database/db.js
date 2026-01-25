@@ -31,7 +31,7 @@ export async function initializeDatabase(db) {
         mesocycle_id INTEGER NOT NULL,
         program_id INTEGER NOT NULL,
         microcycle_number INTEGER NOT NULL,
-        focus TEXT DEFAULT "Focus",
+        focus TEXT DEFAULT "No focus",
         done INTEGER NOT NULL DEFAULT 0
     );
 

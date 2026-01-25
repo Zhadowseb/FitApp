@@ -31,6 +31,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, refreshKey, updateui} ) => {
   const [workoutCounts, setWorkoutCounts] = useState({});
 
   const [selectedWeek, set_selectedWeek] = useState(0);
+  const [targetWeek, set_targetWeek] = useState(0);
   const [OptionsBottomsheet_visible, set_OptionsBottomsheet_visible] = useState(false);
   const [showCalendarPicker, set_ShowCalendarPicker] = useState(false);
 
@@ -167,6 +168,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, refreshKey, updateui} ) => {
           }
         }
       }
+      set_targetWeek(null);
 
     } catch (err) {
       console.error("Error copying week:", err);
@@ -267,39 +269,23 @@ const MicrocycleList = ( {program_id, mesocycle_id, refreshKey, updateui} ) => {
                     <ThemedText> {item.microcycle_number} </ThemedText>
                 </View>
 
-                <CircularProgression
-                  size = {60}
-                  strokeWidth = {5} 
-                  text= {`${counts.done}/${counts.total}`}
-                  textSize = {16}
-                  progressPercent = {progress}
-                />
-
             </View>
 
             <View style={styles.body}>
 
-                <View style={styles.focus}>
-                  <ThemedPicker
-                    value={item.focus}
-                    onChange={ (newFocus) => {
-                      updateFocus(item.microcycle_id, newFocus);
-                    }}
-                    placeholder="Focus"
-                    title="Select Week Focus"
-                    items={[
-                      "Progressive Overload",
-                      "Volume",
-                      "Intensity",
-                      "Technique",
-                      "Speed / Power",
-                      "Easy / Recovery",
-                      "Deload",
-                      "Max Test",
-                    ]}
-                  />
-                </View>
+                <ThemedText>
+                  {item.focus}
+                </ThemedText>
+                
             </View>
+
+              <CircularProgression
+                size = {60}
+                strokeWidth = {5} 
+                text= {`${counts.done}/${counts.total}`}
+                textSize = {16}
+                progressPercent = {progress}
+              />
 
             <View style={{justifyContent: "center"}}>
               <TouchableOpacity
@@ -307,7 +293,6 @@ const MicrocycleList = ( {program_id, mesocycle_id, refreshKey, updateui} ) => {
                   onPress={async () => {
                       set_selectedWeek(item);
                       set_OptionsBottomsheet_visible(true);
-                      copyWeek(item.microcycle_id, selectedWeek.microcycle_id);
                   }}>
 
                   <ThreeDots
@@ -316,6 +301,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, refreshKey, updateui} ) => {
 
               </TouchableOpacity>   
             </View>
+
           </ThemedCard>
 
       </TouchableOpacity>
@@ -334,7 +320,33 @@ const MicrocycleList = ( {program_id, mesocycle_id, refreshKey, updateui} ) => {
       onClose={() => set_OptionsBottomsheet_visible(false)} >
 
       <View style={styles.bottomsheet_title}>
-          <ThemedTitle type={"h3"}> Week number: {selectedWeek.microcycle_id} </ThemedTitle>
+
+          <ThemedTitle type={"h3"} style={{flex: 10}}> 
+            Week number: {selectedWeek.microcycle_number} 
+          </ThemedTitle>
+
+          <View style={styles.focus}>
+            <ThemedText> Change Focus </ThemedText>
+
+            <ThemedPicker
+              value={selectedWeek.focus}
+              onChange={ (newFocus) => {
+                updateFocus(selectedWeek.microcycle_id, newFocus);
+              }}
+              placeholder="Focus"
+              title="Select Week Focus"
+              items={[
+                "Progressive Overload",
+                "Volume",
+                "Intensity",
+                "Technique",
+                "Speed / Power",
+                "Easy / Recovery",
+                "Deload",
+                "Max Test",
+              ]}
+            />
+          </View>
       </View>
 
       <View style={styles.bottomsheet_body}>
@@ -364,8 +376,8 @@ const MicrocycleList = ( {program_id, mesocycle_id, refreshKey, updateui} ) => {
         program_id={program_id}
         visible={showCalendarPicker}
         close={ (returned) => {
-          set_selectedWeek(returned); 
           set_ShowCalendarPicker(false);
+          copyWeek(selectedWeek.microcycle_id, returned.microcycle_id);
         }} 
         version="microcycle"/>
     )}

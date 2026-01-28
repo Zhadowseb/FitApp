@@ -5,11 +5,12 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
+import { useColorScheme } from "react-native";
+import { Colors } from "../../../../Resources/GlobalStyling/colors";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import PickWorkoutModal from './Components/PickWorkoutModal/PickWorkoutModal';
 
 import styles from './DayStyle';
-import SlantedDivider from "../../../../Resources/Figures/SlantedDivider"
 import { WORKOUT_ICONS } from '../../../../Resources/Icons/WorkoutLabels/index';
 
 //Icons:
@@ -18,19 +19,24 @@ import Plus from '../../../../Resources/Icons/UI-icons/Plus';
 import Copy from '../../../../Resources/Icons/UI-icons/Copy';
 
 //Themed components and utility
-import { ThemedCard, ThemedText, ThemedBottomSheet } from "../../../../Resources/Components";
+import { ThemedCard, ThemedText, ThemedBottomSheet, ThemedBouncyCheckbox } from "../../../../Resources/Components";
 import { formatDate } from '../../../../Utils/dateUtils';
 
 const Day = ( {day, program_id, microcycle_id} ) => {
+    const colorScheme = useColorScheme();
+    const theme = Colors[colorScheme] ?? Colors.light;
     
     const db = useSQLiteContext();
     const navigation = useNavigation();
 
     const [workouts, set_workouts] = useState([]);
     const [workouts_done, setWorkouts_done] = useState(false);
+    const [workoutExercises, set_workoutExercises] = useState([]);
     const [day_id, setDay_id] = useState(0);
     const [date, setDate] = useState("");
+    const [done, set_done] = useState(false);
     const [focusText, setFocusText] = useState("Rest");
+    const [globalWeeks, set_globalWeeks] = useState(0);
 
     //Copy workout to different day option.
     const [newDate, set_newDate] = useState(new Date());
@@ -53,10 +59,13 @@ const Day = ( {day, program_id, microcycle_id} ) => {
     const [datePicker_visible, set_datePicker_visible] = useState(false);
     const [OptionsBottomsheet_visible, set_OptionsBottomsheet_visible] = useState(false);
     
+    const hasWorkouts = workouts.length > 0;
+    
+    
     const loadDay = async () => {
         try {
             const dayRow = await db.getFirstAsync(
-                `SELECT day_id, date FROM Day WHERE Weekday = ? AND microcycle_id = ?;`,
+                `SELECT day_id, date, done FROM Day WHERE Weekday = ? AND microcycle_id = ?;`,
                 [day, microcycle_id]
             );
 
@@ -64,6 +73,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
 
             setDay_id(dayRow.day_id);
             setDate(dayRow.date);
+            set_done(dayRow.done);
 
             const workouts = await db.getAllAsync(
                 `SELECT workout_id, label, done, day_id FROM Workout WHERE day_id = 
@@ -79,6 +89,26 @@ const Day = ( {day, program_id, microcycle_id} ) => {
             } else { 
                 setFocusText("..."); 
             }
+
+
+            const result = [];
+
+            for (const workout of workouts) {
+                const exercises = await db.getAllAsync(
+                `SELECT exercise_name, sets
+                FROM Exercise
+                WHERE workout_id = ?;`,
+                [workout.workout_id]
+                );
+
+                result.push({
+                workout_id: workout.workout_id,
+                label: workout.label,
+                exercises,
+                });
+            }
+
+            set_workoutExercises(result);
 
             const doneRow = await db.getFirstAsync(
                 `SELECT done FROM Day WHERE day_id = ?;`,
@@ -198,12 +228,22 @@ const Day = ( {day, program_id, microcycle_id} ) => {
 
     };
 
-
-
-    //Render:
     return (
         <>
-        <ThemedCard style={styles.card}>
+        <ThemedCard
+        style={[
+            styles.card,
+            hasWorkouts
+            ? {
+                flexGrow: 1,
+                minHeight: 90,
+                }
+            : {
+                height: 50,
+                opacity: 0.6,
+                },
+        ]}
+        >
             
             <TouchableOpacity
                 style={{flex: 1, flexDirection: "row"}}
@@ -220,36 +260,80 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                     }
                 }}>
 
-                <View style={styles.day}>
+                <View style={[styles.day]}>
+
+                    <ThemedBouncyCheckbox
+                        value={done === 1}
+                        size= "20"
+                        edgeSize={2}
+                        disabled
+                        checkmarkColor={theme.cardBackground}
+                        style={{paddingRight: 10}}
+                    />
+
                     <View style={styles.text}>
-                        <ThemedText style={[workouts_done && { color: "green" }]}>
-                            {day}
+                        <ThemedText style={[workouts_done]}>
+                            {day.slice(0, 3)}
                         </ThemedText>
 
                         <ThemedText>
-                            {date}
+                            {date.slice(0, 5)}
                         </ThemedText>
                     </View>
                 </View>
 
-                <View style={[styles.workouts, styles.text]}>
-                    <ThemedText> Workouts: {workouts.length} </ThemedText>
-                </View>
+                <View style={[styles.workouts, styles.text, {alignItems: hasWorkouts ? "flex-start" : "center"}]}>
 
-                <View style={styles.focus}>
-                    <View style={{justifyContent: "center", alignItems: "center"}}>
-                        <ThemedText> {focusText} </ThemedText>
+                    {workoutExercises.length > 0 && (
+                    <View style={{ overflow: "hidden" }}>
+                        {workoutExercises.length === 1 ? (
+                        // One workout = display exercises.
+                        workoutExercises[0].exercises.map((ex, i) => (
+                            <ThemedText key={`${ex.exercise_name}-${i}`}>
+                            {ex.exercise_name} × {ex.sets}
+                            </ThemedText>
+                        ))
+                        ) : (
+                        // If there's multiple workouts, add a workout title.
+                        workoutExercises.map((workout, wIndex) => (
+                            <View key={workout.workout_id} style={{ marginBottom: 6 }}>
+                            <ThemedText style={{ fontWeight: "600", opacity: 0.8 }}>
+                                Workout {wIndex + 1}:
+                            </ThemedText>
+
+                            {workout.exercises.map((ex, i) => (
+                                <ThemedText
+                                key={`${workout.workout_id}-${i}`}
+                                style={{ paddingLeft: 8 }}
+                                >
+                                {ex.exercise_name} × {ex.sets}
+                                </ThemedText>
+                            ))}
+                            </View>
+                        ))
+                        )}
                     </View>
+                    )}
 
-                    {SelectedIcon && (
-                        <View style={[styles.card, {padding: 4}]}>
+
+
+                    {!hasWorkouts && (
+                        <View style={{flexDirection: "row"}}>
+
+                        <View style={ {padding: 4}}>
                             <SelectedIcon
                                 width={24}
                                 height={24}
                                 backgroundColor="#fff"
-                        />
-                        </View> )}
+                            />
+                        </View>
+
+                        <ThemedText style={{paddingTop: 7}}> {focusText} </ThemedText>
+
+                        </View>
+                    )}
                 </View>
+
 
                 <TouchableOpacity
                     style={styles.options}

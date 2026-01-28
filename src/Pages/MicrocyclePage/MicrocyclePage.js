@@ -12,7 +12,7 @@ const MicrocyclePage = ( {route} ) => {
     const db = useSQLiteContext();
     const navigation = useNavigation();
 
-    const {mesocycle_id, program_id} = route.params;
+    const {mesocycle_id, program_id, period_start, period_end} = route.params;
 
     const [refreshing, set_refreshing] = useState(0);
 
@@ -99,7 +99,9 @@ const MicrocyclePage = ( {route} ) => {
             
             <MicrocycleList
                 program_id={program_id}
-                mesocycle_id={mesocycle_id} 
+                mesocycle_id={mesocycle_id}
+                period_start={period_start}
+                period_end={period_end} 
                 refreshKey={refreshing}
                 updateui={updateUI}/>
 

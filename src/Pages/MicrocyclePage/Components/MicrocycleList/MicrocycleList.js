@@ -20,8 +20,9 @@ import { ThemedCard,
         ThemedBottomSheet,
         ThemedPicker,
         ThemedTitle } from "../../../../Resources/Components";
+import { formatDate, parseCustomDate } from "../../../../Utils/dateUtils";
 
-const MicrocycleList = ( {program_id, mesocycle_id, refreshKey, updateui} ) => {
+const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, refreshKey, updateui} ) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
   const db = useSQLiteContext();
@@ -47,13 +48,30 @@ const MicrocycleList = ( {program_id, mesocycle_id, refreshKey, updateui} ) => {
         [mesocycle_id]
       );
 
-      setMicrocycles(cycles);
+      const enriched = enrichMicrocycles(cycles);
+      setMicrocycles(enriched);
 
     } catch (error) {
       console.error("Error loading programs", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const enrichMicrocycles = (cycles) => {
+    return cycles.map(cycle => {
+      const start = parseCustomDate(period_start);
+      start.setDate(start.getDate() + (cycle.microcycle_number * 7 - 7))
+
+      const end = new Date(start);
+      end.setDate(end.getDate() + 6);
+
+      return {
+        ...cycle,
+        period_start: formatDate(start),
+        period_end: formatDate(end),
+      };
+    })
   };
 
   const updateFocus = async (microcycle_id, focus) => {
@@ -251,8 +269,9 @@ const MicrocycleList = ( {program_id, mesocycle_id, refreshKey, updateui} ) => {
         onPress={() => {
           navigation.navigate("WeekPage", {
               microcycle_id: item.microcycle_id,
-              microcycle_number: item.microcycle_number,
-              program_id: item.program_id})
+              program_id: item.program_id,
+              period_start: item.period_start,
+              period_end: item.period_end})
         }}>
           <ThemedCard style={{flexDirection: "row", paddingTop: "0", paddingBottom: "0",}}>
             <View style={styles.status_section}>

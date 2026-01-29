@@ -324,7 +324,6 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                             <SelectedIcon
                                 width={24}
                                 height={24}
-                                backgroundColor="#fff"
                             />
                         </View>
 

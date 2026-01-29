@@ -191,7 +191,6 @@ const ExercisePage = ({route}) =>  {
                       <SelectedIcon
                         width={50}
                         height={50}
-                        backgroundColor="#fff"
                       />
                     </View>
                   ) : (

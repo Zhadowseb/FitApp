@@ -15,7 +15,7 @@ function SkippingRope({width, height, backgroundColor}) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <Path fill={theme.cardBackground} d="M0 0H24V24H0z" />
+      <Path fill={backgroundColor ? backgroundColor : theme.cardBackground} d="M0 0H24V24H0z" />
       <Path
         d="M8.498 5.5c0 1.933 1.791 3.5 4 3.5 2.21 0 4-1.567 4-3.5s-1.79-3.5-4-3.5c-2.209 0-4 1.567-4 3.5z"
         stroke={theme.primary}

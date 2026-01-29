@@ -4,6 +4,7 @@ import Svg, {
   Line,
   Text as SvgText,
   TSpan,
+  G
 } from "react-native-svg";
 import { useColorScheme } from "react-native";
 import { Colors } from "../GlobalStyling/colors";
@@ -25,7 +26,7 @@ const WeekIndicator = ({
 
   // Space reserved for top labels (start / end)
   const topLabelHeight = 26;
-  const verticalPadding = 10;
+  const verticalPadding = 0;
 
   const width =
     (days.length - 1) * spacing + maxRadius * 2;
@@ -39,7 +40,7 @@ const WeekIndicator = ({
     topLabelHeight +
     verticalPadding +
     maxRadius * 2 +
-    20;
+    30;
 
   const firstX = maxRadius;
   const lastX = maxRadius + (days.length - 1) * spacing;
@@ -92,50 +93,74 @@ const WeekIndicator = ({
 
         {/* Circles + text */}
         {days.map((day, i) => {
-          const cx = maxRadius + i * spacing;
-          const r = day.active ? activeRadius : baseRadius;
+        const cx = maxRadius + i * spacing;
+        const r = day.active ? activeRadius : baseRadius;
+        const Icon = day.icon;
 
-          return (
-            <SvgText key={`day-${i}`}>
-              <Circle
+        return (
+            <G key={`day-${i}`}>
+            {/* Circle */}
+            <Circle
                 cx={cx}
                 cy={centerY}
                 r={r}
                 fill={day.active ? theme.secondary : theme.primary}
                 stroke={day.active ? theme.secondary : theme.primary}
                 strokeWidth={2}
-              />
+            />
 
-              <SvgText
+            {/* Label / Today */}
+            <SvgText
                 x={cx}
                 y={centerY}
                 textAnchor="middle"
                 alignmentBaseline="middle"
                 fill={theme.cardBackground}
-              >
-                {day.active && (
-                  <TSpan
-                    x={cx}
-                    fontSize={15}
-                    fontWeight="700"
-                  >
+            >
+                {day.active ? (
+                <TSpan fontSize={15} fontWeight="700">
                     Today
-                  </TSpan>
+                </TSpan>
+                ) : (
+                <TSpan fontSize={11} fontWeight="500">
+                    {day.label}
+                </TSpan>
                 )}
-                {!day.active && (                
-                <TSpan
-                  x={cx}
-                  dy={day.active ? 14 : 0}
-                  fontSize={11}
-                  fontWeight="500"
-                >
-                  {day.label}
-                </TSpan>)}
-
-              </SvgText>
             </SvgText>
-          );
+
+            {/* 🔥 ICON UNDER DAY */}
+            {Icon && (
+                <G
+                x={cx - 10}
+                y={centerY + r + 8}
+                >
+                <Icon
+                    width={20}
+                    height={20}
+                    fill={theme.primary}
+                    backgroundColor={theme.background}
+                />
+                </G>
+            )}
+
+                {/* MINI LABEL */}
+                {day.iconLabel && (
+                <SvgText
+                    x={cx}
+                    y={centerY + r + 35}
+                    textAnchor="middle"
+                    fontSize={9}          // 👈 MEGET lille
+                    fill={theme.text}
+                    opacity={0.7}
+                >
+                    {day.iconLabel}
+                </SvgText>
+                )}
+
+            </G>
+        );
         })}
+
       </Svg>
     </View>
   );

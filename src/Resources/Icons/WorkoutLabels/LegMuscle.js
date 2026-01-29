@@ -15,7 +15,7 @@ function LegMuscle({width, height, backgroundColor}) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <Path fill={theme.cardBackground} d="M0 0H24V24H0z" />
+      <Path fill={backgroundColor ? backgroundColor : theme.cardBackground} d="M0 0H24V24H0z" />
       <Path
         d="M5.002 2c2.691.314 8.897 1.896 11.64 5.746.337.47.69.804 1.27.95.724.18 1.324.666 1.542 1.4.232.798.66 1.64.524 2.494-.052.327-.212.628-.532 1.23L15.099 22"
         stroke={theme.primary}

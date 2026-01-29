@@ -15,7 +15,7 @@ function Treadmil({width, height, backgroundColor}) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <Path fill={theme.cardBackground} d="M0 0H24V24H0z" />
+      <Path fill={backgroundColor ? backgroundColor : theme.cardBackground} d="M0 0H24V24H0z" />
       <Path
         d="M20.191 21H2.931c-.578 0-.895-.479-.928-.985-.032-.493.204-1.012.73-1.14l15.215-3.769C22.205 14.068 23.364 21 20.191 21z"
         stroke={theme.primary}

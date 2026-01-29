@@ -32,8 +32,7 @@ export default function AddProgram({ visible, onClose, onSubmit }) {
 
                         <Icon 
                             width={50}
-                            height={50}
-                            backgroundColor={"#fff"} />
+                            height={50} />
                     </TouchableOpacity>
                 ))}
             </ScrollView>

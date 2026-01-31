@@ -11,6 +11,8 @@ import CalenderPastePicker from "../../../../Resources/Components/CalenderPasteP
 import CircularProgression from "../../../../Resources/Components/CircularProgression"
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
+import WeekIndicator from "../../../../Resources/Figures/WeekIndicator";
+import { WORKOUT_ICONS } from "../../../../Resources/Icons/WorkoutLabels";
 
 import styles from "./MicrocycleListStyle";
 
@@ -29,6 +31,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
   const navigation = useNavigation();
 
   const [microcycles, setMicrocycles] = useState([]);
+  const [weekSummaries, setWeekSummaries] = useState({});
   const [loading, setLoading] = useState(false);
 
   const [workoutCounts, setWorkoutCounts] = useState({});
@@ -57,6 +60,62 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
       setLoading(false);
     }
   };
+
+  const loadWeekSummaries = async () => {
+    const summariesByMicrocycle = {};
+
+    for (const mc of microcycles) {
+      const days = [];
+
+      const start = parseCustomDate(mc.period_start);
+
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(start);
+        date.setDate(start.getDate() + i);
+
+        const dayRow = await db.getFirstAsync(
+          `SELECT day_id FROM Day
+          WHERE microcycle_id = ?
+          AND date = ?`,
+          [mc.microcycle_id, formatDate(date)]
+        );
+
+        let icon = null;
+        let iconLabel = null;
+
+        if (dayRow) {
+          const workouts = await db.getAllAsync(
+            `SELECT label FROM Workout WHERE day_id = ?`,
+            [dayRow.day_id]
+          );
+
+          if (workouts.length === 1) {
+            const found =
+              WORKOUT_ICONS.find(w => w.id === workouts[0].label);
+
+            icon = found?.Icon ?? null;
+            iconLabel = found?.short ?? workouts[0].label;
+          } 
+          else if (workouts.length > 1) {
+            iconLabel = "Multi";
+          }
+        }
+
+        days.push({
+          label: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][i],
+          dateLabel: formatDate(date).slice(0, 5),
+          active: formatDate(date) === formatDate(new Date()),
+          icon,
+          iconLabel,
+        });
+      }
+
+      summariesByMicrocycle[mc.microcycle_id] = days;
+    }
+
+    setWeekSummaries(summariesByMicrocycle);
+  };
+
 
   const enrichMicrocycles = (cycles) => {
     return cycles.map(cycle => {
@@ -245,10 +304,35 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
 
   useEffect(() => {
     if (microcycles.length === 0) return;
-
+    loadWeekSummaries();
     loadCounts();
   }, [microcycles]);
   
+  const buildWeekIndicatorDays = (microcycle) => {
+    const days = [];
+    const start = parseCustomDate(microcycle.period_start);
+    const today = formatDate(new Date());
+
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(start);
+      date.setDate(start.getDate() + i);
+
+      days.push({
+        label: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i],
+        dateLabel: formatDate(date).slice(0, 5), // dd.MM
+        active: formatDate(date) === today,
+
+        // simpelt default – kan udvides senere
+        icon: null,
+        iconLabel: null,
+      });
+    }
+
+    return days;
+  };
+
+
+
   /*
   Add in total sets for each exercise.
   Add in total weight liftet for week.
@@ -273,7 +357,9 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
               period_start: item.period_start,
               period_end: item.period_end})
         }}>
-          <ThemedCard style={{flexDirection: "row", paddingTop: "0", paddingBottom: "0",}}>
+          <ThemedCard style={{flexDirection: "column", paddingTop: "0", paddingBottom: "0",}}>
+
+            <View style={{flexDirection: "row"}}>
             <View style={styles.status_section}>
 
                 <View style={styles.done}>
@@ -321,6 +407,12 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
                       height={"20"}/>
 
               </TouchableOpacity>   
+            </View>
+            </View>
+
+            <View>
+              <WeekIndicator
+                days={weekSummaries[item.microcycle_id] ?? []} />
             </View>
 
           </ThemedCard>

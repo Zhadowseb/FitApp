@@ -15,13 +15,11 @@ export default StyleSheet.create({
   },
 
   day: {
-    width: 100,
-    alignItems: 'center',
-    fontColor: '#ca1010ff',
-    justifyContent: 'flex-start',
-    paddingLeft: 10,
+    width: 110,
+    alignItems: "center",
+    justifyContent: "center",
     overflow: "show",
-    flexDirection: "row"
+    flexDirection: "column"
   },
 
   workouts: {

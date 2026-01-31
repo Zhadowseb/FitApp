@@ -1,7 +1,7 @@
 import {Text, StyleSheet, useColorScheme} from "react-native"
 import { Colors } from "../GlobalStyling/colors"
 
-const ThemedText = ( {style, ...props} ) => {
+const ThemedText = ( {size, style, ...props} ) => {
 
     const colorScheme = useColorScheme()
     const theme = Colors[colorScheme] ?? Colors.light
@@ -11,6 +11,7 @@ const ThemedText = ( {style, ...props} ) => {
             style={
                 [{
                     color: theme.text,
+                    fontSize: size,
                 },
                     style]
             }

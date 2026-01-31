@@ -262,24 +262,43 @@ const Day = ( {day, program_id, microcycle_id} ) => {
 
                 <View style={[styles.day]}>
 
-                    <ThemedBouncyCheckbox
-                        value={done === 1}
-                        size= "20"
-                        edgeSize={2}
-                        disabled
-                        checkmarkColor={theme.cardBackground}
-                        style={{paddingRight: 10}}
-                    />
+                    <View style={{flexDirection: "row"}}>
+                        <ThemedBouncyCheckbox
+                            value={done === 1}
+                            size= "20"
+                            edgeSize={2}
+                            disabled
+                            checkmarkColor={theme.cardBackground}
+                            style={{paddingRight: 10}}
+                        />
 
-                    <View style={styles.text}>
-                        <ThemedText style={[workouts_done]}>
-                            {day.slice(0, 3)}
-                        </ThemedText>
+                        <View style={styles.text}>
+                            <ThemedText style={[workouts_done]}>
+                                {day.slice(0, 3)}
+                            </ThemedText>
 
-                        <ThemedText>
-                            {date.slice(0, 5)}
-                        </ThemedText>
+                            <ThemedText>
+                                {date.slice(0, 5)}
+                            </ThemedText>
+                        </View>
                     </View>
+
+                {hasWorkouts && (
+                    <View style={{flexDirection: "column", alignItems: "center", marginTop: 5}}>
+
+                    <View style={ {padding: 0}}>
+                        <SelectedIcon
+                            width={24}
+                            height={24}
+                        />
+                    </View>
+
+                    <ThemedText style={{color: theme.quietText}} size={10}> 
+                        {focusText} 
+                    </ThemedText>
+
+                    </View> )}
+
                 </View>
 
                 <View style={[styles.workouts, styles.text, {alignItems: hasWorkouts ? "flex-start" : "center"}]}>

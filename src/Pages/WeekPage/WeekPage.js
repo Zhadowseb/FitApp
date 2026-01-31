@@ -10,7 +10,7 @@ import styles from './WeekPageStyle';
 
 import Day from './Components/Day/Day';
 
-import { ThemedText, ThemedView } from "../../Resources/Components";
+import { ThemedText, ThemedView, ThemedHeader } from "../../Resources/Components";
 
 const WeekPage = ( {route} ) => {
     const db = useSQLiteContext();
@@ -31,11 +31,9 @@ const WeekPage = ( {route} ) => {
 
   return (
     <ThemedView>
-
-        <View style={styles.header}>
-
-
-        </View>
+        <ThemedHeader>
+            <ThemedText size={18}>Week</ThemedText>
+        </ThemedHeader>
 
         <View style={styles.body}>
             

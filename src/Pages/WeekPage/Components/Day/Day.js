@@ -284,13 +284,15 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                     </View>
 
                 {hasWorkouts && (
-                    <View style={{flexDirection: "column", alignItems: "center", marginTop: 5}}>
+                    <View style={{flexDirection: "column", alignItems: "center", paddingBottom: 0}}>
 
                     <View style={ {padding: 0}}>
-                        <SelectedIcon
-                            width={24}
-                            height={24}
-                        />
+                        {SelectedIcon && (
+                            <SelectedIcon
+                                width={24}
+                                height={24}
+                            />
+                        )}
                     </View>
 
                     <ThemedText style={{color: theme.quietText}} size={10}> 
@@ -340,10 +342,12 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                         <View style={{flexDirection: "row"}}>
 
                         <View style={ {padding: 4}}>
-                            <SelectedIcon
-                                width={24}
-                                height={24}
-                            />
+                            {SelectedIcon && (
+                                <SelectedIcon
+                                    width={24}
+                                    height={24}
+                                />
+                            )}
                         </View>
 
                         <ThemedText style={{paddingTop: 7}}> {focusText} </ThemedText>

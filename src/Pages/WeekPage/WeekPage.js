@@ -17,6 +17,7 @@ const WeekPage = ( {route} ) => {
 
     const microcycle_id = route.params.microcycle_id;
     const program_id = route.params.program_id;
+    const week_number = route.params.week_number;
     const period_start = route.params.period_start;
     const period_end = route.params.period_end;
 
@@ -32,7 +33,8 @@ const WeekPage = ( {route} ) => {
   return (
     <ThemedView>
         <ThemedHeader>
-            <ThemedText size={18}>Week</ThemedText>
+            <ThemedText size={18}>Week {week_number} </ThemedText>
+            <ThemedText size={10}> {period_start} - {period_end}  </ThemedText>
         </ThemedHeader>
 
         <View style={styles.body}>

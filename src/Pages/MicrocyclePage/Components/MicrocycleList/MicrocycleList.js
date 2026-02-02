@@ -354,6 +354,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
           navigation.navigate("WeekPage", {
               microcycle_id: item.microcycle_id,
               program_id: item.program_id,
+              week_number: item.microcycle_number,
               period_start: item.period_start,
               period_end: item.period_end})
         }}>

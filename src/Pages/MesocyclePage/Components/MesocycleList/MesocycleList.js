@@ -148,6 +148,7 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
           onPress={() => {
             navigation.navigate("MicrocyclePage", {
               mesocycle_id: item.mesocycle_id,
+              mesocycle_number: item.mesocycle_number,
               program_id: program_id,
               period_start: item.period_start,
               period_end: item.period_end,

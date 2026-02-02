@@ -3,7 +3,7 @@ import Svg, { Path } from "react-native-svg"
 import {useColorScheme} from "react-native"
 import { Colors } from "../../GlobalStyling/colors"
 
-function BoxingGlove({width, height, backgroundColor}) {
+function BoxingGlove({width, height, backgroundColor, primaryColor}) {
 
   const colorScheme = useColorScheme()
   const theme = Colors[colorScheme] ?? Colors.light
@@ -22,7 +22,7 @@ function BoxingGlove({width, height, backgroundColor}) {
       />
       <Path
         d="M6.75 11.5a.75.75 0 00-1.5 0h1.5zm5.527 7.716a.75.75 0 10.446-1.432l-.446 1.432zm.446-1.432c-1.362-.424-2.883-1.398-4.06-2.607C7.466 13.949 6.75 12.612 6.75 11.5h-1.5c0 1.688 1.033 3.384 2.338 4.723 1.322 1.357 3.05 2.483 4.69 2.993l.445-1.432z"
-        fill={theme.primary}
+        fill={primaryColor ? primaryColor : theme.primary}
       />
     </Svg>
   )

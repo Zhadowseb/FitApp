@@ -17,7 +17,7 @@ const WeekIndicator = ({
 
   /* ---------------- Layout config ---------------- */
 
-  const spacing = 50;
+  const spacing = 52;
   const baseRadius = 20;
   const activeRadius = 25;
   const maxRadius = Math.max(baseRadius, activeRadius);
@@ -25,11 +25,8 @@ const WeekIndicator = ({
   const width =
     (days.length - 1) * spacing + maxRadius * 2;
 
-  const centerY = maxRadius + 5;
-
-  const height =
-    maxRadius * 2 +
-    55; // plads til ikon + mini-label
+  const centerY = maxRadius + 28; // plads til label over
+  const height = centerY + maxRadius + 28; // plads til dato under
 
   /* ---------------- Render ---------------- */
 
@@ -37,20 +34,6 @@ const WeekIndicator = ({
     <View style={{ alignItems: "center" }}>
       <Svg width={width} height={height}>
 
-        {/* Connecting lines */}
-        {days.slice(0, -1).map((_, i) => (
-          <Line
-            key={`line-${i}`}
-            x1={maxRadius + i * spacing}
-            y1={centerY}
-            x2={maxRadius + (i + 1) * spacing}
-            y2={centerY}
-            stroke={theme.primary}
-            strokeWidth={2}
-          />
-        ))}
-
-        {/* Days */}
         {days.map((day, i) => {
           const cx = maxRadius + i * spacing;
           const r = day.active ? activeRadius : baseRadius;
@@ -58,6 +41,18 @@ const WeekIndicator = ({
 
           return (
             <G key={`day-${i}`}>
+
+              {/* Day label ABOVE circle */}
+              <SvgText
+                x={cx}
+                y={centerY - r - 10}
+                textAnchor="middle"
+                fontSize={day.active ? 13 : 11}
+                fontWeight={day.active ? "700" : "600"}
+                fill={theme.text}
+              >
+                {day.active ? "Today" : day.label}
+              </SvgText>
 
               {/* Circle */}
               <Circle
@@ -69,65 +64,47 @@ const WeekIndicator = ({
                 strokeWidth={2}
               />
 
-              {/* Day label + date */}
-              <SvgText
-                x={cx}
-                y={centerY - 6}
-                textAnchor="middle"
-                alignmentBaseline="middle"
-                fill={theme.cardBackground}
-              >
-                {day.active ? (
-                  <TSpan fontSize={14} fontWeight="700">
-                    Today
-                  </TSpan>
-                ) : (
-                  <TSpan fontSize={11} fontWeight="600">
-                    {day.label}
-                  </TSpan>
-                )}
-              </SvgText>
-
-              {/* Date inside circle */}
-              {day.dateLabel && (
-                <SvgText
-                  x={cx}
-                  y={centerY + 10}
-                  textAnchor="middle"
-                  fontSize={9}
-                  fill={theme.cardBackground}
-                  opacity={0.9}
-                >
-                  {day.dateLabel}
-                </SvgText>
-              )}
-
-              {/* Icon under circle */}
+              {/* ICON inside circle */}
               {Icon && (
                 <G
-                  x={cx - 10}
-                  y={centerY + r + 8}
+                  x={cx - 12}
+                  y={centerY - 16}
                 >
                   <Icon
-                    width={20}
-                    height={20}
-                    fill={theme.primary}
-                    backgroundColor={theme.cardBackground}
+                    width={24}
+                    height={24}
+                    fill={theme.cardBackground}
+                    primaryColor={theme.cardBackground}
+                    backgroundColor="transparent"
                   />
                 </G>
               )}
 
-              {/* Mini label under icon */}
+              {/* ICON LABEL inside circle */}
               {day.iconLabel && (
                 <SvgText
                   x={cx}
-                  y={centerY + r + 38}
+                  y={centerY + r / 1.5}
+                  textAnchor="middle"
+                  fontSize={8}
+                  fill={theme.cardBackground}
+                  opacity={0.85}
+                >
+                  {day.iconLabel}
+                </SvgText>
+              )}
+
+              {/* DATE BELOW circle */}
+              {day.dateLabel && (
+                <SvgText
+                  x={cx}
+                  y={centerY + r + 16}
                   textAnchor="middle"
                   fontSize={9}
                   fill={theme.text}
                   opacity={0.7}
                 >
-                  {day.iconLabel}
+                  {day.dateLabel}
                 </SvgText>
               )}
 

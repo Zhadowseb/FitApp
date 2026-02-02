@@ -6,13 +6,19 @@ import { useNavigation } from "@react-navigation/native";
 import styles from "./MicrocyclePageStyle";
 import MicrocycleList from "./Components/MicrocycleList/MicrocycleList";
 
-import { ThemedButton, ThemedCard, ThemedView } from "../../Resources/Components";
+import { ThemedButton, ThemedCard, ThemedView, ThemedHeader, ThemedText } from "../../Resources/Components";
 
 const MicrocyclePage = ( {route} ) => {
     const db = useSQLiteContext();
     const navigation = useNavigation();
 
-    const {mesocycle_id, program_id} = route.params;
+    const {mesocycle_id, mesocycle_number, program_id, period_start, period_end} = route.params;
+
+    const [refreshing, set_refreshing] = useState(0);
+
+    const updateUI = () => {
+        set_refreshing(prev => prev + 1);
+    }
 
     const deleteMesocycle = async () => {
         await db.execAsync("BEGIN TRANSACTION");
@@ -90,9 +96,19 @@ const MicrocyclePage = ( {route} ) => {
 
     return (
         <ThemedView>
+
+            <ThemedHeader>
+                <ThemedText size={18}>Mesocycle {mesocycle_number} </ThemedText>
+                <ThemedText size={10}> {period_start} - {period_end}  </ThemedText>
+            </ThemedHeader>
             
             <MicrocycleList
-                mesocycle_id={mesocycle_id} />
+                program_id={program_id}
+                mesocycle_id={mesocycle_id}
+                period_start={period_start}
+                period_end={period_end} 
+                refreshKey={refreshing}
+                updateui={updateUI}/>
 
             <ThemedButton 
                 title="Delete Mesocycle"

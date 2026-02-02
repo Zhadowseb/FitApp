@@ -7,11 +7,31 @@ import SkippingRope from "./SkippingRope";
 import Treadmil from "./Treadmil";
 
 export const WORKOUT_ICONS = [
-  { id: "Upperbody", Icon: ArmMuscle },
-  { id: "Legs", Icon: LegMuscle },
-  { id: "Cardio", Icon: RunningShoes },
-  { id: "Rest", Icon: Rest },
-  { id: "Boxing", Icon: BoxingGlove },
-  { id: "Skipping Rope", Icon: SkippingRope},
-  { id: "Treadmil", Icon: Treadmil},
+  { id: "Upperbody",
+    short: "Upper", 
+    Icon: ArmMuscle },
+
+  { id: "Legs", 
+    short: "Legs",
+    Icon: LegMuscle },
+
+  { id: "Cardio", 
+    short: "Cardio",
+    Icon: RunningShoes },
+
+  { id: "Rest",
+    short: "Rest", 
+    Icon: Rest },
+
+  { id: "Boxing", 
+    short: "Boxing",
+    Icon: BoxingGlove },
+
+  { id: "Skipping Rope",
+    short: "Skipping", 
+    Icon: SkippingRope},
+
+  { id: "Treadmil", 
+    short: "Treadmil",
+    Icon: Treadmil},
 ];

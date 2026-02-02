@@ -8,27 +8,25 @@ export default StyleSheet.create({
   },
 
   card: {
-    flex: 1,
     marginVertical: 3,
     marginHorizontal: 5,
     borderRadius: 30,
-    padding: 5,
+    paddingLeft: 0,
   },
 
   day: {
-    flex: 1,
-    borderTopLeftRadius: 12,
-    borderBottomLeftRadius: 12,
-    alignItems: 'center',
-    fontColor: '#ca1010ff',
-    justifyContent: 'center',
+    width: 110,
+    alignItems: "center",
+    justifyContent: "center",
     overflow: "show",
+    flexDirection: "column"
   },
 
   workouts: {
-    flex: 0.8,
-    alignItems: 'center',
-    justifyContent: "center",
+    flexGrow: 1,
+    minWidth: 0,
+    alignItems: "flex-start",
+    overflow: "hidden",
   },
 
   focus: {
@@ -41,7 +39,7 @@ export default StyleSheet.create({
 
   options: {
     flex: 0.2,
-    alignItems: 'center',
+    alignItems: "flex-end",
     justifyContent: "center",
     marginRight: 5,
   },
@@ -54,14 +52,6 @@ export default StyleSheet.create({
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: '#000000',
-  },
-
-  slantedDivider: {
-    position: 'absolute',
-    left: 50,          // justér så den sidder korrekt
-    top: 0,
-    bottom: 0,
-    zIndex: 1,
   },
 
   container_row: {

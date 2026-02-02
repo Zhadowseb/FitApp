@@ -7,13 +7,12 @@ export default StyleSheet.create({
     },
 
     header: {
-        flex: 0.1,
+        flex: 0.16,
         alignItems: 'center',
         justifyContent: 'center',
     },
 
     body: {
-        flex: 0.9,
-        paddingBottom: 40,
+        flex: 1, 
     },
 });

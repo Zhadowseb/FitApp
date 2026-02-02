@@ -12,11 +12,14 @@ import Plus from "../../../../Resources/Icons/UI-icons/Plus"
 import { parseCustomDate, formatDate } from "../../../../Utils/dateUtils";
 
 const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
+  const db = useSQLiteContext();
+  const navigation = useNavigation();
+
   const [mesocycles, setMesocycles] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const db = useSQLiteContext();
-  const navigation = useNavigation();
+  const [meso_start, set_meso_start] = useState(new Date());
+  const [meso_end, set_meso_end] = useState(new Date());
 
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -33,16 +36,41 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
     try {
       setLoading(true);
       const cycles = await db.getAllAsync(
-        "SELECT mesocycle_id, weeks, focus, done FROM Mesocycle WHERE program_id = ?;",
+        "SELECT mesocycle_id, mesocycle_number, weeks, focus, done FROM Mesocycle WHERE program_id = ?;",
         [program_id]
       );
-      setMesocycles(cycles);
+
+      const enriched = enrichMesocycles(cycles);
+      setMesocycles(enriched);
+
     } catch (error) {
       console.error("Error loading programs", error);
     } finally {
       setLoading(false);
     }
   };
+
+  const enrichMesocycles = (cycles) => {
+    let weekOffset = 0;
+
+    return cycles.map(cycle => {
+      const start = parseCustomDate(start_date);
+      start.setDate(start.getDate() + weekOffset * 7);
+
+      const end = new Date(start);
+      end.setDate(end.getDate() + cycle.weeks * 7 - 1);
+
+      weekOffset += cycle.weeks;
+
+      return {
+        ...cycle,
+        period_start: formatDate(start),
+        period_end: formatDate(end),
+      };
+    });
+  };
+
+
 
   const handleAdd = async (data) => {
       try {
@@ -120,7 +148,10 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
           onPress={() => {
             navigation.navigate("MicrocyclePage", {
               mesocycle_id: item.mesocycle_id,
+              mesocycle_number: item.mesocycle_number,
               program_id: program_id,
+              period_start: item.period_start,
+              period_end: item.period_end,
             });
           }}
         >
@@ -154,6 +185,7 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
 
               <View style={styles.weeks}>
                 <ThemedText>Weeks: {item.weeks}</ThemedText>
+                <ThemedText>Period: {item.period_start} to {item.period_end} </ThemedText>
               </View>
             </View>
           </ThemedCard>

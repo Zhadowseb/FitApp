@@ -71,8 +71,8 @@ export default function App() {
             <Stack.Screen name="ProgramPage" component={ProgramPage} />
             <Stack.Screen name="ProgramOverviewPage" component={ProgramOverviewPage} />
             <Stack.Screen name="MesocyclePage" component={MesocyclePage} />
-            <Stack.Screen name="MicrocyclePage" component={MicrocyclePage} />
-            <Stack.Screen name="WeekPage" component={WeekPage} />
+            <Stack.Screen name="MicrocyclePage" component={MicrocyclePage} options={{headerShown: false}} />
+            <Stack.Screen name="WeekPage" component={WeekPage} options={{headerShown: false}} />
             <Stack.Screen name="ExercisePage" component={ExercisePage} />
             <Stack.Screen name="SetPage" component={SetPage} />
             <Stack.Screen name="ExerciseStoragePage" component={ExerciseStoragePage} />

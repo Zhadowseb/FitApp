@@ -1,20 +1,7 @@
 import { StyleSheet } from "react-native";
 
 export default StyleSheet.create({
-  card: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    padding: 16,
-    marginVertical: 10,
-    marginHorizontal: 16,
-    borderRadius: 10,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { height: 2, width: 0 },
-  },
-
+  
   status_section: {
     alignItems: "center",
     justifyContent: "center",
@@ -23,25 +10,6 @@ export default StyleSheet.create({
     paddingRight: 10,
   },
 
-  body: {
-    flexDirection: "column",
-    alignItems: "center",
-    flex: 0.8,
-  },
-
-  focus: {
-    flex: 1,
-    marginBottom: 6,
-    borderBottomWidth: 1,
-    borderColor: "#b9b9b9ff",
-    paddingBottom: 10,
-    marginBottom: 10,
-  },
-
-  weeks: {
-    flex: 1,
-    marginTop: 6,
-  },
 
   header_status: {
     alignItems: "center",
@@ -60,11 +28,20 @@ export default StyleSheet.create({
     paddingTop: 40,
   },
 
-  checkbox_header: {
-  },
-
   checkbox_container: {
     justifyContent: "center",
     alignItems: "center",
   },
+
+
+  focus: {
+    alignItems: "center",
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#4d4d4d",
+  },
+
+  weeks: {
+    alignItems: "center",
+  }
 });

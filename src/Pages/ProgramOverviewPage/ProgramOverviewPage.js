@@ -141,7 +141,6 @@ const ProgramOverviewPage = ( {route} ) => {
             <ThemedText size={18}> Program Overview  </ThemedText>
             <ThemedText size={10}> {start_date} - ??  </ThemedText>
         
-
         </ThemedHeader>
 
         <ScrollView 

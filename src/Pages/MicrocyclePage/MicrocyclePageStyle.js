@@ -25,4 +25,21 @@ export default StyleSheet.create({
         paddingHorizontal: 20,
         padding: 16,
     },
+
+    bottomsheet_title: {
+        flexDirection: "row",
+        borderBottomWidth: 1,
+        borderBottomColor: "#2e2e2eff",
+        paddingBottom: 30,
+    },
+    bottomsheet_body: {
+        justifyContent: "center",
+        padding: 20,
+        paddingLeft: 0,
+    },
+    focus: {
+        flex: 8,
+        justifyContent: "center",
+        alignItems: "center",
+    },
 });

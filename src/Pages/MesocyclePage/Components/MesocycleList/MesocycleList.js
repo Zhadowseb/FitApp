@@ -18,9 +18,6 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
   const [mesocycles, setMesocycles] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const [meso_start, set_meso_start] = useState(new Date());
-  const [meso_end, set_meso_end] = useState(new Date());
-
   const [modalVisible, setModalVisible] = useState(false);
 
   const weekDays = [
@@ -149,6 +146,7 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
             navigation.navigate("MicrocyclePage", {
               mesocycle_id: item.mesocycle_id,
               mesocycle_number: item.mesocycle_number,
+              mesocycle_focus: item.focus,
               program_id: program_id,
               period_start: item.period_start,
               period_end: item.period_end,
@@ -189,6 +187,10 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
               </View>
             </View>
           </ThemedCard>
+
+          <View style={{alignItems: "center"}}>
+            <ThemedText> {item.period_start} - {item.period_end} </ThemedText>
+          </View>
 
         </TouchableOpacity>
       ))}

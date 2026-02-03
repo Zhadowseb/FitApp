@@ -18,7 +18,8 @@ import { ThemedTitle,
         ThemedView, 
         ThemedText, 
         ThemedButton, 
-        ThemedModal } 
+        ThemedModal,
+        ThemedHeader } 
   from "../../Resources/Components";
 
 const ProgramOverviewPage = ( {route} ) => {
@@ -135,6 +136,14 @@ const ProgramOverviewPage = ( {route} ) => {
 
   return (
     <ThemedView>
+        <ThemedHeader>
+            
+            <ThemedText size={18}> Program Overview  </ThemedText>
+            <ThemedText size={10}> {start_date} - ??  </ThemedText>
+        
+
+        </ThemedHeader>
+
         <ScrollView 
             style={styles.container}
             contentContainerStyle={{ paddingBottom: insets.bottom + 15}}>

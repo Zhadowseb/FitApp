@@ -73,7 +73,7 @@ export default function App() {
             <Stack.Screen name="MesocyclePage" component={MesocyclePage} />
             <Stack.Screen name="MicrocyclePage" component={MicrocyclePage} options={{headerShown: false}} />
             <Stack.Screen name="WeekPage" component={WeekPage} options={{headerShown: false}} />
-            <Stack.Screen name="ExercisePage" component={ExercisePage} />
+            <Stack.Screen name="ExercisePage" component={ExercisePage} options={{headerShown: false}} />
             <Stack.Screen name="SetPage" component={SetPage} />
             <Stack.Screen name="ExerciseStoragePage" component={ExerciseStoragePage} />
 

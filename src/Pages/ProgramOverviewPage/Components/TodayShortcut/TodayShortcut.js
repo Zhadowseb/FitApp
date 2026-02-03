@@ -14,30 +14,25 @@ const TodayShortcut = ( {program_id} ) => {
     const db = useSQLiteContext();
     const navigation = useNavigation();
 
-    const [today, setToday] = useState([]);
-    const [workout_count, setWorkout_count] = useState(0);
-    const [workouts_done, setWorkouts_done] = useState(false);
+    const [day, set_day] = useState([]);
+    const [workouts, set_workouts] = useState([]);
     
     const getToday = async () => {
         try{
-            const rows_Day = await db.getFirstAsync(
-            `SELECT day_id FROM Day WHERE program_id = ? AND date = ?;`,
+
+            const day_res = await db.getFirstAsync(
+            `SELECT day_id, Weekday FROM Day WHERE program_id = ? AND date = ?;`,
                 [program_id, getTodaysDate()]
             );
-            if(!rows_Day) return;
-            setToday(rows_Day);
+            if(!day_res) return;
+            set_day(day_res);
 
-            const rows_Workout = await db.getFirstAsync(
-                `SELECT COUNT(*) AS count FROM Workout WHERE day_id = ?;`,
-                [rows_Day.day_id]
-            )
-            setWorkout_count(rows_Workout.count);
-
-            if(rows_Workout.count === 0){
-                setWorkouts_done(true);
-            } else {
-                setWorkouts_done(false);
-            }
+            const workout_res = await db.getAllAsync(
+            `SELECT workout_id FROM Workout WHERE day_id = ?;`,
+                [day_res.day_id]
+            );
+            if(!workout_res) return;
+            set_workouts(workout_res);
 
         }catch (error) {
             console.error(error);
@@ -48,15 +43,16 @@ const TodayShortcut = ( {program_id} ) => {
         getToday();
     }, []);
 
+    // Label, Sets, show workouts.
+
     return (
         <TouchableOpacity
             style={styles.container}
             onPress={() => {
-                navigation.navigate("DayPage", {
-                    day_id: today.day_id,
-                    day: "1", 
-                    date: getTodaysDate(),
-                    program_id: program_id})
+                navigation.navigate("ExercisePage", {
+                    workout_id: workouts[0].workout_id,
+                    day: day.Weekday,
+                    date: getTodaysDate,})
             }}>
 
             <View style={styles.container}>
@@ -76,17 +72,6 @@ const TodayShortcut = ( {program_id} ) => {
                 <ThemedCard>
                     
                     <ThemedText> Workouts: </ThemedText>
-
-                    {workouts_done ? (
-                        <Ionicons 
-                            name="checkmark" 
-                            size={50}
-                            color="green" />
-                    ) : (
-                        <ThemedText>
-                            {workout_count}
-                        </ThemedText>
-                    )}
                 </ThemedCard>
 
 

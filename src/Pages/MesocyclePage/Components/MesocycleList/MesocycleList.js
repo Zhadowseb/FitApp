@@ -93,10 +93,13 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
               [program_id, (mesocycleCount + 1), data.weeks, data.focus]
           );
 
-          const weeksBefore = await db.getAllAsync(
+          const weeksBefore = await db.getFirstAsync(
               `SELECT COUNT(*) AS count FROM Microcycle WHERE program_id = ?;`,
               [program_id]
           )
+          console.log(weeksBefore);
+          console.log(weeksBefore.count);
+          
           const weekCount = weeksBefore?.count ?? null;
 
           //Add in weeks to database
@@ -115,6 +118,8 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
 
                   const date = parseCustomDate(start_date);
                   date.setDate(date.getDate() + current_day);
+
+                  console.log("today: " + current_day + " weekCount= " + weekCount + " week= " + week + " day= " + day)
 
                   await db.runAsync(
                       `INSERT INTO Day (microcycle_id, program_id, Weekday, date) VALUES (?,?,?,?);`,

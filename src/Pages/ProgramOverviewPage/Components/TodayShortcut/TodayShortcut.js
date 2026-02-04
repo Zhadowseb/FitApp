@@ -32,7 +32,6 @@ const TodayShortcut = ( {program_id} ) => {
                 [program_id, getTodaysDate()]
             );
             if(!day_res) return;
-            console.log(day_res)
             set_day(day_res);
 
             const workout_res = await db.getAllAsync(

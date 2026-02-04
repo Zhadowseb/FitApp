@@ -3,6 +3,8 @@ import { View, Text, FlatList, TouchableOpacity } from "react-native";
 import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import PickWorkoutModal from "../../../WeekPage/Components/Day/Components/PickWorkoutModal/PickWorkoutModal";
+import CircularProgression from "../../../../Resources/Components/CircularProgression";
 
 import { getTodaysDate } from '../../../../Utils/dateUtils';
 
@@ -14,30 +16,53 @@ const TodayShortcut = ( {program_id} ) => {
     const db = useSQLiteContext();
     const navigation = useNavigation();
 
-    const [today, setToday] = useState([]);
-    const [workout_count, setWorkout_count] = useState(0);
-    const [workouts_done, setWorkouts_done] = useState(false);
+    const [day, set_day] = useState(null);
+    const date = getTodaysDate();
+    const [workouts, set_workouts] = useState([]);
+    const [counts, setCounts] = useState({ done: 0, total: 0 });
+    const [progress, setProgress] = useState(0);
+
+    const [pickWorkoutModal_visible, set_pickWorkoutModal_visible] = useState(false);
     
     const getToday = async () => {
         try{
-            const rows_Day = await db.getFirstAsync(
-            `SELECT day_id FROM Day WHERE program_id = ? AND date = ?;`,
+
+            const day_res = await db.getFirstAsync(
+            `SELECT day_id, Weekday FROM Day WHERE program_id = ? AND date = ?;`,
                 [program_id, getTodaysDate()]
             );
-            if(!rows_Day) return;
-            setToday(rows_Day);
+            if(!day_res) return;
+            set_day(day_res);
 
-            const rows_Workout = await db.getFirstAsync(
-                `SELECT COUNT(*) AS count FROM Workout WHERE day_id = ?;`,
-                [rows_Day.day_id]
-            )
-            setWorkout_count(rows_Workout.count);
+            const workout_res = await db.getAllAsync(
+            `SELECT workout_id, label FROM Workout WHERE day_id = ?;`,
+                [day_res.day_id]
+            );
+            set_workouts(workout_res);
 
-            if(rows_Workout.count === 0){
-                setWorkouts_done(true);
-            } else {
-                setWorkouts_done(false);
+            if (workout_res.length === 0) {
+                setCounts({ done: 0, total: 0 });
+                setProgress(0);
+                return;
             }
+
+            const sets_res = await db.getAllAsync(`
+                SELECT s.done
+                FROM Sets s
+                JOIN Exercise e ON e.exercise_id = s.exercise_id
+                JOIN Workout w ON w.workout_id = e.workout_id
+                WHERE w.day_id = ?;`,
+                [day_res.day_id]
+            );
+
+            const total = sets_res.length;
+            const done = sets_res.filter(s => s.done === 1).length;
+
+            const percent =
+            total === 0 ? 0 : Math.round((done / total) * 100);
+
+            setCounts({ done, total });
+            setProgress(percent);
 
         }catch (error) {
             console.error(error);
@@ -48,50 +73,75 @@ const TodayShortcut = ( {program_id} ) => {
         getToday();
     }, []);
 
+    useEffect(() => {
+        const unsubscribe = navigation.addListener("focus", getToday);
+        return unsubscribe;
+    }, [navigation]);
+
+    // Label, Sets, show workouts.
+
     return (
-        <TouchableOpacity
-            style={styles.container}
-            onPress={() => {
-                navigation.navigate("DayPage", {
-                    day_id: today.day_id,
-                    day: "1", 
-                    date: getTodaysDate(),
-                    program_id: program_id})
-            }}>
+        <>
+        <ThemedTitle type="h2"> Today's Workout(s): {workouts.length} </ThemedTitle>
+        <ThemedText size={12} style={{paddingLeft: 15}}> {date} </ThemedText>
 
-            <View style={styles.container}>
+        <ThemedCard style={styles.day_container}>
+            <TouchableOpacity
+                style={styles.container}
+                onPress={() => {
+                    if(workouts.length === 1){
+                        navigation.navigate("ExercisePage", {
+                            workout_id: workouts[0].workout_id,
+                            day: day.Weekday,
+                            date: date,})   
+                    } else if (workouts.length > 1){
+                        set_pickWorkoutModal_visible(true);
+                    }
+                }}>
 
-                <View style={styles.container_left}>
+                <View style={styles.container}>
 
-                    <View style={styles.today}>
-                        <ThemedText> Go to today </ThemedText>
+                    <View style={styles.container_left}>
+
+                        <View style={styles.today}>
+                            <ThemedText> Sets today </ThemedText>
+                            <CircularProgression
+                                size = {80}
+                                strokeWidth = {8} 
+                                text= {`${counts.done}/${counts.total}`}
+                                textSize = {18}
+                                progressPercent = {progress}
+                            />
+                        </View>
+
+                    </View> 
+
+                    <View style={styles.container_right}>
+
+
                     </View>
 
-                    <View style={styles.today_date}>
-                        <ThemedText> {getTodaysDate()} </ThemedText>
-                    </View>
 
                 </View>
-
-                <ThemedCard>
-                    
-                    <ThemedText> Workouts: </ThemedText>
-
-                    {workouts_done ? (
-                        <Ionicons 
-                            name="checkmark" 
-                            size={50}
-                            color="green" />
-                    ) : (
-                        <ThemedText>
-                            {workout_count}
-                        </ThemedText>
-                    )}
-                </ThemedCard>
+            </TouchableOpacity>
+        </ThemedCard>
 
 
-            </View>
-        </TouchableOpacity>
+        <PickWorkoutModal 
+            workouts={workouts}
+            visible={pickWorkoutModal_visible}
+            onClose={() => set_pickWorkoutModal_visible(false)}
+            onSubmit={(workout) => {
+
+                navigation.navigate("ExercisePage", {
+                    date: date,
+                    day: day.Weekday,
+                    workout_id: workout.workout_id,
+                });
+
+            }}
+        />
+        </>
     );
 };
 

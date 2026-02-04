@@ -16,7 +16,8 @@ import { ThemedTitle,
         ThemedView, 
         ThemedText, 
         ThemedSwitch, 
-        ThemedModal } 
+        ThemedModal,
+        ThemedHeader } 
   from "../../Resources/Components";
 
 const ExercisePage = ({route}) =>  {
@@ -138,6 +139,14 @@ const ExercisePage = ({route}) =>  {
 
   return (
     <ThemedView>
+
+      <ThemedHeader>
+          
+          <ThemedText size={18}> Workout  </ThemedText>
+          <ThemedText size={10}> {day} - {date}  </ThemedText>
+      
+      </ThemedHeader>
+
       <ScrollView>
 
 

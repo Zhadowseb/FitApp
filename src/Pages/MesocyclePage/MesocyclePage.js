@@ -68,6 +68,7 @@ const MesocyclePage = ( {route} ) => {
                     const date = parseCustomDate(start_date);
                     date.setDate(date.getDate() + current_day);
 
+
                     await db.runAsync(
                         `INSERT INTO Day (microcycle_id, program_id, Weekday, date) VALUES (?,?,?,?);`,
                         [microcycle_id, program_id, weekDays[day-1], formatDate(date)]

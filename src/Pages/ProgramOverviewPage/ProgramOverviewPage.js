@@ -18,7 +18,8 @@ import { ThemedTitle,
         ThemedView, 
         ThemedText, 
         ThemedButton, 
-        ThemedModal } 
+        ThemedModal,
+        ThemedHeader } 
   from "../../Resources/Components";
 
 const ProgramOverviewPage = ( {route} ) => {
@@ -135,19 +136,22 @@ const ProgramOverviewPage = ( {route} ) => {
 
   return (
     <ThemedView>
+        <ThemedHeader>
+            
+            <ThemedText size={18}> Program Overview  </ThemedText>
+            <ThemedText size={10}> {start_date} - ??  </ThemedText>
+        
+        </ThemedHeader>
+
         <ScrollView 
             style={styles.container}
             contentContainerStyle={{ paddingBottom: insets.bottom + 15}}>
 
-            <ThemedTitle type="h2"> Today's Workout </ThemedTitle>
-            <ThemedCard style={styles.day_container}>
-
-                <View style={styles.day_body}>    
-                    <TodayShortcut
-                        program_id = {program_id}
-                        style = {styles.day_touchable}/>
-                </View>
-            </ThemedCard>
+            <View style={styles.day_body}>    
+                <TodayShortcut
+                    program_id = {program_id}
+                    style = {styles.day_touchable}/>
+            </View>
 
             <ThemedTitle type="h2"> Estimated 1 RM's </ThemedTitle>
             <ThemedCard style={styles.rm_container}>

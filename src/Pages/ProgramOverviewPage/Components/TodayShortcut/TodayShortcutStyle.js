@@ -7,19 +7,17 @@ export default StyleSheet.create({
   },
 
   container_left: {
-    flex: 2,
+    flex: 1,
   },
 
   container_right: {
-    flex: 1,
-    backgroundColor: "#edededff",
-    borderRadius: 10,
+    flex: 1.5,
     alignItems: "center",
     justifyContent: "center",
   },
 
   today: {
-    flex: 1,
+    alignItems: "center",
   },
 
   today_date: {
@@ -28,6 +26,12 @@ export default StyleSheet.create({
 
   icons: {
     alignContent: "center",
+  },
+
+  day_container: {
+      padding: 0,
+      minHeight: 120,
+      marginBottom: 12,
   },
 
 });

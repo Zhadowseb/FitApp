@@ -1,20 +1,29 @@
 import React, { useState } from "react";
-import { View, Button, Text } from "react-native";
+import { View, Button, Text, TouchableOpacity } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 
 import styles from "./MicrocyclePageStyle";
 import MicrocycleList from "./Components/MicrocycleList/MicrocycleList";
+import ThreeDots from "../../Resources/Icons/UI-icons/ThreeDots";
 
-import { ThemedButton, ThemedCard, ThemedView, ThemedHeader, ThemedText } from "../../Resources/Components";
+import { ThemedButton, 
+    ThemedBottomSheet, 
+    ThemedView, 
+    ThemedHeader, 
+    ThemedText, 
+    ThemedTitle, 
+    ThemedPicker } from "../../Resources/Components";
 
 const MicrocyclePage = ( {route} ) => {
     const db = useSQLiteContext();
     const navigation = useNavigation();
 
-    const {mesocycle_id, mesocycle_number, program_id, period_start, period_end} = route.params;
+    const {mesocycle_id, mesocycle_number, mesocycle_focus, program_id, period_start, period_end} = route.params;
 
     const [refreshing, set_refreshing] = useState(0);
+    const [OptionsBottomsheet_visible, set_OptionsBottomsheet_visible] = useState(false);
+    const [focus, set_focus] = useState(mesocycle_focus);
 
     const updateUI = () => {
         set_refreshing(prev => prev + 1);
@@ -93,13 +102,39 @@ const MicrocyclePage = ( {route} ) => {
         navigation.goBack();
     };
 
+  const updateFocus = async (focus) => {
+    try {
+
+      await db.getAllAsync(
+        "UPDATE Mesocycle SET focus = ? WHERE mesocycle_id = ? ",
+        [focus, mesocycle_id]
+      );
+
+      updateUI();
+    } catch (error) {
+      console.error("Error loading programs", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
 
     return (
+        <>
         <ThemedView>
 
-            <ThemedHeader>
+            <ThemedHeader
+                right={
+                    <TouchableOpacity onPress={() => {
+                        set_focus(mesocycle_focus)
+                        set_OptionsBottomsheet_visible(true) }}>
+                        <ThreeDots width={20} height={20} />
+                    </TouchableOpacity> } >
+                
                 <ThemedText size={18}>Mesocycle {mesocycle_number} </ThemedText>
                 <ThemedText size={10}> {period_start} - {period_end}  </ThemedText>
+            
+
             </ThemedHeader>
             
             <MicrocycleList
@@ -117,6 +152,46 @@ const MicrocyclePage = ( {route} ) => {
                 onPress={() => deleteMesocycle()}/>
 
         </ThemedView>
+
+        <ThemedBottomSheet
+            visible={OptionsBottomsheet_visible}
+            onClose={() => set_OptionsBottomsheet_visible(false)} >
+
+            <View style={styles.bottomsheet_title}>
+                <ThemedTitle type={"h3"} style={{flex: 10}}> 
+                    Mesocycle number: {mesocycle_number} 
+                </ThemedTitle>
+
+                <View style={styles.focus}>
+                    <ThemedText> Change Focus </ThemedText>
+
+                    <ThemedPicker
+                        value={focus}
+                        onChange={ (newFocus) => {
+                            set_focus(newFocus);
+                            updateFocus(newFocus);
+                        }}
+                        placeholder={focus}
+                        title="Select Week Focus"
+                        items={[
+                            "Strength",
+                            "Bodybuilding",
+                            "Technique",
+                            "Speed / Power",
+                            "Easy / Recovery",
+                            "Max Test",
+                        ]}
+                    />
+                </View>
+            </View>
+
+            <View style={styles.bottomsheet_body}>
+
+
+            </View>
+
+        </ThemedBottomSheet>
+        </>
     );
 };
 

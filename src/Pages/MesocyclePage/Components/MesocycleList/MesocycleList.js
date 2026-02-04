@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
-import Checkbox from 'expo-checkbox';
+import { useColorScheme } from "react-native";
+import { Colors } from "../../../../Resources/GlobalStyling/colors";
 
 import styles from "./MesocycleListStyle";
 import AddMesocycleModal from "../AddMesocycle/AddMesocycleModal";
-import { ThemedTitle, ThemedCard, ThemedView, ThemedText, ThemedButton } 
+import { ThemedTitle, ThemedCard, ThemedView, ThemedText, ThemedButton, ThemedHeader } 
   from "../../../../Resources/Components";
 import Plus from "../../../../Resources/Icons/UI-icons/Plus"
 import { parseCustomDate, formatDate } from "../../../../Utils/dateUtils";
@@ -15,11 +16,12 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
   const db = useSQLiteContext();
   const navigation = useNavigation();
 
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme] ?? Colors.light;
+
   const [mesocycles, setMesocycles] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const [meso_start, set_meso_start] = useState(new Date());
-  const [meso_end, set_meso_end] = useState(new Date());
 
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -66,6 +68,9 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
         ...cycle,
         period_start: formatDate(start),
         period_end: formatDate(end),
+        weightlifts: 0,
+        cardio: 0,
+        other: 0,
       };
     });
   };
@@ -88,10 +93,13 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
               [program_id, (mesocycleCount + 1), data.weeks, data.focus]
           );
 
-          const weeksBefore = await db.getAllAsync(
+          const weeksBefore = await db.getFirstAsync(
               `SELECT COUNT(*) AS count FROM Microcycle WHERE program_id = ?;`,
               [program_id]
           )
+          console.log(weeksBefore);
+          console.log(weeksBefore.count);
+          
           const weekCount = weeksBefore?.count ?? null;
 
           //Add in weeks to database
@@ -110,6 +118,8 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
 
                   const date = parseCustomDate(start_date);
                   date.setDate(date.getDate() + current_day);
+
+                  console.log("today: " + current_day + " weekCount= " + weekCount + " week= " + week + " day= " + day)
 
                   await db.runAsync(
                       `INSERT INTO Day (microcycle_id, program_id, Weekday, date) VALUES (?,?,?,?);`,
@@ -149,46 +159,64 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
             navigation.navigate("MicrocyclePage", {
               mesocycle_id: item.mesocycle_id,
               mesocycle_number: item.mesocycle_number,
+              mesocycle_focus: item.focus,
               program_id: program_id,
               period_start: item.period_start,
               period_end: item.period_end,
             });
           }}
         >
+
+          <View style={{alignItems: "center"}}>
+            <ThemedTitle type="h3"> Cycle: {item.mesocycle_number} </ThemedTitle>
+          </View>
+
           <ThemedCard
             style={{
               width: 200,
               height: 250,
-              flexDirection: "row",
+              flexDirection: "column",
+              borderWidth: item.done ? 3 : 0,
+              borderColor: theme.secondary,
             }}>
-            <View style={styles.status_section}>
-              <View style={styles.header_status}>
 
-                <View style={styles.checkbox_header}>
-                  <ThemedText style={styles.label}>Status</ThemedText>
-                </View>
-
-                <View style={styles.checkbox_container}>
-                  <Checkbox
-                    value={item.done === 1}
-                    color={item.done ? "#4CAF50" : "#ccc"}
-                  />
-                </View>
-              
-              </View>
+            <View style={styles.focus}>
+                <ThemedText size={13}> {item.focus}</ThemedText>
             </View>
 
-            <View style={styles.body}>
-              <View style={styles.focus}>
-                <ThemedText>Mesocycle focus: {item.focus}</ThemedText>
-              </View>
-
-              <View style={styles.weeks}>
+            <View style={styles.weeks}>
                 <ThemedText>Weeks: {item.weeks}</ThemedText>
-                <ThemedText>Period: {item.period_start} to {item.period_end} </ThemedText>
-              </View>
             </View>
+
+            <View style={[styles.frequency, {flex: 1, justifyContent: "flex-end" }]}>
+
+              <View style={{alignItems: "center"}}>
+                <ThemedText size={14}> Workout Split </ThemedText>
+              </View>
+
+              <View style={[ {flexDirection: "row"}]}>
+                <View>
+                  <ThemedText size={12}> Weightlifting: </ThemedText>
+                  <ThemedText size={12}> Cardio:  </ThemedText>
+                  <ThemedText size={12}> Other/Sports:  </ThemedText>
+                </View>
+
+                <View>
+                  <ThemedText size={12}> {item.weightlifts}</ThemedText>
+                  <ThemedText size={12}> {item.cardio} </ThemedText>
+                  <ThemedText size={12}> {item.other} </ThemedText>
+                </View>
+
+              </View>
+
+            </View>
+
+
           </ThemedCard>
+
+          <View style={{alignItems: "center"}}>
+            <ThemedText size={10}> {item.period_start} - {item.period_end} </ThemedText>
+          </View>
 
         </TouchableOpacity>
       ))}
@@ -208,6 +236,7 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
           style={
           {justifyContent: "center",
             alignItems: "center", 
+            marginTop: 35,
             width: 200,
             height: 250,
             borderWidth: 1,

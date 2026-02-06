@@ -7,6 +7,12 @@ export async function initializeDatabase(db) {
         exercise_name TEXT NOT NULL
     );
 
+    /* ============================= */
+    /* ============================= */
+    /* ===== Program Structure ===== */
+    /* ============================= */
+    /* ============================= */
+
     CREATE TABLE IF NOT EXISTS Program (
       program_id INTEGER PRIMARY KEY AUTOINCREMENT,
       program_name TEXT,
@@ -54,6 +60,12 @@ export async function initializeDatabase(db) {
         duration_seconds INTEGER NOT NULL DEFAULT 0
     );
 
+    /* ============================= */
+    /* ============================= */
+    /* ===== Weightlifting ========= */
+    /* ============================= */
+    /* ============================= */
+
     CREATE TABLE IF NOT EXISTS Exercise (
         exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
         workout_id INTEGER NOT NULL,
@@ -88,6 +100,22 @@ export async function initializeDatabase(db) {
         estimated_weight INTEGER NOT NULL DEFAULT 0
     );
   
+    /* ============================= */
+    /* ============================= */
+    /* =========== Running ========= */
+    /* ============================= */
+    /* ============================= */
+
+    CREATE TABLE IF NOT EXISTS Run (
+        Run_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        workout_id INTEGER NOT NULL,
+        warmup_sets INTEGER NOT NULL,
+        working_sets INTEGER NOT NULL,
+        cooldown_sets INTEGER NOT NULL,
+
+        done INTEGER NOT NULL DEFAULT 0
+    );
+
 
     PRAGMA journal_mode = WAL;
 

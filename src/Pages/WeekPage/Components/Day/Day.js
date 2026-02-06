@@ -249,7 +249,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                 style={{flex: 1, flexDirection: "row"}}
                 onPress={() => {
                     if(workouts.length === 1){
-                        navigation.navigate("ExercisePage", {
+                        navigation.navigate("WorkoutPage", {
                             workout_id: workouts[0].workout_id,
                             day: day,
                             date: date,})   
@@ -393,7 +393,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                         set_OptionsBottomsheet_visible(false);
                         const workout_id = await handleNewWorkout();
 
-                        navigation.navigate('ExercisePage', {
+                        navigation.navigate('WorkoutPage', {
                             program_id: program_id,
                             date: date,
                             workout_id: workout_id,
@@ -437,7 +437,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
             onSubmit={(workout) => {
 
                 if(pickMode === PICK_MODE.NAVIGATE){
-                    navigation.navigate("ExercisePage", {
+                    navigation.navigate("WorkoutPage", {
                         program_id: program_id,
                         date: date,
                         workout_id: workout.workout_id

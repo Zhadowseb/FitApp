@@ -90,7 +90,7 @@ const TodayShortcut = ( {program_id} ) => {
                 style={styles.container}
                 onPress={() => {
                     if(workouts.length === 1){
-                        navigation.navigate("ExercisePage", {
+                        navigation.navigate("WorkoutPage", {
                             workout_id: workouts[0].workout_id,
                             day: day.Weekday,
                             date: date,})   

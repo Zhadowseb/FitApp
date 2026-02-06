@@ -4,13 +4,15 @@ import { useState, useCallback, useEffect } from "react";
 import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
 
-import styles from './ExercisePageStyle';
 import ExerciseList from './Components/ExerciseList/ExerciseList';
 import EditModeAdditions from './Components/EditModeAdditions/EditModeAdditions';
 import WorkoutLabel from "../../Resources/Components/WorkoutLabel/WorkoutLabel";
 import { WORKOUT_ICONS } from '../../Resources/Icons/WorkoutLabels';
 import CircularProgression from '../../Resources/Components/CircularProgression';
+import { useColorScheme } from "react-native";
+import { Colors } from "../../Resources/GlobalStyling/colors";
 
+import styles from "./WorkoutPageStyle";
 import { ThemedTitle, 
         ThemedCard, 
         ThemedView, 
@@ -20,7 +22,10 @@ import { ThemedTitle,
         ThemedHeader } 
   from "../../Resources/Components";
 
-const ExercisePage = ({route}) =>  {
+const WorkoutPage = ({route}) =>  {
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme] ?? Colors.light;
+
   const db = useSQLiteContext();
 
   const [editMode, set_editMode] = useState(false);
@@ -140,9 +145,18 @@ const ExercisePage = ({route}) =>  {
   return (
     <ThemedView>
 
-      <ThemedHeader>
+      <ThemedHeader right={
+        SelectedIcon && (
+          <View style={styles.label}>
+            <SelectedIcon
+              width={50}
+              height={50}
+              backgroundColor={theme.background}
+            />
+          </View> )
+      }>
           
-          <ThemedText size={18}> Workout  </ThemedText>
+          <ThemedText size={18}> {label}  </ThemedText>
           <ThemedText size={10}> {day} - {date}  </ThemedText>
       
       </ThemedHeader>
@@ -150,23 +164,41 @@ const ExercisePage = ({route}) =>  {
       <ScrollView>
 
 
-        <View style={{
-          flex: 1,
-          flexDirection: "row",
-        }}>
+        <View style={styles.warmup}>
+          <ThemedTitle type={"h2"}>
+            Warmup
+          </ThemedTitle>
+        </View>
 
-          <View style={styles.info}>
-            <ThemedCard style={styles.info}>
-              <ThemedText>
-                {day}
-              </ThemedText>             
-              <ThemedText>
-                {date}
-              </ThemedText>
-            </ThemedCard>
-          </View>
+        <View style={styles.working_sets}>
+          <ThemedTitle type={"h2"}>
+            Working sets
+          </ThemedTitle>
+
+          <ExerciseList 
+            workout_id = {workout_id}
+            editMode = {editMode}
+            refreshing = {refreshing} 
+            updateUI = {handleExerciseChange}/>
+        </View> 
+        
+        {editMode && (
+          <EditModeAdditions 
+            workout_id={workout_id}
+            date={date}
+            onExerciseChange={handleExerciseChange}
+            deleteWorkout={deleteWorkout}/>
+        )}
+
+      </ScrollView>
+    </ThemedView>
+  );
+}
+
+export default WorkoutPage;
 
 
+          {/* 
           <View style={{alignItems: "center", justifyContent: "center"}}>
             <ThemedTitle
               type="h2">
@@ -185,77 +217,4 @@ const ExercisePage = ({route}) =>  {
 
             </ThemedCard>
           </View>
-
-
-          <View style={{flexDirection: "column"}}>
-            <View style={{alignItems: "center"}}>
-
-              <ThemedCard style={styles.label}>
-              <TouchableOpacity
-                onPress={() => set_labelModal_visible(true)}>
-                
-                  {SelectedIcon ? (
-                    <View style={styles.label}>
-                      <ThemedText> {label} </ThemedText>
-                      <SelectedIcon
-                        width={50}
-                        height={50}
-                      />
-                    </View>
-                  ) : (
-                    <ThemedText style={{ opacity: 0.5 }}>
-                      Add label
-                    </ThemedText>
-                  )}
-
-                </TouchableOpacity> 
-
-                <WorkoutLabel 
-                  visible={labelModal_visible}
-                  onClose={() => set_labelModal_visible(false)}
-                  onSubmit={handleLabel}/>
-              </ThemedCard>
-            </View>
-
-            <View style={{alignItems: "center"}}>
-              <ThemedTitle type="h3">
-                  Mode
-              </ThemedTitle>
-
-              <ThemedCard style={styles.editmode}>
-
-                <ThemedSwitch
-                  value={editMode}
-                  onValueChange={set_editMode} />
-              </ThemedCard>
-            </View>
-
-          </View>
-
-
-
-        </View>
-
-        <View >
-          <ExerciseList 
-            workout_id = {workout_id}
-            editMode = {editMode}
-            refreshing = {refreshing} 
-            updateUI = {handleExerciseChange}/>
-        </View> 
-        
-        {editMode && (
-          <EditModeAdditions 
-            workout_id={workout_id}
-            date={date}
-            onExerciseChange={handleExerciseChange}
-            deleteWorkout={deleteWorkout}/>
-        )}
-
-        <StatusBar style="auto" />
-      </ScrollView>
-    </ThemedView>
-  );
-}
-
-export default ExercisePage;
+          */}

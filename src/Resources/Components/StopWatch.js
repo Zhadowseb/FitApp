@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
-import ThemedText from "./ThemedText";
+import {ThemedText, ThemedButton} from "./";
 
 /**
  * WorkoutStopwatchSQLite
@@ -142,13 +142,15 @@ const WorkoutStopwatchSQLite = ({ workout_id, onStop }) => {
       </ThemedText>
 
       {!running ? (
-        <TouchableOpacity style={styles.start} onPress={start}>
-          <Text style={styles.buttonText}>Start workout</Text>
-        </TouchableOpacity>
+        <ThemedButton
+          variant="secondary"
+          title="Start workout"
+          onPress={start} />
       ) : (
-        <TouchableOpacity style={styles.stop} onPress={stop}>
-          <Text style={styles.buttonText}>Finish workout</Text>
-        </TouchableOpacity>
+        <ThemedButton
+          variant="danger"
+          title="Finish Workout"
+          onPress={stop} />
       )}
     </View>
   );
@@ -175,28 +177,11 @@ const styles = StyleSheet.create({
   container: {
     alignItems: "center",
     flexDirection: "row",
-    paddingVertical: 20,
   },
   time: {
-    fontSize: 42,
-    fontWeight: "600",
-    marginRight: 16,
-  },
-  start: {
-    backgroundColor: "#2ecc71",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  stop: {
-    backgroundColor: "#e74c3c",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  buttonText: {
-    color: "white",
-    fontWeight: "600",
+    fontSize: 30,
+    fontWeight: "200",
+    marginRight: 30,
   },
 });
 

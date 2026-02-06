@@ -5,7 +5,7 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
 
 import { useColorScheme } from "react-native";
-import { Colors } from "../../Resources/GlobalStyling/colors";
+import { Colors } from "../../../../Resources/GlobalStyling/colors";
 
 import { ThemedTitle, 
         ThemedCard, 
@@ -16,7 +16,9 @@ import { ThemedTitle,
         ThemedHeader } 
   from "../../../../Resources/Components/";
 
-const Run = ({route}) =>  {
+import WorkoutStopwatch from '../../../../Resources/Components/StopWatch';
+
+const Run = ({workout_id}) =>  {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
 
@@ -25,6 +27,52 @@ const Run = ({route}) =>  {
   return (
     <ThemedView>
 
+        <View>
+            <ThemedCard style={{alignItems: "center"}}>
+                <WorkoutStopwatch
+                    workout_id={workout_id}
+                    onStop={(seconds) => {
+                        
+                    }} />
+            </ThemedCard>
+        </View>
+
+        <View>
+            <ThemedTitle type={"h2"}>
+                Warmup
+            </ThemedTitle>
+
+            <ThemedCard>
+                
+            </ThemedCard>
+        </View>
+
+
+
+        <View>
+            <ThemedTitle type={"h2"}>
+                Working Sets
+            </ThemedTitle>
+
+            <ThemedCard>
+
+            </ThemedCard>
+        </View>
+
+
+        <View>
+            <ThemedTitle type={"h2"}>
+                Cooldown
+            </ThemedTitle>
+
+            <ThemedCard>
+
+            </ThemedCard>
+        </View>
+
+
     </ThemedView>
   );
 }
+
+export default Run;

@@ -22,6 +22,9 @@ import { ThemedTitle,
         ThemedHeader } 
   from "../../Resources/Components";
 
+//Types of workouts:
+import Run from "./WorkoutTypes/Run/Run";
+
 const WorkoutPage = ({route}) =>  {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
@@ -161,6 +164,10 @@ const WorkoutPage = ({route}) =>  {
       
       </ThemedHeader>
 
+      <Run
+        workout_id={workout_id}/>
+
+      {/* 
       <ScrollView>
 
 
@@ -191,6 +198,8 @@ const WorkoutPage = ({route}) =>  {
         )}
 
       </ScrollView>
+
+      */}
     </ThemedView>
   );
 }

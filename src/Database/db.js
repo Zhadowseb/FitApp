@@ -49,7 +49,9 @@ export async function initializeDatabase(db) {
         day_id INTEGER NOT NULL,
         date TEXT NOT NULL,
         label TEXT, 
-        done INTEGER NOT NULL DEFAULT 0
+        done INTEGER NOT NULL DEFAULT 0,
+        start_ts INTEGER NOT NULL DEFAULT 0,
+        duration_seconds INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS Exercise (
@@ -116,7 +118,7 @@ export async function initializeDatabase(db) {
 
   /*
   await db.execAsync(`
-    DROP TABLE IF EXISTS Workout;
+    ALTER TABLE Workout ADD COLUMN duration_seconds INTEGER;
   `);
   */
   

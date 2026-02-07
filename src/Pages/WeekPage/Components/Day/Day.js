@@ -18,6 +18,7 @@ import { WORKOUT_ICONS } from '../../../../Resources/Icons/WorkoutLabels/index';
 import ThreeDots from '../../../../Resources/Icons/UI-icons/ThreeDots';
 import Plus from '../../../../Resources/Icons/UI-icons/Plus';
 import Copy from '../../../../Resources/Icons/UI-icons/Copy';
+import Delete from "../../../../Resources/Icons/UI-icons/Delete";
 
 //Themed components and utility
 import { ThemedCard, ThemedText, ThemedBottomSheet, ThemedBouncyCheckbox } from "../../../../Resources/Components";
@@ -41,13 +42,14 @@ const Day = ( {day, program_id, microcycle_id} ) => {
 
     //Copy workout to different day option.
     const [newDate, set_newDate] = useState(new Date());
-    const [copiedWorkout, set_copiedWorkout] = useState(0);
+    const [selectedWorkout, set_selectedWorkout] = useState(0);
 
     //PickWorkoutModal, Option menu or actually choosing. 
     const PICK_MODE = {
         NAVIGATE: "navigate",
         COPY: "copy",
         PASTE: "paste",
+        DELETE: "delete",
     };
     const [pickMode, set_pickMode] = useState(null);
 
@@ -63,7 +65,12 @@ const Day = ( {day, program_id, microcycle_id} ) => {
     
     const hasWorkouts = workouts.length > 0;
     
-    
+    useFocusEffect(
+        useCallback(() => {
+            loadDay();
+        }, [day, microcycle_id])
+    );
+
     const loadDay = async () => {
         try {
             const dayRow = await db.getFirstAsync(
@@ -122,12 +129,6 @@ const Day = ( {day, program_id, microcycle_id} ) => {
             console.error("Error loading day:", err);
         }
     };
-
-    useFocusEffect(
-        useCallback(() => {
-            loadDay();
-        }, [day, microcycle_id])
-    );
 
     const copyWorkoutToDate = async (workoutId, date) => {
 
@@ -216,6 +217,38 @@ const Day = ( {day, program_id, microcycle_id} ) => {
         }
 
     };
+
+    const deleteWorkout = async (selectedWorkout) => {
+        try {
+            await db.execAsync("BEGIN TRANSACTION");
+
+            await db.runAsync(
+                `DELETE FROM Sets WHERE exercise_id IN (
+                    SELECT exercise_id FROM Exercise WHERE workout_id = ?);`,
+                [selectedWorkout]);
+
+            await db.runAsync(
+                `DELETE FROM Exercise WHERE workout_id = ?;`,
+                [selectedWorkout]);
+
+            await db.runAsync(
+                `DELETE FROM Run WHERE workout_id = ?;`,
+                [selectedWorkout]);
+
+            await db.runAsync(
+                `DELETE FROM Workout WHERE workout_id = ?;`,
+                [selectedWorkout]);
+
+            await db.execAsync("COMMIT");
+        } catch (err) {
+            await db.execAsync("ROLLBACK");
+            console.error("Failed to delete workout:", err);
+            throw err;
+        }
+    };
+
+
+
 
     return (
         <>
@@ -391,6 +424,23 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                     </ThemedText>
                 </TouchableOpacity>
 
+                {/* Delete a workout */}
+                <TouchableOpacity 
+                    style={styles.option}
+                    onPress={async () => {
+                        set_pickMode(PICK_MODE.DELETE);
+                        set_pickWorkoutModal_visible(true);
+                    }}>
+
+                    <Delete
+                        width={24}
+                        height={24}/>
+                    <ThemedText style={styles.option_text}> 
+                        Delete Workout
+                    </ThemedText>
+                </TouchableOpacity>
+
+
                 {/* Copy a workout, and paste it to a different day */}
                 <TouchableOpacity 
                     style={styles.option}
@@ -406,7 +456,6 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                     <ThemedText style={styles.option_text}> 
                         Copy workout to a different day
                     </ThemedText>
-
                 </TouchableOpacity>
 
             </View>
@@ -448,9 +497,15 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                 }
 
                 if(pickMode === PICK_MODE.COPY){
-                    set_copiedWorkout(workout.workout_id);
+                    set_selectedWorkout(workout.workout_id);
                     set_datePicker_visible(true);
                     set_pickWorkoutModal_visible(false);
+                }
+
+                if(pickMode === PICK_MODE.DELETE){
+                    deleteWorkout(workout.workout_id)
+                    set_pickWorkoutModal_visible(false);
+                    set_OptionsBottomsheet_visible(false);
                 }
             }}
         />
@@ -466,9 +521,9 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                     
                     if (event.type !== "set" || !date) return;
 
-                    await copyWorkoutToDate(copiedWorkout, date)
+                    await copyWorkoutToDate(selectedWorkout, date)
 
-                    set_copiedWorkout(null);
+                    set_selectedWorkout(null);
                     set_pickMode(null);
                 }}
             />

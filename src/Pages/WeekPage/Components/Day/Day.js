@@ -9,6 +9,7 @@ import { useColorScheme } from "react-native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import PickWorkoutModal from './Components/PickWorkoutModal/PickWorkoutModal';
+import WorkoutLabel from "../../../../Resources/Components/WorkoutLabel/WorkoutLabel";
 
 import styles from './DayStyle';
 import { WORKOUT_ICONS } from '../../../../Resources/Icons/WorkoutLabels/index';
@@ -58,6 +59,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
     const [pickWorkoutModal_visible, set_pickWorkoutModal_visible] = useState(false);
     const [datePicker_visible, set_datePicker_visible] = useState(false);
     const [OptionsBottomsheet_visible, set_OptionsBottomsheet_visible] = useState(false);
+    const [labelModal_visible, set_labelModal_visible] = useState(false);
     
     const hasWorkouts = workouts.length > 0;
     
@@ -118,19 +120,6 @@ const Day = ( {day, program_id, microcycle_id} ) => {
 
         } catch (err) {
             console.error("Error loading day:", err);
-        }
-    };
-
-    const handleNewWorkout = async () => {
-        try {
-            const result = await db.runAsync(
-                `INSERT INTO Workout (date, day_id) VALUES (?, ?);`,
-                    [date, day_id]
-            );
-            return result.lastInsertRowId;
-
-        } catch (error) {
-            console.error(error);
         }
     };
 
@@ -391,13 +380,8 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                     style={[styles.option, {paddingTop: 0}]}
                     onPress={async () => {
                         set_OptionsBottomsheet_visible(false);
-                        const workout_id = await handleNewWorkout();
+                        set_labelModal_visible(true);
 
-                        navigation.navigate('WorkoutPage', {
-                            program_id: program_id,
-                            date: date,
-                            workout_id: workout_id,
-                        }); 
                     }}>
                     <Plus
                         width={24}
@@ -429,6 +413,25 @@ const Day = ( {day, program_id, microcycle_id} ) => {
 
         </ThemedBottomSheet>
 
+        <WorkoutLabel
+            visible={labelModal_visible}
+            onClose={() => set_labelModal_visible(false)}
+            onSubmit={async (labelId) => {
+
+                set_labelModal_visible(false);
+
+                const workout_id = await db.runAsync(
+                    `INSERT INTO Workout (date, day_id, label) VALUES (?, ?, ?);`,
+                    [date, day_id, labelId.id]
+                );
+
+                navigation.navigate("WorkoutPage", {
+                    program_id,
+                    date,
+                    workout_id: workout_id.lastInsertRowId,
+                });
+            }}
+        />
 
         <PickWorkoutModal 
             workouts={workouts}

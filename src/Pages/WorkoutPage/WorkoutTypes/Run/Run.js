@@ -17,6 +17,7 @@ import { ThemedTitle,
   from "../../../../Resources/Components/";
 
 import WorkoutStopwatch from '../../../../Resources/Components/StopWatch';
+import Plus from '../../../../Resources/Icons/UI-icons/Plus';
 
 const Run = ({workout_id}) =>  {
   const colorScheme = useColorScheme();
@@ -38,9 +39,19 @@ const Run = ({workout_id}) =>  {
         </View>
 
         <View>
-            <ThemedTitle type={"h2"}>
-                Warmup
-            </ThemedTitle>
+            <View style={{flexDirection: "row", alignItems: "center"}}>
+                <ThemedTitle type={"h2"}>
+                    Warmup
+                </ThemedTitle>
+
+                <View style={{marginLeft: "auto", marginRight: "15"}}>
+                    <TouchableOpacity>
+                        <Plus
+                            width={24}
+                            height={24}/>
+                    </TouchableOpacity>
+                </View>
+            </View>
 
             <ThemedCard>
                 

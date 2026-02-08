@@ -109,9 +109,17 @@ export async function initializeDatabase(db) {
     CREATE TABLE IF NOT EXISTS Run (
         Run_id INTEGER PRIMARY KEY AUTOINCREMENT,
         workout_id INTEGER NOT NULL,
-        warmup_sets INTEGER NOT NULL,
-        working_sets INTEGER NOT NULL,
-        cooldown_sets INTEGER NOT NULL,
+        type TEXT 
+          DEFAULT 'WORKING_SET'
+          NOT NULL 
+          CHECK (status IN ('WARMUP', 'WORKING_SET', 'COOLDOWN')),
+        
+        set_number INTEGER NOT NULL,
+        is_pause INTEGER NOT NULL DEFAULT 0,
+        distance INTEGER,
+        pace INTEGER,
+        time,
+        heartrate,
 
         done INTEGER NOT NULL DEFAULT 0
     );

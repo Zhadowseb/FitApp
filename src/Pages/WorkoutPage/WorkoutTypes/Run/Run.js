@@ -13,8 +13,9 @@ import { ThemedTitle,
         ThemedText, 
         ThemedSwitch, 
         ThemedModal,
-        ThemedHeader } 
+        ThemedHeader, } 
   from "../../../../Resources/Components/";
+import AddRunSetModal from './AddRunSetModal';
 
 import WorkoutStopwatch from '../../../../Resources/Components/StopWatch';
 import Plus from '../../../../Resources/Icons/UI-icons/Plus';
@@ -23,9 +24,40 @@ const Run = ({workout_id}) =>  {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
 
+  const [addRunSetModal_visible, set_addRunSetModal_visible] = useState(false);
+
   const db = useSQLiteContext();
 
+  const addWarmupSet = async () => {
+      try{
+          await db.runAsync(
+              `INSERT INTO Run (
+                workout_id, 
+                type, 
+                set_number,
+                is_pause,
+                distance,
+                pace,
+                time,
+                heartrate ) VALUES (?, "WARMUP", ?, ?, ?, ?, ?, ?);`, 
+                [workout_id]
+          );
+      }catch (error) {
+          console.error(error);
+      }
+  }
+
+  const addWorkingSet = () => {
+
+  } 
+
+  const addCooldownSet = () => {
+
+  }
+
+
   return (
+    <>
     <ThemedView>
 
         <View>
@@ -45,7 +77,10 @@ const Run = ({workout_id}) =>  {
                 </ThemedTitle>
 
                 <View style={{marginLeft: "auto", marginRight: "15"}}>
-                    <TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={ () => {
+                            set_addRunSetModal_visible(true);
+                        }}>
                         <Plus
                             width={24}
                             height={24}/>
@@ -83,6 +118,14 @@ const Run = ({workout_id}) =>  {
 
 
     </ThemedView>
+
+    <AddRunSetModal
+        visible={addRunSetModal_visible}
+        onClose={ () => set_addRunSetModal_visible(false)}
+    />
+
+    
+    </>
   );
 }
 

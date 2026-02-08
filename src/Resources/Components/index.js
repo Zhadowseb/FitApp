@@ -10,3 +10,4 @@ export { default as ThemedBottomSheet } from "./ThemedBottomSheet";
 export { default as ThemedSwitch } from "./ThemedSwitch";
 export { default as ThemedBouncyCheckbox } from "./ThemedBouncyCheckbox";
 export { default as ThemedHeader } from "./ThemedHeader";
+export { default as ThemedSegmentedToggle} from "./ThemedSegmentedToggle";

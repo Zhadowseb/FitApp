@@ -19,6 +19,7 @@ import AddRunSetModal from './AddRunSetModal';
 
 import WorkoutStopwatch from '../../../../Resources/Components/StopWatch';
 import Plus from '../../../../Resources/Icons/UI-icons/Plus';
+import styles from './RunStyle';
 
 const Run = ({workout_id}) =>  {
   const colorScheme = useColorScheme();
@@ -98,6 +99,32 @@ const Run = ({workout_id}) =>  {
             </View>
 
             <ThemedCard>
+                <View style={styles.grid}> 
+                    <View style={[styles.set, styles.sharedGrid]}>
+                        <ThemedText > 1 </ThemedText>
+                        <ThemedText style={{paddingLeft: 20}}>Pause</ThemedText>
+                        <ThemedText > 2 </ThemedText>
+                        <ThemedText style={{paddingLeft: 20}}>Pause</ThemedText>
+                    </View>
+
+                    <View style={[styles.distance, styles.sharedGrid]}>
+                        <ThemedText> 5000 m </ThemedText>
+                    </View>
+
+                    <View style={[styles.pace, styles.sharedGrid]}>
+                        <ThemedText> 6:00 </ThemedText>
+                    </View>
+
+                    <View style={[styles.time, styles.sharedGrid]}>
+                        <ThemedText> 60 min </ThemedText>
+                    </View>
+
+                    <View style={[styles.zone, styles.sharedGrid]}>
+                        <ThemedText> Zone 2 </ThemedText>
+                    </View>
+
+                </View>
+
                 
             </ThemedCard>
         </View>

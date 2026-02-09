@@ -18,8 +18,9 @@ export default function AddRunSetModal({ visible, onClose, onSubmit }) {
   const [time, set_time] = useState(0);
   const [heartrate, set_heartrate] = useState(0);
 
-  const handleSubmit = () => {
+  const handleSubmit = (pauseOrWorking, distance, pace, time, heartrate) => {
     onSubmit({ pauseOrWorking, distance, pace, time, heartrate });
+    onClose();
   };
 
   return (
@@ -32,8 +33,8 @@ export default function AddRunSetModal({ visible, onClose, onSubmit }) {
         {/* set distance if any */}
         <ThemedSegmentedToggle
           value={pauseOrWorking}
-          leftLabel="Pause"
-          rightLabel="Working set"
+          leftLabel="Working Set"
+          rightLabel="Pause"
           onChange={set_pauseOrWorking} />
 
         {/* set distance if any */}
@@ -62,7 +63,7 @@ export default function AddRunSetModal({ visible, onClose, onSubmit }) {
 
         <ThemedButton
           title="Add"
-          onPress={handleSubmit()}
+          onPress={() => handleSubmit(pauseOrWorking, distance, pace, time, heartrate)}
           variant="secondary"
           />
 

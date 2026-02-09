@@ -121,7 +121,7 @@ const Run = ({workout_id}) =>  {
 
     <AddRunSetModal
         visible={addRunSetModal_visible}
-        onClose={ () => set_addRunSetModal_visible(false)}
+        onClose={ () => {set_addRunSetModal_visible(false)}}
     />
 
     

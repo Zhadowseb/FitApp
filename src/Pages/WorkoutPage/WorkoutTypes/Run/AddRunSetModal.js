@@ -19,11 +19,12 @@ export default function AddRunSetModal({ visible, onClose, onSubmit }) {
   const [heartrate, set_heartrate] = useState(0);
 
   const handleSubmit = () => {
-    onSubmit({ type, distance, pace, time, heartrate });
+    onSubmit({ pauseOrWorking, distance, pace, time, heartrate });
   };
 
   return (
     <ThemedModal
+      style={{maxHeight: 450}}
       visible={visible}
       onClose={onClose}
       title="Add Set" >

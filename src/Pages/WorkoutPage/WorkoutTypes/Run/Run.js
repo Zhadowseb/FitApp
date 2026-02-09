@@ -28,7 +28,7 @@ const Run = ({workout_id}) =>  {
 
   const db = useSQLiteContext();
 
-  const [type, set_type] = useState("Working");
+  const [type, set_type] = useState("WORKING_SET");
 
   const [warmup_sets, set_warmup_sets] = useState(0);
   const [working_sets, set_working_sets] = useState(0);
@@ -87,7 +87,7 @@ const Run = ({workout_id}) =>  {
                 <View style={{marginLeft: "auto", marginRight: "15"}}>
                     <TouchableOpacity
                         onPress={ () => {
-                            set_type("Warmup");
+                            set_type("WARMUP");
                             set_addRunSetModal_visible(true);
                         }}>
                         <Plus

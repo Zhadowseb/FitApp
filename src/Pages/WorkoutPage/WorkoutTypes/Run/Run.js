@@ -28,7 +28,15 @@ const Run = ({workout_id}) =>  {
 
   const db = useSQLiteContext();
 
-  const addWarmupSet = async () => {
+  const [type, set_type] = useState("Working");
+
+  const [warmup_sets, set_warmup_sets] = useState(0);
+  const [working_sets, set_working_sets] = useState(0);
+  const [cooldown_sets, set_cooldown_sets] = useState(0);
+
+  const addWarmupSet = async (pauseOrWorking, distance, pace, time, heartrate) => {
+        set_warmup_sets(warmup_sets + 1);
+        let trueorfalse = pauseOrWorking = left;
       try{
           await db.runAsync(
               `INSERT INTO Run (
@@ -40,7 +48,7 @@ const Run = ({workout_id}) =>  {
                 pace,
                 time,
                 heartrate ) VALUES (?, "WARMUP", ?, ?, ?, ?, ?, ?);`, 
-                [workout_id]
+                [workout_id, warmup_sets, trueorfalse, distance, pace, time, heartrate]
           );
       }catch (error) {
           console.error(error);
@@ -79,6 +87,7 @@ const Run = ({workout_id}) =>  {
                 <View style={{marginLeft: "auto", marginRight: "15"}}>
                     <TouchableOpacity
                         onPress={ () => {
+                            set_type("Warmup");
                             set_addRunSetModal_visible(true);
                         }}>
                         <Plus
@@ -122,6 +131,13 @@ const Run = ({workout_id}) =>  {
     <AddRunSetModal
         visible={addRunSetModal_visible}
         onClose={ () => {set_addRunSetModal_visible(false)}}
+        onSubmit={ (pauseOrWorking, distance, pace, time, heartrate) => {
+
+            if(type === "Warmup"){
+                addWarmupSet();
+            }
+
+        }}
     />
 
     

@@ -6,11 +6,17 @@ import { useFocusEffect } from "@react-navigation/native";
 
 
 import { ThemedText } from "../../../../Resources/Components";
-import styles from "./RunStyle"; // genbrug dit grid-style
+import styles from "./RunStyle";
 
-const RunSetList = ({ workout_id, type }) => {
+const RunSetList = ({ workout_id, type, reloadKey }) => {
   const db = useSQLiteContext();
   const [sets, setSets] = useState([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadRunSets();
+    }, [reloadKey])
+  );
 
   const loadRunSets = async () => {
     try {

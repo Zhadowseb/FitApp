@@ -23,12 +23,17 @@ import Plus from '../../../../Resources/Icons/UI-icons/Plus';
 import styles from './RunStyle';
 
 const Run = ({workout_id}) =>  {
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme] ?? Colors.light;
+    const colorScheme = useColorScheme();
+    const theme = Colors[colorScheme] ?? Colors.light;
+    const db = useSQLiteContext();
+
+    const [updateCount, set_updateCount] = useState(0);
+    const triggerReload = () => {
+        set_updateCount(prev => prev + 1);
+    };
 
   const [addRunSetModal_visible, set_addRunSetModal_visible] = useState(false);
 
-  const db = useSQLiteContext();
 
   const [type, set_type] = useState("WORKING_SET");
 
@@ -68,6 +73,7 @@ const Run = ({workout_id}) =>  {
                 Number(heartrate) || null,
             ]
             );
+            triggerReload();
         } catch (error) {
             console.error("Failed to add warmup set:", error);
         }
@@ -118,6 +124,7 @@ const Run = ({workout_id}) =>  {
 
             <ThemedCard>
                 <RunSetList
+                    reloadKey={updateCount}
                     workout_id={workout_id}
                     type="WARMUP" />
             </ThemedCard>
@@ -146,6 +153,7 @@ const Run = ({workout_id}) =>  {
 
             <ThemedCard>
                 <RunSetList
+                    reloadKey={updateCount}
                     workout_id={workout_id}
                     type="WORKING_SET"
                 />
@@ -174,6 +182,7 @@ const Run = ({workout_id}) =>  {
 
             <ThemedCard>
                 <RunSetList
+                    reloadKey={updateCount}
                     workout_id={workout_id}
                     type="COOLDOWN"
                 />

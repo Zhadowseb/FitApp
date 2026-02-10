@@ -39,25 +39,25 @@ export default function AddRunSetModal({ visible, onClose, onSubmit }) {
 
         {/* set distance if any */}
         <ThemedTextInput
-            placeholder="Distance"
+            placeholder="Distance (in meters)"
             value={distance}
             onChangeText={set_distance} />
 
         {/* set pace if any */}
         <ThemedTextInput
-            placeholder="Pace"
+            placeholder="Pace (in min/km ex 6:00)"
             value={pace}
             onChangeText={set_pace} />
 
         {/* set time if any */}
         <ThemedTextInput
-            placeholder="Time"
+            placeholder="Time (in minutes)"
             value={time}
             onChangeText={set_time} />
 
         {/* set heartrate, fx zone */}
         <ThemedTextInput
-            placeholder="Heartrate"
+            placeholder="Heartrate Zone (1-5)"
             value={heartrate}
             onChangeText={set_heartrate} />
 

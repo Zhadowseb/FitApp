@@ -8,34 +8,37 @@ export default StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
     },
+    sharedGrid: {
+        borderColor: "#4b4b4bff",
+        borderBottomWidth: 0.2,
+    },
+    lastGrid: {
+        borderBottomWidth: 0,
+    },
 
     
     set: {
         width: "20%",
-        borderRightWidth: 1,
-        borderColor: "#7a7a7aff",
+        borderRightWidth: 0.2,
     },
 
     distance: {
         width: "20%",
-        borderRightWidth: 1,
-        borderColor: "#7a7a7aff",
+        borderRightWidth: 0.2,
         justifyContent: "center",
         alignItems: "center",
     },
     
     pace: {
         width: "20%",
-        borderRightWidth: 1,
-        borderColor: "#7a7a7aff",
+        borderRightWidth: 0.2,
         justifyContent: "center",
         alignItems: "center",
     },
     
     time: { 
         width: "20%",
-        borderRightWidth: 1,
-        borderColor: "#7a7a7aff",
+        borderRightWidth: 0.2,
         justifyContent: "center",
         alignItems: "center",
     },

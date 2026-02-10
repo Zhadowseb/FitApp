@@ -112,14 +112,14 @@ export async function initializeDatabase(db) {
         type TEXT 
           DEFAULT 'WORKING_SET'
           NOT NULL 
-          CHECK (status IN ('WARMUP', 'WORKING_SET', 'COOLDOWN')),
+          CHECK (type IN ('WARMUP', 'WORKING_SET', 'COOLDOWN')),
         
         set_number INTEGER NOT NULL,
         is_pause INTEGER NOT NULL DEFAULT 0,
         distance INTEGER,
         pace INTEGER,
-        time,
-        heartrate,
+        time INTEGER,
+        heartrate INTEGER,
 
         done INTEGER NOT NULL DEFAULT 0
     );
@@ -157,7 +157,12 @@ export async function initializeDatabase(db) {
     ALTER TABLE Workout ADD COLUMN duration_seconds INTEGER;
   `);
   */
-  
+
+  /*
+  await db.execAsync(`
+    DROP TABLE IF EXISTS Run;
+  `);
+  */
   
 
   //Drop all tables:

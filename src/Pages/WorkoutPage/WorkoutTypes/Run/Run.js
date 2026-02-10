@@ -3,6 +3,7 @@ import { View, Button, ScrollView, Text, TouchableOpacity, Switch } from 'react-
 import { useState, useCallback, useEffect } from "react";
 import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
+import RunSetList from "./RunSetList";
 
 import { useColorScheme } from "react-native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
@@ -35,26 +36,43 @@ const Run = ({workout_id}) =>  {
   const [working_sets, set_working_sets] = useState(0);
   const [cooldown_sets, set_cooldown_sets] = useState(0);
 
-  const addWarmupSet = async (pauseOrWorking, distance, pace, time, heartrate) => {
-        set_warmup_sets(warmup_sets + 1);
-        let trueorfalse = pauseOrWorking = left;
-      try{
-          await db.runAsync(
-              `INSERT INTO Run (
-                workout_id, 
-                type, 
+    const addSet = async (setVariety, pauseOrWorking, distance, pace, time, heartrate) => {
+        try {
+            const row = await db.getFirstAsync(
+                `SELECT COUNT(*) as count FROM Run WHERE workout_id = ? AND type = ?;`,
+                [workout_id, setVariety]
+            );
+
+            const set_number = row.count + 1;
+            const is_pause = pauseOrWorking === "right" ? 1 : 0;
+
+            await db.runAsync(
+            `INSERT INTO Run (
+                workout_id,
+                type,
                 set_number,
                 is_pause,
                 distance,
                 pace,
                 time,
-                heartrate ) VALUES (?, "WARMUP", ?, ?, ?, ?, ?, ?);`, 
-                [workout_id, warmup_sets, trueorfalse, distance, pace, time, heartrate]
-          );
-      }catch (error) {
-          console.error(error);
-      }
-  }
+                heartrate
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+            [
+                workout_id,
+                setVariety,
+                set_number,
+                is_pause,
+                Number(distance) || null,
+                Number(pace) || null,
+                Number(time) || null,
+                Number(heartrate) || null,
+            ]
+            );
+        } catch (error) {
+            console.error("Failed to add warmup set:", error);
+        }
+    };
+
 
   const addWorkingSet = () => {
 
@@ -99,56 +117,66 @@ const Run = ({workout_id}) =>  {
             </View>
 
             <ThemedCard>
-                <View style={styles.grid}> 
-                    <View style={[styles.set, styles.sharedGrid]}>
-                        <ThemedText > 1 </ThemedText>
-                        <ThemedText style={{paddingLeft: 20}}>Pause</ThemedText>
-                        <ThemedText > 2 </ThemedText>
-                        <ThemedText style={{paddingLeft: 20}}>Pause</ThemedText>
-                    </View>
+                <RunSetList
+                    workout_id={workout_id}
+                    type="WARMUP" />
+            </ThemedCard>
+        </View>
 
-                    <View style={[styles.distance, styles.sharedGrid]}>
-                        <ThemedText> 5000 m </ThemedText>
-                    </View>
 
-                    <View style={[styles.pace, styles.sharedGrid]}>
-                        <ThemedText> 6:00 </ThemedText>
-                    </View>
 
-                    <View style={[styles.time, styles.sharedGrid]}>
-                        <ThemedText> 60 min </ThemedText>
-                    </View>
+        <View>
+            <View style={{flexDirection: "row", alignItems: "center"}}>
+                <ThemedTitle type={"h2"}>
+                    Working Sets
+                </ThemedTitle>
 
-                    <View style={[styles.zone, styles.sharedGrid]}>
-                        <ThemedText> Zone 2 </ThemedText>
-                    </View>
-
+                <View style={{marginLeft: "auto", marginRight: "15"}}>
+                    <TouchableOpacity
+                        onPress={ () => {
+                            set_type("WORKING_SET");
+                            set_addRunSetModal_visible(true);
+                        }}>
+                        <Plus
+                            width={24}
+                            height={24}/>
+                    </TouchableOpacity>
                 </View>
-
-                
-            </ThemedCard>
-        </View>
-
-
-
-        <View>
-            <ThemedTitle type={"h2"}>
-                Working Sets
-            </ThemedTitle>
+            </View>
 
             <ThemedCard>
-
+                <RunSetList
+                    workout_id={workout_id}
+                    type="WORKING_SET"
+                />
             </ThemedCard>
         </View>
 
 
         <View>
-            <ThemedTitle type={"h2"}>
-                Cooldown
-            </ThemedTitle>
+            <View style={{flexDirection: "row", alignItems: "center"}}>
+                <ThemedTitle type={"h2"}>
+                    Cooldown
+                </ThemedTitle>
+
+                <View style={{marginLeft: "auto", marginRight: "15"}}>
+                    <TouchableOpacity
+                        onPress={ () => {
+                            set_type("COOLDOWN");
+                            set_addRunSetModal_visible(true);
+                        }}>
+                        <Plus
+                            width={24}
+                            height={24}/>
+                    </TouchableOpacity>
+                </View>
+            </View>
 
             <ThemedCard>
-
+                <RunSetList
+                    workout_id={workout_id}
+                    type="COOLDOWN"
+                />
             </ThemedCard>
         </View>
 
@@ -158,12 +186,16 @@ const Run = ({workout_id}) =>  {
     <AddRunSetModal
         visible={addRunSetModal_visible}
         onClose={ () => {set_addRunSetModal_visible(false)}}
-        onSubmit={ (pauseOrWorking, distance, pace, time, heartrate) => {
-
-            if(type === "Warmup"){
-                addWarmupSet();
+        onSubmit={({ pauseOrWorking, distance, pace, time, heartrate }) => {
+            if (type === "WARMUP") {
+                addSet("WARMUP", pauseOrWorking, distance, pace, time, heartrate);
             }
-
+            if (type === "WORKING_SET") {
+                addSet("WORKING_SET", pauseOrWorking, distance, pace, time, heartrate);
+            }
+            if (type === "COOLDOWN") {
+                addSet("COOLDOWN", pauseOrWorking, distance, pace, time, heartrate);
+            }
         }}
     />
 

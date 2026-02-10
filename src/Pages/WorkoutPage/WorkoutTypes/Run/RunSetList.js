@@ -139,7 +139,7 @@ const RunSetList = ({ workout_id, type, reloadKey, empty }) => {
           onClose={() => set_bottomsheetVisible(false)} >
 
           <View style={styles.bottomsheet_title}>
-              <ThemedText> {selectedSet.type} </ThemedText>
+              <ThemedText> Set: {selectedSet.set_number} of type: {selectedSet.type} </ThemedText>
           </View>
 
           <View style={styles.bottomsheet_body}>

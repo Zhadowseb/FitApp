@@ -16,6 +16,7 @@ const RunSetList = ({ workout_id, type, reloadKey, empty }) => {
   const [sets, setSets] = useState([]);
 
   const [bottomsheetVisible, set_bottomsheetVisible] = useState(false);
+  const [selectedSet, set_selectedSet] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -40,6 +41,17 @@ const RunSetList = ({ workout_id, type, reloadKey, empty }) => {
       console.error("Failed to load run sets:", err);
     }
   };
+
+  const deleteSet = async () => {
+    try {
+      db.getFirstAsync(
+        `DELETE FROM Run WHERE Run_id = ?;`,
+        [selectedSet.Run_id]
+      );
+    } catch (err) {
+      console.error("Failed to delete run set:", err);
+    }
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -71,6 +83,7 @@ const RunSetList = ({ workout_id, type, reloadKey, empty }) => {
               index === sets.length - 1 && styles.lastGrid ]}
               
               onPress={async () => {
+                set_selectedSet(set);
                 set_bottomsheetVisible(true);
               }}>
 
@@ -124,7 +137,7 @@ const RunSetList = ({ workout_id, type, reloadKey, empty }) => {
           onClose={() => set_bottomsheetVisible(false)} >
 
           <View style={styles.bottomsheet_title}>
-              <ThemedText> test </ThemedText>
+              <ThemedText> {selectedSet.type} </ThemedText>
           </View>
 
           <View style={styles.bottomsheet_body}>
@@ -133,7 +146,8 @@ const RunSetList = ({ workout_id, type, reloadKey, empty }) => {
               <TouchableOpacity 
                   style={styles.option}
                   onPress={async () => {
-
+                    deleteSet();
+                    set_bottomsheetVisible(false);
                   }}>
 
                   <Delete

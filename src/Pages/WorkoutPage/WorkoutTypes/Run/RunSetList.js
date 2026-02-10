@@ -1,17 +1,21 @@
 // src/Components/RunSetList/RunSetList.js
 import { useState, useCallback } from "react";
-import { View } from "react-native";
+import { TouchableOpacity, View } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
 
 
-import { ThemedCard, ThemedText } from "../../../../Resources/Components";
+import { ThemedCard, ThemedText, ThemedBottomSheet } from "../../../../Resources/Components";
+import Delete from "../../../../Resources/Icons/UI-icons/Delete";
+
 import styles from "./RunStyle";
 import ListHeader from "./ListHeader";
 
 const RunSetList = ({ workout_id, type, reloadKey, empty }) => {
   const db = useSQLiteContext();
   const [sets, setSets] = useState([]);
+
+  const [bottomsheetVisible, set_bottomsheetVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -61,16 +65,23 @@ const RunSetList = ({ workout_id, type, reloadKey, empty }) => {
         {sets.map((set, index) => (
           
           <View key={set.Run_id} style={styles.grid}>
+            
             {/* SET NUMBER + PAUSE */}
-            <View style={[styles.set, styles.sharedGrid,
-              index === sets.length - 1 && styles.lastGrid ]}>
+            <TouchableOpacity style={[styles.set, styles.sharedGrid,
+              index === sets.length - 1 && styles.lastGrid ]}
+              
+              onPress={async () => {
+                set_bottomsheetVisible(true);
+              }}>
+
               {set.is_pause ? 
               (<ThemedText style={{ paddingLeft: 20 }}>
                 Pause
               </ThemedText>) : 
               (<ThemedText>{set.set_number}</ThemedText>)}
+            </TouchableOpacity>
 
-            </View>
+
 
             {/* DISTANCE */}
             <View style={[styles.distance, styles.sharedGrid,
@@ -106,6 +117,36 @@ const RunSetList = ({ workout_id, type, reloadKey, empty }) => {
           </View>
         ))}
       </ThemedCard>
+
+
+      <ThemedBottomSheet
+          visible={bottomsheetVisible}
+          onClose={() => set_bottomsheetVisible(false)} >
+
+          <View style={styles.bottomsheet_title}>
+              <ThemedText> test </ThemedText>
+          </View>
+
+          <View style={styles.bottomsheet_body}>
+
+              {/* Delete a workout */}
+              <TouchableOpacity 
+                  style={styles.option}
+                  onPress={async () => {
+
+                  }}>
+
+                  <Delete
+                      width={24}
+                      height={24}/>
+                  <ThemedText style={styles.option_text}> 
+                      Delete set
+                  </ThemedText>
+              </TouchableOpacity>
+
+          </View>
+
+      </ThemedBottomSheet>
     </>
   );
 };

@@ -61,9 +61,11 @@ const RunSetList = ({ workout_id, type, reloadKey, empty }) => {
 
   if (sets.length === 0) {
     return (
-      <ThemedText style={{ opacity: 0.3, paddingLeft: 15 }}>
-        No sets
-      </ThemedText>
+      <ThemedCard style={{opacity: 0.3}}>
+        <ThemedText style={{ paddingLeft: 15 }}>
+          No sets
+        </ThemedText>
+      </ThemedCard>
     );
   }
 

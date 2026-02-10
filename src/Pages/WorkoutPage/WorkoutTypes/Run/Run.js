@@ -123,6 +123,34 @@ const Run = ({workout_id}) =>  {
             </View>
 
             <ThemedCard>
+                <View style={{flexDirection: "row"}}>
+                    <View style={[styles.set, styles.sharedGrid, styles.title]}>
+                        <ThemedText size={10} style={{color: theme.quietText}}> 
+                            Set </ThemedText>
+                    </View>
+
+                    <View style={[styles.distance, styles.sharedGrid, styles.title]}>
+                        <ThemedText size={10} style={{color: theme.quietText}}> 
+                            Distance </ThemedText>
+                    </View>
+
+                    <View style={[styles.pace, styles.sharedGrid, styles.title]}>
+                        <ThemedText size={10} style={{color: theme.quietText}}> 
+                            Pace </ThemedText>
+                    </View>
+
+                    <View style={[styles.time, styles.sharedGrid, styles.title]}>
+                        <ThemedText size={10} style={{color: theme.quietText}}> 
+                            Time </ThemedText>
+                    </View>
+
+                    <View style={[styles.zone, styles.sharedGrid, styles.title]}>
+                        <ThemedText size={10} style={{color: theme.quietText}}> 
+                            Zone </ThemedText>
+                    </View>
+
+                </View>
+
                 <RunSetList
                     reloadKey={updateCount}
                     workout_id={workout_id}

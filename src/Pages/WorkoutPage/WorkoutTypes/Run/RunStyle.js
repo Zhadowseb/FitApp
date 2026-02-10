@@ -15,6 +15,11 @@ export default StyleSheet.create({
     lastGrid: {
         borderBottomWidth: 0,
     },
+    title: {
+        borderRightWidth: 0,
+        alignItems: "center",
+        justifyContent: "center",
+    },
 
     
     set: {
@@ -47,5 +52,5 @@ export default StyleSheet.create({
         width: "20%",
         justifyContent: "center",
         alignItems: "center",
-    }
+    },
 });

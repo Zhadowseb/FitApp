@@ -69,7 +69,7 @@ const RunSetList = ({ workout_id, type, reloadKey }) => {
           <View style={[styles.distance, styles.sharedGrid,
             index === sets.length - 1 && styles.lastGrid ]}>
             <ThemedText>
-              {set.distance ? `${set.distance} m` : "-"}
+              {set.distance ? `${set.distance} m` : ""}
             </ThemedText>
           </View>
 
@@ -77,7 +77,7 @@ const RunSetList = ({ workout_id, type, reloadKey }) => {
           <View style={[styles.pace, styles.sharedGrid,
             index === sets.length - 1 && styles.lastGrid ]}>
             <ThemedText>
-              {set.pace ? formatPace(set.pace) : "-"}
+              {set.pace ? formatPace(set.pace) : ""}
             </ThemedText>
           </View>
 
@@ -85,7 +85,7 @@ const RunSetList = ({ workout_id, type, reloadKey }) => {
           <View style={[styles.time, styles.sharedGrid,
             index === sets.length - 1 && styles.lastGrid ]}>
             <ThemedText>
-              {set.time ? formatTime(set.time) : "-"}
+              {set.time ? formatTime(set.time) : ""}
             </ThemedText>
           </View>
 
@@ -93,7 +93,7 @@ const RunSetList = ({ workout_id, type, reloadKey }) => {
           <View style={[styles.zone, styles.sharedGrid,
             index === sets.length - 1 && styles.lastGrid]}>
             <ThemedText>
-              {set.heartrate ? `HR ${set.heartrate}` : "-"}
+              {set.heartrate ? `HR ${set.heartrate}` : ""}
             </ThemedText>
           </View>
         </View>

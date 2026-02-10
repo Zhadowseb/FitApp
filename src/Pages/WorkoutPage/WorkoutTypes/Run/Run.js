@@ -127,6 +127,7 @@ const Run = ({workout_id}) =>  {
 
             <RunSetList
                 reloadKey={updateCount}
+                triggerReload={triggerReload}
                 empty={set_WarmupEmpty}
                 workout_id={workout_id}
                 type="WARMUP" />
@@ -157,6 +158,7 @@ const Run = ({workout_id}) =>  {
 
             <RunSetList
                 reloadKey={updateCount}
+                triggerReload={triggerReload}
                 empty={set_WorkingEmpty}
                 workout_id={workout_id}
                 type="WORKING_SET"
@@ -188,6 +190,7 @@ const Run = ({workout_id}) =>  {
 
             <RunSetList
                 reloadKey={updateCount}
+                triggerReload={triggerReload}
                 empty={set_CooldownEmpty}
                 workout_id={workout_id}
                 type="COOLDOWN"

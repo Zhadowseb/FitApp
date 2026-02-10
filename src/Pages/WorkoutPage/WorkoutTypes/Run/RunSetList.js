@@ -11,7 +11,7 @@ import Delete from "../../../../Resources/Icons/UI-icons/Delete";
 import styles from "./RunStyle";
 import ListHeader from "./ListHeader";
 
-const RunSetList = ({ workout_id, type, reloadKey, empty }) => {
+const RunSetList = ({ workout_id, type, empty, reloadKey, triggerReload }) => {
   const db = useSQLiteContext();
   const [sets, setSets] = useState([]);
 
@@ -48,6 +48,7 @@ const RunSetList = ({ workout_id, type, reloadKey, empty }) => {
         `DELETE FROM Run WHERE Run_id = ?;`,
         [selectedSet.Run_id]
       );
+      triggerReload();
     } catch (err) {
       console.error("Failed to delete run set:", err);
     }

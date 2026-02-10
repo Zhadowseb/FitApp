@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
 import RunSetList from "./RunSetList";
+import ListHeader from './ListHeader';
 
 import { useColorScheme } from "react-native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
@@ -123,32 +124,8 @@ const Run = ({workout_id}) =>  {
             </View>
 
             <ThemedCard>
-                <View style={{flexDirection: "row"}}>
-                    <View style={[styles.set, styles.sharedGrid, styles.title]}>
-                        <ThemedText size={10} style={{color: theme.quietText}}> 
-                            Set </ThemedText>
-                    </View>
-
-                    <View style={[styles.distance, styles.sharedGrid, styles.title]}>
-                        <ThemedText size={10} style={{color: theme.quietText}}> 
-                            Distance </ThemedText>
-                    </View>
-
-                    <View style={[styles.pace, styles.sharedGrid, styles.title]}>
-                        <ThemedText size={10} style={{color: theme.quietText}}> 
-                            Pace </ThemedText>
-                    </View>
-
-                    <View style={[styles.time, styles.sharedGrid, styles.title]}>
-                        <ThemedText size={10} style={{color: theme.quietText}}> 
-                            Time </ThemedText>
-                    </View>
-
-                    <View style={[styles.zone, styles.sharedGrid, styles.title]}>
-                        <ThemedText size={10} style={{color: theme.quietText}}> 
-                            Zone </ThemedText>
-                    </View>
-                </View>
+                <ListHeader
+                    styles={styles}/>
 
                 <RunSetList
                     reloadKey={updateCount}
@@ -179,6 +156,9 @@ const Run = ({workout_id}) =>  {
             </View>
 
             <ThemedCard>
+                <ListHeader
+                    styles={styles}/>
+
                 <RunSetList
                     reloadKey={updateCount}
                     workout_id={workout_id}
@@ -208,6 +188,9 @@ const Run = ({workout_id}) =>  {
             </View>
 
             <ThemedCard>
+                <ListHeader
+                    styles={styles}/>
+                    
                 <RunSetList
                     reloadKey={updateCount}
                     workout_id={workout_id}

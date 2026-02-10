@@ -5,10 +5,11 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
 
 
-import { ThemedText } from "../../../../Resources/Components";
+import { ThemedCard, ThemedText } from "../../../../Resources/Components";
 import styles from "./RunStyle";
+import ListHeader from "./ListHeader";
 
-const RunSetList = ({ workout_id, type, reloadKey }) => {
+const RunSetList = ({ workout_id, type, reloadKey, empty }) => {
   const db = useSQLiteContext();
   const [sets, setSets] = useState([]);
 
@@ -30,6 +31,7 @@ const RunSetList = ({ workout_id, type, reloadKey }) => {
       );
 
       setSets(rows);
+      empty?.(rows.length === 0);
     } catch (err) {
       console.error("Failed to load run sets:", err);
     }
@@ -44,60 +46,66 @@ const RunSetList = ({ workout_id, type, reloadKey }) => {
   if (sets.length === 0) {
     return (
       <ThemedText style={{ opacity: 0.5, padding: 12 }}>
-        No sets yet
+        No sets
       </ThemedText>
     );
   }
 
   return (
     <>
-      {sets.map((set, index) => (
-        
-        <View key={set.Run_id} style={styles.grid}>
-          {/* SET NUMBER + PAUSE */}
-          <View style={[styles.set, styles.sharedGrid,
-            index === sets.length - 1 && styles.lastGrid ]}>
-            {set.is_pause ? 
-            (<ThemedText style={{ paddingLeft: 20 }}>
-               Pause
-            </ThemedText>) : 
-            (<ThemedText>{set.set_number}</ThemedText>)}
 
-          </View>
+      <ThemedCard style={{opacity: sets.length === 0 ? 0.3 : 1}}>
+        <ListHeader
+            styles={styles}/>
 
-          {/* DISTANCE */}
-          <View style={[styles.distance, styles.sharedGrid,
-            index === sets.length - 1 && styles.lastGrid ]}>
-            <ThemedText>
-              {set.distance ? `${set.distance} m` : ""}
-            </ThemedText>
-          </View>
+        {sets.map((set, index) => (
+          
+          <View key={set.Run_id} style={styles.grid}>
+            {/* SET NUMBER + PAUSE */}
+            <View style={[styles.set, styles.sharedGrid,
+              index === sets.length - 1 && styles.lastGrid ]}>
+              {set.is_pause ? 
+              (<ThemedText style={{ paddingLeft: 20 }}>
+                Pause
+              </ThemedText>) : 
+              (<ThemedText>{set.set_number}</ThemedText>)}
 
-          {/* PACE */}
-          <View style={[styles.pace, styles.sharedGrid,
-            index === sets.length - 1 && styles.lastGrid ]}>
-            <ThemedText>
-              {set.pace ? formatPace(set.pace) : ""}
-            </ThemedText>
-          </View>
+            </View>
 
-          {/* TIME */}
-          <View style={[styles.time, styles.sharedGrid,
-            index === sets.length - 1 && styles.lastGrid ]}>
-            <ThemedText>
-              {set.time ? formatTime(set.time) : ""}
-            </ThemedText>
-          </View>
+            {/* DISTANCE */}
+            <View style={[styles.distance, styles.sharedGrid,
+              index === sets.length - 1 && styles.lastGrid ]}>
+              <ThemedText>
+                {set.distance ? `${set.distance} m` : ""}
+              </ThemedText>
+            </View>
 
-          {/* HEART RATE */}
-          <View style={[styles.zone, styles.sharedGrid,
-            index === sets.length - 1 && styles.lastGrid]}>
-            <ThemedText>
-              {set.heartrate ? `HR ${set.heartrate}` : ""}
-            </ThemedText>
+            {/* PACE */}
+            <View style={[styles.pace, styles.sharedGrid,
+              index === sets.length - 1 && styles.lastGrid ]}>
+              <ThemedText>
+                {set.pace ? formatPace(set.pace) : ""}
+              </ThemedText>
+            </View>
+
+            {/* TIME */}
+            <View style={[styles.time, styles.sharedGrid,
+              index === sets.length - 1 && styles.lastGrid ]}>
+              <ThemedText>
+                {set.time ? formatTime(set.time) : ""}
+              </ThemedText>
+            </View>
+
+            {/* HEART RATE */}
+            <View style={[styles.zone, styles.sharedGrid,
+              index === sets.length - 1 && styles.lastGrid]}>
+              <ThemedText>
+                {set.heartrate ? `HR ${set.heartrate}` : ""}
+              </ThemedText>
+            </View>
           </View>
-        </View>
-      ))}
+        ))}
+      </ThemedCard>
     </>
   );
 };

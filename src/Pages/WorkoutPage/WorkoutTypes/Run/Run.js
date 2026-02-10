@@ -33,14 +33,14 @@ const Run = ({workout_id}) =>  {
         set_updateCount(prev => prev + 1);
     };
 
-  const [addRunSetModal_visible, set_addRunSetModal_visible] = useState(false);
+    const [addRunSetModal_visible, set_addRunSetModal_visible] = useState(false);
 
 
-  const [type, set_type] = useState("WORKING_SET");
+    const [type, set_type] = useState("WORKING_SET");
 
-  const [warmup_sets, set_warmup_sets] = useState(0);
-  const [working_sets, set_working_sets] = useState(0);
-  const [cooldown_sets, set_cooldown_sets] = useState(0);
+    const [warmupEmpty, set_WarmupEmpty] = useState(true);
+    const [workingEmpty, set_WorkingEmpty] = useState(true);
+    const [cooldownEmpty, set_CooldownEmpty] = useState(true);
 
     const addSet = async (setVariety, pauseOrWorking, distance, pace, time, heartrate) => {
         try {
@@ -106,9 +106,11 @@ const Run = ({workout_id}) =>  {
 
         <View>
             <View style={{flexDirection: "row", alignItems: "center"}}>
-                <ThemedTitle type={"h2"}>
-                    Warmup
-                </ThemedTitle>
+                <View style={{opacity: warmupEmpty ? 0.2 : 1}}>
+                    <ThemedTitle type={"h2"}>
+                        Warmup
+                    </ThemedTitle>
+                </View>
 
                 <View style={{marginLeft: "auto", marginRight: "15"}}>
                     <TouchableOpacity
@@ -123,24 +125,22 @@ const Run = ({workout_id}) =>  {
                 </View>
             </View>
 
-            <ThemedCard>
-                <ListHeader
-                    styles={styles}/>
-
-                <RunSetList
-                    reloadKey={updateCount}
-                    workout_id={workout_id}
-                    type="WARMUP" />
-            </ThemedCard>
+            <RunSetList
+                reloadKey={updateCount}
+                empty={set_WarmupEmpty}
+                workout_id={workout_id}
+                type="WARMUP" />
         </View>
 
 
 
         <View>
             <View style={{flexDirection: "row", alignItems: "center"}}>
-                <ThemedTitle type={"h2"}>
-                    Working Sets
-                </ThemedTitle>
+                <View style={{opacity: workingEmpty ? 0.2 : 1}}>
+                    <ThemedTitle type={"h2"}>
+                        Working Sets
+                    </ThemedTitle>
+                </View>
 
                 <View style={{marginLeft: "auto", marginRight: "15"}}>
                     <TouchableOpacity
@@ -155,24 +155,23 @@ const Run = ({workout_id}) =>  {
                 </View>
             </View>
 
-            <ThemedCard>
-                <ListHeader
-                    styles={styles}/>
+            <RunSetList
+                reloadKey={updateCount}
+                empty={set_WorkingEmpty}
+                workout_id={workout_id}
+                type="WORKING_SET"
+            />
 
-                <RunSetList
-                    reloadKey={updateCount}
-                    workout_id={workout_id}
-                    type="WORKING_SET"
-                />
-            </ThemedCard>
         </View>
 
 
         <View>
             <View style={{flexDirection: "row", alignItems: "center"}}>
-                <ThemedTitle type={"h2"}>
-                    Cooldown
-                </ThemedTitle>
+                <View style={{opacity: cooldownEmpty ? 0.2 : 1}}>
+                    <ThemedTitle type={"h2"}>
+                        Cooldown
+                    </ThemedTitle>
+                </View>
 
                 <View style={{marginLeft: "auto", marginRight: "15"}}>
                     <TouchableOpacity
@@ -187,16 +186,12 @@ const Run = ({workout_id}) =>  {
                 </View>
             </View>
 
-            <ThemedCard>
-                <ListHeader
-                    styles={styles}/>
-                    
-                <RunSetList
-                    reloadKey={updateCount}
-                    workout_id={workout_id}
-                    type="COOLDOWN"
-                />
-            </ThemedCard>
+            <RunSetList
+                reloadKey={updateCount}
+                empty={set_CooldownEmpty}
+                workout_id={workout_id}
+                type="COOLDOWN"
+            />
         </View>
 
 

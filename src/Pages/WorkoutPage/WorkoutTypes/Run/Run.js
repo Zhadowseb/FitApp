@@ -148,7 +148,6 @@ const Run = ({workout_id}) =>  {
                         <ThemedText size={10} style={{color: theme.quietText}}> 
                             Zone </ThemedText>
                     </View>
-
                 </View>
 
                 <RunSetList

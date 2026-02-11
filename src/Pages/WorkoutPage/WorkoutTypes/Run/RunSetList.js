@@ -18,8 +18,6 @@ const RunSetList = ({ workout_id, type, empty, reloadKey, triggerReload }) => {
   const [bottomsheetVisible, set_bottomsheetVisible] = useState(false);
   const [selectedSet, set_selectedSet] = useState(0);
 
-  const [cellValue, set_cellValue] = useState("");
-
   useFocusEffect(
     useCallback(() => {
       loadRunSets();

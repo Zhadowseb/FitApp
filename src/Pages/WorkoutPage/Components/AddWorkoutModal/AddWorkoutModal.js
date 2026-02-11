@@ -6,7 +6,7 @@ import { WORKOUT_ICONS } from "../../../../Resources/Icons/WorkoutLabels/index";
 
 export default function AddProgram({ visible, onClose, onSubmit }) {
 
-    const [selected_label, set_selected_label] = useState("");
+  const [selected_label, set_selected_label] = useState("");
 
 
   const handleSubmit = () => {

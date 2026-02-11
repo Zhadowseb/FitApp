@@ -4,7 +4,7 @@ import { View, Text, Button, TouchableOpacity } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 import { useColorScheme } from "react-native";
-import { Colors } from "../../../../../../Resources/GlobalStyling/colors";
+import { Colors } from "../../../../../../../../Resources/GlobalStyling/colors";
 
 
 import styles from "./ExerciseRowStyle";
@@ -12,14 +12,11 @@ import SetList from "./SetList/SetList";
 import {checkUniformWeights, 
         checkUniformReps} from "../../Utils/checkUniformSets";
 
-import ArrowUp from "../../../../../../Resources/Icons/UI-icons/ArrowUp";
-import ArrowDown from "../../../../../../Resources/Icons/UI-icons/ArrowDown";
-
 import {ThemedCard,
         ThemedText,
         ThemedButton,
         ThemedBouncyCheckbox} 
-  from "../../../../../../Resources/Components";
+  from "../../../../../../../../Resources/Components";
 
 
 const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} ) => {

@@ -2,7 +2,7 @@ import { View, Text, ScrollView } from "react-native";
 import styles from "./TitleStyle";
 
 import {ThemedText} 
-  from "../../../../../../Resources/Components";
+  from "../../../../../../../../Resources/Components";
 
 const Title = ({exercises,loading,editMode,renderItem}) => {
   return (

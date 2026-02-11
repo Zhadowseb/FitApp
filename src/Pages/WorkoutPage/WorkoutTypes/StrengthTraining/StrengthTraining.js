@@ -6,13 +6,11 @@ import { useFocusEffect } from "@react-navigation/native";
 
 import ExerciseList from './Components/ExerciseList/ExerciseList';
 import EditModeAdditions from './Components/EditModeAdditions/EditModeAdditions';
-import WorkoutLabel from "../../Resources/Components/WorkoutLabel/WorkoutLabel";
-import { WORKOUT_ICONS } from '../../Resources/Icons/WorkoutLabels';
-import CircularProgression from '../../Resources/Components/CircularProgression';
+import CircularProgression from '../../../../Resources/Components/CircularProgression';
 import { useColorScheme } from "react-native";
-import { Colors } from "../../Resources/GlobalStyling/colors";
+import { Colors } from "../../../../Resources/GlobalStyling/colors";
 
-import styles from "./WorkoutPageStyle";
+import styles from "../../WorkoutPageStyle";
 import { ThemedTitle, 
         ThemedCard, 
         ThemedView, 
@@ -20,12 +18,9 @@ import { ThemedTitle,
         ThemedSwitch, 
         ThemedModal,
         ThemedHeader } 
-  from "../../Resources/Components";
+  from "../../../../Resources/Components";
 
-//Types of workouts:
-import Run from "./WorkoutTypes/Run/Run";
-
-const WorkoutPage = ({route}) =>  {
+const WorkoutPage = ({workout_id, date}) =>  {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
 
@@ -33,13 +28,9 @@ const WorkoutPage = ({route}) =>  {
 
   const [editMode, set_editMode] = useState(false);
   const [refreshing, set_refreshing] = useState(0);
-  const [labelModal_visible, set_labelModal_visible] = useState(false);
-  const [label, set_Label] = useState(null);
 
   const [totalSets, set_totalSets] = useState(0);
   const [doneSets, set_doneSets] = useState(0);
-
-  const {workout_id, workout_label, day, date} = route.params;
 
   const handleExerciseChange = () => {
     set_refreshing(prev => prev + 1);
@@ -107,13 +98,6 @@ const WorkoutPage = ({route}) =>  {
                 />
 
             </ThemedCard>
-        </View>
-
-
-        <View style={styles.warmup}>
-          <ThemedTitle type={"h2"}>
-            Warmup
-          </ThemedTitle>
         </View>
 
         <View style={styles.working_sets}>

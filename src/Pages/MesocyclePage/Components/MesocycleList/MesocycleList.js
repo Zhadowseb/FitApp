@@ -8,7 +8,7 @@ import { Colors } from "../../../../Resources/GlobalStyling/colors";
 import styles from "./MesocycleListStyle";
 import AddMesocycleModal from "../AddMesocycle/AddMesocycleModal";
 import { ThemedTitle, ThemedCard, ThemedView, ThemedText, ThemedButton, ThemedHeader } 
-  from "../../../../Resources/Components";
+  from "../../../../Resources/ThemedComponents";
 import Plus from "../../../../Resources/Icons/UI-icons/Plus"
 import { parseCustomDate, formatDate } from "../../../../Utils/dateUtils";
 
@@ -97,8 +97,6 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
               `SELECT COUNT(*) AS count FROM Microcycle WHERE program_id = ?;`,
               [program_id]
           )
-          console.log(weeksBefore);
-          console.log(weeksBefore.count);
           
           const weekCount = weeksBefore?.count ?? null;
 
@@ -118,8 +116,6 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
 
                   const date = parseCustomDate(start_date);
                   date.setDate(date.getDate() + current_day);
-
-                  console.log("today: " + current_day + " weekCount= " + weekCount + " week= " + week + " day= " + day)
 
                   await db.runAsync(
                       `INSERT INTO Day (microcycle_id, program_id, Weekday, date) VALUES (?,?,?,?);`,

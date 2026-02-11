@@ -18,7 +18,7 @@ import { ThemedTitle,
         ThemedSwitch, 
         ThemedModal,
         ThemedHeader } 
-  from "../../../../Resources/Components";
+  from "../../../../Resources/ThemedComponents";
 
 const WorkoutPage = ({workout_id, date}) =>  {
   const colorScheme = useColorScheme();

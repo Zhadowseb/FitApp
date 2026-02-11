@@ -21,7 +21,10 @@ import Copy from '../../../../Resources/Icons/UI-icons/Copy';
 import Delete from "../../../../Resources/Icons/UI-icons/Delete";
 
 //Themed components and utility
-import { ThemedCard, ThemedText, ThemedBottomSheet, ThemedBouncyCheckbox } from "../../../../Resources/Components";
+import { ThemedCard, 
+        ThemedText, 
+        ThemedBottomSheet, 
+        ThemedBouncyCheckbox } from "../../../../Resources/ThemedComponents";
 import { formatDate } from '../../../../Utils/dateUtils';
 
 const Day = ( {day, program_id, microcycle_id} ) => {

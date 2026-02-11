@@ -6,7 +6,7 @@ import styles from "./WorkoutLabelStyle";
 
 
 import {ThemedButton, ThemedModal, ThemedText} 
-  from "../../Components";
+  from "../../ThemedComponents";
 
 export default function AddProgram({ visible, onClose, onSubmit }) {
     

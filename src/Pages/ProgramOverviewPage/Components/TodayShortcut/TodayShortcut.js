@@ -10,7 +10,7 @@ import { getTodaysDate } from '../../../../Utils/dateUtils';
 
 import styles from "./TodayShortcutStyle"
 import { ThemedTitle, ThemedCard, ThemedView, ThemedText } 
-  from "../../../../Resources/Components";
+  from "../../../../Resources/ThemedComponents";
 
 const TodayShortcut = ( {program_id} ) => {
     const db = useSQLiteContext();

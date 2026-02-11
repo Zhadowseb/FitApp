@@ -10,7 +10,7 @@ import {ThemedCard,
         ThemedText,
         ThemedView,  
         ThemedTextInput} 
-  from "../../../../../../../Resources/Components";
+  from "../../../../../../../Resources/ThemedComponents";
 
 const AddExercise = ( {workout_id, date, onExerciseChange} ) => {
   const db = useSQLiteContext();

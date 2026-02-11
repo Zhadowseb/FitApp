@@ -14,7 +14,7 @@ import {ThemedCard,
         ThemedTextInput,
         ThemedButton,
         ThemedBouncyCheckbox} 
-  from "../../../../../../../../../Resources/Components";
+  from "../../../../../../../../../Resources/ThemedComponents";
   
 const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
   const colorScheme = useColorScheme();

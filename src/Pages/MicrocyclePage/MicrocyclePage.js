@@ -13,7 +13,7 @@ import { ThemedButton,
     ThemedHeader, 
     ThemedText, 
     ThemedTitle, 
-    ThemedPicker } from "../../Resources/Components";
+    ThemedPicker } from "../../Resources/ThemedComponents";
 
 const MicrocyclePage = ( {route} ) => {
     const db = useSQLiteContext();

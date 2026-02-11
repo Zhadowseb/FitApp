@@ -16,7 +16,7 @@ import {ThemedCard,
         ThemedText,
         ThemedButton,
         ThemedBouncyCheckbox} 
-  from "../../../../../../../../Resources/Components";
+  from "../../../../../../../../Resources/ThemedComponents";
 
 
 const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} ) => {

@@ -3,7 +3,7 @@ import { Modal, View, Text, TextInput, Button } from "react-native";
 import styles from "./AddMesocycleModalStyle";
 
 import { ThemedTextInput, ThemedCard, ThemedView, ThemedText, ThemedButton, ThemedModal } 
-  from "../../../../Resources/Components";
+  from "../../../../Resources/ThemedComponents";
 
 export default function AddMesocycleModal({ visible, onClose, onSubmit }) {
 

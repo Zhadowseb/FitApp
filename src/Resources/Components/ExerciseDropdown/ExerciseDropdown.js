@@ -3,7 +3,7 @@ import { View, ActivityIndicator } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 
 import styles from "./ExerciseDropdownStyle";
-import { ThemedPicker, ThemedText } from "../";
+import { ThemedPicker, ThemedText } from "../../ThemedComponents";
 
 const ExerciseDropdown = ({ selectedExerciseName, onChange }) => {
   const [exercises, setExercises] = useState([]);

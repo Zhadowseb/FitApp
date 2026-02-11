@@ -10,8 +10,7 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 
 import styles from "./ProgramListStyle";
-import ThemedCard from "../../../../Resources/Components/ThemedCard";
-import ThemedText from "../../../../Resources/Components/ThemedText";
+import {ThemedCard, ThemedText} from "../../../../Resources/ThemedComponents";
 
 const ProgramList = ({ refreshKey }) => {
   const navigation = useNavigation();

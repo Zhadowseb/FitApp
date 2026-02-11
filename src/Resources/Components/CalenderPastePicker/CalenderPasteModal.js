@@ -5,7 +5,7 @@ import Mesocycle from "./Mesocycle";
 import Microcycle from "./Microcycle";
 import Workout from "./Workout";
 
-import { ThemedPicker, ThemedText } from "..";
+import { ThemedPicker, ThemedText } from "../../ThemedComponents";
 
 const CalenderPastePicker = ({ program_id, visible, close, version }) => {
   return (

@@ -16,7 +16,7 @@ import { ThemedTitle,
         ThemedSwitch, 
         ThemedModal,
         ThemedHeader, } 
-  from "../../../../Resources/Components/";
+  from "../../../../Resources/ThemedComponents";
 import AddRunSetModal from './AddRunSetModal';
 
 import WorkoutStopwatch from '../../../../Resources/Components/StopWatch';

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
-import { ThemedPicker, ThemedText, ThemedModal } from "../";
+import { ThemedPicker, ThemedText, ThemedModal } from "../../ThemedComponents";
 
 const Mesocycle = ({ program_id, visible, close }) => {
   const db = useSQLiteContext();

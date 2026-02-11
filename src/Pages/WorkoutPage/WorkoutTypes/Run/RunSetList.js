@@ -5,7 +5,7 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
 
 
-import { ThemedCard, ThemedText, ThemedBottomSheet, ThemedEditableCell } from "../../../../Resources/Components";
+import { ThemedCard, ThemedText, ThemedBottomSheet, ThemedEditableCell } from "../../../../Resources/ThemedComponents";
 import Delete from "../../../../Resources/Icons/UI-icons/Delete";
 
 import styles from "./RunStyle";

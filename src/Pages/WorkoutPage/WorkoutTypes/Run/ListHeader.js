@@ -1,7 +1,7 @@
 import { View } from "react-native";
 import { useColorScheme } from "react-native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
-import { ThemedText } from "../../../../Resources/Components/";
+import { ThemedText } from "../../../../Resources/ThemedComponents";
 
 /**
  * ListHeader

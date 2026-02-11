@@ -7,7 +7,7 @@ import styles from './HomePageStyle';
 
 //Custom themed components
 import { ThemedTitle, ThemedCard, ThemedView, ThemedText, ThemedButton, ThemedBouncyCheckbox } 
-  from "../../Resources/Components";
+  from "../../Resources/ThemedComponents";
 
 export default function App() {
 

@@ -5,7 +5,7 @@ import { Colors } from "../../../../../../../../../../Resources/GlobalStyling/co
 
 import {ThemedCard,
         ThemedText} 
-  from "../../../../../../../../../../Resources/Components";
+  from "../../../../../../../../../../Resources/ThemedComponents";
 
 const Title = () => {
 

@@ -39,32 +39,11 @@ const WorkoutPage = ({route}) =>  {
   const [totalSets, set_totalSets] = useState(0);
   const [doneSets, set_doneSets] = useState(0);
 
-  const {workout_id, day, date} = route.params;
+  const {workout_id, workout_label, day, date} = route.params;
 
   const handleExerciseChange = () => {
     set_refreshing(prev => prev + 1);
   }
-
-  const handleLabel = ({id}) => {
-    set_Label(id)
-  };
-
-  const loadLabel = async () => {
-    try {
-      const row = await db.getFirstAsync(
-        `SELECT label FROM Workout WHERE workout_id = ?;`,
-        [workout_id]
-      );
-
-      if (row?.label != null) {
-        set_Label(row.label);
-      } else {
-        set_Label(null);
-      }
-    } catch (err) {
-      console.error("Failed to load label:", err);
-    }
-  };
 
   const loadTotalSets = async () => {
     try {
@@ -93,47 +72,12 @@ const WorkoutPage = ({route}) =>  {
     }
   };
 
-  const saveLabel = async () => {
-    try {
-      await db.runAsync(
-        `UPDATE Workout 
-        SET label = ? 
-        WHERE workout_id = ?;`,
-        [label, workout_id]
-      );
-    } catch (err) {
-      console.error("Failed to save label:", err);
-    }
-  };
-
-  const deleteWorkout = async (workout_id) => {
-      try{
-          await db.runAsync(
-              `DELETE FROM Workout WHERE workout_id = ?;`,
-              [workout_id]
-          );
-      }catch (error) {
-          console.error(error);
-      }
-  }
-
   useFocusEffect(
     useCallback(() => {
-      loadLabel();
       loadTotalSets();
       loadCompletedSets();
     }, [workout_id])
   );  
-
-  useFocusEffect(
-    useCallback(() => {
-      return () => {
-        if (label !== null) {
-          saveLabel();
-        }
-      };
-    }, [label, workout_id])
-  );
 
   useEffect(() => {
     loadCompletedSets();
@@ -142,7 +86,7 @@ const WorkoutPage = ({route}) =>  {
 
 
   const SelectedIcon =
-    WORKOUT_ICONS.find(item => item.id === label)?.Icon;
+    WORKOUT_ICONS.find(item => item.id === workout_label)?.Icon;
 
 
   return (
@@ -159,13 +103,16 @@ const WorkoutPage = ({route}) =>  {
           </View> )
       }>
           
-          <ThemedText size={18}> {label}  </ThemedText>
+          <ThemedText size={18}> {workout_label}  </ThemedText>
           <ThemedText size={10}> {day} - {date}  </ThemedText>
       
       </ThemedHeader>
 
-      <Run
-        workout_id={workout_id}/>
+      {workout_label === "Cardio" && (
+        <Run
+          workout_id={workout_id}/>
+      )}
+
 
       {/* 
       <ScrollView>

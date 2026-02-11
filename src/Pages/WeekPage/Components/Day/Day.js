@@ -274,7 +274,8 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                         navigation.navigate("WorkoutPage", {
                             workout_id: workouts[0].workout_id,
                             day: day,
-                            date: date,})   
+                            date: date,
+                            workout_label: workouts[0].label,})   
                     } else if (workouts.length > 1){
 
                         set_pickMode(PICK_MODE.NAVIGATE);
@@ -478,6 +479,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                     program_id,
                     date,
                     workout_id: workout_id.lastInsertRowId,
+                    workout_label: labelId.id,
                 });
             }}
         />
@@ -487,12 +489,13 @@ const Day = ( {day, program_id, microcycle_id} ) => {
             visible={pickWorkoutModal_visible}
             onClose={() => set_pickWorkoutModal_visible(false)}
             onSubmit={(workout) => {
+                console.log(workout);
 
                 if(pickMode === PICK_MODE.NAVIGATE){
                     navigation.navigate("WorkoutPage", {
                         program_id: program_id,
                         date: date,
-                        workout_id: workout.workout_id
+                        workout_id: workout.workout_id,
                     });
                 }
 

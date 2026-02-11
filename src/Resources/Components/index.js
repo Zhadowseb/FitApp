@@ -11,3 +11,4 @@ export { default as ThemedSwitch } from "./ThemedSwitch";
 export { default as ThemedBouncyCheckbox } from "./ThemedBouncyCheckbox";
 export { default as ThemedHeader } from "./ThemedHeader";
 export { default as ThemedSegmentedToggle} from "./ThemedSegmentedToggle";
+export { default as ThemedEditableCell} from "./ThemedEditableCell";

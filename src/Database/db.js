@@ -117,7 +117,7 @@ export async function initializeDatabase(db) {
         set_number INTEGER NOT NULL,
         is_pause INTEGER NOT NULL DEFAULT 0,
         distance INTEGER,
-        pace INTEGER,
+        pace TEXT,
         time INTEGER,
         heartrate INTEGER,
 
@@ -162,7 +162,7 @@ export async function initializeDatabase(db) {
   await db.execAsync(`
     DROP TABLE IF EXISTS Run;
   `);
-  */
+  /*
   
 
   //Drop all tables:

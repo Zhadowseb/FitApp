@@ -69,7 +69,7 @@ const Run = ({workout_id}) =>  {
                 set_number,
                 is_pause,
                 Number(distance) || null,
-                Number(pace) || null,
+                pace || "",
                 Number(time) || null,
                 Number(heartrate) || null,
             ]

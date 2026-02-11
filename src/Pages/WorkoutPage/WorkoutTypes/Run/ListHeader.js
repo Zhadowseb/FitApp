@@ -24,11 +24,17 @@ const ListHeader = ({ styles }) => {
         <ThemedText size={10} style={{ color: theme.quietText }}>
           Distance
         </ThemedText>
+        <ThemedText size={10} style={{ color: theme.quietText }}>
+          (km)
+        </ThemedText>
       </View>
 
       <View style={[styles.pace, styles.sharedGrid, styles.title]}>
         <ThemedText size={10} style={{ color: theme.quietText }}>
           Pace
+        </ThemedText>
+        <ThemedText size={10} style={{ color: theme.quietText }}>
+          (min/km)
         </ThemedText>
       </View>
 
@@ -36,11 +42,17 @@ const ListHeader = ({ styles }) => {
         <ThemedText size={10} style={{ color: theme.quietText }}>
           Time
         </ThemedText>
+        <ThemedText size={10} style={{ color: theme.quietText }}>
+          (min)
+        </ThemedText>
       </View>
 
       <View style={[styles.zone, styles.sharedGrid, styles.title]}>
         <ThemedText size={10} style={{ color: theme.quietText }}>
           Zone
+        </ThemedText>
+        <ThemedText size={10} style={{ color: theme.quietText }}>
+          (bpm/zone)
         </ThemedText>
       </View>
     </View>

@@ -5,7 +5,7 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
 
 
-import { ThemedCard, ThemedText, ThemedBottomSheet } from "../../../../Resources/Components";
+import { ThemedCard, ThemedText, ThemedBottomSheet, ThemedEditableCell } from "../../../../Resources/Components";
 import Delete from "../../../../Resources/Icons/UI-icons/Delete";
 
 import styles from "./RunStyle";
@@ -17,6 +17,8 @@ const RunSetList = ({ workout_id, type, empty, reloadKey, triggerReload }) => {
 
   const [bottomsheetVisible, set_bottomsheetVisible] = useState(false);
   const [selectedSet, set_selectedSet] = useState(0);
+
+  const [cellValue, set_cellValue] = useState("");
 
   useFocusEffect(
     useCallback(() => {
@@ -44,7 +46,7 @@ const RunSetList = ({ workout_id, type, empty, reloadKey, triggerReload }) => {
 
   const deleteSet = async () => {
     try {
-      db.getFirstAsync(
+      db.runAsync(
         `DELETE FROM Run WHERE Run_id = ?;`,
         [selectedSet.Run_id]
       );
@@ -102,33 +104,90 @@ const RunSetList = ({ workout_id, type, empty, reloadKey, triggerReload }) => {
             {/* DISTANCE */}
             <View style={[styles.distance, styles.sharedGrid,
               index === sets.length - 1 && styles.lastGrid ]}>
-              <ThemedText>
-                {set.distance ? `${set.distance} m` : ""}
-              </ThemedText>
+              <ThemedEditableCell
+                value={ set.distance?.toString() ?? ""}
+                onCommit={async (v) => {
+                  setSets(prev =>
+                    prev.map(s =>
+                      s.Run_id === set.Run_id
+                        ? { ...s, distance: v === "" ? null : Number(v) }
+                        : s
+                    )
+                  );
+
+                  await db.runAsync(
+                    `UPDATE Run SET distance = ? WHERE Run_id = ?;`,
+                    [v === "" ? null : Number(v), set.Run_id]
+                  );
+                }}
+              />
             </View>
 
             {/* PACE */}
             <View style={[styles.pace, styles.sharedGrid,
               index === sets.length - 1 && styles.lastGrid ]}>
-              <ThemedText>
-                {set.pace ? formatPace(set.pace) : ""}
-              </ThemedText>
+              <ThemedEditableCell
+                value={set.pace?.toString() ?? ""}
+                keyboardType="normal"
+                onCommit={async (v) => {
+                  setSets(prev =>
+                    prev.map(s =>
+                      s.Run_id === set.Run_id
+                        ? { ...s, pace: v === "" ? null : Number(v) }
+                        : s
+                    )
+                  );
+
+                  await db.runAsync(
+                    `UPDATE Run SET pace = ? WHERE Run_id = ?;`,
+                    [v === "" ? null : v, set.Run_id]
+                  );
+                }}
+              />
             </View>
 
             {/* TIME */}
             <View style={[styles.time, styles.sharedGrid,
               index === sets.length - 1 && styles.lastGrid ]}>
-              <ThemedText>
-                {set.time ? formatTime(set.time) : ""}
-              </ThemedText>
+              <ThemedEditableCell
+                value={set.time?.toString() ?? ""}
+                onCommit={async (v) => {
+                  setSets(prev =>
+                    prev.map(s =>
+                      s.Run_id === set.Run_id
+                        ? { ...s, time: v === "" ? null : Number(v) }
+                        : s
+                    )
+                  );
+
+                  await db.runAsync(
+                    `UPDATE Run SET time = ? WHERE Run_id = ?;`,
+                    [v === "" ? null : Number(v), set.Run_id]
+                  );
+                }}
+              />
             </View>
 
             {/* HEART RATE */}
             <View style={[styles.zone, styles.sharedGrid,
               index === sets.length - 1 && styles.lastGrid]}>
-              <ThemedText>
-                {set.heartrate ? `HR ${set.heartrate}` : ""}
-              </ThemedText>
+              <ThemedEditableCell
+                value={set.heartrate?.toString() ?? ""}
+                onCommit={async (v) => {
+                  setSets(prev =>
+                    prev.map(s =>
+                      s.Run_id === set.Run_id
+                        ? { ...s, heartrate: v === "" ? null : Number(v) }
+                        : s
+                    )
+                  );
+
+                  await db.runAsync(
+                    `UPDATE Run SET heartrate = ? WHERE Run_id = ?;`,
+                    [v === "" ? null : Number(v), set.Run_id]
+                  );
+                }}
+              />
             </View>
           </View>
         ))}
@@ -169,17 +228,3 @@ const RunSetList = ({ workout_id, type, empty, reloadKey, triggerReload }) => {
 };
 
 export default RunSetList;
-
-/* ---------- helpers ---------- */
-
-const formatTime = (minutes) => {
-  const m = Math.floor(minutes);
-  const s = Math.round((minutes - m) * 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
-};
-
-const formatPace = (secondsPerKm) => {
-  const m = Math.floor(secondsPerKm / 60);
-  const s = secondsPerKm % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-};

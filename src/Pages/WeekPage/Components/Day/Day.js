@@ -9,7 +9,7 @@ import { useColorScheme } from "react-native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import PickWorkoutModal from './Components/PickWorkoutModal/PickWorkoutModal';
-import WorkoutLabel from "../../../../Resources/Components/WorkoutLabel/WorkoutLabel";
+import WorkoutLabel from "../../../../Resources/Components/WorkoutLabel";
 
 import styles from './DayStyle';
 import { WORKOUT_ICONS } from '../../../../Resources/Icons/WorkoutLabels/index';

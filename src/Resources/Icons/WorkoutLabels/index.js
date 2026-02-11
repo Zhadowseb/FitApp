@@ -5,6 +5,7 @@ import Rest from "./Rest";
 import BoxingGlove from "./BoxingGlove";
 import SkippingRope from "./SkippingRope";
 import Treadmil from "./Treadmil";
+import Run from "./Run";
 
 export const WORKOUT_ICONS = [
   { id: "Upperbody",
@@ -34,4 +35,8 @@ export const WORKOUT_ICONS = [
   { id: "Treadmil", 
     short: "Treadmil",
     Icon: Treadmil},
+
+  { id: "Run", 
+    short: "Run",
+    Icon: Run},
 ];

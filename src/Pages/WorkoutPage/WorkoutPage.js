@@ -108,7 +108,7 @@ const WorkoutPage = ({route}) =>  {
       
       </ThemedHeader>
 
-      {workout_label === "Cardio" && (
+      {workout_label === "Run" && (
         <Run
           workout_id={workout_id}/>
       )}

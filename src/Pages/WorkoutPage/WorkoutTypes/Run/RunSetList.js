@@ -1,8 +1,9 @@
-// src/Components/RunSetList/RunSetList.js
 import { useState, useCallback } from "react";
 import { TouchableOpacity, View } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
+import { useColorScheme } from "react-native";
+import { Colors } from "../../../../Resources/GlobalStyling/colors";
 
 
 import { ThemedCard, ThemedText, ThemedBottomSheet, ThemedEditableCell } from "../../../../Resources/Components";
@@ -12,6 +13,8 @@ import styles from "./RunStyle";
 import ListHeader from "./ListHeader";
 
 const RunSetList = ({ workout_id, type, empty, reloadKey, triggerReload }) => {
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme] ?? Colors.light;
   const db = useSQLiteContext();
   const [sets, setSets] = useState([]);
 
@@ -91,7 +94,7 @@ const RunSetList = ({ workout_id, type, empty, reloadKey, triggerReload }) => {
               }}>
 
               {set.is_pause ? 
-              (<ThemedText style={{ paddingLeft: 20 }}>
+              (<ThemedText style={{color: theme.quietText}}>
                 Pause
               </ThemedText>) : 
               (<ThemedText>{set.set_number}</ThemedText>)}

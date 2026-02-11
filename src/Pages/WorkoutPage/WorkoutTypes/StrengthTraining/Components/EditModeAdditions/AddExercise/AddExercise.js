@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Text, TextInput, Button, Alert } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 
-import ExerciseDropdown from "../../../../../Resources/Components/ExerciseDropdown/ExerciseDropdown";
+import ExerciseDropdown from "../../../../../../../Resources/Components/ExerciseDropdown/ExerciseDropdown";
 import styles from "./AddExerciseStyle";
 
 import {ThemedCard, 
@@ -10,7 +10,7 @@ import {ThemedCard,
         ThemedText,
         ThemedView,  
         ThemedTextInput} 
-  from "../../../../../Resources/Components";
+  from "../../../../../../../Resources/Components";
 
 const AddExercise = ( {workout_id, date, onExerciseChange} ) => {
   const db = useSQLiteContext();

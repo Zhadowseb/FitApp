@@ -26,7 +26,7 @@ const ThemedButton = ({
             backgroundColor: theme.primary,
         },
         secondary: {
-            backgroundColor: theme.surface,
+            backgroundColor: theme.secondary,
             borderWidth: 1,
             borderColor: theme.border,
         },

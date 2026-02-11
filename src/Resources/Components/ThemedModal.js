@@ -3,15 +3,14 @@ import { Modal, View, StyleSheet, Pressable, useColorScheme } from "react-native
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../GlobalStyling/colors";
 import ThemedText from "./ThemedText";
-import ThemedButton from "./ThemedButton";
 
 const ThemedModal = ({
   visible,
   onClose,
   title,
   children,
-  style,
-  contentStyle,
+  style,               // ✅ used now (outer modal container)
+  contentStyle,        // ✅ used now (inner body)
   dismissOnBackdropPress = true,
 }) => {
   const colorScheme = useColorScheme();
@@ -38,7 +37,7 @@ const ThemedModal = ({
               backgroundColor: theme.cardBackground,
               paddingBottom: insets.bottom + 16,
             },
-            contentStyle,
+            style, // ✅ apply custom modal style overrides here
           ]}
         >
           {title && (
@@ -47,7 +46,7 @@ const ThemedModal = ({
             </ThemedText>
           )}
 
-          <View style={styles.body}>
+          <View style={[styles.body, contentStyle]}>
             {children}
           </View>
         </View>

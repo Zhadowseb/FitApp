@@ -9,6 +9,7 @@ import { useColorScheme } from "react-native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import PickWorkoutModal from './Components/PickWorkoutModal/PickWorkoutModal';
+import WorkoutLabel from "../../../../Resources/Components/WorkoutLabel/WorkoutLabel";
 
 import styles from './DayStyle';
 import { WORKOUT_ICONS } from '../../../../Resources/Icons/WorkoutLabels/index';
@@ -17,6 +18,7 @@ import { WORKOUT_ICONS } from '../../../../Resources/Icons/WorkoutLabels/index';
 import ThreeDots from '../../../../Resources/Icons/UI-icons/ThreeDots';
 import Plus from '../../../../Resources/Icons/UI-icons/Plus';
 import Copy from '../../../../Resources/Icons/UI-icons/Copy';
+import Delete from "../../../../Resources/Icons/UI-icons/Delete";
 
 //Themed components and utility
 import { ThemedCard, ThemedText, ThemedBottomSheet, ThemedBouncyCheckbox } from "../../../../Resources/Components";
@@ -40,13 +42,14 @@ const Day = ( {day, program_id, microcycle_id} ) => {
 
     //Copy workout to different day option.
     const [newDate, set_newDate] = useState(new Date());
-    const [copiedWorkout, set_copiedWorkout] = useState(0);
+    const [selectedWorkout, set_selectedWorkout] = useState(0);
 
     //PickWorkoutModal, Option menu or actually choosing. 
     const PICK_MODE = {
         NAVIGATE: "navigate",
         COPY: "copy",
         PASTE: "paste",
+        DELETE: "delete",
     };
     const [pickMode, set_pickMode] = useState(null);
 
@@ -58,10 +61,16 @@ const Day = ( {day, program_id, microcycle_id} ) => {
     const [pickWorkoutModal_visible, set_pickWorkoutModal_visible] = useState(false);
     const [datePicker_visible, set_datePicker_visible] = useState(false);
     const [OptionsBottomsheet_visible, set_OptionsBottomsheet_visible] = useState(false);
+    const [labelModal_visible, set_labelModal_visible] = useState(false);
     
     const hasWorkouts = workouts.length > 0;
     
-    
+    useFocusEffect(
+        useCallback(() => {
+            loadDay();
+        }, [day, microcycle_id])
+    );
+
     const loadDay = async () => {
         try {
             const dayRow = await db.getFirstAsync(
@@ -120,25 +129,6 @@ const Day = ( {day, program_id, microcycle_id} ) => {
             console.error("Error loading day:", err);
         }
     };
-
-    const handleNewWorkout = async () => {
-        try {
-            const result = await db.runAsync(
-                `INSERT INTO Workout (date, day_id) VALUES (?, ?);`,
-                    [date, day_id]
-            );
-            return result.lastInsertRowId;
-
-        } catch (error) {
-            console.error(error);
-        }
-    };
-
-    useFocusEffect(
-        useCallback(() => {
-            loadDay();
-        }, [day, microcycle_id])
-    );
 
     const copyWorkoutToDate = async (workoutId, date) => {
 
@@ -228,6 +218,38 @@ const Day = ( {day, program_id, microcycle_id} ) => {
 
     };
 
+    const deleteWorkout = async (selectedWorkout) => {
+        try {
+            await db.execAsync("BEGIN TRANSACTION");
+
+            await db.runAsync(
+                `DELETE FROM Sets WHERE exercise_id IN (
+                    SELECT exercise_id FROM Exercise WHERE workout_id = ?);`,
+                [selectedWorkout]);
+
+            await db.runAsync(
+                `DELETE FROM Exercise WHERE workout_id = ?;`,
+                [selectedWorkout]);
+
+            await db.runAsync(
+                `DELETE FROM Run WHERE workout_id = ?;`,
+                [selectedWorkout]);
+
+            await db.runAsync(
+                `DELETE FROM Workout WHERE workout_id = ?;`,
+                [selectedWorkout]);
+
+            await db.execAsync("COMMIT");
+        } catch (err) {
+            await db.execAsync("ROLLBACK");
+            console.error("Failed to delete workout:", err);
+            throw err;
+        }
+    };
+
+
+
+
     return (
         <>
         <ThemedCard
@@ -249,10 +271,11 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                 style={{flex: 1, flexDirection: "row"}}
                 onPress={() => {
                     if(workouts.length === 1){
-                        navigation.navigate("ExercisePage", {
+                        navigation.navigate("WorkoutPage", {
                             workout_id: workouts[0].workout_id,
                             day: day,
-                            date: date,})   
+                            date: date,
+                            workout_label: workouts[0].label,})   
                     } else if (workouts.length > 1){
 
                         set_pickMode(PICK_MODE.NAVIGATE);
@@ -391,13 +414,8 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                     style={[styles.option, {paddingTop: 0}]}
                     onPress={async () => {
                         set_OptionsBottomsheet_visible(false);
-                        const workout_id = await handleNewWorkout();
+                        set_labelModal_visible(true);
 
-                        navigation.navigate('ExercisePage', {
-                            program_id: program_id,
-                            date: date,
-                            workout_id: workout_id,
-                        }); 
                     }}>
                     <Plus
                         width={24}
@@ -406,6 +424,23 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                         Add new workout
                     </ThemedText>
                 </TouchableOpacity>
+
+                {/* Delete a workout */}
+                <TouchableOpacity 
+                    style={styles.option}
+                    onPress={async () => {
+                        set_pickMode(PICK_MODE.DELETE);
+                        set_pickWorkoutModal_visible(true);
+                    }}>
+
+                    <Delete
+                        width={24}
+                        height={24}/>
+                    <ThemedText style={styles.option_text}> 
+                        Delete Workout
+                    </ThemedText>
+                </TouchableOpacity>
+
 
                 {/* Copy a workout, and paste it to a different day */}
                 <TouchableOpacity 
@@ -422,32 +457,58 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                     <ThemedText style={styles.option_text}> 
                         Copy workout to a different day
                     </ThemedText>
-
                 </TouchableOpacity>
 
             </View>
 
         </ThemedBottomSheet>
 
+        <WorkoutLabel
+            visible={labelModal_visible}
+            onClose={() => set_labelModal_visible(false)}
+            onSubmit={async (labelId) => {
+
+                set_labelModal_visible(false);
+
+                const workout_id = await db.runAsync(
+                    `INSERT INTO Workout (date, day_id, label) VALUES (?, ?, ?);`,
+                    [date, day_id, labelId.id]
+                );
+
+                navigation.navigate("WorkoutPage", {
+                    program_id,
+                    date,
+                    workout_id: workout_id.lastInsertRowId,
+                    workout_label: labelId.id,
+                });
+            }}
+        />
 
         <PickWorkoutModal 
             workouts={workouts}
             visible={pickWorkoutModal_visible}
             onClose={() => set_pickWorkoutModal_visible(false)}
             onSubmit={(workout) => {
+                console.log(workout);
 
                 if(pickMode === PICK_MODE.NAVIGATE){
-                    navigation.navigate("ExercisePage", {
+                    navigation.navigate("WorkoutPage", {
                         program_id: program_id,
                         date: date,
-                        workout_id: workout.workout_id
+                        workout_id: workout.workout_id,
                     });
                 }
 
                 if(pickMode === PICK_MODE.COPY){
-                    set_copiedWorkout(workout.workout_id);
+                    set_selectedWorkout(workout.workout_id);
                     set_datePicker_visible(true);
                     set_pickWorkoutModal_visible(false);
+                }
+
+                if(pickMode === PICK_MODE.DELETE){
+                    deleteWorkout(workout.workout_id)
+                    set_pickWorkoutModal_visible(false);
+                    set_OptionsBottomsheet_visible(false);
                 }
             }}
         />
@@ -463,9 +524,9 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                     
                     if (event.type !== "set" || !date) return;
 
-                    await copyWorkoutToDate(copiedWorkout, date)
+                    await copyWorkoutToDate(selectedWorkout, date)
 
-                    set_copiedWorkout(null);
+                    set_selectedWorkout(null);
                     set_pickMode(null);
                 }}
             />

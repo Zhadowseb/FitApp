@@ -3,14 +3,13 @@ import { View, Button, ScrollView } from 'react-native';
 import { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 
-import styles from './EditModeAdditionsStyle';
 import AddExercise from './AddExercise/AddExercise';
 
 import {ThemedCard, 
         ThemedButton, 
         ThemedText,
         ThemedView,  } 
-  from "../../../../Resources/Components";
+  from "../../../../../../Resources/Components";
 
 const EditModeAdditions = ( {workout_id, date, onExerciseChange, deleteWorkout} ) => {
 

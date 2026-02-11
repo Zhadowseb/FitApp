@@ -1,11 +1,11 @@
 import { View, Text, ScrollView } from "react-native";
 import styles from "./TitleStyle";
 import { useColorScheme } from "react-native";
-import { Colors } from "../../../../../../../../Resources/GlobalStyling/colors";
+import { Colors } from "../../../../../../../../../../Resources/GlobalStyling/colors";
 
 import {ThemedCard,
         ThemedText} 
-  from "../../../../../../../../Resources/Components";
+  from "../../../../../../../../../../Resources/Components";
 
 const Title = () => {
 

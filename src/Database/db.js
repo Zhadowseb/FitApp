@@ -7,6 +7,12 @@ export async function initializeDatabase(db) {
         exercise_name TEXT NOT NULL
     );
 
+    /* ============================= */
+    /* ============================= */
+    /* ===== Program Structure ===== */
+    /* ============================= */
+    /* ============================= */
+
     CREATE TABLE IF NOT EXISTS Program (
       program_id INTEGER PRIMARY KEY AUTOINCREMENT,
       program_name TEXT,
@@ -49,8 +55,16 @@ export async function initializeDatabase(db) {
         day_id INTEGER NOT NULL,
         date TEXT NOT NULL,
         label TEXT, 
-        done INTEGER NOT NULL DEFAULT 0
+        done INTEGER NOT NULL DEFAULT 0,
+        start_ts INTEGER NOT NULL DEFAULT 0,
+        duration_seconds INTEGER NOT NULL DEFAULT 0
     );
+
+    /* ============================= */
+    /* ============================= */
+    /* ===== Weightlifting ========= */
+    /* ============================= */
+    /* ============================= */
 
     CREATE TABLE IF NOT EXISTS Exercise (
         exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,6 +100,30 @@ export async function initializeDatabase(db) {
         estimated_weight INTEGER NOT NULL DEFAULT 0
     );
   
+    /* ============================= */
+    /* ============================= */
+    /* =========== Running ========= */
+    /* ============================= */
+    /* ============================= */
+
+    CREATE TABLE IF NOT EXISTS Run (
+        Run_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        workout_id INTEGER NOT NULL,
+        type TEXT 
+          DEFAULT 'WORKING_SET'
+          NOT NULL 
+          CHECK (type IN ('WARMUP', 'WORKING_SET', 'COOLDOWN')),
+        
+        set_number INTEGER NOT NULL,
+        is_pause INTEGER NOT NULL DEFAULT 0,
+        distance INTEGER,
+        pace TEXT,
+        time INTEGER,
+        heartrate INTEGER,
+
+        done INTEGER NOT NULL DEFAULT 0
+    );
+
 
     PRAGMA journal_mode = WAL;
 
@@ -116,10 +154,15 @@ export async function initializeDatabase(db) {
 
   /*
   await db.execAsync(`
-    DROP TABLE IF EXISTS Workout;
+    ALTER TABLE Workout ADD COLUMN duration_seconds INTEGER;
   `);
   */
-  
+
+  /*
+  await db.execAsync(`
+    DROP TABLE IF EXISTS Run;
+  `);
+  /*
   
 
   //Drop all tables:

@@ -3,7 +3,7 @@ import { View, Text, TextInput, Button } from "react-native";
 import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
 import { useState, useEffect } from "react";
 import { useColorScheme } from "react-native";
-import { Colors } from "../../../../../../../Resources/GlobalStyling/colors";
+import { Colors } from "../../../../../../../../../Resources/GlobalStyling/colors";
 
 import styles from "./SetListStyle";
 import Title from "./Title/Title";
@@ -14,7 +14,7 @@ import {ThemedCard,
         ThemedTextInput,
         ThemedButton,
         ThemedBouncyCheckbox} 
-  from "../../../../../../../Resources/Components";
+  from "../../../../../../../../../Resources/Components";
   
 const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
   const colorScheme = useColorScheme();

@@ -4,7 +4,7 @@ import { Picker } from "@react-native-picker/picker";
 
 import styles from "./AddEstimatedSetStyle";
 import ExerciseDropdown from "../../../../../../Resources/Components/ExerciseDropdown/ExerciseDropdown";
-import { ThemedButton, ThemedModal, ThemedTextInput } from "../../../../../../Resources/Components";
+import { ThemedButton, ThemedModal, ThemedTextInput } from "../../../../../../Resources/ThemedComponents";
 
 export default function AddEstimatedSet({ visible, onClose, onSubmit }) {
 

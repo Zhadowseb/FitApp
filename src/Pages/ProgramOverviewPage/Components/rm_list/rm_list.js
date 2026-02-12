@@ -7,7 +7,7 @@ import styles from "./Rm_listStyle"
 import EditEstimatedSet from "./Components/EditEstimatedSet/EditEstimatedSet";
 
 import { ThemedTitle, ThemedCard, ThemedView, ThemedText } 
-  from "../../../../Resources/Components";
+  from "../../../../Resources/ThemedComponents";
 
 const rm_list = ( {program_id, refreshKey, refresh} ) => {
     const db = useSQLiteContext();

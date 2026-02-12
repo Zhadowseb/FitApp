@@ -16,7 +16,7 @@ import { ThemedTitle,
         ThemedSwitch, 
         ThemedModal,
         ThemedHeader } 
-  from "../../Resources/Components";
+  from "../../Resources/ThemedComponents";
 
 //Types of workouts:
 import Run from "./WorkoutTypes/Run/Run";

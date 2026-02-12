@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
-import {ThemedText, ThemedButton} from "./";
+import {ThemedText, ThemedButton} from "../ThemedComponents";
 
 /**
  * WorkoutStopwatchSQLite

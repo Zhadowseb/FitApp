@@ -20,7 +20,7 @@ import { ThemedTitle,
         ThemedButton, 
         ThemedModal,
         ThemedHeader } 
-  from "../../Resources/Components";
+  from "../../Resources/ThemedComponents";
 
 const ProgramOverviewPage = ( {route} ) => {
     const db = useSQLiteContext();

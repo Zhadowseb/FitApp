@@ -9,7 +9,7 @@ import {ThemedCard,
         ThemedButton, 
         ThemedText,
         ThemedView,  } 
-  from "../../../../../../Resources/Components";
+  from "../../../../../../Resources/ThemedComponents";
 
 const EditModeAdditions = ( {workout_id, date, onExerciseChange, deleteWorkout} ) => {
 

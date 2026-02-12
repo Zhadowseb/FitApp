@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { ActivityIndicator, Pressable, View, ScrollView } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
-import { ThemedText, ThemedModal } from "../";
+import { ThemedText, ThemedModal } from "../../ThemedComponents";
 
 const Microcycle = ({ program_id, visible, close }) => {
   const db = useSQLiteContext();

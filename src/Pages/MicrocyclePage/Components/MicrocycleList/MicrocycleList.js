@@ -21,7 +21,7 @@ import { ThemedCard,
         ThemedBouncyCheckbox,
         ThemedBottomSheet,
         ThemedPicker,
-        ThemedTitle } from "../../../../Resources/Components";
+        ThemedTitle } from "../../../../Resources/ThemedComponents";
 import { formatDate, parseCustomDate } from "../../../../Utils/dateUtils";
 
 const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, refreshKey, updateui} ) => {

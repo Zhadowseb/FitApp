@@ -8,7 +8,7 @@ import { ThemedTextInput,
   ThemedButton, 
   ThemedModal,
   ThemedSegmentedToggle } 
-  from "../../../../Resources/Components";
+  from "../../../../Resources/ThemedComponents";
 
 export default function AddRunSetModal({ visible, onClose, onSubmit }) {
 

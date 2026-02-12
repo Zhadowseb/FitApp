@@ -9,7 +9,7 @@ import { useColorScheme } from "react-native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import PickWorkoutModal from './Components/PickWorkoutModal/PickWorkoutModal';
-import WorkoutLabel from "../../../../Resources/Components/WorkoutLabel/WorkoutLabel";
+import WorkoutLabel from "../../../../Resources/Components/WorkoutLabel";
 
 import styles from './DayStyle';
 import { WORKOUT_ICONS } from '../../../../Resources/Icons/WorkoutLabels/index';
@@ -21,7 +21,10 @@ import Copy from '../../../../Resources/Icons/UI-icons/Copy';
 import Delete from "../../../../Resources/Icons/UI-icons/Delete";
 
 //Themed components and utility
-import { ThemedCard, ThemedText, ThemedBottomSheet, ThemedBouncyCheckbox } from "../../../../Resources/Components";
+import { ThemedCard, 
+        ThemedText, 
+        ThemedBottomSheet, 
+        ThemedBouncyCheckbox } from "../../../../Resources/ThemedComponents";
 import { formatDate } from '../../../../Utils/dateUtils';
 
 const Day = ( {day, program_id, microcycle_id} ) => {

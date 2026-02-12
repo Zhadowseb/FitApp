@@ -5,7 +5,7 @@ import styles from "./PickWorkoutModalStyle";
 import {
   ThemedText,
   ThemedModal,
-} from "../../../../../../Resources/Components";
+} from "../../../../../../Resources/ThemedComponents";
 
 const PickWorkoutModal = ({
   workouts = [],

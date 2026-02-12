@@ -8,7 +8,7 @@ import AddProgram from './Components/AddProgram/AddProgram';
 import { formatDate } from '../../Utils/dateUtils';
 
 import { ThemedTitle, ThemedCard, ThemedView, ThemedText, ThemedButton } 
-  from "../../Resources/Components";
+  from "../../Resources/ThemedComponents";
 
 import styles from './ProgramPageStyle';
 

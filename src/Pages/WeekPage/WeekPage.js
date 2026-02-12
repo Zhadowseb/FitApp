@@ -10,7 +10,7 @@ import styles from './WeekPageStyle';
 
 import Day from './Components/Day/Day';
 
-import { ThemedText, ThemedView, ThemedHeader } from "../../Resources/Components";
+import { ThemedText, ThemedView, ThemedHeader } from "../../Resources/ThemedComponents";
 
 const WeekPage = ( {route} ) => {
     const db = useSQLiteContext();

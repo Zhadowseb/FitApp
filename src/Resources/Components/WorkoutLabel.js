@@ -1,12 +1,11 @@
 import React, { useState } from "react";
 import { Modal, View, TouchableOpacity,Text, Button, ScrollView } from "react-native";
-import { WORKOUT_ICONS } from "../../Icons/WorkoutLabels/index";
-
-import styles from "./WorkoutLabelStyle";
+import { WORKOUT_ICONS } from "../Icons/WorkoutLabels/index";
+import { StyleSheet } from "react-native";
 
 
 import {ThemedButton, ThemedModal, ThemedText} 
-  from "../../Components";
+  from "../ThemedComponents";
 
 export default function AddProgram({ visible, onClose, onSubmit }) {
     
@@ -46,3 +45,16 @@ export default function AddProgram({ visible, onClose, onSubmit }) {
         </ThemedModal>
     );
 }
+
+const styles = StyleSheet.create({
+    icon: {
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: "#d7d7d7ff",
+        padding: 5,
+        marginLeft: 5,
+        marginRight: 5,
+        justifyContent: "center",
+        alignItems: "center",
+  },
+})

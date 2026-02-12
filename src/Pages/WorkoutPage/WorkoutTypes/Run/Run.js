@@ -45,7 +45,10 @@ const Run = ({workout_id}) =>  {
     const addSet = async (setVariety, pauseOrWorking, distance, pace, time, heartrate) => {
         try {
             const row = await db.getFirstAsync(
-                `SELECT COUNT(*) as count FROM Run WHERE workout_id = ? AND type = ?;`,
+                `SELECT COUNT(*) as count FROM Run WHERE 
+                    workout_id = ? AND 
+                    type = ? AND 
+                    is_pause = 1;`,
                 [workout_id, setVariety]
             );
 
@@ -81,124 +84,112 @@ const Run = ({workout_id}) =>  {
     };
 
 
-  const addWorkingSet = () => {
-
-  } 
-
-  const addCooldownSet = () => {
-
-  }
-
-
   return (
     <>
-    <ThemedView>
+    <ScrollView>
+    <View>
+        <ThemedCard style={{alignItems: "center"}}>
+            <WorkoutStopwatch
+                workout_id={workout_id}
+                onStop={(seconds) => {
+                    
+                }} />
+        </ThemedCard>
+    </View>
 
-        <View>
-            <ThemedCard style={{alignItems: "center"}}>
-                <WorkoutStopwatch
-                    workout_id={workout_id}
-                    onStop={(seconds) => {
-                        
-                    }} />
-            </ThemedCard>
-        </View>
-
-        <View>
-            <View style={{flexDirection: "row", alignItems: "center"}}>
-                <View style={{opacity: warmupEmpty ? 0.2 : 1}}>
-                    <ThemedTitle type={"h2"}>
-                        Warmup
-                    </ThemedTitle>
-                </View>
-
-                <View style={{marginLeft: "auto", marginRight: "15"}}>
-                    <TouchableOpacity
-                        onPress={ () => {
-                            set_type("WARMUP");
-                            set_addRunSetModal_visible(true);
-                        }}>
-                        <Plus
-                            width={24}
-                            height={24}/>
-                    </TouchableOpacity>
-                </View>
+    <View>
+        <View style={{flexDirection: "row", alignItems: "center"}}>
+            <View style={{opacity: warmupEmpty ? 0.2 : 1}}>
+                <ThemedTitle type={"h2"}>
+                    Warmup
+                </ThemedTitle>
             </View>
 
-            <RunSetList
-                reloadKey={updateCount}
-                triggerReload={triggerReload}
-                empty={set_WarmupEmpty}
-                workout_id={workout_id}
-                type="WARMUP" />
+            <View style={{marginLeft: "auto", marginRight: "15"}}>
+                <TouchableOpacity
+                    onPress={ () => {
+                        set_type("WARMUP");
+                        set_addRunSetModal_visible(true);
+                    }}>
+                    <Plus
+                        width={24}
+                        height={24}/>
+                </TouchableOpacity>
+            </View>
         </View>
 
+        <RunSetList
+            reloadKey={updateCount}
+            triggerReload={triggerReload}
+            empty={set_WarmupEmpty}
+            workout_id={workout_id}
+            type="WARMUP" />
+    </View>
 
 
-        <View>
-            <View style={{flexDirection: "row", alignItems: "center"}}>
-                <View style={{opacity: workingEmpty ? 0.2 : 1}}>
-                    <ThemedTitle type={"h2"}>
-                        Working Sets
-                    </ThemedTitle>
-                </View>
 
-                <View style={{marginLeft: "auto", marginRight: "15"}}>
-                    <TouchableOpacity
-                        onPress={ () => {
-                            set_type("WORKING_SET");
-                            set_addRunSetModal_visible(true);
-                        }}>
-                        <Plus
-                            width={24}
-                            height={24}/>
-                    </TouchableOpacity>
-                </View>
+    <View>
+        <View style={{flexDirection: "row", alignItems: "center"}}>
+            <View style={{opacity: workingEmpty ? 0.2 : 1}}>
+                <ThemedTitle type={"h2"}>
+                    Working Sets
+                </ThemedTitle>
             </View>
 
-            <RunSetList
-                reloadKey={updateCount}
-                triggerReload={triggerReload}
-                empty={set_WorkingEmpty}
-                workout_id={workout_id}
-                type="WORKING_SET"
-            />
-
+            <View style={{marginLeft: "auto", marginRight: "15"}}>
+                <TouchableOpacity
+                    onPress={ () => {
+                        set_type("WORKING_SET");
+                        set_addRunSetModal_visible(true);
+                    }}>
+                    <Plus
+                        width={24}
+                        height={24}/>
+                </TouchableOpacity>
+            </View>
         </View>
 
+        <RunSetList
+            reloadKey={updateCount}
+            triggerReload={triggerReload}
+            empty={set_WorkingEmpty}
+            workout_id={workout_id}
+            type="WORKING_SET"
+        />
 
-        <View>
-            <View style={{flexDirection: "row", alignItems: "center"}}>
-                <View style={{opacity: cooldownEmpty ? 0.2 : 1}}>
-                    <ThemedTitle type={"h2"}>
-                        Cooldown
-                    </ThemedTitle>
-                </View>
+    </View>
 
-                <View style={{marginLeft: "auto", marginRight: "15"}}>
-                    <TouchableOpacity
-                        onPress={ () => {
-                            set_type("COOLDOWN");
-                            set_addRunSetModal_visible(true);
-                        }}>
-                        <Plus
-                            width={24}
-                            height={24}/>
-                    </TouchableOpacity>
-                </View>
+
+    <View>
+        <View style={{flexDirection: "row", alignItems: "center"}}>
+            <View style={{opacity: cooldownEmpty ? 0.2 : 1}}>
+                <ThemedTitle type={"h2"}>
+                    Cooldown
+                </ThemedTitle>
             </View>
 
-            <RunSetList
-                reloadKey={updateCount}
-                triggerReload={triggerReload}
-                empty={set_CooldownEmpty}
-                workout_id={workout_id}
-                type="COOLDOWN"
-            />
+            <View style={{marginLeft: "auto", marginRight: "15"}}>
+                <TouchableOpacity
+                    onPress={ () => {
+                        set_type("COOLDOWN");
+                        set_addRunSetModal_visible(true);
+                    }}>
+                    <Plus
+                        width={24}
+                        height={24}/>
+                </TouchableOpacity>
+            </View>
         </View>
 
-
-    </ThemedView>
+        <RunSetList
+            reloadKey={updateCount}
+            triggerReload={triggerReload}
+            empty={set_CooldownEmpty}
+            workout_id={workout_id}
+            type="COOLDOWN"
+        />
+    </View>
+    </ScrollView>
 
     <AddRunSetModal
         visible={addRunSetModal_visible}

@@ -8,7 +8,7 @@ import { useNavigation } from "@react-navigation/native";
 import styles from "./ExerciseListStyle";
 
 import ExerciseRow from "./Components/ExerciseRow/ExerciseRow"
-import Title from "./Components/Title/Title";
+import Plus from "../../../../../../Resources/Icons/UI-icons/Plus";
 
 const ExerciseList = ( {workout_id, refreshing, updateUI} ) => {
   const [exercises, setExercises] = useState([]);
@@ -215,9 +215,17 @@ const ExerciseList = ( {workout_id, refreshing, updateUI} ) => {
   );
 
   return (
+    <>
     <View>
       {exercises.map((item) => renderItem(item))}
     </View>
+
+    <View style={{alignItems: "center", paddingTop: 30}}>
+      <Plus
+        width={30}
+        height={30} />
+    </View>
+    </>
   );
 };
 

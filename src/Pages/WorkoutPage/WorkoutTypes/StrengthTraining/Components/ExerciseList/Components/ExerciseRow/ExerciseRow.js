@@ -23,6 +23,7 @@ import {ThemedCard,
   from "../../../../../../../../Resources/ThemedComponents";
 import Expand from "../../../../../../../../Resources/Icons/UI-icons/Expand";
 import Plus from "../../../../../../../../Resources/Icons/UI-icons/Plus";
+import Colapse from "../../../../../../../../Resources/Icons/UI-icons/Colapse";
 
 
 const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
@@ -66,10 +67,25 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
           />
       </View>
       
-      <View>
+      <View style={{flexDirection: "row"}}>
         <ThemedTitle type={"h3"}>
           {exercise.exercise_name}
         </ThemedTitle>
+
+        {expandedExercises[exercise.exercise_id] && (
+
+        <TouchableOpacity
+          onPress={() => toggleExpanded(exercise.exercise_id)}>
+          
+          <View style={{paddingLeft: 5}}>
+            <Colapse
+              width={24}
+              height={24}
+            />
+          </View>
+
+        </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.icon_container}>
@@ -93,31 +109,12 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
       <TouchableOpacity
         onPress={() => toggleExpanded(exercise.exercise_id)}>
 
-        
-        {expandedExercises[exercise.exercise_id] && (
-          <View>
-            <SetList 
-                sets={exercise.sets}
-                onToggleSet={onToggleSet}
-                updateWeight={updateWeight}
-                updateUI={updateUI} 
-                />
-
-            <TouchableOpacity
-              onPress={() => toggleExpanded(exercise.exercise_id)}
-              style={styles.hideset}>
-              
-            </TouchableOpacity>
-
-          </View>
-        )}
-
         {!expandedExercises[exercise.exercise_id] && (
           <ThemedCard style={{flexDirection: "row"}}>
             
             <View>
               <ThemedText>
-                3 x 5 @ 95
+               {exercise.setCount} sets of {checkUniformReps(exercise.sets)} with {checkUniformWeights(exercise.sets)} kg
               </ThemedText>
             </View>
 
@@ -129,11 +126,18 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
             </View>
           </ThemedCard>
         )}
-
-
-
       </TouchableOpacity>
 
+      {expandedExercises[exercise.exercise_id] && (
+        <View>
+          <SetList 
+              sets={exercise.sets}
+              onToggleSet={onToggleSet}
+              updateWeight={updateWeight}
+              updateUI={updateUI} 
+              />
+        </View>
+      )}
     </>
   );
 };

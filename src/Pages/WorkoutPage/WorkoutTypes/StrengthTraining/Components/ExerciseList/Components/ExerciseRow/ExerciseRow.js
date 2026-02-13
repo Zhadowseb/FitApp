@@ -32,6 +32,8 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
   
   const [expandedExercises, setExpandedExercises] = useState({});
 
+  const [panelModalVisible, set_panelModalVisible] = useState(false);
+
   const db = useSQLiteContext();
   const navigation = useNavigation();
 
@@ -97,6 +99,10 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
         </View>
         
         <View style={styles.ui_icons}>
+        <TouchableOpacity
+          onPress={() => set_panelModalVisible(true)}>
+
+        </TouchableOpacity>
           <Cogwheel
             width={24}
             height={24} />

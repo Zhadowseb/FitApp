@@ -8,7 +8,6 @@ import { Colors } from "../../../../../../../../../Resources/GlobalStyling/color
 import styles from "./SetListStyle";
 import Title from "./Title";
 
-
 import {ThemedCard,
         ThemedText,
         ThemedTextInput,
@@ -31,51 +30,6 @@ const SetList = ({ sets, onToggleSet, updateUI }) => {
   useEffect(() => {
     setLocalSets(sets);
   }, [sets]);
-
-  const updateLocalSet = (sets_id, patch) => {
-    setLocalSets(prev =>
-      prev.map(s =>
-        s.sets_id === sets_id
-          ? { ...s, ...patch }
-          : s
-      )
-    );
-  };
-
-  const updateSetPause = async (sets_id, pause) => {
-    if (pause === "" || Number.isNaN(pause)) {return;}
-    await db.runAsync(
-      `UPDATE Sets SET pause = ? WHERE sets_id = ?`,
-      [pause, sets_id]);
-    updateUI?.();
-  }
-
-  const updateSetReps = async (sets_id, reps) => {
-    if (reps === "" || Number.isNaN(reps)) {return;}
-    await db.runAsync(
-      `UPDATE Sets SET reps = ? WHERE sets_id = ?`,
-      [reps, sets_id]);
-    updateUI?.();
-  }
-
-  const updateSetRPE = async (sets_id, rpe) => {
-    if (rpe === "" || Number.isNaN(rpe)) {return;}
-    await db.runAsync(
-      `UPDATE Sets SET rpe = ? WHERE sets_id = ?`,
-      [rpe, sets_id] );
-    updateUI?.();
-  }
-
-  const deleteSet = async (sets_id) => {
-    try {
-      await db.runAsync(
-        `DELETE FROM Sets WHERE sets_id = ?;`,
-        [sets_id]);
-      updateUI?.();
-    } catch (error) {
-      console.error(error);
-    }
-  };
 
   return (
     <ThemedCard style={styles.wrapper}>

@@ -21,6 +21,7 @@ import {ThemedCard,
         ThemedBouncyCheckbox,
         ThemedTitle} 
   from "../../../../../../../../Resources/ThemedComponents";
+import Expand from "../../../../../../../../Resources/Icons/UI-icons/Expand";
 
 
 const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
@@ -101,10 +102,20 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
         )}
 
         {!expandedExercises[exercise.exercise_id] && (
-          <ThemedCard>
-            <ThemedText>
-              3 x 5 @ 95
-            </ThemedText>
+          <ThemedCard style={{flexDirection: "row"}}>
+            
+            <View>
+              <ThemedText>
+                3 x 5 @ 95
+              </ThemedText>
+            </View>
+
+            <View style={{marginLeft: "auto"}}>
+              <Expand
+                width={20}
+                height={20}
+              />
+            </View>
           </ThemedCard>
         )}
 

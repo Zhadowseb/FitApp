@@ -54,9 +54,12 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
         onPress={() => toggleExpanded(exercise.exercise_id)}>
         
         <View style={{flexDirection: "row"}}>
-          <ThemedTitle type={"h3"}>
-            {exercise.exercise_name}
-          </ThemedTitle>
+          
+          <View style={{paddingLeft: 20}}>
+            <ThemedTitle type={"h3"}>
+              {exercise.exercise_name}
+            </ThemedTitle>
+          </View>
 
           <View style={[styles.done_box]}>
               <ThemedBouncyCheckbox
@@ -87,6 +90,15 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
 
           </View>
         )}
+
+        {!expandedExercises[exercise.exercise_id] && (
+          <ThemedCard>
+            <ThemedText>
+              3 x 5 @ 95
+            </ThemedText>
+          </ThemedCard>
+        )}
+
 
 
       </TouchableOpacity>

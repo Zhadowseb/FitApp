@@ -85,7 +85,7 @@ const SetList = ({ sets, onToggleSet, updateUI }) => {
   };
 
   return (
-    <View style={styles.wrapper}>
+    <ThemedCard style={styles.wrapper}>
       
       <Title />
 
@@ -128,7 +128,7 @@ const SetList = ({ sets, onToggleSet, updateUI }) => {
             </View>
         </View>
       ))}
-    </View>
+    </ThemedCard>
   );
 };
 

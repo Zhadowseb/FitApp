@@ -103,6 +103,7 @@ const SetList = ({ sets, onToggleSet, updateUI }) => {
                     `UPDATE Sets SET pause = ? WHERE sets_id = ?;`,
                     [v === "" ? null : Number(v), set.sets_id]
                   );
+                  updateUI();
                 }}
               />
             </View>
@@ -137,6 +138,7 @@ const SetList = ({ sets, onToggleSet, updateUI }) => {
                     `UPDATE Sets SET reps = ? WHERE sets_id = ?;`,
                     [v === "" ? null : Number(v), set.sets_id]
                   );
+                  updateUI();
                 }}
               />
             </View>
@@ -159,6 +161,7 @@ const SetList = ({ sets, onToggleSet, updateUI }) => {
                     `UPDATE Sets SET rpe = ? WHERE sets_id = ?;`,
                     [v === "" ? null : Number(v), set.sets_id]
                   );
+                  updateUI();
                 }}
               />
             </View>
@@ -182,6 +185,7 @@ const SetList = ({ sets, onToggleSet, updateUI }) => {
                     `UPDATE Sets SET weight = ? WHERE sets_id = ?;`,
                     [v === "" ? null : Number(v), set.sets_id]
                   );
+                  updateUI();
                 }}
               />
             </View>

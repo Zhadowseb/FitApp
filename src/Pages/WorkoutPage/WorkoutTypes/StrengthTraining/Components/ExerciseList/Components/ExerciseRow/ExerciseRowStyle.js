@@ -82,9 +82,20 @@ export default StyleSheet.create({
   //NEW STYLING
 
   done_box: {
-    marginLeft: "auto",
-    paddingRight: "20",
+    paddingLeft: 10,
+    paddingRight: "10",
     justifyContent: "center",
+  },
+
+  icon_container: {
+    marginLeft: "auto", 
+    flexDirection: "row",
+    paddingRight: 10,
+  },
+
+  ui_icons: {
+    justifyContent: "center", 
+    paddingLeft: 5
   }
 
 });

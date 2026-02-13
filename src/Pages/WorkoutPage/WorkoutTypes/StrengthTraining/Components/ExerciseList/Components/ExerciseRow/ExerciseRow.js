@@ -22,6 +22,7 @@ import {ThemedCard,
         ThemedTitle} 
   from "../../../../../../../../Resources/ThemedComponents";
 import Expand from "../../../../../../../../Resources/Icons/UI-icons/Expand";
+import Plus from "../../../../../../../../Resources/Icons/UI-icons/Plus";
 
 
 const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
@@ -53,34 +54,44 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
 
   return (
     <>
+      <View style={{flexDirection: "row", paddingTop: 20}}>
+      
+      <View style={[styles.done_box]}>
+          <ThemedBouncyCheckbox
+            value={exercise.done === 1}
+            size= "20"
+            edgeSize={2}
+            disabled
+            checkmarkColor={theme.cardBackground}
+          />
+      </View>
+      
+      <View>
+        <ThemedTitle type={"h3"}>
+          {exercise.exercise_name}
+        </ThemedTitle>
+      </View>
+
+      <View style={styles.icon_container}>
+        
+        <View style={styles.ui_icons}>
+          <Plus
+            width={24}
+            height={24} />
+        </View>
+        
+        <View style={styles.ui_icons}>
+          <Cogwheel
+            width={24}
+            height={24} />
+        </View>
+
+      </View>
+
+    </View> 
   
       <TouchableOpacity
         onPress={() => toggleExpanded(exercise.exercise_id)}>
-        
-        <View style={{flexDirection: "row"}}>
-          
-          <View style={{paddingLeft: 20}}>
-            <ThemedTitle type={"h3"}>
-              {exercise.exercise_name}
-            </ThemedTitle>
-          </View>
-
-          <View style={{justifyContent: "center", paddingLeft: 5}}>
-            <Cogwheel
-              width={20}
-              height={20} />
-          </View>
-
-          <View style={[styles.done_box]}>
-              <ThemedBouncyCheckbox
-                value={exercise.done === 1}
-                size= "20"
-                edgeSize={2}
-                disabled
-                checkmarkColor={theme.cardBackground}
-              />
-          </View>
-        </View>
 
         
         {expandedExercises[exercise.exercise_id] && (

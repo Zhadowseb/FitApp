@@ -15,11 +15,12 @@ import {checkUniformWeights,
 import {ThemedCard,
         ThemedText,
         ThemedButton,
-        ThemedBouncyCheckbox} 
+        ThemedBouncyCheckbox,
+        ThemedTitle} 
   from "../../../../../../../../Resources/ThemedComponents";
 
 
-const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} ) => {
+const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
   
@@ -47,50 +48,17 @@ const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} 
   };
 
   return (
-    <ThemedCard key={exercise.exercise_id}
-      style={{
-        marginHorizontal: 0}}>
-
+    <>
+  
       <TouchableOpacity
         onPress={() => toggleExpanded(exercise.exercise_id)}>
         
-        <View style={styles.exercise_container}>
-          <View style={styles.exercise_name}>
-            <ThemedText> {exercise.exercise_name} </ThemedText>
-          </View>
+        <View style={{flexDirection: "row"}}>
+          <ThemedTitle type={"h3"}>
+            {exercise.exercise_name}
+          </ThemedTitle>
 
-          <View style={[styles.exercise_sets, styles.exercise_alignment]}>
-            <ThemedText>{exercise.sets.length}</ThemedText>
-          </View>
-
-          <View style={[styles.exercise_x, styles.exercise_alignment]}>
-            <ThemedText>x</ThemedText>
-          </View>
-
-          <View style={[styles.exercise_reps, styles.exercise_alignment]}>
-            <ThemedText>{checkUniformReps(exercise.sets)}</ThemedText>
-          </View>
-
-          <View style={[styles.exercise_weight, styles.exercise_alignment]}>
-            <ThemedText>{checkUniformWeights(exercise.sets)}</ThemedText>
-          </View>
-
-          <View style={[styles.exercise_done, styles.exercise_alignment]}>
-            {editMode ?
-              <ThemedButton
-                title="x"
-                variant="danger"
-                style={{
-                  paddingVertical: 0,
-                  paddingHorizontal: 0,
-                  marginRight: 5,
-                  marginBottom: 3,
-                  height: 25,
-                  width: 25,
-                }}
-                onPress={() => deleteExercise(exercise.exercise_id)}
-              />
-              :
+          <View style={[styles.done_box]}>
               <ThemedBouncyCheckbox
                 value={exercise.done === 1}
                 size= "20"
@@ -98,20 +66,18 @@ const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} 
                 disabled
                 checkmarkColor={theme.cardBackground}
               />
-
-            
-            }
           </View>
         </View>
 
+        
         {expandedExercises[exercise.exercise_id] && (
           <View>
             <SetList 
                 sets={exercise.sets}
                 onToggleSet={onToggleSet}
                 updateWeight={updateWeight}
-                updateUI={updateUI}
-                editMode={editMode} />
+                updateUI={updateUI} 
+                />
 
             <TouchableOpacity
               onPress={() => toggleExpanded(exercise.exercise_id)}
@@ -122,9 +88,10 @@ const ExerciseRow = ( {exercise, updateUI, editMode, onToggleSet, updateWeight} 
           </View>
         )}
 
+
       </TouchableOpacity>
 
-    </ThemedCard>
+    </>
   );
 };
 

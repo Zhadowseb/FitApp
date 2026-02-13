@@ -6,7 +6,7 @@ import { useColorScheme } from "react-native";
 import { Colors } from "../../../../../../../../../Resources/GlobalStyling/colors";
 
 import styles from "./SetListStyle";
-import Title from "./Title/Title";
+import Title from "./Title";
 
 
 import {ThemedCard,
@@ -16,7 +16,7 @@ import {ThemedCard,
         ThemedBouncyCheckbox} 
   from "../../../../../../../../../Resources/ThemedComponents";
   
-const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
+const SetList = ({ sets, onToggleSet, updateUI }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
 
@@ -92,20 +92,7 @@ const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
       {localSets.map((set) => (
         <View key={set.sets_id} style={styles.container}>
             <View style={styles.pause}> 
-                {!editMode ? 
-                  <ThemedText style={styles.text}> {set.pause} </ThemedText>
-                  :
-                <ThemedTextInput
-                  style={[styles.widthPause, styles.input]}
-                  inputStyle={styles.editableInput}
-                  value={String(set.pause ?? "")}
-                  onChangeText={(text) =>
-                    updateLocalSet(set.sets_id, { pause: text })
-                  }
-                  onBlur={() =>
-                    updateSetPause(set.sets_id, Number(set.pause))
-                  }
-                />}
+              <ThemedText style={styles.text}> {set.pause} </ThemedText>
             </View>
   
             <View style={[styles.set, styles.text]}>  
@@ -117,84 +104,27 @@ const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
             </View>
 
             <View style={styles.reps}> 
-                {!editMode ? 
-                  <ThemedText style={styles.text}> {set.reps} </ThemedText>
-                  :
-                <ThemedTextInput
-                  style={[styles.widthReps, styles.input]}
-                  inputStyle={styles.editableInput}
-                  value={String(set.reps ?? "")}
-                  onChangeText={(text) =>
-                    updateLocalSet(set.sets_id, { reps: text })
-                  }
-                  onBlur={() =>
-                    updateSetReps(set.sets_id, Number(set.reps))
-                  }
-                />}
+              <ThemedText style={styles.text}> {set.reps} </ThemedText>
             </View>
 
             <View style={styles.rpe}> 
-                {!editMode ? 
-                  <ThemedText style={styles.text}> {set.rpe} </ThemedText>
-                  :
-                <ThemedTextInput
-                  style={[styles.widthRPE, styles.input]}
-                  inputStyle={styles.editableInput}
-                  value={String(set.rpe ?? "")}
-                  onChangeText={(text) =>
-                    updateLocalSet(set.sets_id, { rpe: text })
-                  }
-                  onBlur={() =>
-                    updateSetRPE(set.sets_id, Number(set.rpe))
-                  }
-                />}
+              <ThemedText style={styles.text}> {set.rpe} </ThemedText>
             </View>
 
             <View style={styles.weight}> 
-                {!editMode ? 
-                  <ThemedText style={styles.text}> {set.weight} </ThemedText>
-                  :
-                  <ThemedTextInput
-                    style={[styles.widthWeight, styles.input]}
-                    inputStyle={styles.editableInput}
-                    value={String(set.weight ?? "")}
-                    onChangeText={(text) =>
-                      updateLocalSet(set.sets_id, { weight: text })
-                    }
-                    onBlur={() =>
-                      updateSetWeight(set.sets_id, Number(set.weight))
-                    }
-                  />}
+              <ThemedText style={styles.text}> {set.weight} </ThemedText>
             </View>
 
             <View style={[styles.done, styles.text]}> 
-
-              {editMode ?
-                <ThemedButton
-                  title="x"
-                  variant="danger"
-                  style={{
-                    paddingVertical: 1,
-                    paddingHorizontal: 1,
-                    height: 25,
-                    width: 25,
-                  }}
-                  onPress={() => deleteSet(set.sets_id)}
+              <View style={{justifyContent:"center"}}>
+                <ThemedBouncyCheckbox
+                  value={set.done === 1}
+                  onChange={(checked) => onToggleSet(set.sets_id, checked)}
+                  size={18}
+                  edgeSize={2}
+                  checkmarkColor={theme.cardBackground}
                 />
-                :
-                <View style={{justifyContent:"center"}}>
-                  <ThemedBouncyCheckbox
-                    value={set.done === 1}
-                    onChange={(checked) => onToggleSet(set.sets_id, checked)}
-                    size={18}
-                    edgeSize={2}
-                    checkmarkColor={theme.cardBackground}
-                  />
-                </View>
-
-
-                  
-              }
+              </View>
             </View>
         </View>
       ))}

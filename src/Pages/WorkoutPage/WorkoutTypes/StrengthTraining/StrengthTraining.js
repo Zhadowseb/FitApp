@@ -5,7 +5,6 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
 
 import ExerciseList from './Components/ExerciseList/ExerciseList';
-import EditModeAdditions from './Components/EditModeAdditions/EditModeAdditions';
 import CircularProgression from '../../../../Resources/Components/CircularProgression';
 import { useColorScheme } from "react-native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
@@ -26,7 +25,6 @@ const WorkoutPage = ({workout_id, date}) =>  {
 
   const db = useSQLiteContext();
 
-  const [editMode, set_editMode] = useState(false);
   const [refreshing, set_refreshing] = useState(0);
 
   const [totalSets, set_totalSets] = useState(0);
@@ -81,6 +79,7 @@ const WorkoutPage = ({workout_id, date}) =>  {
 
       <ScrollView>
 
+        {/*
         <View style={{alignItems: "center", justifyContent: "center"}}>
             <ThemedTitle
                 type="h2">
@@ -99,26 +98,15 @@ const WorkoutPage = ({workout_id, date}) =>  {
 
             </ThemedCard>
         </View>
+        */}
 
         <View style={styles.working_sets}>
-          <ThemedTitle type={"h2"}>
-            Working sets
-          </ThemedTitle>
 
           <ExerciseList 
             workout_id = {workout_id}
-            editMode = {editMode}
             refreshing = {refreshing} 
             updateUI = {handleExerciseChange}/>
         </View> 
-        
-        {editMode && (
-          <EditModeAdditions 
-            workout_id={workout_id}
-            date={date}
-            onExerciseChange={handleExerciseChange}
-            deleteWorkout={deleteWorkout}/>
-        )}
 
       </ScrollView>
     </ThemedView>

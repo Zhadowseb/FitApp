@@ -78,4 +78,13 @@ export default StyleSheet.create({
     alignItems: "center",
   },
 
+
+  //NEW STYLING
+
+  done_box: {
+    marginLeft: "auto",
+    paddingRight: "20",
+    justifyContent: "center",
+  }
+
 });

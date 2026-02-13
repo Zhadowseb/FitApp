@@ -16,7 +16,7 @@ function Cogwheel({width, height}) {
       height={height}
       color={theme.iconColor}
       fill="none"
-      stroke="#141B34"
+      stroke={theme.iconColor}
       strokeWidth={1.5}
     >
       <Path d="M15.5 12a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0z" />

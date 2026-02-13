@@ -12,6 +12,9 @@ import SetList from "./SetList/SetList";
 import {checkUniformWeights, 
         checkUniformReps} from "../../Utils/checkUniformSets";
 
+//UI icons
+import Cogwheel from "../../../../../../../../Resources/Icons/UI-icons/Cogwheel";
+
 import {ThemedCard,
         ThemedText,
         ThemedButton,
@@ -59,6 +62,12 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
             <ThemedTitle type={"h3"}>
               {exercise.exercise_name}
             </ThemedTitle>
+          </View>
+
+          <View style={{justifyContent: "center", paddingLeft: 5}}>
+            <Cogwheel
+              width={20}
+              height={20} />
           </View>
 
           <View style={[styles.done_box]}>

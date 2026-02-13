@@ -11,46 +11,27 @@ export default StyleSheet.create({
 
     pause: {
         width: "15%",
+        borderLeftWidth: 0,
     },
     set: {
         width: "10%",
-        borderLeftColor: "#555555ff",
-        borderLeftWidth: 1,
-        alignContent: "center",
-        alignItems: "center",
     },
     x: {
         width: "5%",
-        borderLeftColor: "#555555ff",
-        borderLeftWidth: 1,
-        alignContent: "center",
-        alignItems: "center",
     },
     reps: {
         width: "17%",
-        borderLeftColor: "#555555ff",
-        borderLeftWidth: 1,
-        alignContent: "center",
-        alignItems: "center",
     },
     weight: {
         width: "20%",
-        borderLeftColor: "#555555ff",
-        borderLeftWidth: 1,
-        alignContent: "center",
-        alignItems: "center",
     },
     rpe: {
         width: "17%",
-        borderLeftColor: "#555555ff",
-        borderLeftWidth: 1,
-        alignContent: "center",
-        alignItems: "center",
     },
     done: {
         width: "15%",
-        borderLeftColor: "#555555ff",
-        borderLeftWidth: 1,
+        paddingBottom: 5,
+        paddingTop: 8,
     },  
 
     override: {
@@ -58,13 +39,6 @@ export default StyleSheet.create({
         borderLeftWidth: 0,
         borderBottomColor: "#d3d3d3ff",
         borderBottomWidth: 1,
-    },
-
-    text: {
-        alignContent: "center",
-        alignItems: "center",
-        paddingBottom: 5,
-        paddingTop: 8,
     },
 
     editableInput: {
@@ -91,5 +65,17 @@ export default StyleSheet.create({
     widthWeight: {
         minWidth: 45,
     },
+
+    editable_cell: {
+        borderLeftWidth: 0.2,
+        justifyContent: "center",
+        alignItems: "center",
+        borderColor: "#4b4b4bff",
+        borderBottomWidth: 0.2,
+    },
+    lastGrid: {
+        borderBottomWidth: 0,
+    },
+
 
 });

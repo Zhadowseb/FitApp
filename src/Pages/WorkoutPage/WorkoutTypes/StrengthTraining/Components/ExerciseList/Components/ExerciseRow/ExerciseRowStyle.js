@@ -96,6 +96,8 @@ export default StyleSheet.create({
   ui_icons: {
     justifyContent: "center", 
     paddingLeft: 5
-  }
+  },
+
+
 
 });

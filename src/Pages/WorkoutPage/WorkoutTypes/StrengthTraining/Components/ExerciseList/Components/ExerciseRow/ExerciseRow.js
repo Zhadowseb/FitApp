@@ -1,5 +1,5 @@
 // src/Components/ExerciseList/ExerciseList.js
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { View, Text, Button, TouchableOpacity } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
@@ -24,6 +24,7 @@ import {ThemedCard,
 import Expand from "../../../../../../../../Resources/Icons/UI-icons/Expand";
 import Plus from "../../../../../../../../Resources/Icons/UI-icons/Plus";
 import Colapse from "../../../../../../../../Resources/Icons/UI-icons/Colapse";
+import PanelSettingsModal from "./PanelSettingsModal";
 
 
 const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
@@ -31,11 +32,16 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
   const theme = Colors[colorScheme] ?? Colors.light;
   
   const [expandedExercises, setExpandedExercises] = useState({});
+  const [visibleColumns, set_VisibleColumns] = useState(exercise.visibleColumns);
 
   const [panelModalVisible, set_panelModalVisible] = useState(false);
 
   const db = useSQLiteContext();
   const navigation = useNavigation();
+
+  useEffect(() => {
+    set_VisibleColumns(exercise.visibleColumns);
+  }, [exercise.visibleColumns]);
 
   const toggleExpanded = (exercise_id) => {
     setExpandedExercises(prev => ({
@@ -53,6 +59,17 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const saveColumns = async (columns) => {
+    await db.runAsync(
+      `UPDATE Exercise 
+      SET visible_columns = ?
+      WHERE exercise_id = ?`,
+      [JSON.stringify(columns), exercise.exercise_id]
+    );
+
+    set_VisibleColumns(columns);
   };
 
   return (
@@ -101,11 +118,10 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
         <View style={styles.ui_icons}>
         <TouchableOpacity
           onPress={() => set_panelModalVisible(true)}>
-
+            <Cogwheel
+              width={24}
+              height={24} />
         </TouchableOpacity>
-          <Cogwheel
-            width={24}
-            height={24} />
         </View>
 
       </View>
@@ -138,12 +154,22 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
         <View>
           <SetList 
               sets={exercise.sets}
+              visibleColumns={visibleColumns}
               onToggleSet={onToggleSet}
               updateWeight={updateWeight}
               updateUI={updateUI} 
               />
         </View>
       )}
+
+      <PanelSettingsModal
+        visible={panelModalVisible}
+        currentColumns={visibleColumns}
+        onClose={(columns) => {
+          saveColumns(columns);
+          set_panelModalVisible(false)
+        }}/>
+
     </>
   );
 };

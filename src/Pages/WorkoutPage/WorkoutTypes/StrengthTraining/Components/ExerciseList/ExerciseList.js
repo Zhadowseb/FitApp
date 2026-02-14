@@ -23,7 +23,7 @@ const ExerciseList = ( {workout_id, refreshing, updateUI} ) => {
 
       const exercises = await db.getAllAsync(
         `SELECT 
-          exercise_id, exercise_name, sets, done 
+          exercise_id, exercise_name, sets, done, visible_columns
           FROM Exercise WHERE workout_id = ?;`,
         [workout_id]
       );
@@ -46,10 +46,24 @@ const ExerciseList = ( {workout_id, refreshing, updateUI} ) => {
 
       const exercisesWithSets = exercises.map(ex => {
           const exSets = setsByExercise[ex.exercise_id] ?? [];
+
+          const defaultColumns = {
+            rest: true,
+            set: true,
+            x: true,
+            reps: true,
+            rpe: true,
+            weight: true,
+            done: true,
+          };
+          
           return {
             ...ex,
             sets: exSets,
             setCount: exSets.length,
+            visibleColumns: ex.visible_columns
+              ? JSON.parse(ex.visible_columns)
+              : defaultColumns,            
           };
         });
       setExercises(exercisesWithSets);

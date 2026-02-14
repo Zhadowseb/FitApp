@@ -16,7 +16,7 @@ import {ThemedCard,
         ThemedBouncyCheckbox} 
   from "../../../../../../../../../Resources/ThemedComponents";
   
-const SetList = ({ sets, onToggleSet, updateUI }) => {
+const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
 
@@ -40,6 +40,7 @@ const SetList = ({ sets, onToggleSet, updateUI }) => {
         <View key={set.sets_id} style={styles.container}>
             
             {/* REST */}
+            {visibleColumns.rest && (
             <View style={[styles.editable_cell, styles.pause,
               index === sets.length - 1 && styles.lastGrid ]}>
               <ThemedEditableCell
@@ -61,20 +62,26 @@ const SetList = ({ sets, onToggleSet, updateUI }) => {
                 }}
               />
             </View>
+            )}
   
             {/* SET_NUMBER */}
+            {visibleColumns.set && (
             <View style={[styles.set, styles.editable_cell,
               index === sets.length - 1 && styles.lastGrid ]}>  
                 <ThemedText> {set.set_number} </ThemedText>
             </View>
+            )}
 
             {/* X SPACER */}
+            {visibleColumns.x && (
             <View style={[styles.x, styles.editable_cell,
             index === sets.length - 1 && styles.lastGrid ]}>   
                 <ThemedText> x </ThemedText>
             </View>
+            )}
 
             {/* REPS */}
+            {visibleColumns.reps && (
             <View style={[styles.reps, styles.editable_cell,
             index === sets.length - 1 && styles.lastGrid ]}>  
               <ThemedEditableCell
@@ -96,8 +103,10 @@ const SetList = ({ sets, onToggleSet, updateUI }) => {
                 }}
               />
             </View>
+            )}
 
             {/* RPE */}
+            {visibleColumns.rpe && (
             <View style={[styles.rpe, styles.editable_cell,
             index === sets.length - 1 && styles.lastGrid ]}>  
               <ThemedEditableCell
@@ -119,8 +128,10 @@ const SetList = ({ sets, onToggleSet, updateUI }) => {
                 }}
               />
             </View>
+            )}
 
             {/* WEIGHT */}
+            {visibleColumns.weight && (
             <View style={[styles.weight, styles.editable_cell,
             index === sets.length - 1 && styles.lastGrid ]}>  
               
@@ -143,7 +154,9 @@ const SetList = ({ sets, onToggleSet, updateUI }) => {
                 }}
               />
             </View>
+            )}
 
+            {visibleColumns.done && (
             <View style={[styles.editable_cell, styles.done,
             index === sets.length - 1 && styles.lastGrid ]}>  
               <View style={{justifyContent:"center"}}>
@@ -156,6 +169,7 @@ const SetList = ({ sets, onToggleSet, updateUI }) => {
                 />
               </View>
             </View>
+            )}
         </View>
       ))}
     </ThemedCard>

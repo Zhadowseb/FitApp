@@ -12,21 +12,33 @@ export default StyleSheet.create({
     pause: {
         width: "15%",
         borderLeftWidth: 0,
+        paddingBottom: 5,
+        paddingTop: 8,
     },
     set: {
         width: "10%",
+        paddingBottom: 5,
+        paddingTop: 8,
     },
     x: {
         width: "5%",
+        paddingBottom: 5,
+        paddingTop: 8,
     },
     reps: {
         width: "17%",
+        paddingBottom: 5,
+        paddingTop: 8,
     },
     weight: {
         width: "20%",
+        paddingBottom: 5,
+        paddingTop: 8,
     },
     rpe: {
         width: "17%",
+        paddingBottom: 5,
+        paddingTop: 8,
     },
     done: {
         width: "15%",

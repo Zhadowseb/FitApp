@@ -34,14 +34,14 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
   return (
     <ThemedCard style={styles.wrapper}>
       
-      <Title />
+      <Title visibleColumns={visibleColumns}/>
 
       {localSets.map((set, index) => (
         <View key={set.sets_id} style={styles.container}>
             
             {/* REST */}
             {visibleColumns.rest && (
-            <View style={[styles.editable_cell, styles.pause,
+            <View style={[styles.editable_cell, styles.pause, styles.padding,
               index === sets.length - 1 && styles.lastGrid ]}>
               <ThemedEditableCell
                 value={ set.pause?.toString() ?? ""}
@@ -66,7 +66,7 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
   
             {/* SET_NUMBER */}
             {visibleColumns.set && (
-            <View style={[styles.set, styles.editable_cell,
+            <View style={[styles.set, styles.editable_cell, styles.padding,
               index === sets.length - 1 && styles.lastGrid ]}>  
                 <ThemedText> {set.set_number} </ThemedText>
             </View>
@@ -74,7 +74,7 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
 
             {/* X SPACER */}
             {visibleColumns.x && (
-            <View style={[styles.x, styles.editable_cell,
+            <View style={[styles.x, styles.editable_cell, styles.padding,
             index === sets.length - 1 && styles.lastGrid ]}>   
                 <ThemedText> x </ThemedText>
             </View>
@@ -82,7 +82,7 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
 
             {/* REPS */}
             {visibleColumns.reps && (
-            <View style={[styles.reps, styles.editable_cell,
+            <View style={[styles.reps, styles.editable_cell, styles.padding,
             index === sets.length - 1 && styles.lastGrid ]}>  
               <ThemedEditableCell
                 value={ set.reps?.toString() ?? ""}
@@ -107,7 +107,7 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
 
             {/* RPE */}
             {visibleColumns.rpe && (
-            <View style={[styles.rpe, styles.editable_cell,
+            <View style={[styles.rpe, styles.editable_cell, styles.padding,
             index === sets.length - 1 && styles.lastGrid ]}>  
               <ThemedEditableCell
                 value={ set.rpe?.toString() ?? ""}
@@ -132,7 +132,7 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
 
             {/* WEIGHT */}
             {visibleColumns.weight && (
-            <View style={[styles.weight, styles.editable_cell,
+            <View style={[styles.weight, styles.editable_cell, styles.padding,
             index === sets.length - 1 && styles.lastGrid ]}>  
               
               <ThemedEditableCell
@@ -157,7 +157,7 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
             )}
 
             {visibleColumns.done && (
-            <View style={[styles.editable_cell, styles.done,
+            <View style={[styles.editable_cell, styles.done, styles.padding,
             index === sets.length - 1 && styles.lastGrid ]}>  
               <View style={{justifyContent:"center"}}>
                 <ThemedBouncyCheckbox

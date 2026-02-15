@@ -6,52 +6,36 @@ export default StyleSheet.create({
     container: {
         flexDirection: "row",
         flex: 1,
-        width: "100%",
     },
 
+    padding: {
+        paddingBottom: 5,
+        paddingTop: 8,
+    },
     pause: {
-        width: "15%",
+        flex: 15,
         borderLeftWidth: 0,
-        paddingBottom: 5,
-        paddingTop: 8,
     },
-    set: {
-        width: "10%",
-        paddingBottom: 5,
-        paddingTop: 8,
-    },
-    x: {
-        width: "5%",
-        paddingBottom: 5,
-        paddingTop: 8,
-    },
-    reps: {
-        width: "17%",
-        paddingBottom: 5,
-        paddingTop: 8,
-    },
-    weight: {
-        width: "20%",
-        paddingBottom: 5,
-        paddingTop: 8,
-    },
-    rpe: {
-        width: "17%",
-        paddingBottom: 5,
-        paddingTop: 8,
-    },
-    done: {
-        width: "15%",
-        paddingBottom: 5,
-        paddingTop: 8,
-    },  
+    set:    {flex: 10},
+    x:      {flex: 5},
+    reps:   {flex: 17},
+    weight: {flex: 20},
+    rpe:    {flex: 17},
+    done:   {flex: 15},  
 
     override: {
-        borderLeftColor: "#ffffffff",
         borderLeftWidth: 0,
-        borderBottomColor: "#d3d3d3ff",
+        borderBottomColor: "#555555ff",
         borderBottomWidth: 1,
+        justifyContent: "center",
+        alignItems: "center",
     },
+
+    titleText: {
+        fontWeight: "bold",
+        fontSize: 10,
+    },
+
 
     editableInput: {
         borderWidth: 1,

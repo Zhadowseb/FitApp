@@ -17,11 +17,11 @@ export default StyleSheet.create({
         borderLeftWidth: 0,
     },
     set:    {flex: 10},
-    x:      {flex: 5},
+    x:      {flex: 5, maxWidth: 15},
     reps:   {flex: 17},
     weight: {flex: 20},
     rpe:    {flex: 17},
-    done:   {flex: 15},  
+    done:   {flex: 15, maxWidth: 40},  
 
     override: {
         borderLeftWidth: 0,

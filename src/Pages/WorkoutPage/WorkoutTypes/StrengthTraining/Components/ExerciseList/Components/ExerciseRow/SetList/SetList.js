@@ -113,6 +113,7 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
         return (
           <ThemedEditableCell
             value={set.weight?.toString() ?? ""}
+            suffix="kg"
             onCommit={(v) => updateField("weight", v, set.sets_id)}
           />
         );

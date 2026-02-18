@@ -61,6 +61,19 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
     }
   };
 
+  const addSet = async () => {
+    try {
+      await db.runAsync(
+        `INSERT INTO Sets 
+          (set_number, exercise_id) VALUES
+          (?, ?);`,
+        [exercise.sets.length + 1, exercise.exercise_id]);
+      updateUI?.();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const saveColumns = async (columns) => {
     await db.runAsync(
       `UPDATE Exercise 
@@ -110,9 +123,13 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
       <View style={styles.icon_container}>
         
         <View style={styles.ui_icons}>
-          <Plus
-            width={24}
-            height={24} />
+
+        <TouchableOpacity
+          onPress={() => addSet()}>
+            <Plus
+              width={24}
+              height={24} />
+        </TouchableOpacity>
         </View>
         
         <View style={styles.ui_icons}>

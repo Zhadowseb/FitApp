@@ -201,6 +201,36 @@ const RunSetList = ({ workout_id, type, empty, reloadKey, triggerReload }) => {
 
           <View style={styles.bottomsheet_title}>
               <ThemedText> Set: {selectedSet.set_number} of type: {selectedSet.type} </ThemedText>
+
+              <View style={[styles.togglepauseorworking, {borderColor: theme.primary}]}>
+                <TouchableOpacity 
+                    onPress={async () => {
+                        const newValue = selectedSet.is_pause ? 0 : 1;
+
+                        await db.runAsync(
+                          `UPDATE Run SET is_pause = ? WHERE Run_id = ?;`,
+                          [newValue, selectedSet.Run_id]
+                        );
+                        
+                        setSets(prev =>
+                          prev.map(s =>
+                            s.Run_id === selectedSet.Run_id
+                              ? { ...s, is_pause: newValue }
+                              : s
+                          )
+                        );
+
+                        set_selectedSet(prev => ({
+                          ...prev,
+                          is_pause: newValue
+                        }));
+
+                    }}>
+                  <ThemedText> 
+                    {selectedSet?.is_pause ? "Pause" : "Working Set"} 
+                  </ThemedText>
+                </TouchableOpacity>
+              </View>
           </View>
 
           <View style={styles.bottomsheet_body}>

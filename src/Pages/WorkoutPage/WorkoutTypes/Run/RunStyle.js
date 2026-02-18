@@ -55,10 +55,20 @@ export default StyleSheet.create({
     },
 
     bottomsheet_title: {
+        flexDirection: "row",
         borderBottomWidth: 1,
         borderBottomColor: "#2e2e2eff",
         paddingBottom: 30,
     },
+    togglepauseorworking: {
+        borderWidth: 2,
+        borderRadius: 15,
+        padding: 5,
+        justifyContent: "center",
+        alignItems: "center",
+        width: 120,
+    },
+
     bottomsheet_body: {
         justifyContent: "center",
         padding: 20,

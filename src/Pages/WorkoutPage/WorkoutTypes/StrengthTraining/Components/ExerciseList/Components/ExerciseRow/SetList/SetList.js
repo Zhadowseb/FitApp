@@ -1,4 +1,4 @@
-import { View } from "react-native";
+import { View, TouchableOpacity } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useState, useEffect } from "react";
 import { useColorScheme } from "react-native";
@@ -6,6 +6,7 @@ import { Colors } from "../../../../../../../../../Resources/GlobalStyling/color
 
 import styles from "./SetListStyle";
 import Title from "./Title";
+import DeleteSetModal from "./DeleteSetModal";
 
 import {
   ThemedCard,
@@ -20,6 +21,9 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
 
   const db = useSQLiteContext();
   const [localSets, setLocalSets] = useState(sets);
+
+  const [deleteSetModal_visible, set_deleteSetModal_visible] = useState(false);
+  const [selectedSet, set_selectedSet] = useState("");
 
   useEffect(() => {
     setLocalSets(sets);
@@ -40,6 +44,14 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
 
   const activeColumns = columnConfig.filter(col => visibleColumns[col.key]);
 
+  const deleteSet = async (set_id) => {
+    await db.runAsync(
+      `DELETE FROM Sets WHERE sets_id = ?;`,
+      [set_id]
+    );
+    updateUI();
+  }
+
   const updateField = async (field, value, setId) => {
     setLocalSets(prev =>
       prev.map(s =>
@@ -53,7 +65,6 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
       `UPDATE Sets SET ${field} = ? WHERE sets_id = ?;`,
       [value === "" ? null : Number(value), setId]
     );
-
     updateUI();
   };
 
@@ -68,7 +79,16 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
         );
 
       case "set":
-        return <ThemedText>{set.set_number}</ThemedText>;
+        return (
+        <TouchableOpacity
+          onPress={() => {
+            set_deleteSetModal_visible(true);
+            set_selectedSet(set.sets_id);
+          }}>
+            <ThemedText>{set.set_number}</ThemedText>          
+          </TouchableOpacity>
+        );
+          
 
       case "x":
         return <ThemedText>x</ThemedText>;
@@ -114,6 +134,7 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
   };
 
   return (
+    <>
     <ThemedCard style={styles.wrapper}>
       <Title visibleColumns={visibleColumns} />
 
@@ -142,6 +163,16 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
         </View>
       ))}
     </ThemedCard>
+
+    <DeleteSetModal
+      visible={deleteSetModal_visible}
+      onClose={() => set_deleteSetModal_visible(false)}
+      onSubmit={ () => {
+        deleteSet(selectedSet);
+        set_deleteSetModal_visible(false);
+      }}
+      />
+    </>
   );
 };
 

@@ -41,7 +41,8 @@ const Run = ({workout_id}) =>  {
             const row = await db.getFirstAsync(
                 `SELECT COUNT(*) as count FROM Run WHERE 
                     workout_id = ? AND 
-                    type = ?;`,
+                    type = ? AND
+                    is_pause = 0;`,
                 [workout_id, setVariety]
             );
 

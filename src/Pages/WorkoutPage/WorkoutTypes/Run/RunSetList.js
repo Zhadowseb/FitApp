@@ -27,6 +27,12 @@ const RunSetList = ({ workout_id, type, empty, reloadKey, triggerReload }) => {
     }, [reloadKey])
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      loadRunSets();
+    }, [workout_id, type])
+  );
+
   const loadRunSets = async () => {
     try {
       const rows = await db.getAllAsync(
@@ -57,11 +63,45 @@ const RunSetList = ({ workout_id, type, empty, reloadKey, triggerReload }) => {
     }
   }
 
-  useFocusEffect(
-    useCallback(() => {
-      loadRunSets();
-    }, [workout_id, type])
-  );
+  const renumberWorkingSets = async () => {
+    const rows = await db.getAllAsync(
+      `SELECT *
+       FROM Run
+       WHERE workout_id = ?
+         AND type = ?
+       ORDER BY set_number ASC;`,
+      [workout_id, type]
+    );
+
+    let counter = 1;
+
+    for (const row of rows) {
+      if (!row.is_pause) {
+        await db.runAsync(
+          `UPDATE Run SET set_number = ? WHERE Run_id = ?;`,
+          [counter, row.Run_id]
+        );
+        counter++;
+      }
+    }
+  };
+
+  const togglePause = async () => {
+    if (!selectedSet) return;
+
+    const newValue = selectedSet.is_pause ? 0 : 1;
+
+    await db.runAsync(
+      `UPDATE Run SET is_pause = ? WHERE Run_id = ?;`,
+      [newValue, selectedSet.Run_id]
+    );
+
+    await renumberWorkingSets();
+    await loadRunSets();
+
+    set_bottomsheetVisible(false);
+  };
+
 
   if (sets.length === 0) {
     return (
@@ -204,28 +244,7 @@ const RunSetList = ({ workout_id, type, empty, reloadKey, triggerReload }) => {
 
               <View style={[styles.togglepauseorworking, {borderColor: theme.primary}]}>
                 <TouchableOpacity 
-                    onPress={async () => {
-                        const newValue = selectedSet.is_pause ? 0 : 1;
-
-                        await db.runAsync(
-                          `UPDATE Run SET is_pause = ? WHERE Run_id = ?;`,
-                          [newValue, selectedSet.Run_id]
-                        );
-                        
-                        setSets(prev =>
-                          prev.map(s =>
-                            s.Run_id === selectedSet.Run_id
-                              ? { ...s, is_pause: newValue }
-                              : s
-                          )
-                        );
-
-                        set_selectedSet(prev => ({
-                          ...prev,
-                          is_pause: newValue
-                        }));
-
-                    }}>
+                    onPress={async () => {togglePause()}}>
                   <ThemedText> 
                     {selectedSet?.is_pause ? "Pause" : "Working Set"} 
                   </ThemedText>

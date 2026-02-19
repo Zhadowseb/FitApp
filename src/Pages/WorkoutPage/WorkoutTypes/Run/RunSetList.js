@@ -240,7 +240,9 @@ const RunSetList = ({
                 styles.zone,
                 styles.sharedGrid,
                 index === sets.length - 1 && styles.lastGrid,
-                set.heartrate && {backgroundColor: ZONE_COLORS[set.heartrate]},
+                set.heartrate && {
+                  backgroundColor: ZONE_COLORS[set.heartrate], 
+                  borderRadius: 5},
               ]}
             >
               <View style={{ position: "relative", width: "100%" }}>

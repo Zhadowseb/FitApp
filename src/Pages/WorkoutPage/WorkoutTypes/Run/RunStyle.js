@@ -83,4 +83,16 @@ export default StyleSheet.create({
         fontWeight: 600,
         fontSize: 16,
     },
+
+
+    zone_dropdown_container: {
+        position: "absolute",
+        top: 28,
+        left: 0,
+        right: 0,
+        borderWidth: 1,
+        borderRadius: 8,
+        elevation: 6,
+        zIndex: 10,
+    },
 });

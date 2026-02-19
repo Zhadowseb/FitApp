@@ -13,6 +13,7 @@ import {
 } from "../../../../Resources/ThemedComponents";
 
 import Delete from "../../../../Resources/Icons/UI-icons/Delete";
+import Cross from "../../../../Resources/Icons/UI-icons/Cross";
 import styles from "./RunStyle";
 import ListHeader from "./ListHeader";
 
@@ -244,6 +245,7 @@ const RunSetList = ({
             >
               <View style={{ position: "relative", width: "100%" }}>
                 <TouchableOpacity
+                  style={{ width: "100%", position: "relative", justifyContent: "center" }}
                   onPress={() => {
                     if (zoneSetId === set.Run_id) {
                       setZoneDropdownVisible(!zoneDropdownVisible);
@@ -256,38 +258,82 @@ const RunSetList = ({
                   <ThemedText style={{ textAlign: "center" }}>
                     {set.heartrate ? `${set.heartrate}` : ""}
                   </ThemedText>
+
                 </TouchableOpacity>
 
+
                 {zoneDropdownVisible &&
-                  
                   zoneSetId === set.Run_id && (
-                    <View style={[styles.zone_dropdown_container,
-                        {backgroundColor: theme.cardBackground,
-                          borderColor: theme.border} 
-                    ]}>
-                      
-                      {ZONES.map((zone) => (
-                        <TouchableOpacity
-                          key={zone.value}
-                          style={{ padding: 10 }}
-                          onPress={async () => {
-                            setZoneDropdownVisible(false);
+                    <View
+                      style={[
+                        styles.zone_dropdown_container,
+                        {
+                          backgroundColor: theme.cardBackground,
+                          borderColor: theme.border,
+                        },
+                      ]}
+                    >
+                      {/* CLEAR ZONE */}
+                      <TouchableOpacity
+                        style={{
+                          padding: 10,
+                          alignItems: "center",
+                          borderBottomWidth: 1,
+                          borderColor: theme.border,
+                        }}
+                        onPress={async () => {
+                          setZoneDropdownVisible(false);
 
-                            await db.runAsync(
-                              `UPDATE Run SET heartrate = ? WHERE Run_id = ?;`,
-                              [zone.value, set.Run_id]
-                            );
-                            await loadRunSets();
-                          }}
-                        >
-                          <ThemedText style={{ textAlign: "center" }}>
-                            {zone.label}
-                          </ThemedText>
-                        </TouchableOpacity>
-                      ))}
+                          await db.runAsync(
+                            `UPDATE Run SET heartrate = NULL WHERE Run_id = ?;`,
+                            [set.Run_id]
+                          );
+
+                          await loadRunSets();
+                        }}
+                      >
+                        <Cross width={14} height={14} />
+                      </TouchableOpacity>
+
+                      {/* ZONES */}
+                      {ZONES.map((zone) => {
+                        const bgColor = ZONE_COLORS[zone.value];
+
+                        return (
+                          <TouchableOpacity
+                            key={zone.value}
+                            style={{
+                              padding: 10,
+                              alignItems: "center",
+                              backgroundColor: bgColor,
+                            }}
+                            onPress={async () => {
+                              setZoneDropdownVisible(false);
+
+                              await db.runAsync(
+                                `UPDATE Run SET heartrate = ? WHERE Run_id = ?;`,
+                                [zone.value, set.Run_id]
+                              );
+
+                              await loadRunSets();
+                            }}
+                          >
+                            <ThemedText
+                              style={{
+                                textAlign: "center",
+                                color: zone.value === 1 ? "#000" : "#fff",
+                                fontWeight: "600",
+                              }}
+                            >
+                              {zone.label}
+                            </ThemedText>
+                          </TouchableOpacity>
+                        );
+                      })}
+
                     </View>
-
                   )}
+
               </View>
             </View>
           </View>

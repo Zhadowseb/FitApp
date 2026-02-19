@@ -16,7 +16,7 @@ function Cross({width, height}) {
       height={height}
       color={theme.primary}
       fill="none"
-      stroke="#141B34"
+      stroke={theme.primary}
       strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"

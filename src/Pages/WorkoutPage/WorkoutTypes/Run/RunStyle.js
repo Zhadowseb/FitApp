@@ -55,10 +55,20 @@ export default StyleSheet.create({
     },
 
     bottomsheet_title: {
+        flexDirection: "row",
         borderBottomWidth: 1,
         borderBottomColor: "#2e2e2eff",
         paddingBottom: 30,
     },
+    togglepauseorworking: {
+        borderWidth: 2,
+        borderRadius: 15,
+        padding: 5,
+        justifyContent: "center",
+        alignItems: "center",
+        width: 120,
+    },
+
     bottomsheet_body: {
         justifyContent: "center",
         padding: 20,
@@ -72,5 +82,17 @@ export default StyleSheet.create({
         paddingLeft: 10,
         fontWeight: 600,
         fontSize: 16,
+    },
+
+
+    zone_dropdown_container: {
+        position: "absolute",
+        top: 28,
+        left: 0,
+        right: 0,
+        borderWidth: 1,
+        borderRadius: 8,
+        elevation: 6,
+        zIndex: 10,
     },
 });

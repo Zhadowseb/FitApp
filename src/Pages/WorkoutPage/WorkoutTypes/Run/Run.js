@@ -17,7 +17,6 @@ import { ThemedTitle,
         ThemedModal,
         ThemedHeader, } 
   from "../../../../Resources/ThemedComponents";
-import AddRunSetModal from './AddRunSetModal';
 
 import WorkoutStopwatch from '../../../../Resources/Components/StopWatch';
 import Plus from '../../../../Resources/Icons/UI-icons/Plus';
@@ -33,50 +32,26 @@ const Run = ({workout_id}) =>  {
         set_updateCount(prev => prev + 1);
     };
 
-    const [addRunSetModal_visible, set_addRunSetModal_visible] = useState(false);
-
-
-    const [type, set_type] = useState("WORKING_SET");
-
     const [warmupEmpty, set_WarmupEmpty] = useState(true);
     const [workingEmpty, set_WorkingEmpty] = useState(true);
     const [cooldownEmpty, set_CooldownEmpty] = useState(true);
 
-    const addSet = async (setVariety, pauseOrWorking, distance, pace, time, heartrate) => {
+    const addSet = async (setVariety) => {
         try {
             const row = await db.getFirstAsync(
                 `SELECT COUNT(*) as count FROM Run WHERE 
                     workout_id = ? AND 
-                    type = ? AND 
-                    is_pause = 1;`,
+                    type = ? AND
+                    is_pause = 0;`,
                 [workout_id, setVariety]
             );
 
             const set_number = row.count + 1;
-            const is_pause = pauseOrWorking === "right" ? 1 : 0;
 
             await db.runAsync(
-            `INSERT INTO Run (
-                workout_id,
-                type,
-                set_number,
-                is_pause,
-                distance,
-                pace,
-                time,
-                heartrate
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
-            [
-                workout_id,
-                setVariety,
-                set_number,
-                is_pause,
-                Number(distance) || null,
-                pace || "",
-                Number(time) || null,
-                Number(heartrate) || null,
-            ]
-            );
+            `INSERT INTO Run (workout_id, type, set_number) 
+                VALUES (?, ?, ?);`,
+            [workout_id, setVariety, set_number]);
             triggerReload();
         } catch (error) {
             console.error("Failed to add warmup set:", error);
@@ -108,8 +83,7 @@ const Run = ({workout_id}) =>  {
             <View style={{marginLeft: "auto", marginRight: "15"}}>
                 <TouchableOpacity
                     onPress={ () => {
-                        set_type("WARMUP");
-                        set_addRunSetModal_visible(true);
+                        addSet("WARMUP")
                     }}>
                     <Plus
                         width={24}
@@ -139,8 +113,7 @@ const Run = ({workout_id}) =>  {
             <View style={{marginLeft: "auto", marginRight: "15"}}>
                 <TouchableOpacity
                     onPress={ () => {
-                        set_type("WORKING_SET");
-                        set_addRunSetModal_visible(true);
+                        addSet("WORKING_SET");
                     }}>
                     <Plus
                         width={24}
@@ -171,8 +144,7 @@ const Run = ({workout_id}) =>  {
             <View style={{marginLeft: "auto", marginRight: "15"}}>
                 <TouchableOpacity
                     onPress={ () => {
-                        set_type("COOLDOWN");
-                        set_addRunSetModal_visible(true);
+                        addSet("COOLDOWN");
                     }}>
                     <Plus
                         width={24}
@@ -190,24 +162,6 @@ const Run = ({workout_id}) =>  {
         />
     </View>
     </ScrollView>
-
-    <AddRunSetModal
-        visible={addRunSetModal_visible}
-        onClose={ () => {set_addRunSetModal_visible(false)}}
-        onSubmit={({ pauseOrWorking, distance, pace, time, heartrate }) => {
-            if (type === "WARMUP") {
-                addSet("WARMUP", pauseOrWorking, distance, pace, time, heartrate);
-            }
-            if (type === "WORKING_SET") {
-                addSet("WORKING_SET", pauseOrWorking, distance, pace, time, heartrate);
-            }
-            if (type === "COOLDOWN") {
-                addSet("COOLDOWN", pauseOrWorking, distance, pace, time, heartrate);
-            }
-        }}
-    />
-
-    
     </>
   );
 }

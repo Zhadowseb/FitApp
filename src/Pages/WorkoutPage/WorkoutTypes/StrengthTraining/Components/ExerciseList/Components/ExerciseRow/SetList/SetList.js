@@ -1,204 +1,179 @@
-// src/Components/ExerciseList/ExerciseList.js
-import { View, Text, TextInput, Button } from "react-native";
-import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
+import { View, TouchableOpacity } from "react-native";
+import { useSQLiteContext } from "expo-sqlite";
 import { useState, useEffect } from "react";
 import { useColorScheme } from "react-native";
 import { Colors } from "../../../../../../../../../Resources/GlobalStyling/colors";
 
 import styles from "./SetListStyle";
-import Title from "./Title/Title";
+import Title from "./Title";
+import DeleteSetModal from "./DeleteSetModal";
 
+import {
+  ThemedCard,
+  ThemedText,
+  ThemedEditableCell,
+  ThemedBouncyCheckbox
+} from "../../../../../../../../../Resources/ThemedComponents";
 
-import {ThemedCard,
-        ThemedText,
-        ThemedTextInput,
-        ThemedButton,
-        ThemedBouncyCheckbox} 
-  from "../../../../../../../../../Resources/ThemedComponents";
-  
-const SetList = ({ sets, onToggleSet, editMode, updateUI }) => {
+const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
 
-  if (!sets || sets.length === 0) {
-    return null;
-  }
-
   const db = useSQLiteContext();
   const [localSets, setLocalSets] = useState(sets);
+
+  const [deleteSetModal_visible, set_deleteSetModal_visible] = useState(false);
+  const [selectedSet, set_selectedSet] = useState("");
 
   useEffect(() => {
     setLocalSets(sets);
   }, [sets]);
 
-  const updateLocalSet = (sets_id, patch) => {
+  if (!localSets || localSets.length === 0) return null;
+
+  // 🔹 Column configuration
+  const columnConfig = [
+    { key: "rest", style: styles.pause },
+    { key: "set", style: styles.set },
+    { key: "x", style: styles.x },
+    { key: "reps", style: styles.reps },
+    { key: "rpe", style: styles.rpe },
+    { key: "weight", style: styles.weight },
+    { key: "done", style: styles.done },
+  ];
+
+  const activeColumns = columnConfig.filter(col => visibleColumns[col.key]);
+
+  const deleteSet = async (set_id) => {
+    await db.runAsync(
+      `DELETE FROM Sets WHERE sets_id = ?;`,
+      [set_id]
+    );
+    updateUI();
+  }
+
+  const updateField = async (field, value, setId) => {
     setLocalSets(prev =>
       prev.map(s =>
-        s.sets_id === sets_id
-          ? { ...s, ...patch }
+        s.sets_id === setId
+          ? { ...s, [field]: value === "" ? null : Number(value) }
           : s
       )
     );
+
+    await db.runAsync(
+      `UPDATE Sets SET ${field} = ? WHERE sets_id = ?;`,
+      [value === "" ? null : Number(value), setId]
+    );
+    updateUI();
   };
 
-  const updateSetPause = async (sets_id, pause) => {
-    if (pause === "" || Number.isNaN(pause)) {return;}
-    await db.runAsync(
-      `UPDATE Sets SET pause = ? WHERE sets_id = ?`,
-      [pause, sets_id]);
-    updateUI?.();
-  }
+  const renderCellContent = (key, set, index) => {
+    switch (key) {
+      case "rest":
+        return (
+          <ThemedEditableCell
+            value={set.pause?.toString() ?? ""}
+            onCommit={(v) => updateField("pause", v, set.sets_id)}
+          />
+        );
 
-  const updateSetReps = async (sets_id, reps) => {
-    if (reps === "" || Number.isNaN(reps)) {return;}
-    await db.runAsync(
-      `UPDATE Sets SET reps = ? WHERE sets_id = ?`,
-      [reps, sets_id]);
-    updateUI?.();
-  }
+      case "set":
+        return (
+        <TouchableOpacity
+          onPress={() => {
+            set_deleteSetModal_visible(true);
+            set_selectedSet(set.sets_id);
+          }}>
+            <ThemedText>{set.set_number}</ThemedText>          
+          </TouchableOpacity>
+        );
+          
 
-  const updateSetRPE = async (sets_id, rpe) => {
-    if (rpe === "" || Number.isNaN(rpe)) {return;}
-    await db.runAsync(
-      `UPDATE Sets SET rpe = ? WHERE sets_id = ?`,
-      [rpe, sets_id] );
-    updateUI?.();
-  }
+      case "x":
+        return <ThemedText>x</ThemedText>;
 
-  const updateSetWeight = async (sets_id, weight) => {
-    if (weight === "" || Number.isNaN(weight)) {return;}
-    await db.runAsync(
-      `UPDATE Sets SET weight = ? WHERE sets_id = ?`,
-      [weight, sets_id] );
-    updateUI?.();
-  };
+      case "reps":
+        return (
+          <ThemedEditableCell
+            value={set.reps?.toString() ?? ""}
+            onCommit={(v) => updateField("reps", v, set.sets_id)}
+          />
+        );
 
-  const deleteSet = async (sets_id) => {
-    try {
-      await db.runAsync(
-        `DELETE FROM Sets WHERE sets_id = ?;`,
-        [sets_id]);
-      updateUI?.();
-    } catch (error) {
-      console.error(error);
+      case "rpe":
+        return (
+          <ThemedEditableCell
+            value={set.rpe?.toString() ?? ""}
+            onCommit={(v) => updateField("rpe", v, set.sets_id)}
+          />
+        );
+
+      case "weight":
+        return (
+          <ThemedEditableCell
+            value={set.weight?.toString() ?? ""}
+            suffix="kg"
+            onCommit={(v) => updateField("weight", v, set.sets_id)}
+          />
+        );
+
+      case "done":
+        return (
+          <ThemedBouncyCheckbox
+            value={set.done === 1}
+            onChange={(checked) => onToggleSet(set.sets_id, checked)}
+            size={18}
+            edgeSize={2}
+            checkmarkColor={theme.cardBackground}
+          />
+        );
+
+      default:
+        return null;
     }
   };
 
   return (
-    <View style={styles.wrapper}>
-      
-      <Title />
+    <>
+    <ThemedCard style={styles.wrapper}>
+      <Title visibleColumns={visibleColumns} />
 
-      {localSets.map((set) => (
+      {localSets.map((set, rowIndex) => (
         <View key={set.sets_id} style={styles.container}>
-            <View style={styles.pause}> 
-                {!editMode ? 
-                  <ThemedText style={styles.text}> {set.pause} </ThemedText>
-                  :
-                <ThemedTextInput
-                  style={[styles.widthPause, styles.input]}
-                  inputStyle={styles.editableInput}
-                  value={String(set.pause ?? "")}
-                  onChangeText={(text) =>
-                    updateLocalSet(set.sets_id, { pause: text })
-                  }
-                  onBlur={() =>
-                    updateSetPause(set.sets_id, Number(set.pause))
-                  }
-                />}
-            </View>
-  
-            <View style={[styles.set, styles.text]}>  
-                <ThemedText> {set.set_number} </ThemedText>
-            </View>
+          {activeColumns.map((col, colIndex) => {
+            const isFirst = colIndex === 0;
+            const isLast = colIndex === activeColumns.length - 1;
 
-            <View style={[styles.x, styles.text]}> 
-                <ThemedText> x </ThemedText>
-            </View>
-
-            <View style={styles.reps}> 
-                {!editMode ? 
-                  <ThemedText style={styles.text}> {set.reps} </ThemedText>
-                  :
-                <ThemedTextInput
-                  style={[styles.widthReps, styles.input]}
-                  inputStyle={styles.editableInput}
-                  value={String(set.reps ?? "")}
-                  onChangeText={(text) =>
-                    updateLocalSet(set.sets_id, { reps: text })
-                  }
-                  onBlur={() =>
-                    updateSetReps(set.sets_id, Number(set.reps))
-                  }
-                />}
-            </View>
-
-            <View style={styles.rpe}> 
-                {!editMode ? 
-                  <ThemedText style={styles.text}> {set.rpe} </ThemedText>
-                  :
-                <ThemedTextInput
-                  style={[styles.widthRPE, styles.input]}
-                  inputStyle={styles.editableInput}
-                  value={String(set.rpe ?? "")}
-                  onChangeText={(text) =>
-                    updateLocalSet(set.sets_id, { rpe: text })
-                  }
-                  onBlur={() =>
-                    updateSetRPE(set.sets_id, Number(set.rpe))
-                  }
-                />}
-            </View>
-
-            <View style={styles.weight}> 
-                {!editMode ? 
-                  <ThemedText style={styles.text}> {set.weight} </ThemedText>
-                  :
-                  <ThemedTextInput
-                    style={[styles.widthWeight, styles.input]}
-                    inputStyle={styles.editableInput}
-                    value={String(set.weight ?? "")}
-                    onChangeText={(text) =>
-                      updateLocalSet(set.sets_id, { weight: text })
-                    }
-                    onBlur={() =>
-                      updateSetWeight(set.sets_id, Number(set.weight))
-                    }
-                  />}
-            </View>
-
-            <View style={[styles.done, styles.text]}> 
-
-              {editMode ?
-                <ThemedButton
-                  title="x"
-                  variant="danger"
-                  style={{
-                    paddingVertical: 1,
-                    paddingHorizontal: 1,
-                    height: 25,
-                    width: 25,
-                  }}
-                  onPress={() => deleteSet(set.sets_id)}
-                />
-                :
-                <View style={{justifyContent:"center"}}>
-                  <ThemedBouncyCheckbox
-                    value={set.done === 1}
-                    onChange={(checked) => onToggleSet(set.sets_id, checked)}
-                    size={18}
-                    edgeSize={2}
-                    checkmarkColor={theme.cardBackground}
-                  />
-                </View>
-
-
-                  
-              }
-            </View>
+            return (
+              <View
+                key={col.key}
+                style={[
+                  styles.editable_cell,
+                  col.style,
+                  styles.padding,
+                  isFirst && { borderLeftWidth: 0 },
+                  isLast && { borderRightWidth: 0 },
+                  rowIndex === localSets.length - 1 && styles.lastGrid,
+                ]}
+              >
+                {renderCellContent(col.key, set, rowIndex)}
+              </View>
+            );
+          })}
         </View>
       ))}
-    </View>
+    </ThemedCard>
+
+    <DeleteSetModal
+      visible={deleteSetModal_visible}
+      onClose={() => set_deleteSetModal_visible(false)}
+      onSubmit={ () => {
+        deleteSet(selectedSet);
+        set_deleteSetModal_visible(false);
+      }}
+      />
+    </>
   );
 };
 

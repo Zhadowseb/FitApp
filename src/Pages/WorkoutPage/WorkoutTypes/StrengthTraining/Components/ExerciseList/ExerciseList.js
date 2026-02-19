@@ -8,9 +8,9 @@ import { useNavigation } from "@react-navigation/native";
 import styles from "./ExerciseListStyle";
 
 import ExerciseRow from "./Components/ExerciseRow/ExerciseRow"
-import Title from "./Components/Title/Title";
+import Plus from "../../../../../../Resources/Icons/UI-icons/Plus";
 
-const ExerciseList = ( {workout_id, editMode, refreshing, updateUI} ) => {
+const ExerciseList = ( {workout_id, refreshing, updateUI} ) => {
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -23,7 +23,7 @@ const ExerciseList = ( {workout_id, editMode, refreshing, updateUI} ) => {
 
       const exercises = await db.getAllAsync(
         `SELECT 
-          exercise_id, exercise_name, sets, done 
+          exercise_id, exercise_name, sets, done, visible_columns
           FROM Exercise WHERE workout_id = ?;`,
         [workout_id]
       );
@@ -46,10 +46,24 @@ const ExerciseList = ( {workout_id, editMode, refreshing, updateUI} ) => {
 
       const exercisesWithSets = exercises.map(ex => {
           const exSets = setsByExercise[ex.exercise_id] ?? [];
+
+          const defaultColumns = {
+            rest: true,
+            set: true,
+            x: true,
+            reps: true,
+            rpe: true,
+            weight: true,
+            done: true,
+          };
+          
           return {
             ...ex,
             sets: exSets,
             setCount: exSets.length,
+            visibleColumns: ex.visible_columns
+              ? JSON.parse(ex.visible_columns)
+              : defaultColumns,            
           };
         });
       setExercises(exercisesWithSets);
@@ -210,18 +224,22 @@ const ExerciseList = ( {workout_id, editMode, refreshing, updateUI} ) => {
         exercise={item}
         updateUI={updateUI}
         onToggleSet={updateSetDone}
-        editMode={editMode}
         refreshing={refreshing}/>
     </View>
   );
 
   return (
-    <Title
-      exercises={exercises}
-      loading={loading}
-      editMode={editMode}
-      renderItem={renderItem}
-    />
+    <>
+    <View>
+      {exercises.map((item) => renderItem(item))}
+    </View>
+
+    <View style={{alignItems: "center", paddingTop: 30}}>
+      <Plus
+        width={30}
+        height={30} />
+    </View>
+    </>
   );
 };
 

@@ -78,4 +78,26 @@ export default StyleSheet.create({
     alignItems: "center",
   },
 
+
+  //NEW STYLING
+
+  done_box: {
+    paddingLeft: 10,
+    paddingRight: "10",
+    justifyContent: "center",
+  },
+
+  icon_container: {
+    marginLeft: "auto", 
+    flexDirection: "row",
+    paddingRight: 10,
+  },
+
+  ui_icons: {
+    justifyContent: "center", 
+    paddingLeft: 5
+  },
+
+
+
 });

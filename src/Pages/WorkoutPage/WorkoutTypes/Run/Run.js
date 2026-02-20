@@ -139,15 +139,27 @@ const Run = ({workout_id}) =>  {
     <ScrollView>
     <View>
         <ThemedCard style={{alignItems: "center"}}>
-            <ThemedText>session time: {formatTime(sessionTime)}</ThemedText>
-            <ThemedText>remaining time on set: {formatTime(remainingTime)}</ThemedText>
 
-            <ThemedButton
-                title={isRunning ? "Running..." : "Start workout"}
-                onPress={ () => {startWorkout()}}
-                variant='secondary'>
-                
-            </ThemedButton>
+            <View style={{flexDirection: "row", alignItems: "center"}}>
+                <View>
+                    <ThemedText>session time: {formatTime(sessionTime)}</ThemedText>
+                </View>
+
+                <View>
+                    <ThemedButton
+                        title={isRunning ? "Running..." : "Start workout"}
+                        onPress={ () => {startWorkout()}}
+                        variant='secondary'>
+                    </ThemedButton>
+                    <ThemedButton
+                        title={isRunning ? "Pause" : "Not started"}
+                        onPress={ () => {setIsRunning(false)}}
+                        variant='danger'
+                        disabled={isRunning ? false : true}>
+                    </ThemedButton>
+                </View>
+            </View>
+
         </ThemedCard>
     </View>
 

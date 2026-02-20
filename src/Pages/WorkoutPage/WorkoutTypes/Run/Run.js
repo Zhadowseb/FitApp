@@ -41,7 +41,10 @@ const Run = ({workout_id}) =>  {
 
 
     //Workout timer state:
+    const [hasStarted, setHasStarted] = useState(false);
     const [isRunning, setIsRunning] = useState(false);
+    const [isFinished, setIsFinished] = useState(false);
+
     const [sessionTime, setSessionTime] = useState(0);
     const [currentSetIndex, setCurrentSetIndex] = useState(0);
     const [remainingTime, setRemainingTime] = useState(0);
@@ -103,6 +106,15 @@ const Run = ({workout_id}) =>  {
     };
 
     const startWorkout = async () => {
+        if (isFinished){
+            return;
+        }
+
+        if (hasStarted) {
+            setIsRunning(true);
+            return;
+        }
+
         const queue = await buildSetsQueue();
         if (!queue.length) return;
 
@@ -110,6 +122,8 @@ const Run = ({workout_id}) =>  {
         setCurrentSetIndex(0);
         setRemainingTime(queue[0].duration);
         setSessionTime(0);
+
+        setHasStarted(true);
         setIsRunning(true);
     };
 
@@ -134,28 +148,51 @@ const Run = ({workout_id}) =>  {
             duration: Math.max(0, Number(r.time ?? 0)) * 60}));
     };
 
+    const endWorkout = () => {
+        setIsRunning(false);
+        setIsFinished(true);
+    };
+
     return(
     <>
     <ScrollView>
     <View>
         <ThemedCard style={{alignItems: "center"}}>
 
-            <View style={{flexDirection: "row", alignItems: "center"}}>
-                <View>
-                    <ThemedText>session time: {formatTime(sessionTime)}</ThemedText>
+            <View style={{flexDirection: "column", alignItems: "center"}}>
+                <View style={{paddingBottom: 20, alignItems: "center"}}>
+                    <ThemedText size={15}>
+                        Session time
+                    </ThemedText>
+                    <ThemedText size={30}>
+                        {formatTime(sessionTime)}
+                    </ThemedText>
                 </View>
 
-                <View>
+                <View style={{flexDirection: "row"}}>
                     <ThemedButton
-                        title={isRunning ? "Running..." : "Start workout"}
-                        onPress={ () => {startWorkout()}}
+                        title={
+                            isFinished
+                                ? "Finished"
+                                : isRunning
+                                    ? "Running..."
+                                    : hasStarted
+                                        ? "Continue"
+                                        : "Start workout"}
+                        onPress={startWorkout}
                         variant='secondary'>
                     </ThemedButton>
                     <ThemedButton
-                        title={isRunning ? "Pause" : "Not started"}
+                        title={"Pause"}
                         onPress={ () => {setIsRunning(false)}}
+                        variant='primary'
+                        disabled={!isRunning || isFinished}>
+                    </ThemedButton>
+                    <ThemedButton
+                        title={"End Workout"}
+                        onPress={endWorkout}
                         variant='danger'
-                        disabled={isRunning ? false : true}>
+                        disabled={!hasStarted || isFinished}>
                     </ThemedButton>
                 </View>
             </View>
@@ -192,6 +229,7 @@ const Run = ({workout_id}) =>  {
             activeSetId={setsQueue[currentSetIndex]?.id}
             remainingTime={remainingTime}
             isRunning={isRunning}
+            hasStarted={hasStarted}
             />
     </View>
 
@@ -226,6 +264,7 @@ const Run = ({workout_id}) =>  {
             activeSetId={setsQueue[currentSetIndex]?.id}
             remainingTime={remainingTime}
             isRunning={isRunning}
+            hasStarted={hasStarted}
         />
 
     </View>
@@ -260,6 +299,7 @@ const Run = ({workout_id}) =>  {
             activeSetId={setsQueue[currentSetIndex]?.id}
             remainingTime={remainingTime}
             isRunning={isRunning}
+            hasStarted={hasStarted}
         />
     </View>
     </ScrollView>

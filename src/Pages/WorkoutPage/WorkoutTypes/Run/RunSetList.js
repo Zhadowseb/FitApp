@@ -27,6 +27,7 @@ const RunSetList = ({
   activeSetId,
   remainingTime,
   isRunning,
+  hasStarted,
 }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
@@ -155,7 +156,7 @@ const RunSetList = ({
         <ListHeader styles={styles} />
 
         {sets.map((set, index) => {
-        const isActive = set.Run_id === activeSetId && isRunning;
+        const isActive = set.Run_id === activeSetId && hasStarted;
 
         return (
           <View key={set.Run_id} 
@@ -226,14 +227,10 @@ const RunSetList = ({
             </View>
 
             {/* TIME */}
-            <View
-              style={[
-                styles.time,
-                styles.sharedGrid,
-                index === sets.length - 1 && styles.lastGrid
-              ]}
-            >
-              {set.Run_id === activeSetId && isRunning ? (
+            <View style={[styles.time, styles.sharedGrid,
+                index === sets.length - 1 && styles.lastGrid]}>
+
+              {set.Run_id === activeSetId && hasStarted ? (
                 <ThemedText style={{ textAlign: "center", fontWeight: "600" }}>
                   {formatTime(remainingTime)}
                 </ThemedText>

@@ -47,6 +47,11 @@ export default StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
     },
+    timeRunning: {
+        borderWidth: 0.6,
+        borderColor: "#f0ff21",
+        borderRadius: 5,
+    },
 
     zone: {
         width: "20%",

@@ -16,6 +16,7 @@ import Delete from "../../../../Resources/Icons/UI-icons/Delete";
 import Cross from "../../../../Resources/Icons/UI-icons/Cross";
 import styles from "./RunStyle";
 import ListHeader from "./ListHeader";
+import { formatTime } from "../../../../Utils/timeUtils";
 
 const RunSetList = ({
   workout_id,
@@ -23,6 +24,9 @@ const RunSetList = ({
   empty,
   reloadKey,
   triggerReload,
+  activeSetId,
+  remainingTime,
+  isRunning,
 }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
@@ -145,13 +149,20 @@ const RunSetList = ({
       <ThemedCard
         style={{
           opacity: sets.length === 0 ? 0.3 : 1,
-          overflow: "visible", // IMPORTANT
+          overflow: "visible", //
         }}
       >
         <ListHeader styles={styles} />
 
-        {sets.map((set, index) => (
-          <View key={set.Run_id} style={styles.grid}>
+        {sets.map((set, index) => {
+        const isActive = set.Run_id === activeSetId && isRunning;
+
+        return (
+          <View key={set.Run_id} 
+            style={[styles.grid, 
+              isActive && styles.timeRunning]}>
+            
+            
             {/* SET NUMBER / PAUSE */}
             <TouchableOpacity
               style={[
@@ -219,19 +230,25 @@ const RunSetList = ({
               style={[
                 styles.time,
                 styles.sharedGrid,
-                index === sets.length - 1 && styles.lastGrid,
+                index === sets.length - 1 && styles.lastGrid
               ]}
             >
-              <ThemedEditableCell
-                value={set.time?.toString() ?? ""}
-                onCommit={async (v) => {
-                  await db.runAsync(
-                    `UPDATE Run SET time = ? WHERE Run_id = ?;`,
-                    [v === "" ? null : Number(v), set.Run_id]
-                  );
-                  await loadRunSets();
-                }}
-              />
+              {set.Run_id === activeSetId && isRunning ? (
+                <ThemedText style={{ textAlign: "center", fontWeight: "600" }}>
+                  {formatTime(remainingTime)}
+                </ThemedText>
+              ) : (
+                <ThemedEditableCell
+                  value={set.time?.toString() ?? ""}
+                  onCommit={async (v) => {
+                    await db.runAsync(
+                      `UPDATE Run SET time = ? WHERE Run_id = ?;`,
+                      [v === "" ? null : Number(v), set.Run_id]
+                    );
+                    await loadRunSets();
+                  }}
+                />
+              )}
             </View>
 
             {/* ZONE DROPDOWN */}
@@ -339,7 +356,7 @@ const RunSetList = ({
               </View>
             </View>
           </View>
-        ))}
+        )})}
       </ThemedCard>
 
       {/* BOTTOM SHEET */}

@@ -15,12 +15,15 @@ import { ThemedTitle,
         ThemedText, 
         ThemedSwitch, 
         ThemedModal,
-        ThemedHeader, } 
+        ThemedHeader,
+        ThemedButton, } 
   from "../../../../Resources/ThemedComponents";
 
 import WorkoutStopwatch from '../../../../Resources/Components/StopWatch';
 import Plus from '../../../../Resources/Icons/UI-icons/Plus';
 import styles from './RunStyle';
+
+import { formatTime } from '../../../../Utils/timeUtils';
 
 const Run = ({workout_id}) =>  {
     const colorScheme = useColorScheme();
@@ -35,6 +38,47 @@ const Run = ({workout_id}) =>  {
     const [warmupEmpty, set_WarmupEmpty] = useState(true);
     const [workingEmpty, set_WorkingEmpty] = useState(true);
     const [cooldownEmpty, set_CooldownEmpty] = useState(true);
+
+
+    //Workout timer state:
+    const [isRunning, setIsRunning] = useState(false);
+    const [sessionTime, setSessionTime] = useState(0);
+    const [currentSetIndex, setCurrentSetIndex] = useState(0);
+    const [remainingTime, setRemainingTime] = useState(0);
+    const [setsQueue, setSetsQueue] = useState([]);
+
+    useEffect(() => {
+        if (!isRunning) return;
+
+        const interval = setInterval(() => {
+            setSessionTime(prev => prev + 1);
+
+            setRemainingTime(prev => {
+                if (prev > 1) {
+                    return prev - 1;
+                }
+
+                // Set færdigt → skift til næste
+                setCurrentSetIndex(prevIndex => {
+                    const nextIndex = prevIndex + 1;
+
+                    if (nextIndex < setsQueue.length) {
+                    setRemainingTime(setsQueue[nextIndex].duration);
+                    return nextIndex;
+                    }
+
+                    setIsRunning(false);
+                    return prevIndex;
+                });
+
+                return 0;
+            });
+
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [isRunning]);
+
 
     const addSet = async (setVariety) => {
         try {
@@ -58,17 +102,52 @@ const Run = ({workout_id}) =>  {
         }
     };
 
+    const startWorkout = async () => {
+        const queue = await buildSetsQueue();
+        if (!queue.length) return;
 
-  return (
+        setSetsQueue(queue);
+        setCurrentSetIndex(0);
+        setRemainingTime(queue[0].duration);
+        setSessionTime(0);
+        setIsRunning(true);
+    };
+
+    const buildSetsQueue = async () => {
+        const rows = await db.getAllAsync(
+            `SELECT Run_id AS id, type, time, set_number
+            FROM Run
+            WHERE workout_id = ?
+            ORDER BY 
+            CASE type
+                WHEN 'WARMUP' THEN 1
+                WHEN 'WORKING_SET' THEN 2
+                WHEN 'COOLDOWN' THEN 3
+            END,
+            set_number ASC;`,
+            [workout_id]
+        );
+
+        return rows.map(r => ({
+            id: r.id,
+            type: r.type,
+            duration: Math.max(0, Number(r.time ?? 0)) * 60}));
+    };
+
+    return(
     <>
     <ScrollView>
     <View>
         <ThemedCard style={{alignItems: "center"}}>
-            <WorkoutStopwatch
-                workout_id={workout_id}
-                onStop={(seconds) => {
-                    
-                }} />
+            <ThemedText>session time: {formatTime(sessionTime)}</ThemedText>
+            <ThemedText>remaining time on set: {formatTime(remainingTime)}</ThemedText>
+
+            <ThemedButton
+                title={isRunning ? "Running..." : "Start workout"}
+                onPress={ () => {startWorkout()}}
+                variant='secondary'>
+                
+            </ThemedButton>
         </ThemedCard>
     </View>
 
@@ -97,7 +176,11 @@ const Run = ({workout_id}) =>  {
             triggerReload={triggerReload}
             empty={set_WarmupEmpty}
             workout_id={workout_id}
-            type="WARMUP" />
+            type="WARMUP" 
+            activeSetId={setsQueue[currentSetIndex]?.id}
+            remainingTime={remainingTime}
+            isRunning={isRunning}
+            />
     </View>
 
 
@@ -128,6 +211,9 @@ const Run = ({workout_id}) =>  {
             empty={set_WorkingEmpty}
             workout_id={workout_id}
             type="WORKING_SET"
+            activeSetId={setsQueue[currentSetIndex]?.id}
+            remainingTime={remainingTime}
+            isRunning={isRunning}
         />
 
     </View>
@@ -159,6 +245,9 @@ const Run = ({workout_id}) =>  {
             empty={set_CooldownEmpty}
             workout_id={workout_id}
             type="COOLDOWN"
+            activeSetId={setsQueue[currentSetIndex]?.id}
+            remainingTime={remainingTime}
+            isRunning={isRunning}
         />
     </View>
     </ScrollView>
@@ -167,3 +256,4 @@ const Run = ({workout_id}) =>  {
 }
 
 export default Run;
+

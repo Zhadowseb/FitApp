@@ -61,7 +61,6 @@ const Run = ({workout_id}) =>  {
                     return prev - 1;
                 }
 
-                // Set færdigt → skift til næste
                 setCurrentSetIndex(prevIndex => {
                     const nextIndex = prevIndex + 1;
 
@@ -71,6 +70,7 @@ const Run = ({workout_id}) =>  {
                     }
 
                     setIsRunning(false);
+                    setIsFinished(true);
                     return prevIndex;
                 });
 
@@ -129,9 +129,8 @@ const Run = ({workout_id}) =>  {
 
     const buildSetsQueue = async () => {
         const rows = await db.getAllAsync(
-            `SELECT Run_id AS id, type, time, set_number
-            FROM Run
-            WHERE workout_id = ?
+            `SELECT * FROM Run WHERE 
+            workout_id = ?
             ORDER BY 
             CASE type
                 WHEN 'WARMUP' THEN 1
@@ -170,30 +169,39 @@ const Run = ({workout_id}) =>  {
                 </View>
 
                 <View style={{flexDirection: "row"}}>
-                    <ThemedButton
-                        title={
-                            isFinished
-                                ? "Finished"
-                                : isRunning
-                                    ? "Running..."
-                                    : hasStarted
-                                        ? "Continue"
-                                        : "Start workout"}
-                        onPress={startWorkout}
-                        variant='secondary'>
-                    </ThemedButton>
-                    <ThemedButton
-                        title={"Pause"}
-                        onPress={ () => {setIsRunning(false)}}
-                        variant='primary'
-                        disabled={!isRunning || isFinished}>
-                    </ThemedButton>
-                    <ThemedButton
-                        title={"End Workout"}
-                        onPress={endWorkout}
-                        variant='danger'
-                        disabled={!hasStarted || isFinished}>
-                    </ThemedButton>
+
+                    <View style={{paddingRight: 5}}>
+                        <ThemedButton
+                            title={
+                                isFinished
+                                    ? "Finished"
+                                    : isRunning
+                                        ? "Running..."
+                                        : hasStarted
+                                            ? "Continue"
+                                            : "Start workout"}
+                            onPress={startWorkout}
+                            variant='secondary'>
+                        </ThemedButton>
+                    </View>
+
+                    <View>
+                        <ThemedButton
+                            title={"Pause"}
+                            onPress={ () => {setIsRunning(false)}}
+                            variant='primary'
+                            disabled={!isRunning || isFinished}>
+                        </ThemedButton>
+                    </View>
+
+                    <View style={{paddingLeft: 5}}>
+                        <ThemedButton
+                            title={"End Workout"}
+                            onPress={endWorkout}
+                            variant='danger'
+                            disabled={!hasStarted || isFinished}>
+                        </ThemedButton>
+                    </View>
                 </View>
             </View>
 

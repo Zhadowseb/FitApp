@@ -56,8 +56,15 @@ export async function initializeDatabase(db) {
         date TEXT NOT NULL,
         label TEXT, 
         done INTEGER NOT NULL DEFAULT 0,
+
+        /*======Old timer======*/
         start_ts INTEGER NOT NULL DEFAULT 0,
-        duration_seconds INTEGER NOT NULL DEFAULT 0
+        duration_seconds INTEGER NOT NULL DEFAULT 0,
+
+        /*======Workout Timer=======*/
+        original_start_time INTEGER
+        timer_start INTEGER,
+        elapsed_time INTEGER DEFAULT 0
     );
 
     /* ============================= */
@@ -154,7 +161,14 @@ export async function initializeDatabase(db) {
 
   /*
   await db.execAsync(`
-    ALTER TABLE Workout ADD COLUMN duration_seconds INTEGER;
+    ALTER TABLE Workout ADD COLUMN original_start_time INTEGER;
+  `);
+  */
+  
+
+  /*
+  await db.execAsync(`
+    ALTER TABLE Workout ADD COLUMN elapsed_time INTEGER DEFAULT 0;
   `);
   */
 

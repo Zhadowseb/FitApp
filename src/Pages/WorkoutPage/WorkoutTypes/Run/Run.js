@@ -41,47 +41,152 @@ const Run = ({workout_id}) =>  {
 
 
     //Workout timer state:
-    const [hasStarted, setHasStarted] = useState(false);
-    const [isRunning, setIsRunning] = useState(false);
-    const [isFinished, setIsFinished] = useState(false);
+    const [original_start_time, set_original_start_time] = useState(null);
+    const [timer_start, set_timer_start] = useState(null);
+    const [elapsed_time, set_elapsed_time] = useState(0);
 
-    const [sessionTime, setSessionTime] = useState(0);
-    const [currentSetIndex, setCurrentSetIndex] = useState(0);
-    const [remainingTime, setRemainingTime] = useState(0);
-    const [setsQueue, setSetsQueue] = useState([]);
+    const [isRunning, set_isRunning] = useState(false);
+    const [isDone, set_isDone] = useState(false);
+
+
+    useFocusEffect(
+        useCallback(() => {
+
+            const reload = async () => {
+                const row = await db.getFirstAsync(
+                    `SELECT 
+                        done,
+                        original_start_time,
+                        timer_start, 
+                        elapsed_time FROM Workout 
+                    WHERE workout_id = ?;`,
+                    [workout_id]
+                );
+
+                if(row.timer_start !== null){
+                    set_isRunning(true);
+                }
+                set_isDone(row.done === 1);
+                set_original_start_time(row.original_start_time);
+                set_timer_start(row.timer_start);
+                set_elapsed_time(row.elapsed_time);
+            }
+            reload();
+
+        }, [workout_id])
+    );
+
+    //Save leaving page
+    useFocusEffect(
+        useCallback(() => {
+
+            return () => {
+                
+                const saveState = async () => {
+
+                    await db.getFirstAsync(
+                        `UPDATE Workout
+                            SET timer_start = ?, 
+                            elapsed_time = ?
+                            WHERE workout_id = ?;`,
+                        [timer_start, elapsed_time, workout_id]
+                    );  
+                }
+                saveState();
+            };
+
+        }, [timer_start, elapsed_time])
+    );
 
     useEffect(() => {
-        if (!isRunning) return;
-
         const interval = setInterval(() => {
-            setSessionTime(prev => prev + 1);
+            
+            if(isRunning){
+                let time = computeElapsed();
+                set_elapsed_time(time);
+            }
 
-            setRemainingTime(prev => {
-                if (prev > 1) {
-                    return prev - 1;
-                }
-
-                setCurrentSetIndex(prevIndex => {
-                    const nextIndex = prevIndex + 1;
-
-                    if (nextIndex < setsQueue.length) {
-                    setRemainingTime(setsQueue[nextIndex].duration);
-                    return nextIndex;
-                    }
-
-                    setIsRunning(false);
-                    setIsFinished(true);
-                    return prevIndex;
-                });
-
-                return 0;
-            });
 
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [isRunning]);
+    }, [timer_start, isRunning, workout_id]);
 
+    const computeElapsed = () => {
+        if(timer_start === null){return}
+
+        const seconds = Math.floor(
+            elapsed_time + ((Date.now() - timer_start) / 1000)
+        );
+        return seconds;
+    }
+
+
+    const startWorkout = async () => {
+        set_isRunning(true);
+
+        const row = await db.getFirstAsync(
+            `SELECT original_start_time FROM Workout 
+            WHERE workout_id = ?;`,
+            [workout_id]
+        );
+
+        //Miliseconds since 1. januar 1970 at 00:00:00 UTC
+        const start_time = Date.now();
+
+        if(row.original_start_time === null){
+            set_original_start_time(start_time);
+            await db.runAsync(
+                `UPDATE Workout SET original_start_time = ? 
+                WHERE workout_id = ?;`,
+                [start_time, workout_id]
+            );
+        }
+        await db.runAsync(
+            `UPDATE Workout SET timer_start = ? WHERE workout_id = ?;`,
+            [start_time, workout_id]
+        );
+        set_timer_start(start_time);
+    };
+
+    const pauseWorkout = async () => {
+        set_isRunning(false);
+        set_timer_start(null);
+        
+        await db.runAsync(
+            `UPDATE Workout SET timer_start = NULL
+            WHERE workout_id = ?;`,
+            [workout_id]
+        );
+    };
+
+    const endWorkout = async () => {
+        set_isRunning(false);
+        set_isDone(true);
+        set_timer_start(null);
+        
+        await db.runAsync(
+            `UPDATE Workout SET done = 1
+            WHERE workout_id = ?;`,
+            [workout_id]
+        );
+    };
+
+    const restartWorkout = async () => {
+        await db.runAsync(
+            `UPDATE Workout SET 
+                original_start_time = NULL,
+                timer_start = NULL, 
+                elapsed_time = 0
+                WHERE workout_id = ?;`,
+            [workout_id]
+        );
+        set_original_start_time(null);
+        set_timer_start(null);
+        set_elapsed_time(0);
+        set_isRunning(false);
+        set_isDone(false);
+    }
 
     const addSet = async (setVariety) => {
         try {
@@ -105,53 +210,6 @@ const Run = ({workout_id}) =>  {
         }
     };
 
-    const startWorkout = async () => {
-        if (isFinished){
-            return;
-        }
-
-        if (hasStarted) {
-            setIsRunning(true);
-            return;
-        }
-
-        const queue = await buildSetsQueue();
-        if (!queue.length) return;
-
-        setSetsQueue(queue);
-        setCurrentSetIndex(0);
-        setRemainingTime(queue[0].duration);
-        setSessionTime(0);
-
-        setHasStarted(true);
-        setIsRunning(true);
-    };
-
-    const buildSetsQueue = async () => {
-        const rows = await db.getAllAsync(
-            `SELECT * FROM Run WHERE 
-            workout_id = ?
-            ORDER BY 
-            CASE type
-                WHEN 'WARMUP' THEN 1
-                WHEN 'WORKING_SET' THEN 2
-                WHEN 'COOLDOWN' THEN 3
-            END,
-            set_number ASC;`,
-            [workout_id]
-        );
-
-        return rows.map(r => ({
-            id: r.id,
-            type: r.type,
-            duration: Math.max(0, Number(r.time ?? 0)) * 60}));
-    };
-
-    const endWorkout = () => {
-        setIsRunning(false);
-        setIsFinished(true);
-    };
-
     return(
     <>
     <ScrollView>
@@ -164,7 +222,7 @@ const Run = ({workout_id}) =>  {
                         Session time
                     </ThemedText>
                     <ThemedText size={30}>
-                        {formatTime(sessionTime)}
+                        {formatTime(elapsed_time)}
                     </ThemedText>
                 </View>
 
@@ -172,25 +230,26 @@ const Run = ({workout_id}) =>  {
 
                     <View style={{paddingRight: 5}}>
                         <ThemedButton
-                            title={
-                                isFinished
-                                    ? "Finished"
-                                    : isRunning
-                                        ? "Running..."
-                                        : hasStarted
-                                            ? "Continue"
-                                            : "Start workout"}
+                            title={"start"/*
+                                isFinished ? 
+                                    "Finished"
+                                    : isRunning ? 
+                                        "Running..."
+                                        : hasStarted ? 
+                                            "Continue"
+                                            : "Start workout"*/}
                             onPress={startWorkout}
-                            variant='secondary'>
+                            variant='secondary'
+                            disabled={isDone || isRunning}>
                         </ThemedButton>
                     </View>
 
                     <View>
                         <ThemedButton
                             title={"Pause"}
-                            onPress={ () => {setIsRunning(false)}}
+                            onPress={pauseWorkout}
                             variant='primary'
-                            disabled={!isRunning || isFinished}>
+                            disabled={!isRunning || isDone}>
                         </ThemedButton>
                     </View>
 
@@ -199,9 +258,22 @@ const Run = ({workout_id}) =>  {
                             title={"End Workout"}
                             onPress={endWorkout}
                             variant='danger'
-                            disabled={!hasStarted || isFinished}>
+                            disabled={
+                                original_start_time === null ||
+                                isDone}>
                         </ThemedButton>
                     </View>
+                </View>
+
+                <View style={{paddingTop: 5}}>
+                    <ThemedButton
+                        title={"Restart"}
+                        onPress={restartWorkout}
+                        variant='danger'
+                        disabled={
+                            original_start_time === null ||
+                            !isDone}>
+                    </ThemedButton>
                 </View>
             </View>
 
@@ -234,10 +306,6 @@ const Run = ({workout_id}) =>  {
             empty={set_WarmupEmpty}
             workout_id={workout_id}
             type="WARMUP" 
-            activeSetId={setsQueue[currentSetIndex]?.id}
-            remainingTime={remainingTime}
-            isRunning={isRunning}
-            hasStarted={hasStarted}
             />
     </View>
 
@@ -269,10 +337,6 @@ const Run = ({workout_id}) =>  {
             empty={set_WorkingEmpty}
             workout_id={workout_id}
             type="WORKING_SET"
-            activeSetId={setsQueue[currentSetIndex]?.id}
-            remainingTime={remainingTime}
-            isRunning={isRunning}
-            hasStarted={hasStarted}
         />
 
     </View>
@@ -304,10 +368,6 @@ const Run = ({workout_id}) =>  {
             empty={set_CooldownEmpty}
             workout_id={workout_id}
             type="COOLDOWN"
-            activeSetId={setsQueue[currentSetIndex]?.id}
-            remainingTime={remainingTime}
-            isRunning={isRunning}
-            hasStarted={hasStarted}
         />
     </View>
     </ScrollView>

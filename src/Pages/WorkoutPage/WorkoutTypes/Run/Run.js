@@ -1,12 +1,13 @@
 import { StatusBar } from 'expo-status-bar';
 import { View, Button, ScrollView, Text, TouchableOpacity, Switch } from 'react-native';
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
 import RunSetList from "./RunSetList";
 import ListHeader from './ListHeader';
 
-import { useColorScheme } from "react-native";
+
+import { useColorScheme, Vibration } from "react-native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 
 import { ThemedTitle, 
@@ -49,6 +50,8 @@ const Run = ({workout_id}) =>  {
     const [activeSet, set_activeSet] = useState("");
     const [activeSet_remainingTime, set_activeSet_remainingTime] = useState(0);
     const [isDone, set_isDone] = useState(false);
+
+    const previousActiveSetRef = useRef(null);
 
 
     //Focus coming back to the page
@@ -140,6 +143,8 @@ const Run = ({workout_id}) =>  {
                 WHERE workout_id = ?;`,
                 [start_time, workout_id]
             );
+        } else {
+            Vibration.vibrate(500);
         }
         await db.runAsync(
             `UPDATE Workout SET timer_start = ? WHERE workout_id = ?;`,
@@ -149,6 +154,8 @@ const Run = ({workout_id}) =>  {
     };
 
     const pauseWorkout = async () => {
+        
+        Vibration.vibrate([0, 100, 100, 100]);
         set_isRunning(false);
         set_timer_start(null);
         
@@ -205,9 +212,7 @@ const Run = ({workout_id}) =>  {
         for (let i = 0; i < sets.length; i++) { 
             const setDuration = (sets[i].time ?? 0) * 60; 
        
-            // Hvis vi har mere elapsed end dette set varer 
              if (remainingElapsed >= setDuration) { 
-                // Marker set som done hvis det ikke allerede er det 
                 if (!sets[i].done) { 
                     await db.runAsync( 
                         `UPDATE Run SET done = 1 WHERE Run_id = ?;`, 
@@ -215,7 +220,20 @@ const Run = ({workout_id}) =>  {
                     } 
                 remainingElapsed -= setDuration; 
             } else {  
-                set_activeSet(sets[i].Run_id);
+
+                const newActiveSet = sets[i].Run_id;
+                //Vibration function for sets.
+                if (previousActiveSetRef.current !== newActiveSet) {
+                    previousActiveSetRef.current = newActiveSet;
+
+                    if (sets[i].is_pause) {
+                        Vibration.vibrate([0, 100, 100, 100]);
+                    } else {
+                        Vibration.vibrate(500);
+                    }
+                }
+
+                set_activeSet(newActiveSet);
                 set_activeSet_remainingTime(
                     Math.max(0, setDuration - remainingElapsed)); 
                 return; 

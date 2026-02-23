@@ -217,9 +217,9 @@ const Run = ({workout_id}) =>  {
         <ThemedCard style={{alignItems: "center"}}>
 
             <View style={{flexDirection: "column", alignItems: "center"}}>
-                <View style={{paddingBottom: 20, alignItems: "center"}}>
+                <View style={{paddingBottom: 10, alignItems: "center"}}>
                     <ThemedText size={15}>
-                        Session time
+                        Elapsed time
                     </ThemedText>
                     <ThemedText size={30}>
                         {formatTime(elapsed_time)}
@@ -228,22 +228,21 @@ const Run = ({workout_id}) =>  {
 
                 <View style={{flexDirection: "row"}}>
 
+                    {!isRunning && !isDone && (
                     <View style={{paddingRight: 5}}>
                         <ThemedButton
-                            title={"start"/*
-                                isFinished ? 
-                                    "Finished"
-                                    : isRunning ? 
-                                        "Running..."
-                                        : hasStarted ? 
-                                            "Continue"
-                                            : "Start workout"*/}
+                            title={
+                                (original_start_time !== null) ?
+                                    "Continue"
+                                    : "Start" }
                             onPress={startWorkout}
                             variant='secondary'
                             disabled={isDone || isRunning}>
                         </ThemedButton>
                     </View>
+                    )}
 
+                    {isRunning && (
                     <View>
                         <ThemedButton
                             title={"Pause"}
@@ -252,7 +251,9 @@ const Run = ({workout_id}) =>  {
                             disabled={!isRunning || isDone}>
                         </ThemedButton>
                     </View>
+                    )}
 
+                    {!isRunning && !isDone && (original_start_time !== null) && (
                     <View style={{paddingLeft: 5}}>
                         <ThemedButton
                             title={"End Workout"}
@@ -263,17 +264,21 @@ const Run = ({workout_id}) =>  {
                                 isDone}>
                         </ThemedButton>
                     </View>
-                </View>
+                    )}
 
-                <View style={{paddingTop: 5}}>
-                    <ThemedButton
-                        title={"Restart"}
-                        onPress={restartWorkout}
-                        variant='danger'
-                        disabled={
-                            original_start_time === null ||
-                            !isDone}>
-                    </ThemedButton>
+                    {isDone && (
+                        <View style={{paddingTop: 5}}>
+                            <ThemedButton
+                                title={"Restart"}
+                                onPress={restartWorkout}
+                                variant='danger'
+                                disabled={
+                                    original_start_time === null ||
+                                    !isDone}>
+                            </ThemedButton>
+                        </View>
+                    )}
+
                 </View>
             </View>
 

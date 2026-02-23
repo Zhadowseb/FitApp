@@ -47,12 +47,13 @@ const Run = ({workout_id}) =>  {
 
     const [isRunning, set_isRunning] = useState(false);
     const [activeSet, set_activeSet] = useState("");
+    const [activeSet_remainingTime, set_activeSet_remainingTime] = useState(0);
     const [isDone, set_isDone] = useState(false);
 
 
+    //Focus coming back to the page
     useFocusEffect(
         useCallback(() => {
-
             const reload = async () => {
                 const row = await db.getFirstAsync(
                     `SELECT 
@@ -67,7 +68,7 @@ const Run = ({workout_id}) =>  {
                 if(row.timer_start !== null){
                     set_isRunning(true);
                 }
-                set_isDone(row.done === 1);
+                set_isDone(Number(row.done) === 1);
                 set_original_start_time(row.original_start_time);
                 set_timer_start(row.timer_start);
                 set_elapsed_time(row.elapsed_time);
@@ -80,11 +81,9 @@ const Run = ({workout_id}) =>  {
     //Save leaving page
     useFocusEffect(
         useCallback(() => {
-
             return () => {
                 
                 const saveState = async () => {
-
                     await db.getFirstAsync(
                         `UPDATE Workout
                             SET timer_start = ?, 
@@ -107,7 +106,6 @@ const Run = ({workout_id}) =>  {
                 set_elapsed_time(time);
                 calculateActiveSet(time);
             }
-
 
         }, 1000);
 
@@ -176,6 +174,7 @@ const Run = ({workout_id}) =>  {
     const restartWorkout = async () => {
         await db.runAsync(
             `UPDATE Workout SET 
+                done = 0,
                 original_start_time = NULL,
                 timer_start = NULL, 
                 elapsed_time = 0
@@ -187,6 +186,7 @@ const Run = ({workout_id}) =>  {
         set_elapsed_time(0);
         set_isRunning(false);
         set_isDone(false);
+        triggerReload();
     }
 
     const calculateActiveSet = async (currentElapsed) => {
@@ -214,9 +214,10 @@ const Run = ({workout_id}) =>  {
                         [sets[i].Run_id] ); 
                     } 
                 remainingElapsed -= setDuration; 
-            } else { 
-                // Dette er aktivt set 
-                set_activeSet(sets[i].Run_id); 
+            } else {  
+                set_activeSet(sets[i].Run_id);
+                set_activeSet_remainingTime(
+                    Math.max(0, setDuration - remainingElapsed)); 
                 return; 
             } 
         } 
@@ -366,6 +367,7 @@ const Run = ({workout_id}) =>  {
             workout_id={workout_id}
             type="WARMUP" 
             activeSet={activeSet}
+            activeSet_remainingTime={activeSet_remainingTime}
             />
     </View>
 
@@ -398,6 +400,7 @@ const Run = ({workout_id}) =>  {
             workout_id={workout_id}
             type="WORKING_SET"
             activeSet={activeSet}
+            activeSet_remainingTime={activeSet_remainingTime}
         />
 
     </View>
@@ -430,6 +433,7 @@ const Run = ({workout_id}) =>  {
             workout_id={workout_id}
             type="COOLDOWN"
             activeSet={activeSet}
+            activeSet_remainingTime={activeSet_remainingTime}
         />
     </View>
     </ScrollView>

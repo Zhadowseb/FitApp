@@ -25,6 +25,7 @@ const RunSetList = ({
   reloadKey,
   triggerReload,
   activeSet,
+  activeSet_remainingTime,
 }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
@@ -153,13 +154,12 @@ const RunSetList = ({
         <ListHeader styles={styles} />
 
         {sets.map((set, index) => {
-        const isActive = set.Run_id === true;
+        const isActive = activeSet === set.Run_id;
 
         return (
           <View key={set.Run_id} 
             style={[styles.grid, 
-              isActive && styles.timeRunning,
-              activeSet === set.Run_id && {backgroundColor: "#FFF"}]}>
+              isActive && styles.timeRunning]}>
             
             
             {/* SET NUMBER / PAUSE */}
@@ -228,9 +228,9 @@ const RunSetList = ({
             <View style={[styles.time, styles.sharedGrid,
                 index === sets.length - 1 && styles.lastGrid]}>
 
-              {set.Run_id === true ? (
+              {isActive ? (
                 <ThemedText style={{ textAlign: "center", fontWeight: "600" }}>
-                  TIMER
+                  {formatTime(activeSet_remainingTime)}
                 </ThemedText>
               ) : (
                 <ThemedEditableCell

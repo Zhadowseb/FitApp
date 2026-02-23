@@ -24,6 +24,7 @@ const RunSetList = ({
   empty,
   reloadKey,
   triggerReload,
+  activeSet,
 }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
@@ -157,7 +158,8 @@ const RunSetList = ({
         return (
           <View key={set.Run_id} 
             style={[styles.grid, 
-              isActive && styles.timeRunning]}>
+              isActive && styles.timeRunning,
+              activeSet === set.Run_id && {backgroundColor: "#FFF"}]}>
             
             
             {/* SET NUMBER / PAUSE */}

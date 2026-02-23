@@ -46,6 +46,7 @@ const Run = ({workout_id}) =>  {
     const [elapsed_time, set_elapsed_time] = useState(0);
 
     const [isRunning, set_isRunning] = useState(false);
+    const [activeSet, set_activeSet] = useState("");
     const [isDone, set_isDone] = useState(false);
 
 
@@ -104,6 +105,7 @@ const Run = ({workout_id}) =>  {
             if(isRunning){
                 let time = computeElapsed();
                 set_elapsed_time(time);
+                calculateActiveSet(time);
             }
 
 
@@ -120,7 +122,6 @@ const Run = ({workout_id}) =>  {
         );
         return seconds;
     }
-
 
     const startWorkout = async () => {
         set_isRunning(true);
@@ -186,6 +187,43 @@ const Run = ({workout_id}) =>  {
         set_elapsed_time(0);
         set_isRunning(false);
         set_isDone(false);
+    }
+
+    const calculateActiveSet = async (currentElapsed) => {
+        const sets = await db.getAllAsync( 
+            `SELECT * FROM Run WHERE workout_id = ? 
+                ORDER BY 
+                    CASE type 
+                        WHEN 'WARMUP' THEN 1 
+                        WHEN 'WORKING_SET' THEN 2 
+                        WHEN 'COOLDOWN' THEN 3 
+                    END, 
+                set_number ASC;`, [workout_id] );
+
+        let remainingElapsed = currentElapsed; 
+
+        for (let i = 0; i < sets.length; i++) { 
+            const setDuration = (sets[i].time ?? 0) * 60; 
+       
+            // Hvis vi har mere elapsed end dette set varer 
+             if (remainingElapsed >= setDuration) { 
+                // Marker set som done hvis det ikke allerede er det 
+                if (!sets[i].done) { 
+                    await db.runAsync( 
+                        `UPDATE Run SET done = 1 WHERE Run_id = ?;`, 
+                        [sets[i].Run_id] ); 
+                    } 
+                remainingElapsed -= setDuration; 
+            } else { 
+                // Dette er aktivt set 
+                set_activeSet(sets[i].Run_id); 
+                return; 
+            } 
+        } 
+                
+        // Hvis vi når hertil → alle sets er færdige 
+        setCurrentSetId(null); 
+        setRemainingTime(0);
     }
 
     const addSet = async (setVariety) => {
@@ -327,6 +365,7 @@ const Run = ({workout_id}) =>  {
             empty={set_WarmupEmpty}
             workout_id={workout_id}
             type="WARMUP" 
+            activeSet={activeSet}
             />
     </View>
 
@@ -358,6 +397,7 @@ const Run = ({workout_id}) =>  {
             empty={set_WorkingEmpty}
             workout_id={workout_id}
             type="WORKING_SET"
+            activeSet={activeSet}
         />
 
     </View>
@@ -389,6 +429,7 @@ const Run = ({workout_id}) =>  {
             empty={set_CooldownEmpty}
             workout_id={workout_id}
             type="COOLDOWN"
+            activeSet={activeSet}
         />
     </View>
     </ScrollView>

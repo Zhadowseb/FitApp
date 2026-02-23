@@ -23,7 +23,7 @@ import WorkoutStopwatch from '../../../../Resources/Components/StopWatch';
 import Plus from '../../../../Resources/Icons/UI-icons/Plus';
 import styles from './RunStyle';
 
-import { formatTime } from '../../../../Utils/timeUtils';
+import { formatTime, formatWorkoutStart } from '../../../../Utils/timeUtils';
 
 const Run = ({workout_id}) =>  {
     const colorScheme = useColorScheme();
@@ -218,6 +218,22 @@ const Run = ({workout_id}) =>  {
 
             <View style={{flexDirection: "column", alignItems: "center"}}>
                 <View style={{paddingBottom: 10, alignItems: "center"}}>
+                    
+                    {original_start_time !== null ? (
+                        <View> 
+                            <ThemedText size={10} setColor={theme.quietText}>
+                                Workout started on:
+                            </ThemedText>
+                            <ThemedText size={10} setColor={theme.quietText}>
+                                {formatWorkoutStart(original_start_time)}
+                            </ThemedText>
+                        </View>
+                    ) : (
+                        <ThemedText size={10} setColor={theme.quietText}>
+                            workout has not been started yet.
+                        </ThemedText>
+                    )}
+
                     <ThemedText size={15}>
                         Elapsed time
                     </ThemedText>

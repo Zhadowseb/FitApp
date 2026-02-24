@@ -4,6 +4,8 @@ import { SQLiteProvider } from 'expo-sqlite';
 import { initializeDatabase } from './src/Database/db';
 import { useColorScheme, StatusBar } from "react-native"
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import * as TaskManager from 'expo-task-manager';
+import * as Location from 'expo-location';
 
 
 import HomePage from './src/Pages/HomePage/HomePage';
@@ -18,8 +20,40 @@ import ExerciseStoragePage from "./src/Pages/ExerciseStoragePage/ExerciseStorage
 
 import { Colors } from './src/Resources/GlobalStyling/colors';
 
-const Stack = createNativeStackNavigator();
+import * as SQLite from 'expo-sqlite';
 
+const LOCATION_TASK = 'background-location-task';
+
+TaskManager.defineTask(LOCATION_TASK, async ({ data, error }) => {
+  if (error) return;
+  if (!data?.locations?.length) return;
+
+  const db = await SQLite.openDatabaseAsync('datab.db');
+
+  const workout = await db.getFirstAsync(
+    `SELECT workout_id FROM Workout WHERE is_active = 1 LIMIT 1;`
+  );
+
+  if (!workout) return;
+
+  for (const location of data.locations) {
+    await db.runAsync(
+      `INSERT INTO LocationLog 
+       (workout_id, latitude, longitude, accuracy, timestamp)
+       VALUES (?, ?, ?, ?, ?);`,
+      [
+        workout.workout_id,
+        location.coords.latitude,
+        location.coords.longitude,
+        location.coords.accuracy,
+        location.timestamp
+      ]
+    );
+  }
+});
+
+
+const Stack = createNativeStackNavigator();
 export default function App() {
 
   const colorScheme = useColorScheme()

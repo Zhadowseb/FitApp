@@ -5,7 +5,8 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
 import RunSetList from "./RunSetList";
 import ListHeader from './ListHeader';
-
+import * as Location from 'expo-location';
+import * as TaskManager from 'expo-task-manager';
 
 import { useColorScheme, Vibration } from "react-native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
@@ -26,6 +27,7 @@ import styles from './RunStyle';
 
 import { formatTime, formatWorkoutStart } from '../../../../Utils/timeUtils';
 
+const LOCATION_TASK = 'background-location-task';
 const Run = ({workout_id}) =>  {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme] ?? Colors.light;
@@ -127,6 +129,8 @@ const Run = ({workout_id}) =>  {
     const startWorkout = async () => {
         set_isRunning(true);
 
+        await startTracking();
+
         const row = await db.getFirstAsync(
             `SELECT original_start_time FROM Workout 
             WHERE workout_id = ?;`,
@@ -146,11 +150,36 @@ const Run = ({workout_id}) =>  {
         } else {
             Vibration.vibrate(500);
         }
+
         await db.runAsync(
             `UPDATE Workout SET timer_start = ? WHERE workout_id = ?;`,
             [start_time, workout_id]
         );
+
+        //Start location tracking.
+        await db.runAsync(
+            `UPDATE Workout SET is_active = 1 WHERE workout_id = ?`,
+            [workout_id]
+        );
+
         set_timer_start(start_time);
+    };
+
+    const startTracking = async () => {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+
+        await Location.requestBackgroundPermissionsAsync();
+
+        const hasStarted = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK);
+        if (hasStarted) return;
+
+        await Location.startLocationUpdatesAsync(LOCATION_TASK, {
+            accuracy: Location.Accuracy.High,
+            timeInterval: 2000,         //Miliseconds - aka 2 seconds
+            distanceInterval: 5,        //Meters - aka 5 meters
+            showsBackgroundLocationIndicator: true,
+        });
     };
 
     const pauseWorkout = async () => {
@@ -170,10 +199,19 @@ const Run = ({workout_id}) =>  {
         set_isRunning(false);
         set_isDone(true);
         set_timer_start(null);
+
+        await Location.stopLocationUpdatesAsync(LOCATION_TASK);
         
+        //Set workout done
         await db.runAsync(
             `UPDATE Workout SET done = 1
             WHERE workout_id = ?;`,
+            [workout_id]
+        );
+
+        //Stop location tracking
+        await db.runAsync(
+            `UPDATE Workout SET is_active = 0 WHERE workout_id = ?`,
             [workout_id]
         );
     };

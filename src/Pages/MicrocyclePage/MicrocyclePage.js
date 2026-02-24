@@ -6,6 +6,7 @@ import { useNavigation } from "@react-navigation/native";
 import styles from "./MicrocyclePageStyle";
 import MicrocycleList from "./Components/MicrocycleList/MicrocycleList";
 import ThreeDots from "../../Resources/Icons/UI-icons/ThreeDots";
+import Plus from "../../Resources/Icons/UI-icons/Plus";
 
 import { ThemedButton, 
     ThemedBottomSheet, 
@@ -15,15 +16,31 @@ import { ThemedButton,
     ThemedTitle, 
     ThemedPicker } from "../../Resources/ThemedComponents";
 
+import { parseCustomDate, formatDate, getTodaysDate } from "../../Utils/dateUtils";
+
 const MicrocyclePage = ( {route} ) => {
     const db = useSQLiteContext();
     const navigation = useNavigation();
 
-    const {mesocycle_id, mesocycle_number, mesocycle_focus, program_id, period_start, period_end} = route.params;
+    const {mesocycle_id, 
+            mesocycle_number, 
+            mesocycle_focus, 
+            program_id, 
+            period_start, 
+            period_end} = route.params;
 
     const [refreshing, set_refreshing] = useState(0);
     const [OptionsBottomsheet_visible, set_OptionsBottomsheet_visible] = useState(false);
     const [focus, set_focus] = useState(mesocycle_focus);
+
+    const weekDays = [
+        'Monday', 
+        'Tuesday', 
+        'Wednesday', 
+        'Thursday', 
+        'Friday', 
+        'Saturday', 
+        'Sunday'];
 
     const updateUI = () => {
         set_refreshing(prev => prev + 1);
@@ -118,6 +135,49 @@ const MicrocyclePage = ( {route} ) => {
     }
   }
 
+    const addExtraWeek = async () => {
+        try {
+            //Get amount of weeks.
+            const get_weeks = await db.getAllAsync(
+                `SELECT microcycle_id, microcycle_number FROM Microcycle WHERE mesocycle_id = ?;`,
+                [mesocycle_id]
+            );
+            const weeks = get_weeks.length;
+
+            const get_lastDay = await db.getFirstAsync(
+                `SELECT date FROM Day WHERE 
+                    microcycle_id = ? AND
+                    Weekday = "Sunday";`,
+                [(get_weeks[weeks-1].microcycle_id)]
+            );
+
+            //Insert new week.
+            const microcycle_result = await db.runAsync(
+                `INSERT INTO Microcycle (mesocycle_id, program_id, microcycle_number) VALUES (?, ?, ?);`,
+                [mesocycle_id, program_id, (weeks + 1)]
+            );
+            const microcycle_id = microcycle_result.lastInsertRowId;
+
+            //Insert new days.
+            for(let day = 1; day <= 7; day++){
+
+                const date = parseCustomDate(get_lastDay.date);
+                date.setDate(date.getDate() + day);
+
+                await db.runAsync(
+                    `INSERT INTO Day (microcycle_id, program_id, Weekday, date) VALUES (?,?,?,?);`,
+                    [microcycle_id, program_id, weekDays[day-1], formatDate(date)]
+                )
+            }
+
+            updateUI();
+            set_OptionsBottomsheet_visible(false);
+
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
 
     return (
         <>
@@ -183,12 +243,27 @@ const MicrocyclePage = ( {route} ) => {
                         ]}
                     />
                 </View>
+
             </View>
 
             <View style={styles.bottomsheet_body}>
+                {/* Add on week. */}
+                <TouchableOpacity 
+                    style={styles.option}
+                    onPress={async () => {
+                        addExtraWeek();
+                    }}>
 
+                    <Plus
+                        width={24}
+                        height={24}/>
+                    <ThemedText style={styles.option_text}> 
+                        Add week to mesocycle.
+                    </ThemedText>
 
+                </TouchableOpacity>
             </View>
+
 
         </ThemedBottomSheet>
         </>

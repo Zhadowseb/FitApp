@@ -37,6 +37,15 @@ export default StyleSheet.create({
         padding: 20,
         paddingLeft: 0,
     },
+    option: {
+        flexDirection: "row",
+        paddingTop: 20,
+    },
+    option_text: {
+        paddingLeft: 10,
+        fontWeight: 600,
+        fontSize: 16,
+    },
     focus: {
         flex: 8,
         justifyContent: "center",

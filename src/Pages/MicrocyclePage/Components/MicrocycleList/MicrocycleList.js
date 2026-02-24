@@ -23,6 +23,7 @@ import { ThemedCard,
         ThemedPicker,
         ThemedTitle } from "../../../../Resources/ThemedComponents";
 import { formatDate, parseCustomDate } from "../../../../Utils/dateUtils";
+import Delete from "../../../../Resources/Icons/UI-icons/Delete";
 
 const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, refreshKey, updateui} ) => {
   const colorScheme = useColorScheme();
@@ -332,6 +333,62 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
   };
 
 
+  const deleteMicrocycle = async (microcycle_id) => {
+    await db.execAsync("BEGIN TRANSACTION");
+
+    try {
+      await db.runAsync(`
+        DELETE FROM Sets
+        WHERE exercise_id IN (
+          SELECT e.exercise_id
+          FROM Exercise e
+          JOIN Workout w ON w.workout_id = e.workout_id
+          JOIN Day d ON d.day_id = w.day_id
+          WHERE d.microcycle_id = ?
+        )
+      `, [microcycle_id]);
+
+      await db.runAsync(`
+        DELETE FROM Exercise
+        WHERE workout_id IN (
+          SELECT w.workout_id
+          FROM Workout w
+          JOIN Day d ON d.day_id = w.day_id
+          WHERE d.microcycle_id = ?
+        )
+      `, [microcycle_id]);
+
+      await db.runAsync(`
+        DELETE FROM Workout
+        WHERE day_id IN (
+          SELECT day_id
+          FROM Day
+          WHERE microcycle_id = ?
+        )
+      `, [microcycle_id]);
+
+      await db.runAsync(`
+        DELETE FROM Day
+        WHERE microcycle_id = ?
+      `, [microcycle_id]);
+
+      await db.runAsync(`
+        DELETE FROM Microcycle
+        WHERE microcycle_id = ?
+      `, [microcycle_id]);
+
+      await db.execAsync("COMMIT");
+
+      updateui(); // refresh list
+      set_OptionsBottomsheet_visible(false);
+
+    } catch (e) {
+      await db.execAsync("ROLLBACK");
+      console.error("deleteMicrocycle failed:", e);
+    }
+  };
+
+
 
   /*
   Add in total sets for each exercise.
@@ -477,6 +534,22 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
                   height={24}/>
               <ThemedText style={styles.option_text}> 
                   Copy workouts to a different week
+              </ThemedText>
+
+          </TouchableOpacity>
+
+          {/* Delete microcycle */}
+          <TouchableOpacity 
+              style={styles.option}
+              onPress={async () => {
+                await deleteMicrocycle(selectedWeek.microcycle_id);
+              }}>
+
+              <Delete
+                  width={24}
+                  height={24}/>
+              <ThemedText style={styles.option_text}> 
+                  Delete Week.
               </ThemedText>
 
           </TouchableOpacity>

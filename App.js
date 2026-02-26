@@ -23,7 +23,6 @@ import { Colors } from './src/Resources/GlobalStyling/colors';
 import * as SQLite from 'expo-sqlite';
 
 const LOCATION_TASK = 'background-location-task';
-
 TaskManager.defineTask(LOCATION_TASK, async ({ data, error }) => {
   if (error) return;
   if (!data?.locations?.length) return;
@@ -36,6 +35,7 @@ TaskManager.defineTask(LOCATION_TASK, async ({ data, error }) => {
 
   if (!workout) return;
 
+  
   for (const location of data.locations) {
     await db.runAsync(
       `INSERT INTO LocationLog 
@@ -49,7 +49,9 @@ TaskManager.defineTask(LOCATION_TASK, async ({ data, error }) => {
         location.timestamp
       ]
     );
-  }
+  } 
+
+  console.log("inserted new location.");
 });
 
 

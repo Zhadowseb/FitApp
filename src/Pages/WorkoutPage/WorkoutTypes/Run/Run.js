@@ -4,9 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
 import RunSetList from "./RunSetList";
-import ListHeader from './ListHeader';
 import * as Location from 'expo-location';
-import * as TaskManager from 'expo-task-manager';
 
 import { useColorScheme, Vibration } from "react-native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
@@ -129,8 +127,6 @@ const Run = ({workout_id}) =>  {
     const startWorkout = async () => {
         set_isRunning(true);
 
-        await startTracking();
-
         const row = await db.getFirstAsync(
             `SELECT original_start_time FROM Workout 
             WHERE workout_id = ?;`,
@@ -163,6 +159,7 @@ const Run = ({workout_id}) =>  {
         );
 
         set_timer_start(start_time);
+        await startTracking();
     };
 
     const startTracking = async () => {
@@ -308,6 +305,7 @@ const Run = ({workout_id}) =>  {
     return(
     <>
     <ScrollView>
+
     <View>
         <ThemedCard style={{alignItems: "center"}}>
 

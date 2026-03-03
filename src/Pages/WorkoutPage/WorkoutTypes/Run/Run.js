@@ -176,6 +176,10 @@ const Run = ({workout_id}) =>  {
             timeInterval: 2000,         //Miliseconds - aka 2 seconds
             distanceInterval: 5,        //Meters - aka 5 meters
             showsBackgroundLocationIndicator: true,
+            foregroundService: {
+                notificationTitle: "Workout tracking active",
+                notificationBody: "Tracking your run...",
+            },
         });
     };
 
@@ -302,9 +306,90 @@ const Run = ({workout_id}) =>  {
         }
     };
 
+const [locationLogs, setLocationLogs] = useState([]);
+
+const loadLocationLogs = async () => {
+    try {
+        const rows = await db.getAllAsync(
+            `SELECT * FROM LocationLog
+             WHERE workout_id = ?
+             ORDER BY timestamp ASC;`,
+            [workout_id]
+        );
+
+        setLocationLogs(rows);
+
+    } catch (err) {
+        console.log("Error reading LocationLog:", err);
+    }
+};
+
+const clearLocationLogs = async () => {
+    try {
+        await db.runAsync(
+            `DELETE FROM LocationLog WHERE workout_id = ?;`,
+            [workout_id]
+        );
+
+        setLocationLogs([]);
+        console.log("Logs cleared");
+
+    } catch (err) {
+        console.log("Error clearing LocationLog:", err);
+    }
+};
+
     return(
     <>
     <ScrollView>
+
+<View style={{ padding: 10 }}>
+    <ThemedButton
+        title="Load Location Logs"
+        onPress={loadLocationLogs}
+        variant="secondary"
+    />
+</View>
+
+<View style={{ maxHeight: 250, marginHorizontal: 10 }}>
+    <ScrollView>
+        <ThemedText> {locationLogs.length} </ThemedText>
+        {locationLogs.map((row, index) => (
+            <View
+                key={row.id}
+                style={{
+                    paddingVertical: 6,
+                    borderBottomWidth: 1,
+                    borderColor: "#333"
+                }}
+            >
+                <ThemedText size={12}>
+                    #{index + 1}
+                </ThemedText>
+                <ThemedText size={12}>
+                    Lat: {row.latitude.toFixed(6)}
+                </ThemedText>
+                <ThemedText size={12}>
+                    Lng: {row.longitude.toFixed(6)}
+                </ThemedText>
+                <ThemedText size={12}>
+                    Acc: {row.accuracy}
+                </ThemedText>
+                <ThemedText size={12}>
+                    Time: {new Date(row.timestamp).toLocaleTimeString()}
+                </ThemedText>
+            </View>
+        ))}
+    </ScrollView>
+</View>
+
+<View style={{ padding: 10 }}>
+    <ThemedButton
+        title="Clear Location Logs"
+        onPress={clearLocationLogs}
+        variant="danger"
+    />
+</View>
 
     <View>
         <ThemedCard style={{alignItems: "center"}}>

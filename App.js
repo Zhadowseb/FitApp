@@ -30,7 +30,9 @@ TaskManager.defineTask(LOCATION_TASK, async ({ data, error }) => {
   const db = await SQLite.openDatabaseAsync('datab.db');
 
   const workout = await db.getFirstAsync(
-    `SELECT workout_id FROM Workout WHERE is_active = 1 LIMIT 1;`
+    `SELECT workout_id FROM Workout
+     WHERE is_active = 1 AND timer_start IS NOT NULL AND done = 0
+     LIMIT 1;`
   );
 
   if (!workout) return;

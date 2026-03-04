@@ -1,6 +1,6 @@
 // src/Components/ExerciseList/ExerciseList.js
 import { use, useState } from "react";
-import { View, Text, ScrollView } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
 import { useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
@@ -235,9 +235,15 @@ const ExerciseList = ( {workout_id, refreshing, updateUI} ) => {
     </View>
 
     <View style={{alignItems: "center", paddingTop: 30}}>
-      <Plus
-        width={30}
-        height={30} />
+
+      <TouchableOpacity
+        onPress={ () => {
+          
+        }}>
+        <Plus
+          width={30}
+          height={30} />
+      </TouchableOpacity>
     </View>
     </>
   );

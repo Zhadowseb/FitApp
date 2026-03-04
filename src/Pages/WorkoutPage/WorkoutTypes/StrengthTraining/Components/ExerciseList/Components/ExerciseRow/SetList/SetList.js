@@ -81,6 +81,22 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
       case "set":
         return (
         <TouchableOpacity
+          style={{
+            justifyContent: "center",
+            alignItems: "center",
+            width: "100%",
+            height: "100%",
+            borderTopWidth: 1,
+            borderLeftWidth: 1,
+            borderBottomWidth: 2,
+            borderRightWidth: 2,
+
+            borderTopColor: "rgb(48, 45, 43)",   // lys
+            borderLeftColor: "rgb(48, 45, 43)",
+
+            borderBottomColor: "rgb(8, 7, 7)", // mørk
+            borderRightColor: "rgb(8, 7, 7)",
+          }}
           onPress={() => {
             set_deleteSetModal_visible(true);
             set_selectedSet(set.sets_id);
@@ -150,8 +166,8 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
                 key={col.key}
                 style={[
                   styles.editable_cell,
-                  col.style,
                   styles.padding,
+                  col.style,
                   isFirst && { borderLeftWidth: 0 },
                   isLast && { borderRightWidth: 0 },
                   rowIndex === localSets.length - 1 && styles.lastGrid,

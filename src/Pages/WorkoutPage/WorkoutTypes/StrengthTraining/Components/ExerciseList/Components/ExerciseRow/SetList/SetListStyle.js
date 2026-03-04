@@ -16,7 +16,11 @@ export default StyleSheet.create({
         flex: 15,
         borderLeftWidth: 0,
     },
-    set:    {flex: 10},
+    set:    {
+        flex: 10,            
+        paddingTop: 0,
+        paddingBottom: 0
+    },
     x:      {flex: 5, maxWidth: 15},
     reps:   {flex: 17},
     weight: {flex: 20},

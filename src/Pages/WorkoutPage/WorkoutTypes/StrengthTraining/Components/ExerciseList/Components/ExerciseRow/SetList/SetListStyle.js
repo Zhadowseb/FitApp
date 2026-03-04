@@ -10,7 +10,7 @@ export default StyleSheet.create({
 
     padding: {
         paddingBottom: 5,
-        paddingTop: 8,
+        paddingTop: 5,
     },
     pause: {
         flex: 15,

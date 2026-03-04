@@ -90,6 +90,7 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
             borderLeftWidth: 1,
             borderBottomWidth: 2,
             borderRightWidth: 2,
+            backgroundColor: "rgb(32, 30, 29)",
 
             borderTopColor: "rgb(48, 45, 43)",   // lys
             borderLeftColor: "rgb(48, 45, 43)",

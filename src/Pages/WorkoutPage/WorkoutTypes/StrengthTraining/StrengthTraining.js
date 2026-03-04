@@ -79,26 +79,37 @@ const WorkoutPage = ({workout_id, date}) =>  {
 
       <ScrollView>
 
-        {/*
-        <View style={{alignItems: "center", justifyContent: "center"}}>
-            <ThemedTitle
-                type="h2">
-                Sets
-            </ThemedTitle>
+        <View style={{flexDirection: "row", justifyContent: "center"}}>
+          <View style={{alignItems: "center", justifyContent: "center"}}>
+              <ThemedTitle
+                  type="h3">
+                  Timer
+              </ThemedTitle>
 
-            <ThemedCard style={styles.sets}>
+              <ThemedCard>
+                <ThemedText> placeholder </ThemedText>
+              </ThemedCard>
+          </View>
+          
+          <View style={{alignItems: "center", justifyContent: "center"}}>
+              <ThemedTitle
+                  type="h3">
+                  Sets
+              </ThemedTitle>
 
-                <CircularProgression
-                size = {100}
-                strokeWidth = {10} 
-                text= {doneSets + "/" + totalSets}
-                textSize = {16}
-                progressPercent = {(doneSets/totalSets) * 100}
-                />
+              <ThemedCard>
 
-            </ThemedCard>
+                  <CircularProgression
+                  size = {80}
+                  strokeWidth = {10} 
+                  text= {doneSets + "/" + totalSets}
+                  textSize = {16}
+                  progressPercent = {(doneSets/totalSets) * 100}
+                  />
+
+              </ThemedCard>
+          </View>
         </View>
-        */}
 
         <View style={styles.working_sets}>
 

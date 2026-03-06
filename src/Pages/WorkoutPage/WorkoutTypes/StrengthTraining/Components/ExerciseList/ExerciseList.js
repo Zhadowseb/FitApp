@@ -9,10 +9,13 @@ import styles from "./ExerciseListStyle";
 
 import ExerciseRow from "./Components/ExerciseRow/ExerciseRow"
 import Plus from "../../../../../../Resources/Icons/UI-icons/Plus";
+import PickExerciseModal from "./Components/PickExerciseModal";
 
 const ExerciseList = ( {workout_id, refreshing, updateUI} ) => {
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const [pickExerciseModal_visible, set_pickExerciseModal_visible] = useState(false);
 
   const db = useSQLiteContext();
   const navigation = useNavigation();
@@ -238,13 +241,20 @@ const ExerciseList = ( {workout_id, refreshing, updateUI} ) => {
 
       <TouchableOpacity
         onPress={ () => {
-          
+          set_pickExerciseModal_visible(true);
         }}>
         <Plus
           width={30}
           height={30} />
       </TouchableOpacity>
     </View>
+
+    <PickExerciseModal
+      visible={pickExerciseModal_visible}
+      workout_id={workout_id}
+      onClose={() => set_pickExerciseModal_visible(false)}
+      onSubmit={loadExercises}
+    />
     </>
   );
 };

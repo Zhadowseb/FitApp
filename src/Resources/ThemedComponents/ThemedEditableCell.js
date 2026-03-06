@@ -24,7 +24,7 @@ const ThemedEditableCell = ({
   return (
     <View style={styles.wrapper}>
       <TextInput
-        value={localValue}
+        value={localValue ?? ""}
         onFocus={() => setFocused(true)}
         onBlur={() => {
           setFocused(false);
@@ -56,12 +56,13 @@ const ThemedEditableCell = ({
       )}
     </View>
   );
+
 };
 
 const styles = StyleSheet.create({
   wrapper: {
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "baseline",
     justifyContent: "center",
   },
   input: {

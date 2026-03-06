@@ -5,7 +5,6 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
 
 import ExerciseList from './Components/ExerciseList/ExerciseList';
-import EditModeAdditions from './Components/EditModeAdditions/EditModeAdditions';
 import CircularProgression from '../../../../Resources/Components/CircularProgression';
 import { useColorScheme } from "react-native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
@@ -26,7 +25,6 @@ const WorkoutPage = ({workout_id, date}) =>  {
 
   const db = useSQLiteContext();
 
-  const [editMode, set_editMode] = useState(false);
   const [refreshing, set_refreshing] = useState(0);
 
   const [totalSets, set_totalSets] = useState(0);
@@ -81,44 +79,45 @@ const WorkoutPage = ({workout_id, date}) =>  {
 
       <ScrollView>
 
-        <View style={{alignItems: "center", justifyContent: "center"}}>
-            <ThemedTitle
-                type="h2">
-                Sets
-            </ThemedTitle>
+        <View style={{flexDirection: "row", justifyContent: "center"}}>
+          <View style={{alignItems: "center", justifyContent: "center"}}>
+              <ThemedTitle
+                  type="h3">
+                  Timer
+              </ThemedTitle>
 
-            <ThemedCard style={styles.sets}>
+              <ThemedCard>
+                <ThemedText> placeholder </ThemedText>
+              </ThemedCard>
+          </View>
+          
+          <View style={{alignItems: "center", justifyContent: "center"}}>
+              <ThemedTitle
+                  type="h3">
+                  Sets
+              </ThemedTitle>
 
-                <CircularProgression
-                size = {100}
-                strokeWidth = {10} 
-                text= {doneSets + "/" + totalSets}
-                textSize = {16}
-                progressPercent = {(doneSets/totalSets) * 100}
-                />
+              <ThemedCard>
 
-            </ThemedCard>
+                  <CircularProgression
+                  size = {80}
+                  strokeWidth = {10} 
+                  text= {doneSets + "/" + totalSets}
+                  textSize = {16}
+                  progressPercent = {(doneSets/totalSets) * 100}
+                  />
+
+              </ThemedCard>
+          </View>
         </View>
 
         <View style={styles.working_sets}>
-          <ThemedTitle type={"h2"}>
-            Working sets
-          </ThemedTitle>
 
           <ExerciseList 
             workout_id = {workout_id}
-            editMode = {editMode}
             refreshing = {refreshing} 
             updateUI = {handleExerciseChange}/>
         </View> 
-        
-        {editMode && (
-          <EditModeAdditions 
-            workout_id={workout_id}
-            date={date}
-            onExerciseChange={handleExerciseChange}
-            deleteWorkout={deleteWorkout}/>
-        )}
 
       </ScrollView>
     </ThemedView>

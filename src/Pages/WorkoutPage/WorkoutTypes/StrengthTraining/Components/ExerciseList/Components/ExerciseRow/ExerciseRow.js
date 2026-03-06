@@ -87,7 +87,18 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
 
   return (
     <>
-      <View style={{flexDirection: "row", paddingTop: 20}}>
+      <View style={{
+        borderWidth: 0.2,
+        borderRadius: 20,
+        marginBottom: 5,
+        marginLeft: 3,
+        marginRight: 3,
+        borderColor: "#575656"}}>
+
+      <View style={{
+        paddingTop: 10,
+        paddingBottom: 10,
+        flexDirection: "row"}}>
       
       <View style={[styles.done_box]}>
           <ThemedBouncyCheckbox
@@ -178,6 +189,8 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
               />
         </View>
       )}
+
+      </View>
 
       <PanelSettingsModal
         visible={panelModalVisible}

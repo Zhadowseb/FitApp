@@ -148,7 +148,7 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
       <TouchableOpacity
         onPress={() => toggleExpanded(exercise.exercise_id)}>
 
-        {!expandedExercises[exercise.exercise_id] && (
+        {!expandedExercises[exercise.exercise_id] && exercise.sets.length !== 0 && (
           <ThemedCard style={{flexDirection: "row"}}>
             
             <View>

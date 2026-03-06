@@ -12,13 +12,19 @@ import { ThemedTextInput,
   ThemedSegmentedToggle } 
   from "../../../../../../../../Resources/ThemedComponents";
 
-export default function PanelSettingsModal({ visible, onClose, currentColumns  }) {
+export default function PanelSettingsModal({ 
+    visible, onClose, currentColumns, exercise_id, deleteExercise }) {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme] ?? Colors.light;
 
   const handleClose = () => {
     onClose(columns);
   };
+
+  const handleDelete = () => {
+    deleteExercise(exercise_id);
+    onClose(columns);
+  }
 
     useEffect(() => {
         if (visible) {
@@ -81,13 +87,11 @@ export default function PanelSettingsModal({ visible, onClose, currentColumns  }
 
         <View style={{alignItems: "center"}}>
             <ThemedButton
-                title={"Close"}
+                title={"Delete Exercise"}
                 variant="danger"
-                style={{width: 100}}
-                onPress={handleClose}/>
+                style={{width: 200}}
+                onPress={ () => handleDelete()}/>
         </View>
-
-
 
 
     </ThemedModal>

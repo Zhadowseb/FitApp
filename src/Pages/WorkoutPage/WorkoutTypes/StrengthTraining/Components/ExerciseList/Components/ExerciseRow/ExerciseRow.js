@@ -35,6 +35,7 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
   const [visibleColumns, set_VisibleColumns] = useState(exercise.visibleColumns);
 
   const [panelModalVisible, set_panelModalVisible] = useState(false);
+  const [selectedExercise, set_selectedExercise] = useState(null);
 
   const db = useSQLiteContext();
   const navigation = useNavigation();
@@ -53,8 +54,13 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
   const deleteExercise = async (exercise_id) => {
     try {
       await db.runAsync(
+        `DELETE FROM Sets WHERE exercise_id = ?;`,
+        [exercise_id]);
+
+      await db.runAsync(
         `DELETE FROM Exercise WHERE exercise_id = ?;`,
         [exercise_id]);
+ 
       updateUI?.();
     } catch (error) {
       console.error(error);
@@ -91,9 +97,9 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
         borderWidth: 0.2,
         borderRadius: 20,
         marginBottom: 5,
-        marginLeft: 3,
-        marginRight: 3,
-        borderColor: "#575656"}}>
+        marginLeft: 5,
+        marginRight: 5,
+        borderColor: "#858584"}}>
 
       <View style={{
         paddingTop: 10,
@@ -145,7 +151,10 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
         
         <View style={styles.ui_icons}>
         <TouchableOpacity
-          onPress={() => set_panelModalVisible(true)}>
+          onPress={() => {
+            set_panelModalVisible(true);
+            set_selectedExercise(exercise.exercise_id);
+          }}>
             <Cogwheel
               width={24}
               height={24} />
@@ -190,11 +199,14 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
         </View>
       )}
 
+      {/* White border wrapping exercise and sheets */}
       </View>
 
       <PanelSettingsModal
         visible={panelModalVisible}
         currentColumns={visibleColumns}
+        exercise_id={selectedExercise}
+        deleteExercise={deleteExercise}
         onClose={(columns) => {
           saveColumns(columns);
           set_panelModalVisible(false)

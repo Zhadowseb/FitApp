@@ -57,10 +57,6 @@ export async function initializeDatabase(db) {
         label TEXT, 
         done INTEGER NOT NULL DEFAULT 0,
 
-        /*======Old timer======*/
-        start_ts INTEGER NOT NULL DEFAULT 0,
-        duration_seconds INTEGER NOT NULL DEFAULT 0,
-
         /*======Workout Timer=======*/
         is_active INTEGER DEFAULT 0,
         original_start_time INTEGER,

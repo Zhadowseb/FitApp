@@ -56,8 +56,12 @@ export async function initializeDatabase(db) {
         date TEXT NOT NULL,
         label TEXT, 
         done INTEGER NOT NULL DEFAULT 0,
-        start_ts INTEGER NOT NULL DEFAULT 0,
-        duration_seconds INTEGER NOT NULL DEFAULT 0
+
+        /*======Workout Timer=======*/
+        is_active INTEGER DEFAULT 0,
+        original_start_time INTEGER,
+        timer_start INTEGER,
+        elapsed_time INTEGER DEFAULT 0
     );
 
     /* ============================= */
@@ -126,6 +130,22 @@ export async function initializeDatabase(db) {
     );
 
 
+    /* ============================= */
+    /* ============================= */
+    /* ===== Location tracking ===== */
+    /* ============================= */
+    /* ============================= */
+
+    CREATE TABLE IF NOT EXISTS LocationLog (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      workout_id INTEGER,
+      latitude REAL,
+      longitude REAL,
+      accuracy REAL,
+      timestamp INTEGER
+    );
+
+
     PRAGMA journal_mode = WAL;
 
     `
@@ -152,6 +172,16 @@ export async function initializeDatabase(db) {
       standard_exercises
     );
   }
+
+
+  /*
+  await db.execAsync(`
+    ALTER TABLE Workout ADD COLUMN is_active INTEGER DEFAULT 0;
+  `);
+  */
+  
+  
+  
 
   /*
   await db.execAsync(`

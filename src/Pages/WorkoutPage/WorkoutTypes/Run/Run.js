@@ -269,7 +269,6 @@ const Run = ({workout_id}) =>  {
                     } 
                 remainingElapsed -= setDuration; 
             } else {  
-
                 const newActiveSet = sets[i].Run_id;
                 //Vibration function for sets.
                 if (previousActiveSetRef.current !== newActiveSet) {

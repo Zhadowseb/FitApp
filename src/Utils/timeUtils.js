@@ -7,10 +7,10 @@ export const formatTime = (totalSeconds) => {
   const paddedSeconds = seconds < 10 ? `0${seconds}` : seconds;
 
   if (hours > 0) {
-    return `${hours}:${paddedMinutes}:${paddedSeconds}`;
+    return `${hours}:${paddedMinutes}.${paddedSeconds}`;
   }
 
-  return `${minutes}:${paddedSeconds}`;
+  return `${minutes}.${paddedSeconds}`;
 };
 
 export const formatWorkoutStart = (timestamp) => {

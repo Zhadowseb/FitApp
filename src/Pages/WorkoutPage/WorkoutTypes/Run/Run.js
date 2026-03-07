@@ -45,11 +45,11 @@ const Run = ({workout_id}) =>  {
     const [original_start_time, set_original_start_time] = useState(null);
     const [timer_start, set_timer_start] = useState(null);
     const [elapsed_time, set_elapsed_time] = useState(0);
+    const [isDone, set_isDone] = useState(false);
 
     const [isRunning, set_isRunning] = useState(false);
     const [activeSet, set_activeSet] = useState("");
     const [activeSet_remainingTime, set_activeSet_remainingTime] = useState(0);
-    const [isDone, set_isDone] = useState(false);
 
     const previousActiveSetRef = useRef(null);
 
@@ -105,24 +105,38 @@ const Run = ({workout_id}) =>  {
         const interval = setInterval(() => {
             
             if(isRunning){
-                let time = computeElapsed();
-                set_elapsed_time(time);
-                calculateActiveSet(time);
+                let currentTime = computeCurrentElapsed();
+                calculateActiveSet(elapsed_time + currentTime);
             }
 
         }, 1000);
 
         return () => clearInterval(interval);
     }, [timer_start, isRunning, workout_id]);
+    
 
-    const computeElapsed = () => {
-        if(timer_start === null){return}
+    const computeCurrentElapsed = () => {
+        if (!timer_start) return 0;
 
-        const seconds = Math.floor(
-            elapsed_time + ((Date.now() - timer_start) / 1000)
+        return Math.floor(
+            (Date.now() - timer_start) / 1000
         );
-        return seconds;
-    }
+    };
+
+    const updateElapsed = async () => {
+        const newElapsed = Math.floor(
+            elapsed_time + computeCurrentElapsed()
+        );
+        
+        await db.getFirstAsync(
+            `UPDATE Workout
+                SET elapsed_time = ?
+                WHERE workout_id = ?;`,
+            [newElapsed, workout_id]
+        );  
+
+        set_elapsed_time(newElapsed);
+    };
 
     const startWorkout = async () => {
         set_isRunning(true);
@@ -143,22 +157,18 @@ const Run = ({workout_id}) =>  {
                 WHERE workout_id = ?;`,
                 [start_time, workout_id]
             );
-        } else {
-            Vibration.vibrate(500);
-        }
+        } 
+        Vibration.vibrate(500);
+        set_timer_start(start_time);
 
-        await db.runAsync(
-            `UPDATE Workout SET timer_start = ? WHERE workout_id = ?;`,
-            [start_time, workout_id]
-        );
-
+        /*
         //Start location tracking.
         await db.runAsync(
             `UPDATE Workout SET is_active = 1 WHERE workout_id = ?`,
             [workout_id]
         );
+        */
 
-        set_timer_start(start_time);
         // await startTracking();
     };
 
@@ -187,15 +197,11 @@ const Run = ({workout_id}) =>  {
 
     const pauseWorkout = async () => {
         
+        updateElapsed();
+
         Vibration.vibrate([0, 100, 100, 100]);
         set_isRunning(false);
         set_timer_start(null);
-        
-        await db.runAsync(
-            `UPDATE Workout SET timer_start = NULL
-            WHERE workout_id = ?;`,
-            [workout_id]
-        );
     };
 
     const endWorkout = async () => {
@@ -212,11 +218,13 @@ const Run = ({workout_id}) =>  {
             [workout_id]
         );
 
+        /*
         //Stop location tracking
         await db.runAsync(
             `UPDATE Workout SET is_active = 0 WHERE workout_id = ?`,
             [workout_id]
         );
+        */
     };
 
     const restartWorkout = async () => {
@@ -281,9 +289,8 @@ const Run = ({workout_id}) =>  {
             } 
         } 
                 
-        // Hvis vi når hertil → alle sets er færdige 
-        setCurrentSetId(null); 
-        setRemainingTime(0);
+        set_activeSet(null);
+        set_activeSet_remainingTime(0);
     }
 
     const addSet = async (setVariety) => {
@@ -337,7 +344,7 @@ const Run = ({workout_id}) =>  {
                         Elapsed time
                     </ThemedText>
                     <ThemedText size={30}>
-                        {formatTime(elapsed_time)}
+                        {formatTime(elapsed_time + computeCurrentElapsed())}
                     </ThemedText>
                 </View>
 

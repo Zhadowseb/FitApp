@@ -46,8 +46,8 @@ const Run = ({workout_id}) =>  {
     const [timer_start, set_timer_start] = useState(null);
     const [elapsed_time, set_elapsed_time] = useState(0);
     const [isDone, set_isDone] = useState(false);
-
     const [isRunning, set_isRunning] = useState(false);
+    
     const [activeSet, set_activeSet] = useState("");
     const [activeSet_remainingTime, set_activeSet_remainingTime] = useState(0);
 

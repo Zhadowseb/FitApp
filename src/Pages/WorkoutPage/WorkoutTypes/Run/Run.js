@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
 import RunSetList from "./RunSetList";
-import * as Location from 'expo-location';
+// import * as Location from 'expo-location';
 
 import { useColorScheme, Vibration } from "react-native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
@@ -25,7 +25,7 @@ import styles from './RunStyle';
 
 import { formatTime, formatWorkoutStart } from '../../../../Utils/timeUtils';
 
-const LOCATION_TASK = 'background-location-task';
+// const LOCATION_TASK = 'background-location-task';
 const Run = ({workout_id}) =>  {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme] ?? Colors.light;
@@ -159,9 +159,10 @@ const Run = ({workout_id}) =>  {
         );
 
         set_timer_start(start_time);
-        await startTracking();
+        // await startTracking();
     };
 
+    /*
     const startTracking = async () => {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') return;
@@ -182,6 +183,7 @@ const Run = ({workout_id}) =>  {
             },
         });
     };
+    */
 
     const pauseWorkout = async () => {
         
@@ -201,7 +203,7 @@ const Run = ({workout_id}) =>  {
         set_isDone(true);
         set_timer_start(null);
 
-        await Location.stopLocationUpdatesAsync(LOCATION_TASK);
+        // await Location.stopLocationUpdatesAsync(LOCATION_TASK);
         
         //Set workout done
         await db.runAsync(
@@ -306,90 +308,9 @@ const Run = ({workout_id}) =>  {
         }
     };
 
-const [locationLogs, setLocationLogs] = useState([]);
-
-const loadLocationLogs = async () => {
-    try {
-        const rows = await db.getAllAsync(
-            `SELECT * FROM LocationLog
-             WHERE workout_id = ?
-             ORDER BY timestamp ASC;`,
-            [workout_id]
-        );
-
-        setLocationLogs(rows);
-
-    } catch (err) {
-        console.log("Error reading LocationLog:", err);
-    }
-};
-
-const clearLocationLogs = async () => {
-    try {
-        await db.runAsync(
-            `DELETE FROM LocationLog WHERE workout_id = ?;`,
-            [workout_id]
-        );
-
-        setLocationLogs([]);
-        console.log("Logs cleared");
-
-    } catch (err) {
-        console.log("Error clearing LocationLog:", err);
-    }
-};
-
     return(
     <>
     <ScrollView>
-
-<View style={{ padding: 10 }}>
-    <ThemedButton
-        title="Load Location Logs"
-        onPress={loadLocationLogs}
-        variant="secondary"
-    />
-</View>
-
-<View style={{ maxHeight: 250, marginHorizontal: 10 }}>
-    <ScrollView>
-        <ThemedText> {locationLogs.length} </ThemedText>
-        {locationLogs.map((row, index) => (
-            <View
-                key={row.id}
-                style={{
-                    paddingVertical: 6,
-                    borderBottomWidth: 1,
-                    borderColor: "#333"
-                }}
-            >
-                <ThemedText size={12}>
-                    #{index + 1}
-                </ThemedText>
-                <ThemedText size={12}>
-                    Lat: {row.latitude.toFixed(6)}
-                </ThemedText>
-                <ThemedText size={12}>
-                    Lng: {row.longitude.toFixed(6)}
-                </ThemedText>
-                <ThemedText size={12}>
-                    Acc: {row.accuracy}
-                </ThemedText>
-                <ThemedText size={12}>
-                    Time: {new Date(row.timestamp).toLocaleTimeString()}
-                </ThemedText>
-            </View>
-        ))}
-    </ScrollView>
-</View>
-
-<View style={{ padding: 10 }}>
-    <ThemedButton
-        title="Clear Location Logs"
-        onPress={clearLocationLogs}
-        variant="danger"
-    />
-</View>
 
     <View>
         <ThemedCard style={{alignItems: "center"}}>

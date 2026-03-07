@@ -19,23 +19,6 @@ export default function App() {
 
   const navigation = useNavigation();
 
-  const logCurrentLocation = async () => {
-    try {
-      // Request permission
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        console.log("Permission denied");
-        return;
-      }
-
-      // Get location
-      const location = await Location.getCurrentPositionAsync({});
-      console.log("My location:", location);
-    } catch (err) {
-      console.log("Location error:", err);
-    }
-  };
-
   return (
 
     <ThemedView style={styles.container}>
@@ -51,14 +34,6 @@ export default function App() {
         <ThemedButton
           title="Edit Exercise Choices" 
           onPress={() => navigation.navigate("ExerciseStoragePage")}
-        />
-      </View>
-
-      {/* 👇 NEW BUTTON */}
-      <View style={styles.button_spacing}>
-        <ThemedButton
-          title="Log My Location"
-          onPress={logCurrentLocation}
         />
       </View>
 

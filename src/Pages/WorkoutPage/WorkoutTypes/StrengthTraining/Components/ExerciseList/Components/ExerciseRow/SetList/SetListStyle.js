@@ -6,66 +6,40 @@ export default StyleSheet.create({
     container: {
         flexDirection: "row",
         flex: 1,
-        width: "100%",
     },
 
+    padding: {
+        paddingBottom: 5,
+        paddingTop: 5,
+    },
     pause: {
-        width: "15%",
+        flex: 15,
+        borderLeftWidth: 0,
     },
-    set: {
-        width: "10%",
-        borderLeftColor: "#555555ff",
-        borderLeftWidth: 1,
-        alignContent: "center",
-        alignItems: "center",
+    set:    {
+        flex: 10,            
+        paddingTop: 0,
+        paddingBottom: 0
     },
-    x: {
-        width: "5%",
-        borderLeftColor: "#555555ff",
-        borderLeftWidth: 1,
-        alignContent: "center",
-        alignItems: "center",
-    },
-    reps: {
-        width: "17%",
-        borderLeftColor: "#555555ff",
-        borderLeftWidth: 1,
-        alignContent: "center",
-        alignItems: "center",
-    },
-    weight: {
-        width: "20%",
-        borderLeftColor: "#555555ff",
-        borderLeftWidth: 1,
-        alignContent: "center",
-        alignItems: "center",
-    },
-    rpe: {
-        width: "17%",
-        borderLeftColor: "#555555ff",
-        borderLeftWidth: 1,
-        alignContent: "center",
-        alignItems: "center",
-    },
-    done: {
-        width: "15%",
-        borderLeftColor: "#555555ff",
-        borderLeftWidth: 1,
-    },  
+    x:      {flex: 5, maxWidth: 15},
+    reps:   {flex: 17},
+    weight: {flex: 20},
+    rpe:    {flex: 17},
+    done:   {flex: 15, maxWidth: 40},  
 
     override: {
-        borderLeftColor: "#ffffffff",
         borderLeftWidth: 0,
-        borderBottomColor: "#d3d3d3ff",
+        borderBottomColor: "#555555ff",
         borderBottomWidth: 1,
+        justifyContent: "center",
+        alignItems: "center",
     },
 
-    text: {
-        alignContent: "center",
-        alignItems: "center",
-        paddingBottom: 5,
-        paddingTop: 8,
+    titleText: {
+        fontWeight: "bold",
+        fontSize: 10,
     },
+
 
     editableInput: {
         borderWidth: 1,
@@ -91,5 +65,17 @@ export default StyleSheet.create({
     widthWeight: {
         minWidth: 45,
     },
+
+    editable_cell: {
+        borderLeftWidth: 0.2,
+        justifyContent: "center",
+        alignItems: "center",
+        borderColor: "#4b4b4bff",
+        borderBottomWidth: 0.2,
+    },
+    lastGrid: {
+        borderBottomWidth: 0,
+    },
+
 
 });

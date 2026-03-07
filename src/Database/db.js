@@ -75,6 +75,7 @@ export async function initializeDatabase(db) {
         workout_id INTEGER NOT NULL,
         exercise_name TEXT NOT NULL,
         sets INTEGER NOT NULL,
+        visible_columns TEXT,
 
         done INTEGER NOT NULL DEFAULT 0
     );
@@ -184,9 +185,11 @@ export async function initializeDatabase(db) {
 
   /*
   await db.execAsync(`
-    ALTER TABLE Workout ADD COLUMN elapsed_time INTEGER DEFAULT 0;
+    ALTER TABLE Exercise ADD COLUMN visible_columns TEXT;
+
   `);
   */
+  
 
   /*
   await db.execAsync(`

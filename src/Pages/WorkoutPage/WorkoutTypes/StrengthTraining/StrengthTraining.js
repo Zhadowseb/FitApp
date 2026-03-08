@@ -38,7 +38,7 @@ const StrengthTraining = ({workout_id, date}) =>  {
   const [isDone, set_isDone] = useState(false);
   const [isRunning, set_isRunning] = useState(false);
 
-  const handleExerciseChange = () => {
+  const refresh = () => {
     set_refreshing(prev => prev + 1);
   }
 
@@ -125,16 +125,16 @@ const StrengthTraining = ({workout_id, date}) =>  {
     loadTotalSets();
   }, [refreshing]);
 
-  //Actual timer
+  //Time loop
   useEffect(() => {
-    const interval = setInterval(() => {  
-      if(isRunning){
-        let currentTime = computeCurrentElapsed();
-      }
+    if(!isRunning) return;
+
+    const interval = setInterval(() => {
+      refresh()
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [timer_start, isRunning, workout_id]);
+  }, [isRunning, isRunning, timer_start]);
 
   const computeCurrentElapsed = () => {
       if (!timer_start) return 0;
@@ -149,7 +149,7 @@ const StrengthTraining = ({workout_id, date}) =>  {
           elapsed_time + computeCurrentElapsed()
       );
       
-      await db.getFirstAsync(
+      await db.runAsync(
           `UPDATE Workout
               SET elapsed_time = ?
               WHERE workout_id = ?;`,
@@ -170,6 +170,7 @@ const StrengthTraining = ({workout_id, date}) =>  {
 
     //Miliseconds since 1. januar 1970 at 00:00:00 UTC
     const start_time = Date.now();
+    set_timer_start(start_time);
 
     if(row.original_start_time === null){
         set_original_start_time(start_time);
@@ -180,7 +181,6 @@ const StrengthTraining = ({workout_id, date}) =>  {
         );
     } 
     Vibration.vibrate(500);
-    set_timer_start(start_time);
   };
 
   const pauseWorkout = async () => {
@@ -286,7 +286,7 @@ const StrengthTraining = ({workout_id, date}) =>  {
                         justifyContent: "center"}}>
                         <CircularProgression
                           size = {110}
-                          strokeWidth = {10} 
+                          strokeWidth = {12} 
                           text= {doneSets + "/" + totalSets}
                           textSize = {16}
                           progressPercent = {(doneSets/totalSets) * 100}
@@ -360,7 +360,7 @@ const StrengthTraining = ({workout_id, date}) =>  {
           <ExerciseList 
             workout_id = {workout_id}
             refreshing = {refreshing} 
-            updateUI = {handleExerciseChange}/>
+            updateUI = {refresh}/>
         </View> 
 
       </ScrollView>

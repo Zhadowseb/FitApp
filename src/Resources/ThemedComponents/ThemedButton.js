@@ -65,7 +65,6 @@ export default ThemedButton;
 
 const styles = StyleSheet.create({
   base: {
-    paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 25,
     alignItems: "center",

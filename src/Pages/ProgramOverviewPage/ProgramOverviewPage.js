@@ -175,7 +175,7 @@ const ProgramOverviewPage = ( {route} ) => {
             </ThemedView>
 
             {/* Program PR's */}
-            <ThemedTitle type="h2"> Program PR's </ThemedTitle>
+            <ThemedTitle type="h2"> New Bests </ThemedTitle>
             <ThemedCard style={styles.pr_container}>
 
                 <ThemedText>

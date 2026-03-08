@@ -206,6 +206,12 @@ const ProgramOverviewPage = ( {route} ) => {
                 </View>
             </ThemedCard>
 
+            {/* Program setting and status */}
+            <ThemedTitle type="h2"> Practical </ThemedTitle>
+            <ThemedCard>
+
+            </ThemedCard>
+
             {/* Delete program */}
             <ThemedButton 
                 title="Delete program"

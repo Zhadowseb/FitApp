@@ -174,7 +174,7 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
               flexDirection: "column",
               borderWidth: item.done ? 3 : 0,
               borderColor: theme.secondary,
-              backgroundColor: theme.primary,
+              backgroundColor: theme.primaryLight,
             }}>
 
             <View style={styles.focus}>

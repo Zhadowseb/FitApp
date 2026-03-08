@@ -147,12 +147,43 @@ const ProgramOverviewPage = ( {route} ) => {
             style={styles.container}
             contentContainerStyle={{ paddingBottom: insets.bottom + 15}}>
 
+            {/* Workout shortcut */}
             <View style={styles.day_body}>    
                 <TodayShortcut
                     program_id = {program_id}
                     style = {styles.day_touchable}/>
             </View>
 
+            {/* Mesocycle list */}
+            <ThemedTitle type="h2"> Mesocycle's </ThemedTitle>
+            <ThemedView>
+                <TouchableOpacity
+                        style={[styles.mesocycle_container]}
+                        onPress={() => {
+                            navigation.navigate("MesocyclePage", {
+                            program_id: program_id,
+                            start_date: start_date})
+                    }} >
+                    
+                    <MesocycleList 
+                        program_id = {program_id}
+                        start_date={start_date}
+                        refreshKey= {refreshKey} 
+                        refresh={refresh}/>
+
+                </TouchableOpacity>
+            </ThemedView>
+
+            {/* Program PR's */}
+            <ThemedTitle type="h2"> Program PR's </ThemedTitle>
+            <ThemedCard style={styles.pr_container}>
+
+                <ThemedText>
+                    coming soon...
+                </ThemedText>
+            </ThemedCard>
+
+            {/* 1 rm estimates. */}
             <ThemedTitle type="h2"> Estimated 1 RM's </ThemedTitle>
             <ThemedCard style={styles.rm_container}>
 
@@ -175,35 +206,7 @@ const ProgramOverviewPage = ( {route} ) => {
                 </View>
             </ThemedCard>
 
-            <ThemedTitle type="h2"> Mesocycle's </ThemedTitle>
-            <ThemedView>
-                <TouchableOpacity
-                        style={[styles.mesocycle_container]}
-                        onPress={() => {
-                            navigation.navigate("MesocyclePage", {
-                            program_id: program_id,
-                            start_date: start_date})
-                    }} >
-                    
-                    <MesocycleList 
-                        program_id = {program_id}
-                        start_date={start_date}
-                        refreshKey= {refreshKey} 
-                        refresh={refresh}/>
-
-                </TouchableOpacity>
-            </ThemedView>
-
-            <ThemedTitle type="h2"> Program PR's </ThemedTitle>
-            <ThemedCard style={styles.pr_container}>
-
-                <ThemedText>
-                    coming soon...
-                </ThemedText>
-            </ThemedCard>
-
-
-        
+            {/* Delete program */}
             <ThemedButton 
                 title="Delete program"
                 variant='danger'

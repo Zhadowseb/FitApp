@@ -174,36 +174,21 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
               flexDirection: "column",
               borderWidth: item.done ? 3 : 0,
               borderColor: theme.secondary,
+              backgroundColor: theme.primary,
             }}>
 
             <View style={styles.focus}>
-                <ThemedText size={13}> {item.focus}</ThemedText>
+                <ThemedText size={13} setColor={theme.textInverted}> {item.focus}</ThemedText>
             </View>
 
             <View style={styles.weeks}>
-                <ThemedText>Weeks: {item.weeks}</ThemedText>
+                <ThemedText setColor={theme.textInverted}>
+                  Weeks: {item.weeks}
+                </ThemedText>
             </View>
 
             <View style={[styles.frequency, {flex: 1, justifyContent: "flex-end" }]}>
 
-              <View style={{alignItems: "center"}}>
-                <ThemedText size={14}> Workout Split </ThemedText>
-              </View>
-
-              <View style={[ {flexDirection: "row"}]}>
-                <View>
-                  <ThemedText size={12}> Weightlifting: </ThemedText>
-                  <ThemedText size={12}> Cardio:  </ThemedText>
-                  <ThemedText size={12}> Other/Sports:  </ThemedText>
-                </View>
-
-                <View>
-                  <ThemedText size={12}> {item.weightlifts}</ThemedText>
-                  <ThemedText size={12}> {item.cardio} </ThemedText>
-                  <ThemedText size={12}> {item.other} </ThemedText>
-                </View>
-
-              </View>
 
             </View>
 

@@ -9,6 +9,7 @@ export const Colors = {
         danger: "#ba0000ff",
         
         text: "#d4d4d4",
+        textInverted: "#3d3c3c",
         quietText: "rgb(81, 76, 73)",
         title: "#fff",
         background: "#0E0F12",

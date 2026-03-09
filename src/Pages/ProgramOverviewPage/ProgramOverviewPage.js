@@ -32,14 +32,17 @@ const ProgramOverviewPage = ( {route} ) => {
 
     const [addEstimatedSet_visible, set_AddEstimatedSet_visible] = useState(false);
     const [refreshKey, set_refreshKey] = useState(0);
+    const [status, set_status] = useState("NOT_STARTET");
 
     const refresh = () => {
         set_refreshKey(prev => prev + 1);
     }
 
+    //Coming to page
     useFocusEffect(
         useCallback(() => {
             refresh();
+            getStatus();
         }, [])
     );
 
@@ -58,6 +61,17 @@ const ProgramOverviewPage = ( {route} ) => {
             console.error(error);
         }
         set_AddEstimatedSet_visible(false);
+    }
+
+    const getStatus = async () => {
+        try {
+            const new_status = await db.getFirstAsync(
+                `SELECT status FROM Program WHERE program_id = ?;`,
+                [program_id]);
+            set_status(new_status.status);
+        } catch (error) {
+            console.error(error);
+        }
     }
 
     const deleteProgram = async () => {
@@ -210,21 +224,41 @@ const ProgramOverviewPage = ( {route} ) => {
             <ThemedTitle type="h2"> Practical </ThemedTitle>
             <ThemedCard>
 
-                <View>
-                    <ThemedButton
-                        title="COMPLETE"
-                        variant='primary'
-                        width={150} />
+                <View style={{alignItems: "center", paddingBottom: 10}}>
+                    <ThemedText>
+                        Program status
+                    </ThemedText>
+                </View>
 
-                    <ThemedButton
-                        title="ACTIVE"
-                        variant='primary'
-                        width={150} />
+                <View style={{flexDirection: "row", flex: 1}}>
+                    
+                    <View style={{flex: 1,
+                        opacity: status === "COMPLETE" ? 1 : 0.2}}>
+                        <ThemedButton
+                            title="COMPLETE"
+                            variant='secondary'
+                            width={80}
+                            textSize={8} />
+                    </View>
 
-                    <ThemedButton
-                        title="NOT STARTET"
-                        variant='primary'
-                        width={150} />
+                    <View style={{flex: 1,
+                        opacity: status === "ACTIVE" ? 1 : 0.2}}>
+                        <ThemedButton
+                            title="ACTIVE"
+                            variant='secondary'
+                            width={80}
+                            textSize={8} />
+                    </View>
+
+
+                    <View style={{flex: 1, 
+                        opacity: status === "NOT_STARTET" ? 1 : 0.2}}>
+                        <ThemedButton
+                            title="NOT STARTET"
+                            variant='secondary'
+                            width={80}
+                            textSize={8} />
+                    </View>
                 </View>
 
             {/* 

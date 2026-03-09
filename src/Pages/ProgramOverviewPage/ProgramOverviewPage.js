@@ -5,6 +5,8 @@ import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
+import { useColorScheme } from "react-native";
+import { Colors } from "../../Resources/GlobalStyling/colors";
 
 import styles from './ProgramOverviewPageStyle';
 import Rm_List from './Components/rm_list/rm_list';
@@ -29,6 +31,8 @@ const ProgramOverviewPage = ( {route} ) => {
     const db = useSQLiteContext();
     const navigation = useNavigation();
     const insets = useSafeAreaInsets();
+    const colorScheme = useColorScheme();
+    const theme = Colors[colorScheme] ?? Colors.light;
 
     const program_id = route.params.program_id;
     const start_date = route.params.start_date;
@@ -153,6 +157,15 @@ const ProgramOverviewPage = ( {route} ) => {
         navigation.navigate("ProgramPage");
     };
 
+    const changeStatus = async (new_status) => {
+        console.log(new_status);
+        await db.runAsync(
+            `UPDATE Program SET status = ? WHERE program_id = ?;`,
+            [new_status, program_id]
+        );
+        set_status(new_status);
+    }
+
   return (
     <>
     <ThemedView>
@@ -247,34 +260,39 @@ const ProgramOverviewPage = ( {route} ) => {
                         opacity: status === "COMPLETE" ? 1 : 0.2}}>
                         <ThemedButton
                             title="COMPLETE"
-                            variant='secondary'
+                            style={{backgroundColor: theme.COMPLETE}}
                             width={80}
-                            textSize={8} />
+                            textSize={8} 
+                            onPress={ () => {
+                                changeStatus("COMPLETE") }}/>
                     </View>
 
                     <View style={{flex: 1,
                         opacity: status === "ACTIVE" ? 1 : 0.2}}>
                         <ThemedButton
                             title="ACTIVE"
-                            variant='secondary'
+                            style={{backgroundColor: theme.ACTIVE}}
                             width={80}
-                            textSize={8} />
+                            textSize={8}
+                            onPress={ () => {
+                                changeStatus("ACTIVE") }} />
                     </View>
 
 
                     <View style={{flex: 1, 
-                        opacity: status === "NOT_STARTET" ? 1 : 0.2}}>
+                        opacity: status === "NOT_STARTED" ? 1 : 0.2}}>
                         <ThemedButton
-                            title="NOT STARTET"
-                            variant='secondary'
+                            title="NOT STARTED"
+                            style={{backgroundColor: theme.NOT_STARTED}}
                             width={80}
-                            textSize={8} />
+                            textSize={8} 
+                            onPress={ () => {
+                                changeStatus("NOT_STARTED") }}/>
                     </View>
                 </View>
 
             {/* 
-            
-            Change program status
+        
             Change program name. 
             
             */}

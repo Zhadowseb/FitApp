@@ -12,6 +12,7 @@ import Rm_List from './Components/rm_list/rm_list';
 import AddEstimatedSet from './Components/rm_list/Components/AddEstimatedSet/AddEstimatedSet';
 import TodayShortcut from './Components/TodayShortcut/TodayShortcut';
 import MesocycleList from '../MesocyclePage/Components/MesocycleList/MesocycleList';
+import ThreeDots from "../../Resources/Icons/UI-icons/ThreeDots"
 
 import { ThemedTitle, 
         ThemedCard, 
@@ -19,8 +20,10 @@ import { ThemedTitle,
         ThemedText, 
         ThemedButton, 
         ThemedModal,
-        ThemedHeader } 
+        ThemedHeader,
+        ThemedBottomSheet } 
   from "../../Resources/ThemedComponents";
+import Delete from '../../Resources/Icons/UI-icons/Delete';
 
 const ProgramOverviewPage = ( {route} ) => {
     const db = useSQLiteContext();
@@ -33,6 +36,8 @@ const ProgramOverviewPage = ( {route} ) => {
     const [addEstimatedSet_visible, set_AddEstimatedSet_visible] = useState(false);
     const [refreshKey, set_refreshKey] = useState(0);
     const [status, set_status] = useState("NOT_STARTET");
+
+    const [OptionsBottomsheet_visible, set_OptionsBottomsheet_visible] = useState(false);
 
     const refresh = () => {
         set_refreshKey(prev => prev + 1);
@@ -149,8 +154,14 @@ const ProgramOverviewPage = ( {route} ) => {
     };
 
   return (
+    <>
     <ThemedView>
-        <ThemedHeader>
+        <ThemedHeader
+            right={
+                <TouchableOpacity onPress={() => {
+                    set_OptionsBottomsheet_visible(true) }}>
+                    <ThreeDots width={20} height={20} />
+                </TouchableOpacity> } >
             
             <ThemedText size={18}> Program Overview  </ThemedText>
             <ThemedText size={10}> {start_date} - ??  </ThemedText>
@@ -270,15 +281,44 @@ const ProgramOverviewPage = ( {route} ) => {
 
             </ThemedCard>
 
-            {/* Delete program */}
-            <ThemedButton 
-                title="Delete program"
-                variant='danger'
-                width={250}
-                onPress={() => deleteProgram()}/>
             
         </ScrollView>
     </ThemedView>
+
+        <ThemedBottomSheet
+            visible={OptionsBottomsheet_visible}
+            onClose={() => set_OptionsBottomsheet_visible(false)} >
+
+            <View style={styles.bottomsheet_title}>
+                <ThemedTitle type={"h3"} style={{flex: 10}}> 
+                    test 
+                </ThemedTitle>
+
+
+            </View>
+
+            <View style={styles.bottomsheet_body}>
+                
+                {/* Delete Program */}
+                <TouchableOpacity 
+                    style={styles.option}
+                    onPress={async () => {
+                        deleteProgram();
+                    }}>
+
+                    <Delete
+                        width={24}
+                        height={24}/>
+                    <ThemedText style={styles.option_text}> 
+                        Delete program.
+                    </ThemedText>
+
+                </TouchableOpacity>
+            </View>
+
+
+        </ThemedBottomSheet>
+        </>
   );
 };
 

@@ -245,9 +245,10 @@ const ProgramOverviewPage = ( {route} ) => {
             </ThemedCard>
 
             {/* Program setting and status */}
-            <ThemedTitle type="h2"> Practical </ThemedTitle>
+            <ThemedTitle type="h2"> Settings </ThemedTitle>
             <ThemedCard>
 
+                {/* Change status of the program */}
                 <View style={{alignItems: "center", paddingBottom: 10}}>
                     <ThemedText>
                         Program status
@@ -290,6 +291,17 @@ const ProgramOverviewPage = ( {route} ) => {
                                 changeStatus("NOT_STARTED") }}/>
                     </View>
                 </View>
+
+                {/* Change program name */}
+                <View style={{
+                    alignItems: "center", 
+                    paddingBottom: 10,
+                    paddingTop: 10}}>
+                    <ThemedText>
+                        Program name
+                    </ThemedText>
+                </View>
+
 
             {/* 
         

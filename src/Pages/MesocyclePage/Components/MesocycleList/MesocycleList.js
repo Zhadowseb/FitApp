@@ -203,9 +203,8 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
       ))}
 
       {mesocycles.length === 0 && (
-        <Text style={{ textAlign: "center", marginTop: 20 }}>
-          No mesocycles found.
-        </Text>
+        <>
+        </>
       )}
 
       <TouchableOpacity

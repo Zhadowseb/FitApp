@@ -106,7 +106,7 @@ export default function App() {
             }}> 
 
             <Stack.Screen name="HomePage" component={HomePage} />
-            <Stack.Screen name="ProgramPage" component={ProgramPage} />
+            <Stack.Screen name="ProgramPage" component={ProgramPage} options={{headerShown: false}} />
             <Stack.Screen name="ProgramOverviewPage" component={ProgramOverviewPage} options={{headerShown: false}} />
             <Stack.Screen name="MesocyclePage" component={MesocyclePage} />
             <Stack.Screen name="MicrocyclePage" component={MicrocyclePage} options={{headerShown: false}} />

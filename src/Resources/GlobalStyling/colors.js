@@ -7,8 +7,13 @@ export const Colors = {
         secondary: "#60daacff",
         secondaryLight: "rgb(178, 214, 200)",
         danger: "#ba0000ff",
+
+        NOT_STARTED: "#9E9E9E",
+        ACTIVE: "#f7742eff",
+        COMPLETE: "#60daacff",
         
         text: "#d4d4d4",
+        textInverted: "#3d3c3c",
         quietText: "rgb(81, 76, 73)",
         title: "#fff",
         background: "#0E0F12",

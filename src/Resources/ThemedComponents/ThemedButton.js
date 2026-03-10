@@ -6,6 +6,7 @@ import ThemedText from "./ThemedText";
 
 const ThemedButton = ({
   title,
+  textSize,
   onPress,
   style,
 
@@ -54,7 +55,10 @@ const ThemedButton = ({
         style,
       ]}
     >
-      <ThemedText style={styles.text}>
+      <ThemedText 
+        style={styles.text}
+        size={textSize ? textSize : 14}>
+        
         {title}
       </ThemedText>
     </Pressable>

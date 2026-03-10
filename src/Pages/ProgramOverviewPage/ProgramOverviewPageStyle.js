@@ -73,4 +73,28 @@ export default StyleSheet.create({
     //PR containers
 
 
+    //BottomSheet Styling:
+
+    bottomsheet_title: {
+        flexDirection: "row",
+        borderBottomWidth: 1,
+        borderBottomColor: "#2e2e2eff",
+        paddingBottom: 30,
+    },
+    bottomsheet_body: {
+        justifyContent: "center",
+        padding: 20,
+        paddingLeft: 0,
+    },
+
+    option: {
+        flexDirection: "row",
+        paddingTop: 20,
+    },
+    option_text: {
+        paddingLeft: 10,
+        fontWeight: 600,
+        fontSize: 16,
+    },
+
 });

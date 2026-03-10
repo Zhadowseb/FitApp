@@ -42,7 +42,23 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
         [program_id]
       );
 
-      const enriched = enrichMesocycles(cycles);
+      const workoutCounts = await db.getAllAsync(
+        `SELECT m.mesocycle_id, COUNT(w.workout_id) AS workout_count
+         FROM Mesocycle m
+         LEFT JOIN Microcycle mc ON mc.mesocycle_id = m.mesocycle_id
+         LEFT JOIN Day d ON d.microcycle_id = mc.microcycle_id
+         LEFT JOIN Workout w ON w.day_id = d.day_id
+         WHERE m.program_id = ?
+         GROUP BY m.mesocycle_id;`,
+        [program_id]
+      );
+
+      const workoutCountMap = workoutCounts.reduce((acc, row) => {
+        acc[row.mesocycle_id] = row.workout_count ?? 0;
+        return acc;
+      }, {});
+
+      const enriched = enrichMesocycles(cycles, workoutCountMap);
       setMesocycles(enriched);
 
     } catch (error) {
@@ -52,7 +68,7 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
     }
   };
 
-  const enrichMesocycles = (cycles) => {
+  const enrichMesocycles = (cycles, workoutCountMap) => {
     let weekOffset = 0;
 
     return cycles.map(cycle => {
@@ -64,10 +80,14 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
 
       weekOffset += cycle.weeks;
 
+      const workoutCount = workoutCountMap[cycle.mesocycle_id] ?? 0;
+      const averageWeeklyWorkouts = cycle.weeks > 0 ? workoutCount / cycle.weeks : 0;
+
       return {
         ...cycle,
         period_start: formatDate(start),
         period_end: formatDate(end),
+        average_weekly_workouts: averageWeeklyWorkouts,
         weightlifts: 0,
         cardio: 0,
         other: 0,
@@ -174,36 +194,30 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
               flexDirection: "column",
               borderWidth: item.done ? 3 : 0,
               borderColor: theme.secondary,
+              backgroundColor: theme.primaryLight,
             }}>
 
             <View style={styles.focus}>
-                <ThemedText size={13}> {item.focus}</ThemedText>
+                <ThemedText size={13} setColor={theme.textInverted}> {item.focus}</ThemedText>
             </View>
 
             <View style={styles.weeks}>
-                <ThemedText>Weeks: {item.weeks}</ThemedText>
+                <ThemedText setColor={theme.textInverted}>
+                  Weeks: {item.weeks}
+                </ThemedText>
             </View>
 
-            <View style={[styles.frequency, {flex: 1, justifyContent: "flex-end" }]}>
+            <View style={[styles.frequency, {
+              flex: 1, 
+              justifyContent: "flex-end",
+              alignItems: "center" }]}>
+              <ThemedText setColor={theme.textInverted}>
+                Avg. weekly workouts:
+              </ThemedText>
 
-              <View style={{alignItems: "center"}}>
-                <ThemedText size={14}> Workout Split </ThemedText>
-              </View>
-
-              <View style={[ {flexDirection: "row"}]}>
-                <View>
-                  <ThemedText size={12}> Weightlifting: </ThemedText>
-                  <ThemedText size={12}> Cardio:  </ThemedText>
-                  <ThemedText size={12}> Other/Sports:  </ThemedText>
-                </View>
-
-                <View>
-                  <ThemedText size={12}> {item.weightlifts}</ThemedText>
-                  <ThemedText size={12}> {item.cardio} </ThemedText>
-                  <ThemedText size={12}> {item.other} </ThemedText>
-                </View>
-
-              </View>
+              <ThemedText setColor={theme.textInverted}>
+                {item.average_weekly_workouts.toFixed(1)}
+              </ThemedText>
 
             </View>
 
@@ -218,9 +232,8 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
       ))}
 
       {mesocycles.length === 0 && (
-        <Text style={{ textAlign: "center", marginTop: 20 }}>
-          No mesocycles found.
-        </Text>
+        <>
+        </>
       )}
 
       <TouchableOpacity

@@ -207,9 +207,16 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
                 </ThemedText>
             </View>
 
-            <View style={[styles.frequency, {flex: 1, justifyContent: "flex-end" }]}>
+            <View style={[styles.frequency, {
+              flex: 1, 
+              justifyContent: "flex-end",
+              alignItems: "center" }]}>
               <ThemedText setColor={theme.textInverted}>
-                Avg. weekly workouts: {item.average_weekly_workouts.toFixed(1)}
+                Avg. weekly workouts:
+              </ThemedText>
+
+              <ThemedText setColor={theme.textInverted}>
+                {item.average_weekly_workouts.toFixed(1)}
               </ThemedText>
 
             </View>

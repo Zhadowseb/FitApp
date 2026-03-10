@@ -23,9 +23,11 @@ import { ThemedTitle,
         ThemedButton, 
         ThemedModal,
         ThemedHeader,
-        ThemedBottomSheet } 
+        ThemedBottomSheet, 
+        ThemedEditableCell} 
   from "../../Resources/ThemedComponents";
 import Delete from '../../Resources/Icons/UI-icons/Delete';
+import { formatDate, parseCustomDate } from '../../Utils/dateUtils';
 
 const ProgramOverviewPage = ( {route} ) => {
     const db = useSQLiteContext();
@@ -40,6 +42,8 @@ const ProgramOverviewPage = ( {route} ) => {
     const [addEstimatedSet_visible, set_AddEstimatedSet_visible] = useState(false);
     const [refreshKey, set_refreshKey] = useState(0);
     const [status, set_status] = useState("NOT_STARTET");
+    const [program_name, set_program_name] = useState("");
+    const [end_date, set_end_date] = useState("");
 
     const [OptionsBottomsheet_visible, set_OptionsBottomsheet_visible] = useState(false);
 
@@ -52,6 +56,9 @@ const ProgramOverviewPage = ( {route} ) => {
         useCallback(() => {
             refresh();
             getStatus();
+            getName();
+            const end_date = calculateEndDay()
+            set_end_date(end_date);
         }, [])
     );
 
@@ -78,6 +85,19 @@ const ProgramOverviewPage = ( {route} ) => {
                 `SELECT status FROM Program WHERE program_id = ?;`,
                 [program_id]);
             set_status(new_status.status);
+
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    const getName = async () => {
+        try {
+            const name = await db.getFirstAsync(
+                `SELECT program_name FROM Program WHERE program_id = ?;`,
+                [program_id]);
+            set_program_name(name.program_name);
+
         } catch (error) {
             console.error(error);
         }
@@ -158,12 +178,23 @@ const ProgramOverviewPage = ( {route} ) => {
     };
 
     const changeStatus = async (new_status) => {
-        console.log(new_status);
         await db.runAsync(
             `UPDATE Program SET status = ? WHERE program_id = ?;`,
             [new_status, program_id]
         );
         set_status(new_status);
+    }
+
+    const calculateEndDay = async () => {
+        const result = await db.getFirstAsync(
+            `SELECT COUNT(*) AS total_days FROM Day WHERE program_id = ?;`,
+            [program_id]
+        );
+
+        const start = parseCustomDate(start_date);
+        const end = new Date(start);
+        end.setDate(end.getDate() + result.total_days);
+        return formatDate(end)
     }
 
   return (
@@ -177,7 +208,7 @@ const ProgramOverviewPage = ( {route} ) => {
                 </TouchableOpacity> } >
             
             <ThemedText size={18}> Program Overview  </ThemedText>
-            <ThemedText size={10}> {start_date} - ??  </ThemedText>
+            <ThemedText size={10}> {start_date} - {end_date}  </ThemedText>
         
         </ThemedHeader>
 
@@ -302,12 +333,27 @@ const ProgramOverviewPage = ( {route} ) => {
                     </ThemedText>
                 </View>
 
-
-            {/* 
-        
-            Change program name. 
-            
-            */}
+                <View style={{
+                    flexDirection: "row",
+                    alignItems: "center",}}>
+                    <ThemedText> Current name: </ThemedText>
+                    
+                    <View style={{
+                        borderWidth: 1,
+                        borderColor: "#525252",
+                        padding: 10,
+                        borderRadius: 5,
+                    }}>
+                        <ThemedEditableCell
+                            value={program_name ?? ""}
+                            onCommit={async (v) => {
+                                await db.runAsync(
+                                    `UPDATE Program SET program_name = ? WHERE program_id = ?;`,
+                                    [v, program_id]
+                                ); 
+                            }}/>
+                    </View>
+                </View>
 
             </ThemedCard>
 

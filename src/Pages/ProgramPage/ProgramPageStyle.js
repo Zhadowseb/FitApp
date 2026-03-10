@@ -10,4 +10,20 @@ export default StyleSheet.create({
   loaderContainer: {
     paddingVertical: 10,
   },
+  bottomsheet_title: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  bottomsheet_body: {
+    gap: 8,
+  },
+  option: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+  },
+  option_text: {
+    fontSize: 16,
+  },
 });

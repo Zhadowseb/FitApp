@@ -10,27 +10,9 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 
 import styles from "./ProgramListStyle";
-import { programService as programRepository } from "../../../../Services";
+import { programService } from "../../../../Services";
 import {ThemedCard, ThemedText} from "../../../../Resources/ThemedComponents";
-import { formatDate, parseCustomDate } from "../../../../Utils/dateUtils";
-
-const getProgramEndDate = (startDate, dayCount) => {
-  if (!startDate) {
-    return "";
-  }
-
-  const endDate = parseCustomDate(startDate);
-  endDate.setDate(endDate.getDate() + dayCount);
-  return formatDate(endDate);
-};
-
-const getAverageSessionsPerWeek = (workoutCount, weekCount) => {
-  if (!weekCount) {
-    return "0.0";
-  }
-
-  return (workoutCount / weekCount).toFixed(1);
-};
+import {getProgramEndDate, getAverageSessionsPerWeek} from "../../../../Utils/programUtils";
 
 const ProgramList = ({ refreshKey }) => {
   const navigation = useNavigation();
@@ -43,7 +25,7 @@ const ProgramList = ({ refreshKey }) => {
     try {
       setLoading(true);
 
-      const rows = await programRepository.getProgramsOverview(db);
+      const rows = await programService.getProgramsOverview(db);
 
       setPrograms(
         rows.map((program) => ({

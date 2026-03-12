@@ -7,7 +7,7 @@ import PickWorkoutModal from "../../../WeekPage/Components/Day/Components/PickWo
 import CircularProgression from "../../../../Resources/Components/CircularProgression";
 
 import { getTodaysDate } from '../../../../Utils/dateUtils';
-import { programRepository } from "../../../../Database/repository";
+import { programService as programRepository } from "../../../../Services";
 
 import styles from "./TodayShortcutStyle"
 import { ThemedTitle, ThemedCard, ThemedView, ThemedText } 

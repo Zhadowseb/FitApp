@@ -5,7 +5,7 @@ import { useSQLiteContext } from "expo-sqlite";
 import ProgramList from './Components/ProgramList/ProgramList';
 import AddProgram from './Components/AddProgram/AddProgram';
 import { formatDate } from '../../Utils/dateUtils';
-import { programRepository } from "../../Database/repository";
+import { programService as programRepository } from "../../Services";
 import ThreeDots from "../../Resources/Icons/UI-icons/ThreeDots";
 import Plus from "../../Resources/Icons/UI-icons/Plus";
 

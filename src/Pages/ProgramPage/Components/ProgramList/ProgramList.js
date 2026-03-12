@@ -10,7 +10,7 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 
 import styles from "./ProgramListStyle";
-import { programRepository } from "../../../../Database/repository";
+import { programService as programRepository } from "../../../../Services";
 import {ThemedCard, ThemedText} from "../../../../Resources/ThemedComponents";
 import { formatDate, parseCustomDate } from "../../../../Utils/dateUtils";
 

@@ -4,7 +4,7 @@ import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 
 import styles from "./Rm_listStyle"
-import { weightliftingRepository } from "../../../../Database/repository";
+import { weightliftingService as weightliftingRepository } from "../../../../Services";
 import EditEstimatedSet from "./Components/EditEstimatedSet/EditEstimatedSet";
 
 import { ThemedTitle, ThemedCard, ThemedView, ThemedText } 

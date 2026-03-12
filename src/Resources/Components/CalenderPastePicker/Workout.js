@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
-import { programRepository } from "../../../Database/repository";
+import { programService as programRepository } from "../../../Services";
 import { ThemedPicker, ThemedText, ThemedModal } from "../../ThemedComponents";
 
 const Workout = ({ program_id, visible, close }) => {

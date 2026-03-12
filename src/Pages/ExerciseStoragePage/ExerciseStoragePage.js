@@ -7,7 +7,7 @@ import { useCallback } from "react";
 import { useSQLiteContext } from "expo-sqlite";
 
 import styles from './ExerciseStoragePageStyle';
-import { weightliftingRepository } from "../../Database/repository";
+import { weightliftingService as weightliftingRepository } from "../../Services";
 import ExerciseStorageList from './Components/ExerciseStorageList/ExerciseStorageList';
 import AddExerciseStorageModal from "./Components/AddExerciseStorage/AddExerciseStorageModal"
 

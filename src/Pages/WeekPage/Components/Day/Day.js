@@ -26,7 +26,7 @@ import { ThemedCard,
         ThemedBottomSheet, 
         ThemedBouncyCheckbox } from "../../../../Resources/ThemedComponents";
 import { formatDate } from '../../../../Utils/dateUtils';
-import { programRepository } from "../../../../Database/repository";
+import { programService as programRepository } from "../../../../Services";
 
 const Day = ( {day, program_id, microcycle_id} ) => {
     const colorScheme = useColorScheme();

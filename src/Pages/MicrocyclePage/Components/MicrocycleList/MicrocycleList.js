@@ -15,7 +15,7 @@ import WeekIndicator from "../../../../Resources/Figures/WeekIndicator";
 import { WORKOUT_ICONS } from "../../../../Resources/Icons/WorkoutLabels";
 
 import styles from "./MicrocycleListStyle";
-import { programRepository } from "../../../../Database/repository";
+import { programService as programRepository } from "../../../../Services";
 
 import { ThemedCard, 
         ThemedText, 

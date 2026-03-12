@@ -5,7 +5,7 @@ import { useSQLiteContext } from "expo-sqlite";
 import styles from "./MesocyclePageStyle";
 import AddMesocycleModal from "./Components/AddMesocycle/AddMesocycleModal";
 import MesocycleList from "./Components/MesocycleList/MesocycleList";
-import { programRepository } from "../../Database/repository";
+import { programService as programRepository } from "../../Services";
 
 const MesocyclePage = ( {route} ) => {
     const db = useSQLiteContext();

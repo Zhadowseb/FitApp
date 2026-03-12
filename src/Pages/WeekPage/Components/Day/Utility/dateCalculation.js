@@ -1,6 +1,6 @@
 import { parseCustomDate, formatDate } from "../../../../Utils/dateUtils";
 import { getWeeksBeforeMesocycle } from "../../../../Utils/getWeeksBeforeMesocycle";
-import { programRepository } from "../../../../Database/repository";
+import { programService as programRepository } from "../../../../Services";
 
 export async function calculateProgramDay({
   db, 

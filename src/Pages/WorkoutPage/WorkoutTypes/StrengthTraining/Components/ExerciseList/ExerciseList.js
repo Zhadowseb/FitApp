@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
 
 import styles from "./ExerciseListStyle";
-import { weightliftingRepository } from "../../../../../../Database/repository";
+import { weightliftingService as weightliftingRepository } from "../../../../../../Services";
 
 import ExerciseRow from "./Components/ExerciseRow/ExerciseRow"
 import Plus from "../../../../../../Resources/Icons/UI-icons/Plus";

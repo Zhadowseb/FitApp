@@ -25,9 +25,9 @@ import styles from './RunStyle';
 
 import { formatTime, formatWorkoutStart } from '../../../../Utils/timeUtils';
 import {
-    runningRepository,
-    workoutRepository,
-} from "../../../../Database/repository";
+    runningService as runningRepository,
+    workoutService as workoutRepository,
+} from "../../../../Services";
 
 // const LOCATION_TASK = 'background-location-task';
 const Run = ({workout_id}) =>  {

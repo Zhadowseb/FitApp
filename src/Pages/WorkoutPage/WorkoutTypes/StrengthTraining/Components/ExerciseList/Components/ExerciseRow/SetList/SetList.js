@@ -14,7 +14,7 @@ import {
   ThemedEditableCell,
   ThemedBouncyCheckbox
 } from "../../../../../../../../../Resources/ThemedComponents";
-import { weightliftingRepository } from "../../../../../../../../../Database/repository";
+import { weightliftingService as weightliftingRepository } from "../../../../../../../../../Services";
 
 const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
   const colorScheme = useColorScheme();

@@ -17,7 +17,7 @@ import { ThemedButton,
     ThemedPicker } from "../../Resources/ThemedComponents";
 
 import { parseCustomDate, formatDate, getTodaysDate } from "../../Utils/dateUtils";
-import { programRepository } from "../../Database/repository";
+import { programService as programRepository } from "../../Services";
 
 const MicrocyclePage = ( {route} ) => {
     const db = useSQLiteContext();

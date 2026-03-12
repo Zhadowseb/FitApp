@@ -20,9 +20,8 @@ import { ThemedTitle,
   from "../../../../Resources/ThemedComponents";
 import { formatTime, formatWorkoutStart } from '../../../../Utils/timeUtils';
 import {
-  weightliftingRepository,
-  workoutRepository,
-} from "../../../../Database/repository";
+  weightliftingService, workoutService,
+} from "../../../../Services";
 
 const StrengthTraining = ({workout_id, date}) =>  {
   const colorScheme = useColorScheme();
@@ -49,7 +48,7 @@ const StrengthTraining = ({workout_id, date}) =>  {
   const loadTotalSets = async () => {
     try {
       const result =
-        await weightliftingRepository.getStrengthWorkoutSummary(db, workout_id);
+        await weightliftingService.getStrengthWorkoutSummary(db, workout_id);
       set_totalSets(result.totalSets);
     } catch (err) {
       console.error("Failed to load the amount of sets to do for this workout:", err);
@@ -59,7 +58,7 @@ const StrengthTraining = ({workout_id, date}) =>  {
   const loadCompletedSets = async () => {
     try {
       const result =
-        await weightliftingRepository.getStrengthWorkoutSummary(db, workout_id);
+        await weightliftingService.getStrengthWorkoutSummary(db, workout_id);
       set_doneSets(result.doneSets);
     } catch (err) {
       console.error("Failed to load the done sets for this workout:", err);
@@ -74,7 +73,7 @@ const StrengthTraining = ({workout_id, date}) =>  {
       loadCompletedSets();
 
       const reload = async () => {
-          const row = await workoutRepository.getWorkoutTimerState(db, workout_id);
+          const row = await workoutService.getWorkoutTimerState(db, workout_id);
 
           if(row.timer_start !== null){
               set_isRunning(true);
@@ -95,7 +94,7 @@ const StrengthTraining = ({workout_id, date}) =>  {
           return () => {
               
               const saveState = async () => {
-                  await workoutRepository.persistWorkoutTimerState(db, {
+                  await workoutService.persistWorkoutTimerState(db, {
                       workoutId: workout_id,
                       timerStart: timer_start,
                       elapsedTime: elapsed_time,
@@ -136,7 +135,7 @@ const StrengthTraining = ({workout_id, date}) =>  {
           elapsed_time + computeCurrentElapsed()
       );
       
-      await workoutRepository.updateWorkoutElapsedTime(db, {
+      await workoutService.updateWorkoutElapsedTime(db, {
           workoutId: workout_id,
           elapsedTime: newElapsed,
       });
@@ -147,7 +146,7 @@ const StrengthTraining = ({workout_id, date}) =>  {
   const startWorkout = async () => {
     set_isRunning(true);
 
-    const row = await workoutRepository.getWorkoutOriginalStartTime(db, workout_id);
+    const row = await workoutService.getWorkoutOriginalStartTime(db, workout_id);
 
     //Miliseconds since 1. januar 1970 at 00:00:00 UTC
     const start_time = Date.now();
@@ -155,7 +154,7 @@ const StrengthTraining = ({workout_id, date}) =>  {
 
     if(row.original_start_time === null){
         set_original_start_time(start_time);
-        await workoutRepository.setWorkoutOriginalStartTime(db, {
+        await workoutService.setWorkoutOriginalStartTime(db, {
             workoutId: workout_id,
             startTime: start_time,
         });
@@ -175,14 +174,14 @@ const StrengthTraining = ({workout_id, date}) =>  {
     set_isDone(true);
     set_timer_start(null);
     
-    await workoutRepository.setWorkoutDone(db, {
+    await workoutService.setWorkoutDone(db, {
       workoutId: workout_id,
       done: true,
     });
   };
 
   const restartWorkout = async () => {
-    await workoutRepository.resetWorkoutState(db, workout_id);
+    await workoutService.resetWorkoutState(db, workout_id);
     set_original_start_time(null);
     set_timer_start(null);
     set_elapsed_time(0);

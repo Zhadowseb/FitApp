@@ -6,7 +6,7 @@ import { useColorScheme } from "react-native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 
 import styles from "./MesocycleListStyle";
-import { programRepository } from "../../../../Database/repository";
+import { programService as programRepository } from "../../../../Services";
 import AddMesocycleModal from "../AddMesocycle/AddMesocycleModal";
 import { ThemedTitle, ThemedCard, ThemedView, ThemedText, ThemedButton, ThemedHeader } 
   from "../../../../Resources/ThemedComponents";

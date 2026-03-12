@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from "react";
 import Checkbox from 'expo-checkbox';
 
 import styles from './SetPageStyle';
-import { weightliftingRepository } from "../../Database/repository";
+import { weightliftingService as weightliftingRepository } from "../../Services";
 
 const SetPage = ( {route} ) =>  {
 

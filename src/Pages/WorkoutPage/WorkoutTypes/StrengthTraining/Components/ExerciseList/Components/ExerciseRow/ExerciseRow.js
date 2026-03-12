@@ -25,7 +25,7 @@ import Expand from "../../../../../../../../Resources/Icons/UI-icons/Expand";
 import Plus from "../../../../../../../../Resources/Icons/UI-icons/Plus";
 import Colapse from "../../../../../../../../Resources/Icons/UI-icons/Colapse";
 import PanelSettingsModal from "./PanelSettingsModal";
-import { weightliftingRepository } from "../../../../../../../../Database/repository";
+import { weightliftingService as weightliftingRepository } from "../../../../../../../../Services";
 
 
 const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {

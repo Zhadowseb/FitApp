@@ -9,7 +9,10 @@ import { useColorScheme } from "react-native";
 import { Colors } from "../../Resources/GlobalStyling/colors";
 
 import styles from './ProgramOverviewPageStyle';
-import { programRepository, weightliftingRepository } from "../../Database/repository";
+import {
+  programService as programRepository,
+  weightliftingService as weightliftingRepository,
+} from "../../Services";
 import Rm_List from './Components/rm_list/rm_list';
 
 import AddEstimatedSet from './Components/rm_list/Components/AddEstimatedSet/AddEstimatedSet';

@@ -3,7 +3,7 @@ import { View, ActivityIndicator } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 
 import styles from "./ExerciseDropdownStyle";
-import { weightliftingRepository } from "../../../Database/repository";
+import { weightliftingService as weightliftingRepository } from "../../../Services";
 import { ThemedPicker, ThemedText } from "../../ThemedComponents";
 
 const ExerciseDropdown = ({ selectedExerciseName, onChange }) => {

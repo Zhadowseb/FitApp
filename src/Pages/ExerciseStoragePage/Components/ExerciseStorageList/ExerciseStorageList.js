@@ -4,7 +4,7 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useState, useEffect } from "react";
 
 import styles from './ExerciseStorageListStyle';
-import { weightliftingRepository } from "../../../../Database/repository";
+import { weightliftingService as weightliftingRepository } from "../../../../Services";
 
 const ExerciseStorageList = ( {refreshKey} ) => {
 

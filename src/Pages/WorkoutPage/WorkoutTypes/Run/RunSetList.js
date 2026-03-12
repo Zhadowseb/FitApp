@@ -17,7 +17,7 @@ import Cross from "../../../../Resources/Icons/UI-icons/Cross";
 import styles from "./RunStyle";
 import ListHeader from "./ListHeader";
 import { formatTime } from "../../../../Utils/timeUtils";
-import { runningRepository } from "../../../../Database/repository";
+import { runningService as runningRepository } from "../../../../Services";
 
 const RunSetList = ({
   workout_id,

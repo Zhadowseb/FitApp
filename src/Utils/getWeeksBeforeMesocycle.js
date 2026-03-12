@@ -1,4 +1,4 @@
-import { programRepository } from "../Database/repository";
+import { programService as programRepository } from "../Services";
 
 export async function getWeeksBeforeMesocycle({
   db,

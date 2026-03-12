@@ -1,6 +1,4 @@
-import { withTransaction } from "./shared";
-
-async function getWorkoutHierarchyIds(db, workoutId) {
+export async function getWorkoutHierarchyIds(db, workoutId) {
   return db.getFirstAsync(
     `SELECT
         d.day_id,
@@ -11,6 +9,19 @@ async function getWorkoutHierarchyIds(db, workoutId) {
      JOIN Microcycle mc ON mc.microcycle_id = d.microcycle_id
      WHERE w.workout_id = ?;`,
     [workoutId]
+  );
+}
+
+export async function getDayHierarchyIds(db, dayId) {
+  return db.getFirstAsync(
+    `SELECT
+        d.day_id,
+        d.microcycle_id,
+        mc.mesocycle_id
+     FROM Day d
+     JOIN Microcycle mc ON mc.microcycle_id = d.microcycle_id
+     WHERE d.day_id = ?;`,
+    [dayId]
   );
 }
 
@@ -98,42 +109,28 @@ export async function stopWorkoutStopwatch(
   );
 }
 
-export async function setWorkoutDone(db, { workoutId, done }) {
-  await withTransaction(db, async () => {
-    await db.runAsync(
-      `UPDATE Workout
-       SET done = ?
-       WHERE workout_id = ?;`,
-      [done ? 1 : 0, workoutId]
-    );
-
-    await refreshWorkoutHierarchyCompletion(db, workoutId);
-  });
+export async function updateWorkoutDone(db, { workoutId, done }) {
+  await db.runAsync(
+    `UPDATE Workout
+     SET done = ?
+     WHERE workout_id = ?;`,
+    [done ? 1 : 0, workoutId]
+  );
 }
 
-export async function resetWorkoutState(db, workoutId) {
-  await withTransaction(db, async () => {
-    await db.runAsync(
-      `UPDATE Workout
-       SET done = 0,
-           original_start_time = NULL,
-           timer_start = NULL,
-           elapsed_time = 0
-       WHERE workout_id = ?;`,
-      [workoutId]
-    );
-
-    await refreshWorkoutHierarchyCompletion(db, workoutId);
-  });
+export async function resetWorkoutStateFields(db, workoutId) {
+  await db.runAsync(
+    `UPDATE Workout
+     SET done = 0,
+         original_start_time = NULL,
+         timer_start = NULL,
+         elapsed_time = 0
+     WHERE workout_id = ?;`,
+    [workoutId]
+  );
 }
 
-export async function refreshWorkoutHierarchyCompletion(db, workoutId) {
-  const ids = await getWorkoutHierarchyIds(db, workoutId);
-
-  if (!ids) {
-    return;
-  }
-
+export async function updateDayDoneFromWorkouts(db, dayId) {
   await db.runAsync(
     `UPDATE Day
      SET done = (
@@ -145,9 +142,11 @@ export async function refreshWorkoutHierarchyCompletion(db, workoutId) {
        )
      )
      WHERE day_id = ?;`,
-    [ids.day_id]
+    [dayId]
   );
+}
 
+export async function updateMicrocycleDoneFromWorkouts(db, microcycleId) {
   await db.runAsync(
     `UPDATE Microcycle
      SET done = (
@@ -160,9 +159,11 @@ export async function refreshWorkoutHierarchyCompletion(db, workoutId) {
        )
      )
      WHERE microcycle_id = ?;`,
-    [ids.microcycle_id]
+    [microcycleId]
   );
+}
 
+export async function updateMesocycleDoneFromMicrocycles(db, mesocycleId) {
   await db.runAsync(
     `UPDATE Mesocycle
      SET done = (
@@ -174,6 +175,6 @@ export async function refreshWorkoutHierarchyCompletion(db, workoutId) {
        )
      )
      WHERE mesocycle_id = ?;`,
-    [ids.mesocycle_id]
+    [mesocycleId]
   );
 }

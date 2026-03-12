@@ -9,7 +9,7 @@ import {
 import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
 import {ThemedText, ThemedButton} from "../ThemedComponents";
-import { workoutRepository } from "../../Database/repository";
+import { workoutService as workoutRepository } from "../../Services";
 
 /**
  * WorkoutStopwatchSQLite

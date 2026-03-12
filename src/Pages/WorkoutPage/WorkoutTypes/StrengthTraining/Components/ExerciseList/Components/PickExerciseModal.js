@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ScrollView, Pressable } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
-import { weightliftingRepository } from "../../../../../../../Database/repository";
+import { weightliftingService as weightliftingRepository } from "../../../../../../../Services";
 
 import {
   ThemedModal,

@@ -1,6 +1,6 @@
-import { View, Text, Button, ScrollView, TouchableOpacity } from 'react-native';
+import { View, ScrollView, TouchableOpacity } from 'react-native';
 import { useSQLiteContext } from "expo-sqlite";
-import { use, useState } from "react";
+import { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
@@ -17,7 +17,7 @@ import Rm_List from './Components/rm_list/rm_list';
 
 import AddEstimatedSet from './Components/rm_list/Components/AddEstimatedSet/AddEstimatedSet';
 import TodayShortcut from './Components/TodayShortcut/TodayShortcut';
-import MesocycleList from '../MesocyclePage/Components/MesocycleList/MesocycleList';
+import MesocycleList from "./Components/MesocycleList/MesocycleList";
 import ThreeDots from "../../Resources/Icons/UI-icons/ThreeDots"
 
 import { ThemedTitle, 
@@ -25,7 +25,6 @@ import { ThemedTitle,
         ThemedView, 
         ThemedText, 
         ThemedButton, 
-        ThemedModal,
         ThemedHeader,
         ThemedBottomSheet, 
         ThemedEditableCell} 
@@ -74,7 +73,7 @@ const ProgramOverviewPage = ( {route} ) => {
 
     const handleAdd = async (data) => {
         try {
-            await weightliftingRepository.createEstimatedSet(db, {
+            await weightliftingService.createEstimatedSet(db, {
                 programId: program_id,
                 exerciseName: data.selectedExerciseName,
                 estimatedWeight: data.estimated_weight,
@@ -90,7 +89,7 @@ const ProgramOverviewPage = ( {route} ) => {
 
     const getStatus = async () => {
         try {
-            const new_status = await programRepository.getProgramStatus(db, program_id);
+            const new_status = await programService.getProgramStatus(db, program_id);
             set_status(new_status.status);
 
         } catch (error) {
@@ -100,7 +99,7 @@ const ProgramOverviewPage = ( {route} ) => {
 
     const getName = async () => {
         try {
-            const name = await programRepository.getProgramName(db, program_id);
+            const name = await programService.getProgramName(db, program_id);
             set_program_name(name.program_name);
 
         } catch (error) {
@@ -110,7 +109,7 @@ const ProgramOverviewPage = ( {route} ) => {
 
     const deleteProgram = async () => {
         try {
-            await programRepository.deleteProgram(db, program_id);
+            await programService.deleteProgram(db, program_id);
         } catch (e) {
             throw e;
         }
@@ -119,7 +118,7 @@ const ProgramOverviewPage = ( {route} ) => {
     };
 
     const changeStatus = async (new_status) => {
-        await programRepository.updateProgramStatus(db, {
+        await programService.updateProgramStatus(db, {
             programId: program_id,
             status: new_status,
         });
@@ -127,7 +126,7 @@ const ProgramOverviewPage = ( {route} ) => {
     }
 
     const calculateEndDay = async () => {
-        const result = await programRepository.getProgramDayCount(db, program_id);
+        const result = await programService.getProgramDayCount(db, program_id);
 
         const start = parseCustomDate(start_date);
         const end = new Date(start);
@@ -163,22 +162,12 @@ const ProgramOverviewPage = ( {route} ) => {
 
             {/* Mesocycle list */}
             <ThemedTitle type="h2"> Mesocycle's </ThemedTitle>
-            <ThemedView>
-                <TouchableOpacity
-                        style={[styles.mesocycle_container]}
-                        onPress={() => {
-                            navigation.navigate("MesocyclePage", {
-                            program_id: program_id,
-                            start_date: start_date})
-                    }} >
-                    
+            <ThemedView style={styles.mesocycle_container}>
                     <MesocycleList 
                         program_id = {program_id}
                         start_date={start_date}
                         refreshKey= {refreshKey} 
                         refresh={refresh}/>
-
-                </TouchableOpacity>
             </ThemedView>
 
             {/* Program PR's */}

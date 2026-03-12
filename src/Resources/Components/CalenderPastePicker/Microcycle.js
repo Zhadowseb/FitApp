@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { ActivityIndicator, Pressable, View, ScrollView } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
+import { programRepository } from "../../../Database/repository";
 import { ThemedText, ThemedModal } from "../../ThemedComponents";
 
 const Microcycle = ({ program_id, visible, close }) => {
@@ -16,21 +17,8 @@ const Microcycle = ({ program_id, visible, close }) => {
       try {
         setLoading(true);
 
-        const mesoRows = await db.getAllAsync(
-          `SELECT mesocycle_id, mesocycle_number
-           FROM Mesocycle
-           WHERE program_id = ?
-           ORDER BY mesocycle_number`,
-          [program_id]
-        );
-
-        const microRows = await db.getAllAsync(
-          `SELECT microcycle_id, microcycle_number, mesocycle_id
-           FROM Microcycle
-           WHERE program_id = ?
-           ORDER BY microcycle_number`,
-          [program_id]
-        );
+        const { mesocycles: mesoRows, microcycles: microRows } =
+          await programRepository.getMicrocycleOptions(db, program_id);
 
         setMesocycles(mesoRows);
         setMicrocycles(microRows);

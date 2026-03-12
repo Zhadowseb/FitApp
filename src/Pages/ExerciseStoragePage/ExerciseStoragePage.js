@@ -7,6 +7,7 @@ import { useCallback } from "react";
 import { useSQLiteContext } from "expo-sqlite";
 
 import styles from './ExerciseStoragePageStyle';
+import { weightliftingRepository } from "../../Database/repository";
 import ExerciseStorageList from './Components/ExerciseStorageList/ExerciseStorageList';
 import AddExerciseStorageModal from "./Components/AddExerciseStorage/AddExerciseStorageModal"
 
@@ -30,9 +31,9 @@ const ExerciseStoragePage = ( ) => {
 
     const handleAdd = async (data) => {
         try {
-            await db.runAsync(
-                `INSERT INTO Exercise_storage (exercise_name) VALUES (?);`,
-                [data.exercise_name]
+            await weightliftingRepository.createExerciseStorage(
+                db,
+                data.exercise_name
             );
             refresh();
             set_AddExerciseStorage_visible(false);

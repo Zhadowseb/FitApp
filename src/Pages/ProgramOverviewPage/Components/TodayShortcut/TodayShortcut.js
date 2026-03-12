@@ -7,6 +7,7 @@ import PickWorkoutModal from "../../../WeekPage/Components/Day/Components/PickWo
 import CircularProgression from "../../../../Resources/Components/CircularProgression";
 
 import { getTodaysDate } from '../../../../Utils/dateUtils';
+import { programRepository } from "../../../../Database/repository";
 
 import styles from "./TodayShortcutStyle"
 import { ThemedTitle, ThemedCard, ThemedView, ThemedText } 
@@ -26,40 +27,25 @@ const TodayShortcut = ( {program_id} ) => {
     
     const getToday = async () => {
         try{
+            const snapshot = await programRepository.getTodayProgramSnapshot(db, {
+                programId: program_id,
+                date: getTodaysDate(),
+            });
 
-            const day_res = await db.getFirstAsync(
-            `SELECT day_id, Weekday FROM Day WHERE program_id = ? AND date = ?;`,
-                [program_id, getTodaysDate()]
-            );
-            if(!day_res) return;
-            set_day(day_res);
+            if(!snapshot) return;
 
-            const workout_res = await db.getAllAsync(
-            `SELECT workout_id, label FROM Workout WHERE day_id = ?;`,
-                [day_res.day_id]
-            );
-            set_workouts(workout_res);
+            set_day(snapshot.day);
+            set_workouts(snapshot.workouts);
 
-            if (workout_res.length === 0) {
+            if (snapshot.workouts.length === 0) {
                 setCounts({ done: 0, total: 0 });
                 setProgress(0);
                 return;
             }
 
-            const sets_res = await db.getAllAsync(`
-                SELECT s.done
-                FROM Sets s
-                JOIN Exercise e ON e.exercise_id = s.exercise_id
-                JOIN Workout w ON w.workout_id = e.workout_id
-                WHERE w.day_id = ?;`,
-                [day_res.day_id]
-            );
-
-            const total = sets_res.length;
-            const done = sets_res.filter(s => s.done === 1).length;
-
-            const percent =
-            total === 0 ? 0 : Math.round((done / total) * 100);
+            const total = snapshot.counts.total;
+            const done = snapshot.counts.done;
+            const percent = total === 0 ? 0 : Math.round((done / total) * 100);
 
             setCounts({ done, total });
             setProgress(percent);

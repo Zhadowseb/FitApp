@@ -9,6 +9,7 @@ import { useColorScheme } from "react-native";
 import { Colors } from "../../Resources/GlobalStyling/colors";
 
 import styles from './ProgramOverviewPageStyle';
+import { programRepository, weightliftingRepository } from "../../Database/repository";
 import Rm_List from './Components/rm_list/rm_list';
 
 import AddEstimatedSet from './Components/rm_list/Components/AddEstimatedSet/AddEstimatedSet';
@@ -54,22 +55,27 @@ const ProgramOverviewPage = ( {route} ) => {
     //Coming to page
     useFocusEffect(
         useCallback(() => {
-            refresh();
-            getStatus();
-            getName();
-            const end_date = calculateEndDay()
-            set_end_date(end_date);
+            const loadOverview = async () => {
+                refresh();
+                await Promise.all([
+                    getStatus(),
+                    getName(),
+                ]);
+                const nextEndDate = await calculateEndDay();
+                set_end_date(nextEndDate);
+            };
+
+            loadOverview();
         }, [])
     );
 
     const handleAdd = async (data) => {
         try {
-            await db.runAsync(
-                `INSERT INTO Estimated_set (program_id, exercise_name, estimated_weight) VALUES (?, ?, ?);`,
-                [program_id, 
-                data.selectedExerciseName, 
-                data.estimated_weight]
-            );
+            await weightliftingRepository.createEstimatedSet(db, {
+                programId: program_id,
+                exerciseName: data.selectedExerciseName,
+                estimatedWeight: data.estimated_weight,
+            });
 
             refresh();
             set_AddEstimatedSet_visible(false);
@@ -81,9 +87,7 @@ const ProgramOverviewPage = ( {route} ) => {
 
     const getStatus = async () => {
         try {
-            const new_status = await db.getFirstAsync(
-                `SELECT status FROM Program WHERE program_id = ?;`,
-                [program_id]);
+            const new_status = await programRepository.getProgramStatus(db, program_id);
             set_status(new_status.status);
 
         } catch (error) {
@@ -93,9 +97,7 @@ const ProgramOverviewPage = ( {route} ) => {
 
     const getName = async () => {
         try {
-            const name = await db.getFirstAsync(
-                `SELECT program_name FROM Program WHERE program_id = ?;`,
-                [program_id]);
+            const name = await programRepository.getProgramName(db, program_id);
             set_program_name(name.program_name);
 
         } catch (error) {
@@ -104,73 +106,9 @@ const ProgramOverviewPage = ( {route} ) => {
     }
 
     const deleteProgram = async () => {
-        await db.execAsync("BEGIN TRANSACTION");
-
         try {
-            await db.runAsync(`
-            DELETE FROM Sets
-            WHERE exercise_id IN (
-                SELECT e.exercise_id
-                FROM Exercise e
-                JOIN Workout w ON w.workout_id = e.workout_id
-                JOIN Day d ON d.day_id = w.day_id
-                JOIN Microcycle mc ON mc.microcycle_id = d.microcycle_id
-                JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
-                WHERE m.program_id = ?)`, 
-                [program_id]
-            );
-
-            await db.runAsync(`
-            DELETE FROM Exercise
-            WHERE workout_id IN (
-                SELECT w.workout_id
-                FROM Workout w
-                JOIN Day d ON d.day_id = w.day_id
-                JOIN Microcycle mc ON mc.microcycle_id = d.microcycle_id
-                JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
-                WHERE m.program_id = ?)`, 
-                [program_id]
-            );
-
-            await db.runAsync(`
-            DELETE FROM Workout
-            WHERE day_id IN (
-                SELECT d.day_id
-                FROM Day d
-                JOIN Microcycle mc ON mc.microcycle_id = d.microcycle_id
-                JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
-                WHERE m.program_id = ?)`, 
-                [program_id]);
-
-            await db.runAsync(`
-            DELETE FROM Day
-            WHERE microcycle_id IN (
-                SELECT mc.microcycle_id
-                FROM Microcycle mc
-                JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
-                WHERE m.program_id = ?)`, 
-                [program_id]);
-
-            await db.runAsync(`
-            DELETE FROM Microcycle
-            WHERE mesocycle_id IN (
-                SELECT mesocycle_id FROM Mesocycle WHERE program_id = ?)`, 
-                [program_id]);
-
-            await db.runAsync(
-            `DELETE FROM Mesocycle WHERE program_id = ?`,
-                [program_id]
-            );
-
-            await db.runAsync(
-            `DELETE FROM Program WHERE program_id = ?`,
-                [program_id]
-            );
-
-            await db.execAsync("COMMIT");
-
+            await programRepository.deleteProgram(db, program_id);
         } catch (e) {
-            await db.execAsync("ROLLBACK");
             throw e;
         }
 
@@ -178,18 +116,15 @@ const ProgramOverviewPage = ( {route} ) => {
     };
 
     const changeStatus = async (new_status) => {
-        await db.runAsync(
-            `UPDATE Program SET status = ? WHERE program_id = ?;`,
-            [new_status, program_id]
-        );
+        await programRepository.updateProgramStatus(db, {
+            programId: program_id,
+            status: new_status,
+        });
         set_status(new_status);
     }
 
     const calculateEndDay = async () => {
-        const result = await db.getFirstAsync(
-            `SELECT COUNT(*) AS total_days FROM Day WHERE program_id = ?;`,
-            [program_id]
-        );
+        const result = await programRepository.getProgramDayCount(db, program_id);
 
         const start = parseCustomDate(start_date);
         const end = new Date(start);
@@ -347,10 +282,10 @@ const ProgramOverviewPage = ( {route} ) => {
                         <ThemedEditableCell
                             value={program_name ?? ""}
                             onCommit={async (v) => {
-                                await db.runAsync(
-                                    `UPDATE Program SET program_name = ? WHERE program_id = ?;`,
-                                    [v, program_id]
-                                ); 
+                                await programRepository.updateProgramName(db, {
+                                    programId: program_id,
+                                    programName: v,
+                                });
                             }}/>
                     </View>
                 </View>

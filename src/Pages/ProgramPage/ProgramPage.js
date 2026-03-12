@@ -5,6 +5,7 @@ import { useSQLiteContext } from "expo-sqlite";
 import ProgramList from './Components/ProgramList/ProgramList';
 import AddProgram from './Components/AddProgram/AddProgram';
 import { formatDate } from '../../Utils/dateUtils';
+import { programRepository } from "../../Database/repository";
 import ThreeDots from "../../Resources/Icons/UI-icons/ThreeDots";
 import Plus from "../../Resources/Icons/UI-icons/Plus";
 
@@ -32,12 +33,11 @@ export default function App() {
 
   const handleAdd = async (data) => {
     try {
-      await db.runAsync(
-        `INSERT INTO Program (program_name, start_date, status) VALUES (?, ?, ?);`,
-        [data.program_name, 
-          formatDate(data.start_date), 
-          data.status]
-      );
+      await programRepository.createProgram(db, {
+        programName: data.program_name,
+        startDate: formatDate(data.start_date),
+        status: data.status,
+      });
 
       set_addProgram_Visible(false);
       refresh();

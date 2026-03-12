@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
+import { programRepository } from "../../../Database/repository";
 import { ThemedPicker, ThemedText, ThemedModal } from "../../ThemedComponents";
 
 const Workout = ({ program_id, visible, close }) => {
@@ -14,14 +15,7 @@ const Workout = ({ program_id, visible, close }) => {
     const load = async () => {
       try {
         set_Loading(true);
-        const rows = await db.getAllAsync(
-          `SELECT w.workout_id, w.date
-            FROM Workout w
-            JOIN Day d ON w.day_id = d.day_id
-            WHERE d.program_id = ?
-            ORDER BY w.date;`,
-          [program_id]
-        );
+        const rows = await programRepository.getWorkoutOptions(db, program_id);
         set_workouts(rows);
       } catch (e) {
         console.error(e);

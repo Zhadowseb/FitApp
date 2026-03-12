@@ -14,6 +14,7 @@ import {
   ThemedEditableCell,
   ThemedBouncyCheckbox
 } from "../../../../../../../../../Resources/ThemedComponents";
+import { weightliftingRepository } from "../../../../../../../../../Database/repository";
 
 const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
   const colorScheme = useColorScheme();
@@ -45,10 +46,7 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
   const activeColumns = columnConfig.filter(col => visibleColumns[col.key]);
 
   const deleteSet = async (set_id) => {
-    await db.runAsync(
-      `DELETE FROM Sets WHERE sets_id = ?;`,
-      [set_id]
-    );
+    await weightliftingRepository.deleteSet(db, set_id);
     updateUI();
   }
 
@@ -61,10 +59,11 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
       )
     );
 
-    await db.runAsync(
-      `UPDATE Sets SET ${field} = ? WHERE sets_id = ?;`,
-      [value === "" ? null : Number(value), setId]
-    );
+    await weightliftingRepository.updateSetField(db, {
+      field,
+      value: value === "" ? null : Number(value),
+      setId,
+    });
     updateUI();
   };
 

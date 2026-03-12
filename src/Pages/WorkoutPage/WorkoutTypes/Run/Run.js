@@ -24,6 +24,10 @@ import Plus from '../../../../Resources/Icons/UI-icons/Plus';
 import styles from './RunStyle';
 
 import { formatTime, formatWorkoutStart } from '../../../../Utils/timeUtils';
+import {
+    runningRepository,
+    workoutRepository,
+} from "../../../../Database/repository";
 
 // const LOCATION_TASK = 'background-location-task';
 const Run = ({workout_id}) =>  {
@@ -58,15 +62,7 @@ const Run = ({workout_id}) =>  {
     useFocusEffect(
         useCallback(() => {
             const reload = async () => {
-                const row = await db.getFirstAsync(
-                    `SELECT 
-                        done,
-                        original_start_time,
-                        timer_start, 
-                        elapsed_time FROM Workout 
-                    WHERE workout_id = ?;`,
-                    [workout_id]
-                );
+                const row = await workoutRepository.getWorkoutTimerState(db, workout_id);
 
                 if(row.timer_start !== null){
                     set_isRunning(true);
@@ -87,13 +83,11 @@ const Run = ({workout_id}) =>  {
             return () => {
                 
                 const saveState = async () => {
-                    await db.getFirstAsync(
-                        `UPDATE Workout
-                            SET timer_start = ?, 
-                            elapsed_time = ?
-                            WHERE workout_id = ?;`,
-                        [timer_start, elapsed_time, workout_id]
-                    );  
+                    await workoutRepository.persistWorkoutTimerState(db, {
+                        workoutId: workout_id,
+                        timerStart: timer_start,
+                        elapsedTime: elapsed_time,
+                    });
                 }
                 saveState();
             };
@@ -128,12 +122,10 @@ const Run = ({workout_id}) =>  {
             elapsed_time + computeCurrentElapsed()
         );
         
-        await db.getFirstAsync(
-            `UPDATE Workout
-                SET elapsed_time = ?
-                WHERE workout_id = ?;`,
-            [newElapsed, workout_id]
-        );  
+        await workoutRepository.updateWorkoutElapsedTime(db, {
+            workoutId: workout_id,
+            elapsedTime: newElapsed,
+        });
 
         set_elapsed_time(newElapsed);
     };
@@ -141,33 +133,20 @@ const Run = ({workout_id}) =>  {
     const startWorkout = async () => {
         set_isRunning(true);
 
-        const row = await db.getFirstAsync(
-            `SELECT original_start_time FROM Workout 
-            WHERE workout_id = ?;`,
-            [workout_id]
-        );
+        const row = await workoutRepository.getWorkoutOriginalStartTime(db, workout_id);
 
         //Miliseconds since 1. januar 1970 at 00:00:00 UTC
         const start_time = Date.now();
 
         if(row.original_start_time === null){
             set_original_start_time(start_time);
-            await db.runAsync(
-                `UPDATE Workout SET original_start_time = ? 
-                WHERE workout_id = ?;`,
-                [start_time, workout_id]
-            );
+            await workoutRepository.setWorkoutOriginalStartTime(db, {
+                workoutId: workout_id,
+                startTime: start_time,
+            });
         } 
         Vibration.vibrate(500);
         set_timer_start(start_time);
-
-        /*
-        //Start location tracking.
-        await db.runAsync(
-            `UPDATE Workout SET is_active = 1 WHERE workout_id = ?`,
-            [workout_id]
-        );
-        */
 
         // await startTracking();
     };
@@ -211,32 +190,15 @@ const Run = ({workout_id}) =>  {
 
         // await Location.stopLocationUpdatesAsync(LOCATION_TASK);
         
-        //Set workout done
-        await db.runAsync(
-            `UPDATE Workout SET done = 1
-            WHERE workout_id = ?;`,
-            [workout_id]
-        );
+        await workoutRepository.setWorkoutDone(db, {
+            workoutId: workout_id,
+            done: true,
+        });
 
-        /*
-        //Stop location tracking
-        await db.runAsync(
-            `UPDATE Workout SET is_active = 0 WHERE workout_id = ?`,
-            [workout_id]
-        );
-        */
     };
 
     const restartWorkout = async () => {
-        await db.runAsync(
-            `UPDATE Workout SET 
-                done = 0,
-                original_start_time = NULL,
-                timer_start = NULL, 
-                elapsed_time = 0
-                WHERE workout_id = ?;`,
-            [workout_id]
-        );
+        await workoutRepository.resetWorkoutState(db, workout_id);
         set_original_start_time(null);
         set_timer_start(null);
         set_elapsed_time(0);
@@ -246,15 +208,10 @@ const Run = ({workout_id}) =>  {
     }
 
     const calculateActiveSet = async (currentElapsed) => {
-        const sets = await db.getAllAsync( 
-            `SELECT * FROM Run WHERE workout_id = ? 
-                ORDER BY 
-                    CASE type 
-                        WHEN 'WARMUP' THEN 1 
-                        WHEN 'WORKING_SET' THEN 2 
-                        WHEN 'COOLDOWN' THEN 3 
-                    END, 
-                set_number ASC;`, [workout_id] );
+        const sets = await runningRepository.getOrderedRunSetsForWorkout(
+            db,
+            workout_id
+        );
 
         let remainingElapsed = currentElapsed; 
 
@@ -263,9 +220,10 @@ const Run = ({workout_id}) =>  {
        
              if (remainingElapsed >= setDuration) { 
                 if (!sets[i].done) { 
-                    await db.runAsync( 
-                        `UPDATE Run SET done = 1 WHERE Run_id = ?;`, 
-                        [sets[i].Run_id] ); 
+                    await runningRepository.updateRunSetDone(db, {
+                        runId: sets[i].Run_id,
+                        done: true,
+                    });
                     } 
                 remainingElapsed -= setDuration; 
             } else {  
@@ -294,20 +252,10 @@ const Run = ({workout_id}) =>  {
 
     const addSet = async (setVariety) => {
         try {
-            const row = await db.getFirstAsync(
-                `SELECT COUNT(*) as count FROM Run WHERE 
-                    workout_id = ? AND 
-                    type = ? AND
-                    is_pause = 0;`,
-                [workout_id, setVariety]
-            );
-
-            const set_number = row.count + 1;
-
-            await db.runAsync(
-            `INSERT INTO Run (workout_id, type, set_number) 
-                VALUES (?, ?, ?);`,
-            [workout_id, setVariety, set_number]);
+            await runningRepository.addRunSet(db, {
+                workoutId: workout_id,
+                type: setVariety,
+            });
             triggerReload();
         } catch (error) {
             console.error("Failed to add warmup set:", error);

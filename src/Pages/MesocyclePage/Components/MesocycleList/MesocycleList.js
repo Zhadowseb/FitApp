@@ -6,6 +6,7 @@ import { useColorScheme } from "react-native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 
 import styles from "./MesocycleListStyle";
+import { programRepository } from "../../../../Database/repository";
 import AddMesocycleModal from "../AddMesocycle/AddMesocycleModal";
 import { ThemedTitle, ThemedCard, ThemedView, ThemedText, ThemedButton, ThemedHeader } 
   from "../../../../Resources/ThemedComponents";
@@ -25,33 +26,12 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
 
   const [modalVisible, setModalVisible] = useState(false);
 
-  const weekDays = [
-      'Monday', 
-      'Tuesday', 
-      'Wednesday', 
-      'Thursday', 
-      'Friday', 
-      'Saturday', 
-      'Sunday'];
-
   const loadMesocycles = async () => {
     try {
       setLoading(true);
-      const cycles = await db.getAllAsync(
-        "SELECT mesocycle_id, mesocycle_number, weeks, focus, done FROM Mesocycle WHERE program_id = ?;",
-        [program_id]
-      );
-
-      const workoutCounts = await db.getAllAsync(
-        `SELECT m.mesocycle_id, COUNT(w.workout_id) AS workout_count
-         FROM Mesocycle m
-         LEFT JOIN Microcycle mc ON mc.mesocycle_id = m.mesocycle_id
-         LEFT JOIN Day d ON d.microcycle_id = mc.microcycle_id
-         LEFT JOIN Workout w ON w.day_id = d.day_id
-         WHERE m.program_id = ?
-         GROUP BY m.mesocycle_id;`,
-        [program_id]
-      );
+      const cycles = await programRepository.getMesocyclesByProgram(db, program_id);
+      const workoutCounts =
+        await programRepository.getMesocycleWorkoutCountsByProgram(db, program_id);
 
       const workoutCountMap = workoutCounts.reduce((acc, row) => {
         acc[row.mesocycle_id] = row.workout_count ?? 0;
@@ -99,50 +79,12 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
 
   const handleAdd = async (data) => {
       try {
-
-          //Checking what mesocycle number this is
-          const row = await db.getFirstAsync(
-              `SELECT COUNT(*) AS count FROM Mesocycle WHERE program_id = ?;`,
-              [program_id]
-          );
-          const mesocycleCount = row?.count ?? 0;
-
-          //Insert new mesocycle
-          const result = await db.runAsync(
-              `INSERT INTO Mesocycle (program_id, mesocycle_number, weeks, focus) VALUES (?, ?, ?, ?);`,
-              [program_id, (mesocycleCount + 1), data.weeks, data.focus]
-          );
-
-          const weeksBefore = await db.getFirstAsync(
-              `SELECT COUNT(*) AS count FROM Microcycle WHERE program_id = ?;`,
-              [program_id]
-          )
-          
-          const weekCount = weeksBefore?.count ?? null;
-
-          //Add in weeks to database
-          const newMesocycle_id = result.lastInsertRowId;
-          for (let week = 1; week <= data.weeks; week++){
-              const microcycle_result = await db.runAsync(
-                  `INSERT INTO Microcycle (mesocycle_id, program_id, microcycle_number) VALUES (?, ?, ?);`,
-                  [newMesocycle_id, program_id, week]
-              );
-              
-              const microcycle_id = microcycle_result.lastInsertRowId;
-              for(let day = 1; day <= 7; day++){
-
-
-                  const current_day = (weekCount * 7) + (week * 7 - 7) + (day - 1)
-
-                  const date = parseCustomDate(start_date);
-                  date.setDate(date.getDate() + current_day);
-
-                  await db.runAsync(
-                      `INSERT INTO Day (microcycle_id, program_id, Weekday, date) VALUES (?,?,?,?);`,
-                      [microcycle_id, program_id, weekDays[day-1], formatDate(date)]
-                  )
-              }
-          }
+          await programRepository.createMesocycle(db, {
+              programId: program_id,
+              startDate: start_date,
+              weeks: data.weeks,
+              focus: data.focus,
+          });
 
           refresh();
 

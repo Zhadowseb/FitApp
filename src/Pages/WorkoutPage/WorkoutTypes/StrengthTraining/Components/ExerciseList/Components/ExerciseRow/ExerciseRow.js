@@ -25,6 +25,7 @@ import Expand from "../../../../../../../../Resources/Icons/UI-icons/Expand";
 import Plus from "../../../../../../../../Resources/Icons/UI-icons/Plus";
 import Colapse from "../../../../../../../../Resources/Icons/UI-icons/Colapse";
 import PanelSettingsModal from "./PanelSettingsModal";
+import { weightliftingRepository } from "../../../../../../../../Database/repository";
 
 
 const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
@@ -53,13 +54,7 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
 
   const deleteExercise = async (exercise_id) => {
     try {
-      await db.runAsync(
-        `DELETE FROM Sets WHERE exercise_id = ?;`,
-        [exercise_id]);
-
-      await db.runAsync(
-        `DELETE FROM Exercise WHERE exercise_id = ?;`,
-        [exercise_id]);
+      await weightliftingRepository.deleteExercise(db, exercise_id);
  
       updateUI?.();
     } catch (error) {
@@ -69,11 +64,7 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
 
   const addSet = async () => {
     try {
-      await db.runAsync(
-        `INSERT INTO Sets 
-          (set_number, exercise_id) VALUES
-          (?, ?);`,
-        [exercise.sets.length + 1, exercise.exercise_id]);
+      await weightliftingRepository.addSetToExercise(db, exercise.exercise_id);
       updateUI?.();
     } catch (error) {
       console.error(error);
@@ -81,12 +72,10 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
   };
 
   const saveColumns = async (columns) => {
-    await db.runAsync(
-      `UPDATE Exercise 
-      SET visible_columns = ?
-      WHERE exercise_id = ?`,
-      [JSON.stringify(columns), exercise.exercise_id]
-    );
+    await weightliftingRepository.updateExerciseVisibleColumns(db, {
+      exerciseId: exercise.exercise_id,
+      columns,
+    });
 
     set_VisibleColumns(columns);
   };

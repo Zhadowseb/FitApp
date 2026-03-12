@@ -4,6 +4,7 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useState, useEffect } from "react";
 
 import styles from './ExerciseStorageListStyle';
+import { weightliftingRepository } from "../../../../Database/repository";
 
 const ExerciseStorageList = ( {refreshKey} ) => {
 
@@ -13,9 +14,7 @@ const ExerciseStorageList = ( {refreshKey} ) => {
 
     const loadExerciseStorage = async () => {
         try {
-            const rows = await db.getAllAsync(
-                `SELECT exercise_name FROM Exercise_storage;`
-            );
+            const rows = await weightliftingRepository.getExerciseStorage(db);
 
             set_exercises(rows);
         } catch (error) {

@@ -10,6 +10,7 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 
 import styles from "./ProgramListStyle";
+import { programRepository } from "../../../../Database/repository";
 import {ThemedCard, ThemedText} from "../../../../Resources/ThemedComponents";
 import { formatDate, parseCustomDate } from "../../../../Utils/dateUtils";
 
@@ -42,53 +43,7 @@ const ProgramList = ({ refreshKey }) => {
     try {
       setLoading(true);
 
-      const rows = await db.getAllAsync(
-        `SELECT
-            p.program_id,
-            p.program_name,
-            p.start_date,
-            p.status,
-            COALESCE(mesocycles.mesocycle_count, 0) AS mesocycle_count,
-            COALESCE(microcycles.week_count, 0) AS week_count,
-            COALESCE(days.day_count, 0) AS day_count,
-            COALESCE(workouts.workout_count, 0) AS workout_count
-         FROM Program p
-         LEFT JOIN (
-            SELECT
-              program_id,
-              COUNT(*) AS mesocycle_count
-            FROM Mesocycle
-            GROUP BY program_id
-         ) mesocycles
-           ON mesocycles.program_id = p.program_id
-         LEFT JOIN (
-            SELECT
-              program_id,
-              COUNT(*) AS week_count
-            FROM Microcycle
-            GROUP BY program_id
-         ) microcycles
-           ON microcycles.program_id = p.program_id
-         LEFT JOIN (
-            SELECT
-              program_id,
-              COUNT(*) AS day_count
-            FROM Day
-            GROUP BY program_id
-         ) days
-           ON days.program_id = p.program_id
-         LEFT JOIN (
-            SELECT
-              d.program_id,
-              COUNT(w.workout_id) AS workout_count
-            FROM Day d
-            LEFT JOIN Workout w
-              ON w.day_id = d.day_id
-            GROUP BY d.program_id
-         ) workouts
-           ON workouts.program_id = p.program_id
-         ORDER BY p.start_date DESC, p.program_id DESC;`
-      );
+      const rows = await programRepository.getProgramsOverview(db);
 
       setPrograms(
         rows.map((program) => ({

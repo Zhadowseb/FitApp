@@ -26,6 +26,7 @@ import { ThemedCard,
         ThemedBottomSheet, 
         ThemedBouncyCheckbox } from "../../../../Resources/ThemedComponents";
 import { formatDate } from '../../../../Utils/dateUtils';
+import { programRepository } from "../../../../Database/repository";
 
 const Day = ( {day, program_id, microcycle_id} ) => {
     const colorScheme = useColorScheme();
@@ -76,57 +77,28 @@ const Day = ( {day, program_id, microcycle_id} ) => {
 
     const loadDay = async () => {
         try {
-            const dayRow = await db.getFirstAsync(
-                `SELECT day_id, date, done FROM Day WHERE Weekday = ? AND microcycle_id = ?;`,
-                [day, microcycle_id]
-            );
+            const dayRow = await programRepository.getDayDetails(db, {
+                microcycleId: microcycle_id,
+                weekday: day,
+            });
 
             if (!dayRow?.day_id) return;
 
             setDay_id(dayRow.day_id);
             setDate(dayRow.date);
             set_done(dayRow.done);
+            set_workouts(dayRow.workouts);
 
-            const workouts = await db.getAllAsync(
-                `SELECT workout_id, label, done, day_id FROM Workout WHERE day_id = 
-                (SELECT day_id FROM Day WHERE Weekday = ? AND microcycle_id = ?);`,
-                [day, microcycle_id]
-            );
-            set_workouts(workouts);
+            if (dayRow.workouts.length === 0) {setFocusText("Rest"); } 
+            else if (dayRow.workouts.length === 1) {
 
-            if (workouts.length === 0) {setFocusText("Rest"); } 
-            else if (workouts.length === 1) {
-
-                setFocusText(workouts[0].label);
+                setFocusText(dayRow.workouts[0].label);
             } else { 
                 setFocusText("..."); 
             }
 
-
-            const result = [];
-
-            for (const workout of workouts) {
-                const exercises = await db.getAllAsync(
-                `SELECT exercise_name, sets
-                FROM Exercise
-                WHERE workout_id = ?;`,
-                [workout.workout_id]
-                );
-
-                result.push({
-                workout_id: workout.workout_id,
-                label: workout.label,
-                exercises,
-                });
-            }
-
-            set_workoutExercises(result);
-
-            const doneRow = await db.getFirstAsync(
-                `SELECT done FROM Day WHERE day_id = ?;`,
-                [dayRow.day_id]
-            );
-            setWorkouts_done(doneRow?.done === 1);
+            set_workoutExercises(dayRow.workoutExercises);
+            setWorkouts_done(dayRow.workoutsDone);
 
         } catch (err) {
             console.error("Error loading day:", err);
@@ -134,87 +106,18 @@ const Day = ( {day, program_id, microcycle_id} ) => {
     };
 
     const copyWorkoutToDate = async (workoutId, date) => {
-
-        await db.execAsync("BEGIN TRANSACTION");
-
         try{
-            const targetDay = await db.getFirstAsync(
-                `SELECT day_id FROM Day WHERE date = ? AND program_id = ?`,
-                [formatDate(date), program_id]
-            );
+            const copiedWorkoutId = await programRepository.copyWorkoutToDate(db, {
+                workoutId,
+                programId: program_id,
+                date,
+            });
 
-            if (!targetDay?.day_id) {
+            if (!copiedWorkoutId) {
                 console.warn("No day found for date");
                 return;
             }
-
-            const newWorkout = await db.runAsync(
-                `INSERT INTO Workout (date, day_id, label)
-                SELECT ?, ?, label FROM Workout WHERE workout_id = ?`,
-                [formatDate(date), targetDay.day_id, workoutId]
-            );
-
-            const oldExercises = await db.getAllAsync(
-                `SELECT * FROM Exercise WHERE workout_id = ?`,
-                [workoutId]
-            );
-
-
-            const exerciseIdMap = {}; // { oldId: newId }
-
-            for (const ex of oldExercises) {
-                const result = await db.runAsync(
-                    `INSERT INTO Exercise (workout_id, exercise_name, sets, done)
-                    VALUES (?, ?, ?, 0)`,[
-                    newWorkout.lastInsertRowId,
-                    ex.exercise_name,
-                    ex.sets, ]
-                );
-                exerciseIdMap[ex.exercise_id] = result.lastInsertRowId;
-            }
-
-            for (const oldExerciseId in exerciseIdMap) {
-                const newExerciseId = exerciseIdMap[oldExerciseId];
-
-                const oldSets = await db.getAllAsync(
-                    `SELECT * FROM Sets WHERE exercise_id = ?`,
-                    [oldExerciseId]
-                );
-
-                for (const s of oldSets) {
-                    await db.runAsync(
-                    `INSERT INTO Sets (
-                        set_number,
-                        exercise_id,
-                        date,
-                        personal_record,
-                        pause,
-                        rpe,
-                        weight,
-                        reps,
-                        done,
-                        failed,
-                        note
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)`,
-                    [
-                        s.set_number,
-                        newExerciseId,
-                        s.date,
-                        s.personal_record,
-                        s.pause,
-                        s.rpe,
-                        s.weight,
-                        s.reps,
-                        s.note,
-                    ]
-                    );
-                }
-            }
-
-            await db.execAsync("COMMIT");
-
         } catch (err) {
-            await db.execAsync("ROLLBACK");
             console.error("Copy workout failed:", err);
             throw err;
         }
@@ -223,28 +126,8 @@ const Day = ( {day, program_id, microcycle_id} ) => {
 
     const deleteWorkout = async (selectedWorkout) => {
         try {
-            await db.execAsync("BEGIN TRANSACTION");
-
-            await db.runAsync(
-                `DELETE FROM Sets WHERE exercise_id IN (
-                    SELECT exercise_id FROM Exercise WHERE workout_id = ?);`,
-                [selectedWorkout]);
-
-            await db.runAsync(
-                `DELETE FROM Exercise WHERE workout_id = ?;`,
-                [selectedWorkout]);
-
-            await db.runAsync(
-                `DELETE FROM Run WHERE workout_id = ?;`,
-                [selectedWorkout]);
-
-            await db.runAsync(
-                `DELETE FROM Workout WHERE workout_id = ?;`,
-                [selectedWorkout]);
-
-            await db.execAsync("COMMIT");
+            await programRepository.deleteWorkout(db, selectedWorkout);
         } catch (err) {
-            await db.execAsync("ROLLBACK");
             console.error("Failed to delete workout:", err);
             throw err;
         }
@@ -473,10 +356,11 @@ const Day = ( {day, program_id, microcycle_id} ) => {
 
                 set_labelModal_visible(false);
 
-                const workout_id = await db.runAsync(
-                    `INSERT INTO Workout (date, day_id, label) VALUES (?, ?, ?);`,
-                    [date, day_id, labelId.id]
-                );
+                const workout_id = await programRepository.createWorkoutForDay(db, {
+                    date,
+                    dayId: day_id,
+                    label: labelId.id,
+                });
 
                 navigation.navigate("WorkoutPage", {
                     program_id,

@@ -17,6 +17,7 @@ import Cross from "../../../../Resources/Icons/UI-icons/Cross";
 import styles from "./RunStyle";
 import ListHeader from "./ListHeader";
 import { formatTime } from "../../../../Utils/timeUtils";
+import { runningRepository } from "../../../../Database/repository";
 
 const RunSetList = ({
   workout_id,
@@ -68,14 +69,10 @@ const RunSetList = ({
 
   const loadRunSets = async () => {
     try {
-      const rows = await db.getAllAsync(
-        `SELECT *
-         FROM Run
-         WHERE workout_id = ?
-           AND type = ?
-         ORDER BY set_number ASC;`,
-        [workout_id, type]
-      );
+      const rows = await runningRepository.getRunSets(db, {
+        workoutId: workout_id,
+        type,
+      });
 
       setSets(rows);
       empty?.(rows.length === 0);
@@ -87,35 +84,20 @@ const RunSetList = ({
   const deleteSet = async () => {
     if (!selectedSet) return;
 
-    await db.runAsync(
-      `DELETE FROM Run WHERE Run_id = ?;`,
-      [selectedSet.Run_id]
-    );
+    await runningRepository.deleteRunSet(db, {
+      runId: selectedSet.Run_id,
+      workoutId: workout_id,
+      type,
+    });
 
     triggerReload();
   };
 
   const renumberWorkingSets = async () => {
-    const rows = await db.getAllAsync(
-      `SELECT *
-       FROM Run
-       WHERE workout_id = ?
-         AND type = ?
-       ORDER BY set_number ASC;`,
-      [workout_id, type]
-    );
-
-    let counter = 1;
-
-    for (const row of rows) {
-      if (!row.is_pause) {
-        await db.runAsync(
-          `UPDATE Run SET set_number = ? WHERE Run_id = ?;`,
-          [counter, row.Run_id]
-        );
-        counter++;
-      }
-    }
+    await runningRepository.renumberWorkingRunSets(db, {
+      workoutId: workout_id,
+      type,
+    });
   };
 
   const togglePause = async () => {
@@ -123,12 +105,13 @@ const RunSetList = ({
 
     const newValue = selectedSet.is_pause ? 0 : 1;
 
-    await db.runAsync(
-      `UPDATE Run SET is_pause = ? WHERE Run_id = ?;`,
-      [newValue, selectedSet.Run_id]
-    );
+    await runningRepository.toggleRunSetPause(db, {
+      runId: selectedSet.Run_id,
+      workoutId: workout_id,
+      type,
+      isPause: newValue === 1,
+    });
 
-    await renumberWorkingSets();
     await loadRunSets();
     set_bottomsheetVisible(false);
   };
@@ -191,13 +174,14 @@ const RunSetList = ({
                 index === sets.length - 1 && styles.lastGrid,
               ]}
             >
-              <ThemedEditableCell
+                <ThemedEditableCell
                 value={set.distance?.toString() ?? ""}
                 onCommit={async (v) => {
-                  await db.runAsync(
-                    `UPDATE Run SET distance = ? WHERE Run_id = ?;`,
-                    [v === "" ? null : Number(v), set.Run_id]
-                  );
+                  await runningRepository.updateRunSetField(db, {
+                    runId: set.Run_id,
+                    field: "distance",
+                    value: v === "" ? null : Number(v),
+                  });
                   await loadRunSets();
                 }}
               />
@@ -215,10 +199,11 @@ const RunSetList = ({
                 value={set.pace?.toString() ?? ""}
                 keyboardType="normal"
                 onCommit={async (v) => {
-                  await db.runAsync(
-                    `UPDATE Run SET pace = ? WHERE Run_id = ?;`,
-                    [v === "" ? null : v, set.Run_id]
-                  );
+                  await runningRepository.updateRunSetField(db, {
+                    runId: set.Run_id,
+                    field: "pace",
+                    value: v === "" ? null : v,
+                  });
                   await loadRunSets();
                 }}
               />
@@ -236,10 +221,11 @@ const RunSetList = ({
                 <ThemedEditableCell
                   value={set.time?.toString() ?? ""}
                   onCommit={async (v) => {
-                    await db.runAsync(
-                      `UPDATE Run SET time = ? WHERE Run_id = ?;`,
-                      [v === "" ? null : Number(v), set.Run_id]
-                    );
+                    await runningRepository.updateRunSetField(db, {
+                      runId: set.Run_id,
+                      field: "time",
+                      value: v === "" ? null : Number(v),
+                    });
                     await loadRunSets();
                   }}
                 />
@@ -298,10 +284,11 @@ const RunSetList = ({
                         onPress={async () => {
                           setZoneDropdownVisible(false);
 
-                          await db.runAsync(
-                            `UPDATE Run SET heartrate = NULL WHERE Run_id = ?;`,
-                            [set.Run_id]
-                          );
+                          await runningRepository.updateRunSetField(db, {
+                            runId: set.Run_id,
+                            field: "heartrate",
+                            value: null,
+                          });
 
                           await loadRunSets();
                         }}
@@ -324,10 +311,11 @@ const RunSetList = ({
                             onPress={async () => {
                               setZoneDropdownVisible(false);
 
-                              await db.runAsync(
-                                `UPDATE Run SET heartrate = ? WHERE Run_id = ?;`,
-                                [zone.value, set.Run_id]
-                              );
+                              await runningRepository.updateRunSetField(db, {
+                                runId: set.Run_id,
+                                field: "heartrate",
+                                value: zone.value,
+                              });
 
                               await loadRunSets();
                             }}

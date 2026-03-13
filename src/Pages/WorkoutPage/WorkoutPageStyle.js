@@ -1,15 +1,23 @@
 import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
-
-  editmode: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+  bottomsheetTitle: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#2e2e2eff",
+    paddingBottom: 30,
   },
-  label: {
-    flex: 1,
+  bottomsheetBody: {
     justifyContent: "center",
-    alignItems: "center",
+    padding: 20,
+    paddingLeft: 0,
+  },
+  option: {
+    flexDirection: "row",
+    paddingTop: 20,
+  },
+  optionText: {
+    paddingLeft: 10,
+    fontWeight: 600,
+    fontSize: 16,
   },
 });

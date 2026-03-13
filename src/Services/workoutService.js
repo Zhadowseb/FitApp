@@ -32,6 +32,10 @@ export async function refreshWorkoutHierarchyCompletion(db, workoutId) {
   });
 }
 
+export async function getWorkoutPageMetadata(db, workoutId) {
+  return workoutRepository.getWorkoutPageMetadata(db, workoutId);
+}
+
 export async function getWorkoutTimerState(db, workoutId) {
   return workoutRepository.getWorkoutTimerState(db, workoutId);
 }

@@ -12,6 +12,20 @@ export async function getWorkoutHierarchyIds(db, workoutId) {
   );
 }
 
+export async function getWorkoutPageMetadata(db, workoutId) {
+  return db.getFirstAsync(
+    `SELECT
+        d.program_id,
+        d.Weekday AS day,
+        w.date,
+        w.label AS workout_label
+     FROM Workout w
+     JOIN Day d ON d.day_id = w.day_id
+     WHERE w.workout_id = ?;`,
+    [workoutId]
+  );
+}
+
 export async function getDayHierarchyIds(db, dayId) {
   return db.getFirstAsync(
     `SELECT

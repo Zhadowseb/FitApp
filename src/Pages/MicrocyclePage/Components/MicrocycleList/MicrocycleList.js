@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { View, FlatList, TouchableOpacity } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 import { useColorScheme } from "react-native";
@@ -45,14 +46,18 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
   const [OptionsBottomsheet_visible, set_OptionsBottomsheet_visible] = useState(false);
   const [showCalendarPicker, set_ShowCalendarPicker] = useState(false);
   const [selectedDay, setSelectedDay] = useState(null);
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState(null);
   const [pickWorkoutModalVisible, setPickWorkoutModalVisible] = useState(false);
   const [pickMode, setPickMode] = useState(null);
   const [dayOptionsVisible, setDayOptionsVisible] = useState(false);
   const [labelModalVisible, setLabelModalVisible] = useState(false);
+  const [datePickerVisible, setDatePickerVisible] = useState(false);
+  const [newDate, setNewDate] = useState(new Date());
   const longPressHandledRef = useRef(false);
   const PICK_MODE = {
     NAVIGATE: "navigate",
     DELETE: "delete",
+    COPY: "copy",
   };
 
 
@@ -351,10 +356,38 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
       setPickWorkoutModalVisible(false);
       setDayOptionsVisible(false);
       setSelectedDay(null);
+      setSelectedWorkoutId(null);
       setPickMode(null);
       updateui();
     } catch (error) {
       console.error("Failed to delete workout:", error);
+    }
+  };
+
+  const copyWorkoutToDate = async (workoutId, date) => {
+    try {
+      const copiedWorkoutId = await programRepository.copyWorkoutToDate(db, {
+        workoutId,
+        programId: program_id,
+        date,
+      });
+
+      if (!copiedWorkoutId) {
+        console.warn("No day found for date");
+        setSelectedWorkoutId(null);
+        setPickMode(null);
+        return;
+      }
+
+      setDatePickerVisible(false);
+      setSelectedWorkoutId(null);
+      setPickWorkoutModalVisible(false);
+      setDayOptionsVisible(false);
+      setSelectedDay(null);
+      setPickMode(null);
+      updateui();
+    } catch (error) {
+      console.error("Copy workout failed:", error);
     }
   };
 
@@ -552,11 +585,19 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
       visible={pickWorkoutModalVisible}
       onClose={() => {
         setPickWorkoutModalVisible(false);
+        setSelectedWorkoutId(null);
         setPickMode(null);
       }}
       onSubmit={(workout) => {
         if (pickMode === PICK_MODE.DELETE) {
           deleteWorkout(workout.workout_id);
+          return;
+        }
+
+        if (pickMode === PICK_MODE.COPY) {
+          setSelectedWorkoutId(workout.workout_id);
+          setPickWorkoutModalVisible(false);
+          setDatePickerVisible(true);
           return;
         }
 
@@ -594,6 +635,30 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
             style={styles.option}
             onPress={() => {
               if (selectedDay.workouts.length === 1) {
+                setSelectedWorkoutId(selectedDay.workouts[0].workout_id);
+                setPickMode(PICK_MODE.COPY);
+                setDayOptionsVisible(false);
+                setDatePickerVisible(true);
+                return;
+              }
+
+              setDayOptionsVisible(false);
+              setPickMode(PICK_MODE.COPY);
+              setPickWorkoutModalVisible(true);
+            }}
+          >
+            <Copy width={24} height={24} />
+            <ThemedText style={styles.option_text}>
+              Copy workout to a different day
+            </ThemedText>
+          </TouchableOpacity>
+        )}
+
+        {!!selectedDay?.workouts?.length && (
+          <TouchableOpacity
+            style={styles.option}
+            onPress={() => {
+              if (selectedDay.workouts.length === 1) {
                 deleteWorkout(selectedDay.workouts[0].workout_id);
                 return;
               }
@@ -621,6 +686,26 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
         await createWorkoutForDay(labelId);
       }}
     />
+
+    {datePickerVisible && (
+      <DateTimePicker
+        value={newDate}
+        mode="date"
+        display="default"
+        onChange={async (event, date) => {
+          setDatePickerVisible(false);
+
+          if (event.type !== "set" || !date || !selectedWorkoutId) {
+            setSelectedWorkoutId(null);
+            setPickMode(null);
+            return;
+          }
+
+          setNewDate(date);
+          await copyWorkoutToDate(selectedWorkoutId, date);
+        }}
+      />
+    )}
     
     </>
   );

@@ -1,18 +1,12 @@
 import { StatusBar } from 'expo-status-bar';
-import { View, useColorScheme } from 'react-native';
+import { View} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import * as Location from 'expo-location';
 
 import styles from './HomePageStyle';
 
-//Custom themed components
 import { 
-  ThemedTitle, 
-  ThemedCard, 
-  ThemedView, 
-  ThemedText, 
-  ThemedButton, 
-  ThemedBouncyCheckbox 
+  ThemedView,  
+  ThemedButton 
 } from "../../Resources/ThemedComponents";
 
 export default function App() {
@@ -20,9 +14,7 @@ export default function App() {
   const navigation = useNavigation();
 
   return (
-
     <ThemedView style={styles.container}>
-
       <View style={styles.button_spacing}> 
         <ThemedButton 
           title="Go to Program Page"
@@ -38,7 +30,6 @@ export default function App() {
       </View>
 
       <StatusBar style="auto" />
-
     </ThemedView>
   );
 }

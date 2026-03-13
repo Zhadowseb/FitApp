@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from "react";
 import Checkbox from 'expo-checkbox';
 
 import styles from './SetPageStyle';
+import { weightliftingService as weightliftingRepository } from "../../Services";
 
 const SetPage = ( {route} ) =>  {
 
@@ -20,11 +21,7 @@ const SetPage = ( {route} ) =>  {
 
     const loadSetInfo = async () => {
         try {
-            const rows = await db.getAllAsync(
-                `SELECT set_number, pause, rpe, weight, reps, done, failed, note FROM Sets 
-                    WHERE exercise_id=?;`,
-                    [exercise_id]
-            );
+            const rows = await weightliftingRepository.getExerciseSets(db, exercise_id);
 
             const formatted = rows.map(r => ({
                 ...r,
@@ -46,10 +43,7 @@ const SetPage = ( {route} ) =>  {
 
     const checkInitialized = async () => {
         
-        const count_row = await db.getFirstAsync(
-            "SELECT COUNT(*) AS count FROM Sets WHERE exercise_id = ?;",
-            [exercise_id]
-        );
+        const count_row = await weightliftingRepository.getExerciseSetCount(db, exercise_id);
 
         const existingCount = count_row?.count ?? 0;
 
@@ -62,25 +56,10 @@ const SetPage = ( {route} ) =>  {
 
     const insertSetInfo = async (data) => {
         try {
-            for (const set of data) {
-
-                await db.runAsync(
-                    `UPDATE Sets 
-                        SET pause=?, rpe=?, weight=?, reps=?, done=?, failed=?, note=?
-                        WHERE exercise_id=? AND set_number=?;`,
-                    [
-                        set.pause,
-                        set.rpe,
-                        set.weight,
-                        set.reps,
-                        set.done ? 1 : 0,
-                        set.failed ? 1 : 0,
-                        set.note,
-                        exercise_id,
-                        set.set_number
-                    ]
-                );
-            }
+            await weightliftingRepository.saveExerciseSets(db, {
+                exerciseId: exercise_id,
+                sets: data,
+            });
             
         } catch (error) {
             console.error("Error saving sets", error);
@@ -92,13 +71,10 @@ const SetPage = ( {route} ) =>  {
             const exists = await checkInitialized();
 
             if(!exists){
-
-                for (let i = 1; i <= sets; i++) {
-                    await db.runAsync(
-                        `INSERT INTO Sets (set_number, exercise_id) VALUES (?, ?);`,
-                        [i, exercise_id]
-                    );
-                }
+                await weightliftingRepository.initializeExerciseSets(db, {
+                    exerciseId: exercise_id,
+                    count: sets,
+                });
             }
 
             await loadSetInfo();
@@ -118,12 +94,10 @@ const SetPage = ( {route} ) =>  {
     useEffect(() => {
         const updateExerciseDone = async () => {
             try {
-                await db.runAsync(
-                    `UPDATE Exercise 
-                    SET done = ?
-                    WHERE exercise_id = ?`,
-                    [allDone ? 1 : 0, exercise_id]
-                );
+                await weightliftingRepository.updateExerciseDone(db, {
+                    exerciseId: exercise_id,
+                    done: allDone,
+                });
             } catch (error) {
                 console.error("Failed to update Exercise.done", error);
             }

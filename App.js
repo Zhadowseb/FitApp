@@ -11,7 +11,6 @@ import * as Location from 'expo-location';
 import HomePage from './src/Pages/HomePage/HomePage';
 import ProgramPage from './src/Pages/ProgramPage/ProgramPage';
 import ProgramOverviewPage from './src/Pages/ProgramOverviewPage/ProgramOverviewPage';
-import MesocyclePage from './src/Pages/MesocyclePage/MesocyclePage';
 import MicrocyclePage from './src/Pages/MicrocyclePage/MicrocyclePage';
 import WeekPage from './src/Pages/WeekPage/WeekPage';
 import WorkoutPage from './src/Pages/WorkoutPage/WorkoutPage';
@@ -108,7 +107,6 @@ export default function App() {
             <Stack.Screen name="HomePage" component={HomePage} />
             <Stack.Screen name="ProgramPage" component={ProgramPage} options={{headerShown: false}} />
             <Stack.Screen name="ProgramOverviewPage" component={ProgramOverviewPage} options={{headerShown: false}} />
-            <Stack.Screen name="MesocyclePage" component={MesocyclePage} />
             <Stack.Screen name="MicrocyclePage" component={MicrocyclePage} options={{headerShown: false}} />
             <Stack.Screen name="WeekPage" component={WeekPage} options={{headerShown: false}} />
             <Stack.Screen name="WorkoutPage" component={WorkoutPage} options={{headerShown: false}} />

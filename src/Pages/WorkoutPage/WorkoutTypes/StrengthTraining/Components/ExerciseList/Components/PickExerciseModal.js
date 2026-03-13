@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ScrollView, Pressable } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
+import { weightliftingService as weightliftingRepository } from "../../../../../../../Services";
 
 import {
   ThemedModal,
@@ -23,9 +24,7 @@ const PickExerciseModal = ({ visible, onClose, workout_id, onSubmit }) => {
   const loadExercises = async () => {
     try {
 
-      const rows = await db.getAllAsync(
-        "SELECT exercise_name FROM Exercise_storage ORDER BY exercise_name;"
-      );
+      const rows = await weightliftingRepository.getExerciseStorage(db);
 
       setExercises(rows);
 
@@ -37,11 +36,10 @@ const PickExerciseModal = ({ visible, onClose, workout_id, onSubmit }) => {
   const handleSelect = async (exercise_name) => {
 
     try {
-      await db.runAsync(
-        `INSERT INTO Exercise (workout_id, exercise_name, sets) 
-         VALUES (?, ?, ?);`,
-        [workout_id, exercise_name, 0]
-      );
+      await weightliftingRepository.addExerciseToWorkout(db, {
+        workoutId: workout_id,
+        exerciseName: exercise_name,
+      });
 
       onSubmit?.();
       onClose();

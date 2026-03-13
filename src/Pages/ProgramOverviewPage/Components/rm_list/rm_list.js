@@ -4,6 +4,7 @@ import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 
 import styles from "./Rm_listStyle"
+import { weightliftingService as weightliftingRepository } from "../../../../Services";
 import EditEstimatedSet from "./Components/EditEstimatedSet/EditEstimatedSet";
 
 import { ThemedTitle, ThemedCard, ThemedView, ThemedText } 
@@ -22,10 +23,8 @@ const rm_list = ( {program_id, refreshKey, refresh} ) => {
     const loadEstimated_Sets = async () => {
         try{
             setLoading(true);
-            const estimated_sets = await db.getAllAsync(
-                `SELECT estimated_set_id, estimated_weight, exercise_name FROM Estimated_Set WHERE program_id = ?;`,
-                [program_id]
-            );
+            const estimated_sets =
+                await weightliftingRepository.getEstimatedSets(db, program_id);
             setEstimated_sets(estimated_sets);
         } catch(error) {
             console.error("Error loading estimated sets", error);
@@ -36,10 +35,10 @@ const rm_list = ( {program_id, refreshKey, refresh} ) => {
 
     const handleSubmit = async (data) => {
         try{
-            await db.runAsync(
-                `UPDATE Estimated_set SET estimated_weight = ? WHERE estimated_set_id = ?;`,
-                [data.estimated_weight, data.id]
-            );
+            await weightliftingRepository.updateEstimatedSetWeight(db, {
+                estimatedSetId: data.id,
+                estimatedWeight: data.estimated_weight,
+            });
             refresh();
         } catch (error) {
             console.error(error);
@@ -48,10 +47,7 @@ const rm_list = ( {program_id, refreshKey, refresh} ) => {
 
     const handleDelete = async (data) => {
         try{
-            await db.runAsync(
-                `DELETE FROM Estimated_set WHERE estimated_set_id = ?;`,
-                [data.id]
-            );
+            await weightliftingRepository.deleteEstimatedSet(db, data.id);
             refresh();
         } catch (error) {
             console.error(error);

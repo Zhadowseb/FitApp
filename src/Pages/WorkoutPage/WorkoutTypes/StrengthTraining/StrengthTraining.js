@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { View, Button, ScrollView, Text, TouchableOpacity, Switch } from 'react-native';
+import { View, Button, ScrollView, Text, TouchableOpacity, Switch, Vibration } from 'react-native';
 import { useState, useCallback, useEffect } from "react";
 import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
@@ -19,6 +19,9 @@ import { ThemedTitle,
         ThemedHeader } 
   from "../../../../Resources/ThemedComponents";
 import { formatTime, formatWorkoutStart } from '../../../../Utils/timeUtils';
+import {
+  weightliftingService, workoutService,
+} from "../../../../Services";
 
 const StrengthTraining = ({workout_id, date}) =>  {
   const colorScheme = useColorScheme();
@@ -44,11 +47,9 @@ const StrengthTraining = ({workout_id, date}) =>  {
 
   const loadTotalSets = async () => {
     try {
-      const result = await db.getFirstAsync(
-        `SELECT SUM(sets) AS count FROM Exercise WHERE workout_id = ?`,
-        [workout_id]
-      );
-      set_totalSets(result.count);
+      const result =
+        await weightliftingService.getStrengthWorkoutSummary(db, workout_id);
+      set_totalSets(result.totalSets);
     } catch (err) {
       console.error("Failed to load the amount of sets to do for this workout:", err);
     }
@@ -56,14 +57,9 @@ const StrengthTraining = ({workout_id, date}) =>  {
 
   const loadCompletedSets = async () => {
     try {
-      const result = await db.getFirstAsync(
-        `SELECT COUNT(*) AS done_sets
-          FROM Sets s
-          JOIN Exercise e ON e.exercise_id = s.exercise_id
-          WHERE e.workout_id = ?
-            AND s.done = 1; 
-          `, [workout_id]);
-      set_doneSets(result.done_sets);
+      const result =
+        await weightliftingService.getStrengthWorkoutSummary(db, workout_id);
+      set_doneSets(result.doneSets);
     } catch (err) {
       console.error("Failed to load the done sets for this workout:", err);
     }
@@ -77,15 +73,7 @@ const StrengthTraining = ({workout_id, date}) =>  {
       loadCompletedSets();
 
       const reload = async () => {
-          const row = await db.getFirstAsync(
-              `SELECT 
-                  done,
-                  original_start_time,
-                  timer_start, 
-                  elapsed_time FROM Workout 
-              WHERE workout_id = ?;`,
-              [workout_id]
-          );
+          const row = await workoutService.getWorkoutTimerState(db, workout_id);
 
           if(row.timer_start !== null){
               set_isRunning(true);
@@ -106,13 +94,11 @@ const StrengthTraining = ({workout_id, date}) =>  {
           return () => {
               
               const saveState = async () => {
-                  await db.getFirstAsync(
-                      `UPDATE Workout
-                          SET timer_start = ?, 
-                          elapsed_time = ?
-                          WHERE workout_id = ?;`,
-                      [timer_start, elapsed_time, workout_id]
-                  );  
+                  await workoutService.persistWorkoutTimerState(db, {
+                      workoutId: workout_id,
+                      timerStart: timer_start,
+                      elapsedTime: elapsed_time,
+                  });
               }
               saveState();
           };
@@ -149,12 +135,10 @@ const StrengthTraining = ({workout_id, date}) =>  {
           elapsed_time + computeCurrentElapsed()
       );
       
-      await db.runAsync(
-          `UPDATE Workout
-              SET elapsed_time = ?
-              WHERE workout_id = ?;`,
-          [newElapsed, workout_id]
-      );  
+      await workoutService.updateWorkoutElapsedTime(db, {
+          workoutId: workout_id,
+          elapsedTime: newElapsed,
+      });
 
       set_elapsed_time(newElapsed);
   };
@@ -162,11 +146,7 @@ const StrengthTraining = ({workout_id, date}) =>  {
   const startWorkout = async () => {
     set_isRunning(true);
 
-    const row = await db.getFirstAsync(
-        `SELECT original_start_time FROM Workout 
-        WHERE workout_id = ?;`,
-        [workout_id]
-    );
+    const row = await workoutService.getWorkoutOriginalStartTime(db, workout_id);
 
     //Miliseconds since 1. januar 1970 at 00:00:00 UTC
     const start_time = Date.now();
@@ -174,11 +154,10 @@ const StrengthTraining = ({workout_id, date}) =>  {
 
     if(row.original_start_time === null){
         set_original_start_time(start_time);
-        await db.runAsync(
-            `UPDATE Workout SET original_start_time = ? 
-            WHERE workout_id = ?;`,
-            [start_time, workout_id]
-        );
+        await workoutService.setWorkoutOriginalStartTime(db, {
+            workoutId: workout_id,
+            startTime: start_time,
+        });
     } 
     Vibration.vibrate(500);
   };
@@ -195,30 +174,20 @@ const StrengthTraining = ({workout_id, date}) =>  {
     set_isDone(true);
     set_timer_start(null);
     
-    //Set workout done
-    await db.runAsync(
-        `UPDATE Workout SET done = 1
-        WHERE workout_id = ?;`,
-        [workout_id]
-    );
+    await workoutService.setWorkoutDone(db, {
+      workoutId: workout_id,
+      done: true,
+    });
   };
 
   const restartWorkout = async () => {
-    await db.runAsync(
-        `UPDATE Workout SET 
-            done = 0,
-            original_start_time = NULL,
-            timer_start = NULL, 
-            elapsed_time = 0
-            WHERE workout_id = ?;`,
-        [workout_id]
-    );
+    await workoutService.resetWorkoutState(db, workout_id);
     set_original_start_time(null);
     set_timer_start(null);
     set_elapsed_time(0);
     set_isRunning(false);
     set_isDone(false);
-    triggerReload();
+    refresh();
   }
 
 

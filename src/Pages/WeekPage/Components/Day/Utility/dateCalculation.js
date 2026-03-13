@@ -1,5 +1,6 @@
 import { parseCustomDate, formatDate } from "../../../../Utils/dateUtils";
 import { getWeeksBeforeMesocycle } from "../../../../Utils/getWeeksBeforeMesocycle";
+import { programService as programRepository } from "../../../../Services";
 
 export async function calculateProgramDay({
   db, 
@@ -8,20 +9,12 @@ export async function calculateProgramDay({
   weekdayIndex,
 }) {
 
-  const microcycle = await db.getFirstAsync(
-    `SELECT mesocycle_id, microcycle_number
-     FROM Microcycle
-     WHERE microcycle_id = ?;`,
-    [microcycle_id]
-  );
+  const microcycle = await programRepository.getMicrocycleMetadata(db, microcycle_id);
 
-  const mesocycle = await db.getFirstAsync(
-    `SELECT mesocycle_number
-     FROM Mesocycle
-     WHERE mesocycle_id = ?
-       AND program_id = ?;`,
-    [microcycle.mesocycle_id, program_id]
-  );
+  const mesocycle = await programRepository.getMesocycleMetadata(db, {
+    mesocycleId: microcycle.mesocycle_id,
+    programId: program_id,
+  });
 
   const weeksBefore = await getWeeksBeforeMesocycle({
     db,
@@ -32,10 +25,7 @@ export async function calculateProgramDay({
   const weekCount =
     weeksBefore + microcycle.microcycle_number;
 
-  const program = await db.getFirstAsync(
-    `SELECT start_date FROM Program WHERE program_id = ?;`,
-    [program_id]
-  );
+  const program = await programRepository.getProgramMetadata(db, program_id);
 
   const daysFromStart = weekCount * 7 + weekdayIndex - 7;
 

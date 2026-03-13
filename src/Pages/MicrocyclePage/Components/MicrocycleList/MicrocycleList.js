@@ -15,6 +15,7 @@ import WeekIndicator from "../../../../Resources/Figures/WeekIndicator";
 import { WORKOUT_ICONS } from "../../../../Resources/Icons/WorkoutLabels";
 
 import styles from "./MicrocycleListStyle";
+import { programService as programRepository } from "../../../../Services";
 
 import { ThemedCard, 
         ThemedText, 
@@ -46,11 +47,8 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
   const loadMicrocycles = async () => {
     try {
       setLoading(true);
-
-      const cycles = await db.getAllAsync(
-        "SELECT microcycle_id, microcycle_number, program_id, focus, done FROM Microcycle WHERE mesocycle_id = ?;",
-        [mesocycle_id]
-      );
+      const cycles =
+        await programRepository.getMicrocyclesByMesocycle(db, mesocycle_id);
 
       const enriched = enrichMicrocycles(cycles);
       setMicrocycles(enriched);
@@ -74,20 +72,18 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
         const date = new Date(start);
         date.setDate(start.getDate() + i);
 
-        const dayRow = await db.getFirstAsync(
-          `SELECT day_id FROM Day
-          WHERE microcycle_id = ?
-          AND date = ?`,
-          [mc.microcycle_id, formatDate(date)]
-        );
+        const dayRow = await programRepository.getDayByMicrocycleAndDate(db, {
+          microcycleId: mc.microcycle_id,
+          date: formatDate(date),
+        });
 
         let icon = null;
         let iconLabel = null;
 
         if (dayRow) {
-          const workouts = await db.getAllAsync(
-            `SELECT label FROM Workout WHERE day_id = ?`,
-            [dayRow.day_id]
+          const workouts = await programRepository.getWorkoutLabelsByDay(
+            db,
+            dayRow.day_id
           );
 
           if (workouts.length === 1) {
@@ -138,10 +134,10 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
     try {
       setLoading(true);
 
-      await db.getAllAsync(
-        "UPDATE Microcycle SET focus = ? WHERE microcycle_id = ? ",
-        [focus, microcycle_id]
-      );
+      await programRepository.updateMicrocycleFocus(db, {
+        microcycleId: microcycle_id,
+        focus,
+      });
 
       updateui();
     } catch (error) {
@@ -155,99 +151,10 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
     try {
       setLoading(true);
 
-      // Get all days from old week.
-      const oldDays = await db.getAllAsync(
-        `SELECT day_id, Weekday FROM Day WHERE microcycle_id = ?`,
-        [source_microcycle_id]
-      );
-
-      // Get all days from new week.
-      const newDays = await db.getAllAsync(
-        `SELECT day_id, Weekday FROM Day WHERE microcycle_id = ?`,
-        [target_microcycle_id]
-      );
-
-      // Creating a dictionary mapping old day_id to new day_id
-      const dayMap = {};
-      newDays.forEach(d => {
-        dayMap[d.Weekday] = d.day_id;
+      await programRepository.copyMicrocycleWorkouts(db, {
+        sourceMicrocycleId: source_microcycle_id,
+        targetMicrocycleId: target_microcycle_id,
       });
-
-      // Loop over old days.
-      for (const oldDay of oldDays) {
-        const newDayId = dayMap[oldDay.Weekday];
-        if (!newDayId) continue; //Safety
-
-        //Get workouts from old day.
-        const workouts = await db.getAllAsync(
-          `SELECT * FROM Workout WHERE day_id = ?`,
-          [oldDay.day_id]
-        );
-
-        for (const workout of workouts) {
-          // Loop over all workouts, and insert them into new day.
-          const resultWorkout = await db.runAsync(
-            `INSERT INTO Workout (day_id, date, label, done)
-            VALUES (?, ?, ?, 0)`,
-            [newDayId, workout.date, workout.label]
-          );
-
-          const newWorkoutId = resultWorkout.lastInsertRowId;
-
-          // Get all exercises from the old workout
-          const exercises = await db.getAllAsync(
-            `SELECT * FROM Exercise WHERE workout_id = ?`,
-            [workout.workout_id]
-          );
-
-          for (const exercise of exercises) {
-            // Loop over all the old exercises from the old workout, creating new exercises matching.
-            const resultExercise = await db.runAsync(
-              `INSERT INTO Exercise (workout_id, exercise_name, sets, done)
-              VALUES (?, ?, ?, 0)`,
-              [newWorkoutId, exercise.exercise_name, exercise.sets]
-            );
-
-            const newExerciseId = resultExercise.lastInsertRowId;
-
-            // Collect all the sets ascociated with the currently looped over exercise
-            const sets = await db.getAllAsync(
-              `SELECT * FROM Sets WHERE exercise_id = ?`,
-              [exercise.exercise_id]
-            );
-
-            for (const set of sets) {
-              // Loop over all the old sets, inserting copies within the new exercise.
-              await db.runAsync(
-                `INSERT INTO Sets (
-                  set_number,
-                  exercise_id,
-                  date,
-                  personal_record,
-                  pause,
-                  rpe,
-                  weight,
-                  reps,
-                  done,
-                  failed,
-                  note
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)`,
-                [
-                  set.set_number,
-                  newExerciseId,
-                  set.date,
-                  set.personal_record,
-                  set.pause,
-                  set.rpe,
-                  set.weight,
-                  set.reps,
-                  set.note
-                ]
-              );
-            }
-          }
-        }
-      }
       set_targetWeek(null);
 
     } catch (err) {
@@ -258,27 +165,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
   };
 
   const getWorkoutCounts = async (microcycle_id) => {
-    const total = await db.getFirstAsync(
-      `SELECT COUNT(*) AS count
-      FROM Workout w
-      JOIN Day d ON w.day_id = d.day_id
-      WHERE d.microcycle_id = ?`,
-      [microcycle_id]
-    );
-
-    const done = await db.getFirstAsync(
-      `SELECT COUNT(*) AS count
-      FROM Workout w
-      JOIN Day d ON w.day_id = d.day_id
-      WHERE d.microcycle_id = ?
-        AND w.done = 1`,
-      [microcycle_id]
-    );
-
-    return {
-      total: total.count,
-      done: done.count,
-    };
+    return programRepository.getMicrocycleWorkoutCounts(db, microcycle_id);
   };
 
   const loadCounts = async () => {
@@ -334,56 +221,13 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
 
 
   const deleteMicrocycle = async (microcycle_id) => {
-    await db.execAsync("BEGIN TRANSACTION");
-
     try {
-      await db.runAsync(`
-        DELETE FROM Sets
-        WHERE exercise_id IN (
-          SELECT e.exercise_id
-          FROM Exercise e
-          JOIN Workout w ON w.workout_id = e.workout_id
-          JOIN Day d ON d.day_id = w.day_id
-          WHERE d.microcycle_id = ?
-        )
-      `, [microcycle_id]);
-
-      await db.runAsync(`
-        DELETE FROM Exercise
-        WHERE workout_id IN (
-          SELECT w.workout_id
-          FROM Workout w
-          JOIN Day d ON d.day_id = w.day_id
-          WHERE d.microcycle_id = ?
-        )
-      `, [microcycle_id]);
-
-      await db.runAsync(`
-        DELETE FROM Workout
-        WHERE day_id IN (
-          SELECT day_id
-          FROM Day
-          WHERE microcycle_id = ?
-        )
-      `, [microcycle_id]);
-
-      await db.runAsync(`
-        DELETE FROM Day
-        WHERE microcycle_id = ?
-      `, [microcycle_id]);
-
-      await db.runAsync(`
-        DELETE FROM Microcycle
-        WHERE microcycle_id = ?
-      `, [microcycle_id]);
-
-      await db.execAsync("COMMIT");
+      await programRepository.deleteMicrocycle(db, microcycle_id);
 
       updateui(); // refresh list
       set_OptionsBottomsheet_visible(false);
 
     } catch (e) {
-      await db.execAsync("ROLLBACK");
       console.error("deleteMicrocycle failed:", e);
     }
   };

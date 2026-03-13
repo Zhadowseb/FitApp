@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
 
 import styles from "./ExerciseListStyle";
+import { weightliftingService as weightliftingRepository } from "../../../../../../Services";
 
 import ExerciseRow from "./Components/ExerciseRow/ExerciseRow"
 import Plus from "../../../../../../Resources/Icons/UI-icons/Plus";
@@ -24,52 +25,11 @@ const ExerciseList = ( {workout_id, refreshing, updateUI} ) => {
     try {
       setLoading(true);
 
-      const exercises = await db.getAllAsync(
-        `SELECT 
-          exercise_id, exercise_name, sets, done, visible_columns
-          FROM Exercise WHERE workout_id = ?;`,
-        [workout_id]
+      const exercises = await weightliftingRepository.getWorkoutExercises(
+        db,
+        workout_id
       );
-
-      const sets = await db.getAllAsync(
-        `SELECT s.*
-        FROM Sets s
-        JOIN Exercise e ON e.exercise_id = s.exercise_id
-        WHERE e.workout_id = ?;`,
-        [workout_id]
-      );
-
-      const setsByExercise = {};
-      for (const set of sets) {
-        if (!setsByExercise[set.exercise_id]) {
-          setsByExercise[set.exercise_id] = [];
-        }
-        setsByExercise[set.exercise_id].push(set);
-      }
-
-      const exercisesWithSets = exercises.map(ex => {
-          const exSets = setsByExercise[ex.exercise_id] ?? [];
-
-          const defaultColumns = {
-            rest: true,
-            set: true,
-            x: true,
-            reps: true,
-            rpe: true,
-            weight: true,
-            done: true,
-          };
-          
-          return {
-            ...ex,
-            sets: exSets,
-            setCount: exSets.length,
-            visibleColumns: ex.visible_columns
-              ? JSON.parse(ex.visible_columns)
-              : defaultColumns,            
-          };
-        });
-      setExercises(exercisesWithSets);
+      setExercises(exercises);
 
     } catch (error) {
       console.error("Error loading exercises", error);
@@ -79,125 +39,18 @@ const ExerciseList = ( {workout_id, refreshing, updateUI} ) => {
   };
 
   const updateSetDone = async (sets_id, done) => {
-    await db.execAsync("BEGIN TRANSACTION");
-
     try {
-      // 1. Update the set ticket off
-      await db.runAsync(
-        `UPDATE Sets SET done = ? WHERE sets_id = ?`,
-        [done ? 1 : 0, sets_id]
-      );
-
-      // 2. Update Exercise.done (true = all sets done)
-      await db.runAsync(
-        `
-        UPDATE Exercise
-        SET done = (
-          NOT EXISTS (
-            SELECT 1
-            FROM Sets
-            WHERE Sets.exercise_id = Exercise.exercise_id
-              AND Sets.done = 0
-          )
-        )
-        WHERE exercise_id = (
-          SELECT exercise_id FROM Sets WHERE sets_id = ?
-        )
-        `,
-        [sets_id]
-      );
-
-      // 3. Update Workout.done (true = all exercises done)
-      await db.runAsync(
-        `
-        UPDATE Workout
-        SET done = (
-          NOT EXISTS (
-            SELECT 1
-            FROM Exercise
-            WHERE Exercise.workout_id = Workout.workout_id
-              AND Exercise.done = 0
-          )
-        )
-        WHERE workout_id = ?
-        `,
-        [workout_id]
-      );
-
-      // 4. Update Day.done (true = all workouts done)
-      await db.runAsync(
-        `
-        UPDATE Day
-        SET done = (
-          NOT EXISTS (
-            SELECT 1
-            FROM Workout
-            WHERE Workout.day_id = Day.day_id
-              AND Workout.done = 0
-          )
-        )
-        WHERE day_id = (
-          SELECT day_id FROM Workout WHERE workout_id = ?
-        )
-        `,
-        [workout_id]
-      );
-
-      // 5. Update Microcycle.done (true = all workouts done)
-      await db.runAsync(
-        `
-        UPDATE Microcycle
-        SET done = (
-          NOT EXISTS (
-            SELECT 1
-            FROM Workout
-            JOIN Day ON Day.day_id = Workout.day_id
-            WHERE Day.microcycle_id = Microcycle.microcycle_id
-              AND Workout.done = 0
-          )
-        )
-        WHERE microcycle_id = (
-          SELECT Day.microcycle_id
-          FROM Day
-          JOIN Workout ON Workout.day_id = Day.day_id
-          WHERE Workout.workout_id = ?
-        )
-        `,
-        [workout_id]
-      );
-
-      // 6. Update Mesocycle.done (true = all microcycles done)
-      await db.runAsync(
-        `
-        UPDATE Mesocycle
-        SET done = (
-          NOT EXISTS (
-            SELECT 1
-            FROM Microcycle
-            WHERE Microcycle.mesocycle_id = Mesocycle.mesocycle_id
-              AND Microcycle.done = 0
-          )
-        )
-        WHERE mesocycle_id = (
-          SELECT Microcycle.mesocycle_id
-          FROM Microcycle
-          JOIN Day ON Day.microcycle_id = Microcycle.microcycle_id
-          JOIN Workout ON Workout.day_id = Day.day_id
-          WHERE Workout.workout_id = ?
-        )
-        `,
-        [workout_id]
-      );
-
-
-      await db.execAsync("COMMIT");
+      await weightliftingRepository.updateStrengthSetDone(db, {
+        workoutId: workout_id,
+        setId: sets_id,
+        done,
+      });
 
       //Reloades ui
       loadExercises();
       updateUI();
 
     } catch (error) {
-      await db.execAsync("ROLLBACK");
       console.error("updateSetDone failed:", error);
       throw error;
     }

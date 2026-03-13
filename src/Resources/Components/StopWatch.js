@@ -9,6 +9,7 @@ import {
 import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
 import {ThemedText, ThemedButton} from "../ThemedComponents";
+import { workoutService as workoutRepository } from "../../Services";
 
 /**
  * WorkoutStopwatchSQLite
@@ -44,19 +45,16 @@ const WorkoutStopwatchSQLite = ({ workout_id, onStop }) => {
   const start = async () => {
     if (running) return;
 
-    const row = await db.getFirstAsync(
-      `SELECT start_ts FROM Workout WHERE workout_id = ?;`,
-      [workout_id]
-    );
+    const row = await workoutRepository.getWorkoutStartTimestamp(db, workout_id);
 
     let startTs = row?.start_ts;
 
     if (!startTs) {
       startTs = Date.now();
-      await db.runAsync(
-        `UPDATE Workout SET start_ts = ? WHERE workout_id = ?;`,
-        [startTs, workout_id]
-      );
+      await workoutRepository.setWorkoutStartTimestamp(db, {
+        workoutId: workout_id,
+        startTs,
+      });
     }
 
     startTsRef.current = startTs;
@@ -76,12 +74,10 @@ const WorkoutStopwatchSQLite = ({ workout_id, onStop }) => {
     clearInterval(intervalRef.current);
     intervalRef.current = null;
 
-    await db.runAsync(
-      `UPDATE Workout
-       SET start_ts = NULL, duration_seconds = ?
-       WHERE workout_id = ?;`,
-      [seconds, workout_id]
-    );
+    await workoutRepository.stopWorkoutStopwatch(db, {
+      workoutId: workout_id,
+      durationSeconds: seconds,
+    });
 
     startTsRef.current = null;
     setRunning(false);
@@ -97,9 +93,9 @@ const WorkoutStopwatchSQLite = ({ workout_id, onStop }) => {
       let active = true;
 
       const restore = async () => {
-        const row = await db.getFirstAsync(
-          `SELECT start_ts FROM Workout WHERE workout_id = ?;`,
-          [workout_id]
+        const row = await workoutRepository.getWorkoutStartTimestamp(
+          db,
+          workout_id
         );
 
         if (!row?.start_ts || !active) return;

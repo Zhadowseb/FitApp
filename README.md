@@ -46,7 +46,6 @@ FitApp/
 │   │   ├── HomePage/
 │   │   ├── ProgramPage/
 │   │   ├── ProgramOverviewPage/
-│   │   ├── MesocyclePage/
 │   │   ├── MicrocyclePage/
 │   │   ├── WeekPage/
 │   │   ├── WorkoutPage/

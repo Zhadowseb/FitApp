@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
+import { programService as programRepository } from "../../../Services";
 import { ThemedPicker, ThemedText, ThemedModal } from "../../ThemedComponents";
 
 const Mesocycle = ({ program_id, visible, close }) => {
@@ -14,13 +15,7 @@ const Mesocycle = ({ program_id, visible, close }) => {
     const load = async () => {
       try {
         set_Loading(true);
-        const rows = await db.getAllAsync(
-          `SELECT mesocycle_id, mesocycle_number
-           FROM Mesocycle
-           WHERE program_id = ?
-           ORDER BY mesocycle_number`,
-          [program_id]
-        );
+        const rows = await programRepository.getMesocycleOptions(db, program_id);
         set_Mesocycles(rows);
       } catch (e) {
         console.error(e);

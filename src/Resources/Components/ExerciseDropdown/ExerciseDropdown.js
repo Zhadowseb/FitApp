@@ -3,6 +3,7 @@ import { View, ActivityIndicator } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 
 import styles from "./ExerciseDropdownStyle";
+import { weightliftingService as weightliftingRepository } from "../../../Services";
 import { ThemedPicker, ThemedText } from "../../ThemedComponents";
 
 const ExerciseDropdown = ({ selectedExerciseName, onChange }) => {
@@ -14,9 +15,7 @@ const ExerciseDropdown = ({ selectedExerciseName, onChange }) => {
     try {
       setLoading(true);
 
-      const rows = await db.getAllAsync(
-        "SELECT exercise_name FROM Exercise_storage ORDER BY exercise_name;"
-      );
+      const rows = await weightliftingRepository.getExerciseStorage(db);
 
       setExercises(rows);
 

@@ -5,9 +5,17 @@ node_modules/
 
 # Expo
 .expo/
+.expo-export-check/
+.expo-export-check-android/
 dist/
 web-build/
 expo-env.d.ts
+
+build/
+android/build/
+ios/build/
+
+.env
 
 # Native
 .kotlin/

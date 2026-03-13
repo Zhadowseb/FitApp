@@ -46,9 +46,14 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
   const [showCalendarPicker, set_ShowCalendarPicker] = useState(false);
   const [selectedDay, setSelectedDay] = useState(null);
   const [pickWorkoutModalVisible, setPickWorkoutModalVisible] = useState(false);
+  const [pickMode, setPickMode] = useState(null);
   const [dayOptionsVisible, setDayOptionsVisible] = useState(false);
   const [labelModalVisible, setLabelModalVisible] = useState(false);
   const longPressHandledRef = useRef(false);
+  const PICK_MODE = {
+    NAVIGATE: "navigate",
+    DELETE: "delete",
+  };
 
 
   const loadMicrocycles = async () => {
@@ -290,6 +295,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
     }
 
     setSelectedDay(day);
+    setPickMode(PICK_MODE.NAVIGATE);
     setPickWorkoutModalVisible(true);
   };
 
@@ -336,6 +342,19 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
       });
     } catch (error) {
       console.error("Failed to create workout:", error);
+    }
+  };
+
+  const deleteWorkout = async (workoutId) => {
+    try {
+      await programRepository.deleteWorkout(db, workoutId);
+      setPickWorkoutModalVisible(false);
+      setDayOptionsVisible(false);
+      setSelectedDay(null);
+      setPickMode(null);
+      updateui();
+    } catch (error) {
+      console.error("Failed to delete workout:", error);
     }
   };
 
@@ -533,9 +552,14 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
       visible={pickWorkoutModalVisible}
       onClose={() => {
         setPickWorkoutModalVisible(false);
-        setSelectedDay(null);
+        setPickMode(null);
       }}
       onSubmit={(workout) => {
+        if (pickMode === PICK_MODE.DELETE) {
+          deleteWorkout(workout.workout_id);
+          return;
+        }
+
         navigateToWorkout(workout, selectedDay);
       }}
     />
@@ -564,6 +588,27 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
             Add new workout
           </ThemedText>
         </TouchableOpacity>
+
+        {!!selectedDay?.workouts?.length && (
+          <TouchableOpacity
+            style={styles.option}
+            onPress={() => {
+              if (selectedDay.workouts.length === 1) {
+                deleteWorkout(selectedDay.workouts[0].workout_id);
+                return;
+              }
+
+              setDayOptionsVisible(false);
+              setPickMode(PICK_MODE.DELETE);
+              setPickWorkoutModalVisible(true);
+            }}
+          >
+            <Delete width={24} height={24} />
+            <ThemedText style={styles.option_text}>
+              Delete workout
+            </ThemedText>
+          </TouchableOpacity>
+        )}
       </View>
     </ThemedBottomSheet>
 

@@ -10,8 +10,8 @@ import { Colors } from "../../Resources/GlobalStyling/colors";
 
 import styles from './ProgramOverviewPageStyle';
 import {
-  programService as programRepository,
-  weightliftingService as weightliftingRepository,
+  programService,
+  weightliftingService,
 } from "../../Services";
 import Rm_List from './Components/rm_list/rm_list';
 
@@ -274,7 +274,7 @@ const ProgramOverviewPage = ( {route} ) => {
                         <ThemedEditableCell
                             value={program_name ?? ""}
                             onCommit={async (v) => {
-                                await programRepository.updateProgramName(db, {
+                                await programService.updateProgramName(db, {
                                     programId: program_id,
                                     programName: v,
                                 });

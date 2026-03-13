@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Button, Text, TouchableOpacity } from "react-native";
+import { View, TouchableOpacity } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 
@@ -7,16 +7,15 @@ import styles from "./MicrocyclePageStyle";
 import MicrocycleList from "./Components/MicrocycleList/MicrocycleList";
 import ThreeDots from "../../Resources/Icons/UI-icons/ThreeDots";
 import Plus from "../../Resources/Icons/UI-icons/Plus";
+import Delete from "../../Resources/Icons/UI-icons/Delete";
 
-import { ThemedButton, 
-    ThemedBottomSheet, 
+import { ThemedBottomSheet, 
     ThemedView, 
     ThemedHeader, 
     ThemedText, 
     ThemedTitle, 
     ThemedPicker } from "../../Resources/ThemedComponents";
 
-import { parseCustomDate, formatDate, getTodaysDate } from "../../Utils/dateUtils";
 import { programService as programRepository } from "../../Services";
 
 const MicrocyclePage = ( {route} ) => {
@@ -46,6 +45,7 @@ const MicrocyclePage = ( {route} ) => {
             throw e;
         }
 
+        set_OptionsBottomsheet_visible(false);
         navigation.goBack();
     };
 
@@ -104,12 +104,6 @@ const MicrocyclePage = ( {route} ) => {
                 refreshKey={refreshing}
                 updateui={updateUI}/>
 
-            <ThemedButton 
-                title="Delete Mesocycle"
-                variant="danger"
-                width={220}
-                onPress={() => deleteMesocycle()}/>
-
         </ThemedView>
 
         <ThemedBottomSheet
@@ -158,6 +152,22 @@ const MicrocyclePage = ( {route} ) => {
                         height={24}/>
                     <ThemedText style={styles.option_text}> 
                         Add week to mesocycle.
+                    </ThemedText>
+
+                </TouchableOpacity>
+
+                {/* Delete Mesocycle */}
+                <TouchableOpacity 
+                    style={styles.option}
+                    onPress={async () => {
+                        await deleteMesocycle();
+                    }}>
+
+                    <Delete
+                        width={24}
+                        height={24}/>
+                    <ThemedText style={styles.option_text}> 
+                        Delete mesocycle.
                     </ThemedText>
 
                 </TouchableOpacity>

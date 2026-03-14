@@ -14,9 +14,9 @@ function Cross({width, height}) {
       viewBox="0 0 24 24"
       width={width}
       height={height}
-      color={theme.primary}
+      color={theme.iconColor}
       fill="none"
-      stroke={theme.primary}
+      stroke={theme.iconColor}
       strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"

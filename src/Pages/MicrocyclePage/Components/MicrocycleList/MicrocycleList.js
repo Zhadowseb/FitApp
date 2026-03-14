@@ -1,18 +1,21 @@
-import { useState, useEffect } from "react";
-import { View, Text, FlatList, ActivityIndicator, TouchableOpacity } from "react-native";
+import { useState, useEffect, useRef } from "react";
+import { View, FlatList, TouchableOpacity } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 import { useColorScheme } from "react-native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 import ThreeDots from "../../../../Resources/Icons/UI-icons/ThreeDots"
-import Plus from "../../../../Resources/Icons/UI-icons/Plus";
 import Copy from "../../../../Resources/Icons/UI-icons/Copy";
+import Plus from "../../../../Resources/Icons/UI-icons/Plus";
 import CalenderPastePicker from "../../../../Resources/Components/CalenderPastePicker/CalenderPasteModal";
 import CircularProgression from "../../../../Resources/Components/CircularProgression"
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
-import WeekIndicator from "../../../../Resources/Figures/WeekIndicator";
+import WeekdayIndicator from "../../../../Resources/Figures/WeekdayIndicator";
 import { WORKOUT_ICONS } from "../../../../Resources/Icons/WorkoutLabels";
+import PickWorkoutModal from "../../../WeekPage/Components/Day/Components/PickWorkoutModal/PickWorkoutModal";
+import WorkoutLabel from "../../../../Resources/Components/WorkoutLabel";
 
 import styles from "./MicrocycleListStyle";
 import { programService as programRepository } from "../../../../Services";
@@ -42,6 +45,20 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
   const [targetWeek, set_targetWeek] = useState(0);
   const [OptionsBottomsheet_visible, set_OptionsBottomsheet_visible] = useState(false);
   const [showCalendarPicker, set_ShowCalendarPicker] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState(null);
+  const [pickWorkoutModalVisible, setPickWorkoutModalVisible] = useState(false);
+  const [pickMode, setPickMode] = useState(null);
+  const [dayOptionsVisible, setDayOptionsVisible] = useState(false);
+  const [labelModalVisible, setLabelModalVisible] = useState(false);
+  const [datePickerVisible, setDatePickerVisible] = useState(false);
+  const [newDate, setNewDate] = useState(new Date());
+  const longPressHandledRef = useRef(false);
+  const PICK_MODE = {
+    NAVIGATE: "navigate",
+    DELETE: "delete",
+    COPY: "copy",
+  };
 
 
   const loadMicrocycles = async () => {
@@ -62,48 +79,51 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
 
   const loadWeekSummaries = async () => {
     const summariesByMicrocycle = {};
+    const weekDayNames = [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ];
+    const weekDayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
     for (const mc of microcycles) {
       const days = [];
 
-      const start = parseCustomDate(mc.period_start);
-
       for (let i = 0; i < 7; i++) {
-        const date = new Date(start);
-        date.setDate(start.getDate() + i);
-
-        const dayRow = await programRepository.getDayByMicrocycleAndDate(db, {
+        const dayRow = await programRepository.getDayDetails(db, {
           microcycleId: mc.microcycle_id,
-          date: formatDate(date),
+          weekday: weekDayNames[i],
         });
+        const date = dayRow?.date ?? buildMicrocycleDate(mc.period_start, i);
+        const workouts = dayRow?.workouts ?? [];
 
         let icon = null;
         let iconLabel = null;
 
-        if (dayRow) {
-          const workouts = await programRepository.getWorkoutLabelsByDay(
-            db,
-            dayRow.day_id
-          );
+        if (workouts.length === 1) {
+          const found = WORKOUT_ICONS.find((w) => w.id === workouts[0].label);
 
-          if (workouts.length === 1) {
-            const found =
-              WORKOUT_ICONS.find(w => w.id === workouts[0].label);
-
-            icon = found?.Icon ?? null;
-            iconLabel = found?.short ?? workouts[0].label;
-          } 
-          else if (workouts.length > 1) {
-            iconLabel = "Multi";
-          }
+          icon = found?.Icon ?? null;
+          iconLabel = found?.short ?? workouts[0].label;
+        } else if (workouts.length > 1) {
+          iconLabel = "Multi";
         }
 
         days.push({
-          label: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][i],
-          dateLabel: formatDate(date).slice(0, 5),
-          active: formatDate(date) === formatDate(new Date()),
+          microcycleId: mc.microcycle_id,
+          dayId: dayRow?.day_id ?? null,
+          label: weekDayLabels[i],
+          day: weekDayNames[i],
+          date,
+          dateLabel: date.slice(0, 5),
+          active: date === formatDate(new Date()),
           icon,
           iconLabel,
+          workouts,
         });
       }
 
@@ -196,23 +216,44 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
     loadCounts();
   }, [microcycles]);
   
-  const buildWeekIndicatorDays = (microcycle) => {
+  const buildMicrocycleDate = (periodStart, dayOffset) => {
+    const start = parseCustomDate(periodStart);
+    start.setDate(start.getDate() + dayOffset);
+    return formatDate(start);
+  };
+
+  const buildWeekdayIndicators = (microcycle) => {
     const days = [];
     const start = parseCustomDate(microcycle.period_start);
     const today = formatDate(new Date());
+    const weekDayNames = [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ];
 
     for (let i = 0; i < 7; i++) {
       const date = new Date(start);
       date.setDate(start.getDate() + i);
+      const formattedDate = formatDate(date);
 
       days.push({
+        microcycleId: microcycle.microcycle_id,
+        dayId: null,
         label: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i],
-        dateLabel: formatDate(date).slice(0, 5), // dd.MM
-        active: formatDate(date) === today,
+        day: weekDayNames[i],
+        date: formattedDate,
+        dateLabel: formattedDate.slice(0, 5),
+        active: formattedDate === today,
 
         // simpelt default – kan udvides senere
         icon: null,
         iconLabel: null,
+        workouts: [],
       });
     }
 
@@ -239,6 +280,117 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
   Add in total weight liftet for week.
   */
 
+  const navigateToWorkout = (workout, day) => {
+    navigation.navigate("WorkoutPage", {
+      workout_id: workout.workout_id,
+      workout_label: workout.label,
+      day: day.day,
+      date: day.date,
+    });
+  };
+
+  const handleWeekdayPress = (day) => {
+    if (!day.workouts?.length) {
+      return;
+    }
+
+    if (day.workouts.length === 1) {
+      navigateToWorkout(day.workouts[0], day);
+      return;
+    }
+
+    setSelectedDay(day);
+    setPickMode(PICK_MODE.NAVIGATE);
+    setPickWorkoutModalVisible(true);
+  };
+
+  const handleWeekdayLongPress = (day) => {
+    longPressHandledRef.current = true;
+    setSelectedDay(day);
+    setDayOptionsVisible(true);
+  };
+
+  const createWorkoutForDay = async (labelId) => {
+    if (!selectedDay) {
+      return;
+    }
+
+    try {
+      const dayRow =
+        selectedDay.dayId
+          ? { day_id: selectedDay.dayId }
+          : await programRepository.getDayByMicrocycleAndDate(db, {
+              microcycleId: selectedDay.microcycleId,
+              date: selectedDay.date,
+            });
+
+      if (!dayRow?.day_id) {
+        return;
+      }
+
+      const workoutResult = await programRepository.createWorkoutForDay(db, {
+        date: selectedDay.date,
+        dayId: dayRow.day_id,
+        label: labelId.id,
+      });
+
+      setLabelModalVisible(false);
+      setDayOptionsVisible(false);
+      updateui();
+
+      navigation.navigate("WorkoutPage", {
+        program_id: program_id,
+        day: selectedDay.day,
+        date: selectedDay.date,
+        workout_id: workoutResult.lastInsertRowId,
+        workout_label: labelId.id,
+      });
+    } catch (error) {
+      console.error("Failed to create workout:", error);
+    }
+  };
+
+  const deleteWorkout = async (workoutId) => {
+    try {
+      await programRepository.deleteWorkout(db, workoutId);
+      setPickWorkoutModalVisible(false);
+      setDayOptionsVisible(false);
+      setSelectedDay(null);
+      setSelectedWorkoutId(null);
+      setPickMode(null);
+      updateui();
+    } catch (error) {
+      console.error("Failed to delete workout:", error);
+    }
+  };
+
+  const copyWorkoutToDate = async (workoutId, date) => {
+    try {
+      const copiedWorkoutId = await programRepository.copyWorkoutToDate(db, {
+        workoutId,
+        programId: program_id,
+        date,
+      });
+
+      if (!copiedWorkoutId) {
+        console.warn("No day found for date");
+        setSelectedWorkoutId(null);
+        setPickMode(null);
+        return;
+      }
+
+      setDatePickerVisible(false);
+      setSelectedWorkoutId(null);
+      setPickWorkoutModalVisible(false);
+      setDayOptionsVisible(false);
+      setSelectedDay(null);
+      setPickMode(null);
+      updateui();
+    } catch (error) {
+      console.error("Copy workout failed:", error);
+    }
+  };
+
   const renderItem = ({ item }) => {
 
     const counts =
@@ -250,16 +402,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
         : 0;
 
     return (
-      <TouchableOpacity
-        onPress={() => {
-          navigation.navigate("WeekPage", {
-              microcycle_id: item.microcycle_id,
-              program_id: item.program_id,
-              week_number: item.microcycle_number,
-              period_start: item.period_start,
-              period_end: item.period_end})
-        }}>
-          <ThemedCard style={{flexDirection: "column", paddingTop: "0", paddingBottom: "0",}}>
+      <ThemedCard style={{flexDirection: "column", paddingTop: "0", paddingBottom: "0",}}>
 
             <View style={{flexDirection: "row"}}>
             <View style={styles.status_section}>
@@ -313,13 +456,36 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
             </View>
 
             <View>
-              <WeekIndicator
-                days={weekSummaries[item.microcycle_id] ?? []} />
+              <View style={styles.weekdaysRow}>
+                {(weekSummaries[item.microcycle_id] ?? buildWeekdayIndicators(item)).map((day) => (
+                  <TouchableOpacity
+                    key={`${item.microcycle_id}-${day.day}`}
+                    style={styles.weekdayTouchable}
+                    delayLongPress={600}
+                    onPress={() => {
+                      if (longPressHandledRef.current) {
+                        longPressHandledRef.current = false;
+                        return;
+                      }
+                      handleWeekdayPress(day);
+                    }}
+                    onLongPress={() => {
+                      handleWeekdayLongPress(day);
+                    }}
+                  >
+                    <WeekdayIndicator
+                      label={day.label}
+                      dateLabel={day.dateLabel}
+                      active={day.active}
+                      icon={day.icon}
+                      iconLabel={day.iconLabel}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
 
-          </ThemedCard>
-
-      </TouchableOpacity>
+      </ThemedCard>
     );
   };
 
@@ -412,6 +578,133 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
           updateui();
         }} 
         version="microcycle"/>
+    )}
+
+    <PickWorkoutModal
+      workouts={selectedDay?.workouts ?? []}
+      visible={pickWorkoutModalVisible}
+      onClose={() => {
+        setPickWorkoutModalVisible(false);
+        setSelectedWorkoutId(null);
+        setPickMode(null);
+      }}
+      onSubmit={(workout) => {
+        if (pickMode === PICK_MODE.DELETE) {
+          deleteWorkout(workout.workout_id);
+          return;
+        }
+
+        if (pickMode === PICK_MODE.COPY) {
+          setSelectedWorkoutId(workout.workout_id);
+          setPickWorkoutModalVisible(false);
+          setDatePickerVisible(true);
+          return;
+        }
+
+        navigateToWorkout(workout, selectedDay);
+      }}
+    />
+
+    <ThemedBottomSheet
+      visible={dayOptionsVisible}
+      onClose={() => {
+        setDayOptionsVisible(false);
+      }}
+    >
+      <View style={styles.bottomsheet_title}>
+        <ThemedText>{selectedDay?.day}</ThemedText>
+        <ThemedText>{selectedDay?.date}</ThemedText>
+      </View>
+
+      <View style={styles.bottomsheet_body}>
+        <TouchableOpacity
+          style={[styles.option, { paddingTop: 0 }]}
+          onPress={() => {
+            setDayOptionsVisible(false);
+            setLabelModalVisible(true);
+          }}
+        >
+          <Plus width={24} height={24} />
+          <ThemedText style={styles.option_text}>
+            Add new workout
+          </ThemedText>
+        </TouchableOpacity>
+
+        {!!selectedDay?.workouts?.length && (
+          <TouchableOpacity
+            style={styles.option}
+            onPress={() => {
+              if (selectedDay.workouts.length === 1) {
+                setSelectedWorkoutId(selectedDay.workouts[0].workout_id);
+                setPickMode(PICK_MODE.COPY);
+                setDayOptionsVisible(false);
+                setDatePickerVisible(true);
+                return;
+              }
+
+              setDayOptionsVisible(false);
+              setPickMode(PICK_MODE.COPY);
+              setPickWorkoutModalVisible(true);
+            }}
+          >
+            <Copy width={24} height={24} />
+            <ThemedText style={styles.option_text}>
+              Copy workout to a different day
+            </ThemedText>
+          </TouchableOpacity>
+        )}
+
+        {!!selectedDay?.workouts?.length && (
+          <TouchableOpacity
+            style={styles.option}
+            onPress={() => {
+              if (selectedDay.workouts.length === 1) {
+                deleteWorkout(selectedDay.workouts[0].workout_id);
+                return;
+              }
+
+              setDayOptionsVisible(false);
+              setPickMode(PICK_MODE.DELETE);
+              setPickWorkoutModalVisible(true);
+            }}
+          >
+            <Delete width={24} height={24} />
+            <ThemedText style={styles.option_text}>
+              Delete workout
+            </ThemedText>
+          </TouchableOpacity>
+        )}
+      </View>
+    </ThemedBottomSheet>
+
+    <WorkoutLabel
+      visible={labelModalVisible}
+      onClose={() => {
+        setLabelModalVisible(false);
+      }}
+      onSubmit={async (labelId) => {
+        await createWorkoutForDay(labelId);
+      }}
+    />
+
+    {datePickerVisible && (
+      <DateTimePicker
+        value={newDate}
+        mode="date"
+        display="default"
+        onChange={async (event, date) => {
+          setDatePickerVisible(false);
+
+          if (event.type !== "set" || !date || !selectedWorkoutId) {
+            setSelectedWorkoutId(null);
+            setPickMode(null);
+            return;
+          }
+
+          setNewDate(date);
+          await copyWorkoutToDate(selectedWorkoutId, date);
+        }}
+      />
     )}
     
     </>

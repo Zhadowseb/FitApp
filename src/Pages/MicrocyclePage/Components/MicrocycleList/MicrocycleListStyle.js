@@ -81,4 +81,16 @@ export default StyleSheet.create({
     alignItems: 'center',
     justifyContent: "center",
   },
+
+  weekdaysRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    paddingTop: 12,
+  },
+
+  weekdayTouchable: {
+    flex: 1,
+    alignItems: "center",
+  },
 });

@@ -12,6 +12,7 @@ import { Colors } from "../../../../Resources/GlobalStyling/colors";
 import styles from "../../WorkoutPageStyle";
 import { ThemedTitle, 
         ThemedCard, 
+        ThemedBottomSheet,
         ThemedView, 
         ThemedText, 
         ThemedButton, 
@@ -23,6 +24,7 @@ import { weightliftingService, workoutService} from "../../../../Services";
 
 //Icons:
 import Filter from '../../../../Resources/Icons/UI-icons/Filter';
+import Checkmark from '../../../../Resources/Icons/UI-icons/Checkmark';
 
 const StrengthTraining = ({workout_id, date}) =>  {
   const colorScheme = useColorScheme();
@@ -31,6 +33,8 @@ const StrengthTraining = ({workout_id, date}) =>  {
   const db = useSQLiteContext();
 
   const [refreshing, set_refreshing] = useState(0);
+  const [filterBottomsheetVisible, setFilterBottomsheetVisible] = useState(false);
+  const [showCompletedExercises, setShowCompletedExercises] = useState(false);
 
   const [totalSets, set_totalSets] = useState(0);
   const [doneSets, set_doneSets] = useState(0);
@@ -325,19 +329,56 @@ const StrengthTraining = ({workout_id, date}) =>  {
           </ThemedCard>
         </View>
 
-        <Filter
-          width={24}
-          height={24}/>
+        <TouchableOpacity
+          style={{ alignSelf: "flex-end", marginRight: 8, marginBottom: 5 }}
+          onPress={() => {
+            setFilterBottomsheetVisible(true);
+          }}
+        >
+          <Filter
+            width={24}
+            height={24}/>
+
+        </TouchableOpacity>
 
         <View style={styles.working_sets}>
 
           <ExerciseList 
             workout_id = {workout_id}
             refreshing = {refreshing} 
-            updateUI = {refresh}/>
+            updateUI = {refresh}
+            showCompletedExercises={showCompletedExercises}/>
         </View> 
 
       </ScrollView>
+
+      <ThemedBottomSheet
+        visible={filterBottomsheetVisible}
+        onClose={() => setFilterBottomsheetVisible(false)}
+      >
+        <View style={styles.bottomsheetTitle}>
+          <ThemedText>Filter exercises</ThemedText>
+        </View>
+
+        <View style={styles.bottomsheetBody}>
+          <TouchableOpacity
+            style={[styles.option, styles.filterOption]}
+            onPress={() => {
+              setShowCompletedExercises((prev) => !prev);
+            }}
+          >
+            <ThemedText style={styles.filterOptionText}>
+              Show completed exercises
+            </ThemedText>
+
+            {showCompletedExercises && (
+              <Checkmark
+                width={24}
+                height={24}/>
+            )}
+          </TouchableOpacity>
+        </View>
+      </ThemedBottomSheet>
     </ThemedView>
   );
 }

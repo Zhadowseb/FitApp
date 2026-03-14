@@ -34,7 +34,7 @@ const StrengthTraining = ({workout_id, date}) =>  {
 
   const [refreshing, set_refreshing] = useState(0);
   const [filterBottomsheetVisible, setFilterBottomsheetVisible] = useState(false);
-  const [showCompletedExercises, setShowCompletedExercises] = useState(false);
+  const [showCompletedExercises, setShowCompletedExercises] = useState(true);
 
   const [totalSets, set_totalSets] = useState(0);
   const [doneSets, set_doneSets] = useState(0);

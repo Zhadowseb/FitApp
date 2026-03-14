@@ -19,9 +19,10 @@ import { ThemedTitle,
         ThemedHeader } 
   from "../../../../Resources/ThemedComponents";
 import { formatTime, formatWorkoutStart } from '../../../../Utils/timeUtils';
-import {
-  weightliftingService, workoutService,
-} from "../../../../Services";
+import { weightliftingService, workoutService} from "../../../../Services";
+
+//Icons:
+import Filter from '../../../../Resources/Icons/UI-icons/Filter';
 
 const StrengthTraining = ({workout_id, date}) =>  {
   const colorScheme = useColorScheme();
@@ -323,6 +324,10 @@ const StrengthTraining = ({workout_id, date}) =>  {
               </View>
           </ThemedCard>
         </View>
+
+        <Filter
+          width={24}
+          height={24}/>
 
         <View style={styles.working_sets}>
 

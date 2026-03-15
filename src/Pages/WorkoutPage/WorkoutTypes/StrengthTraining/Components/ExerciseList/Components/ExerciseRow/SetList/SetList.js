@@ -18,7 +18,7 @@ import { weightliftingService as weightliftingRepository } from "../../../../../
 import Delete from "../../../../../../../../../Resources/Icons/UI-icons/Delete";
 import Cross from "../../../../../../../../../Resources/Icons/UI-icons/Cross";
 
-const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
+const SetList = ({ sets, exerciseName, visibleColumns, onToggleSet, updateUI }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
 
@@ -190,6 +190,7 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
     >
       <View style={styles.bottomsheet_title}>
         <ThemedText>Set: {selectedSet?.set_number}</ThemedText>
+        <ThemedText>{exerciseName}</ThemedText>
       </View>
 
       <View style={styles.bottomsheet_body}>

@@ -180,6 +180,7 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
         <View>
           <SetList 
               sets={exercise.sets}
+              exerciseName={exercise.exercise_name}
               visibleColumns={visibleColumns}
               onToggleSet={onToggleSet}
               updateWeight={updateWeight}

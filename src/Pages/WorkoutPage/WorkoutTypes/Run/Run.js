@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { View, Button, ScrollView, Text, TouchableOpacity, Switch } from 'react-native';
+import { AppState, View, Button, ScrollView, Text, TouchableOpacity, Switch } from 'react-native';
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
@@ -56,6 +56,24 @@ const Run = ({workout_id}) =>  {
     const [activeSet_remainingTime, set_activeSet_remainingTime] = useState(0);
 
     const previousActiveSetRef = useRef(null);
+    const timerStartRef = useRef(null);
+    const elapsedTimeRef = useRef(0);
+
+    useEffect(() => {
+        timerStartRef.current = timer_start;
+    }, [timer_start]);
+
+    useEffect(() => {
+        elapsedTimeRef.current = elapsed_time;
+    }, [elapsed_time]);
+
+    const persistCurrentTimerState = useCallback(async () => {
+        await workoutRepository.persistWorkoutTimerState(db, {
+            workoutId: workout_id,
+            timerStart: timerStartRef.current,
+            elapsedTime: elapsedTimeRef.current,
+        });
+    }, [db, workout_id]);
 
 
     //Focus coming back to the page
@@ -63,11 +81,10 @@ const Run = ({workout_id}) =>  {
         useCallback(() => {
             const reload = async () => {
                 const row = await workoutRepository.getWorkoutTimerState(db, workout_id);
+                const nextIsDone = Number(row.done) === 1;
 
-                if(row.timer_start !== null){
-                    set_isRunning(true);
-                }
-                set_isDone(Number(row.done) === 1);
+                set_isRunning(row.timer_start !== null && !nextIsDone);
+                set_isDone(nextIsDone);
                 set_original_start_time(row.original_start_time);
                 set_timer_start(row.timer_start);
                 set_elapsed_time(row.elapsed_time);
@@ -77,23 +94,23 @@ const Run = ({workout_id}) =>  {
         }, [workout_id])
     );
 
-    //Save leaving page
-    useFocusEffect(
-        useCallback(() => {
-            return () => {
-                
-                const saveState = async () => {
-                    await workoutRepository.persistWorkoutTimerState(db, {
-                        workoutId: workout_id,
-                        timerStart: timer_start,
-                        elapsedTime: elapsed_time,
-                    });
-                }
-                saveState();
-            };
+    useEffect(() => {
+        const subscription = AppState.addEventListener("change", (nextAppState) => {
+            if (nextAppState === "inactive" || nextAppState === "background") {
+                persistCurrentTimerState();
+            }
+        });
 
-        }, [timer_start, elapsed_time])
-    );
+        return () => {
+            subscription.remove();
+        };
+    }, [persistCurrentTimerState]);
+
+    useEffect(() => {
+        return () => {
+            persistCurrentTimerState();
+        };
+    }, [persistCurrentTimerState]);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -122,17 +139,19 @@ const Run = ({workout_id}) =>  {
             elapsed_time + computeCurrentElapsed()
         );
         
-        await workoutRepository.updateWorkoutElapsedTime(db, {
+        await workoutRepository.persistWorkoutTimerState(db, {
             workoutId: workout_id,
+            timerStart: null,
             elapsedTime: newElapsed,
         });
 
+        elapsedTimeRef.current = newElapsed;
+        timerStartRef.current = null;
         set_elapsed_time(newElapsed);
+        return newElapsed;
     };
 
     const startWorkout = async () => {
-        set_isRunning(true);
-
         const row = await workoutRepository.getWorkoutOriginalStartTime(db, workout_id);
 
         //Miliseconds since 1. januar 1970 at 00:00:00 UTC
@@ -145,7 +164,16 @@ const Run = ({workout_id}) =>  {
                 startTime: start_time,
             });
         } 
+
+        await workoutRepository.persistWorkoutTimerState(db, {
+            workoutId: workout_id,
+            timerStart: start_time,
+            elapsedTime: elapsed_time,
+        });
+
         Vibration.vibrate(500);
+        timerStartRef.current = start_time;
+        set_isRunning(true);
         set_timer_start(start_time);
 
         // await startTracking();
@@ -176,17 +204,21 @@ const Run = ({workout_id}) =>  {
 
     const pauseWorkout = async () => {
         
-        updateElapsed();
+        const newElapsed = await updateElapsed();
 
         Vibration.vibrate([0, 100, 100, 100]);
         set_isRunning(false);
         set_timer_start(null);
+        set_elapsed_time(newElapsed);
     };
 
     const endWorkout = async () => {
+        const finalElapsed = timer_start ? await updateElapsed() : elapsed_time;
+
         set_isRunning(false);
         set_isDone(true);
         set_timer_start(null);
+        set_elapsed_time(finalElapsed);
 
         // await Location.stopLocationUpdatesAsync(LOCATION_TASK);
         

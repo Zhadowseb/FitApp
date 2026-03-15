@@ -4,7 +4,8 @@ export default StyleSheet.create({
   bottomsheetTitle: {
     borderBottomWidth: 1,
     borderBottomColor: "#2e2e2eff",
-    paddingBottom: 30,
+    paddingBottom: 20,
+    alignItems: "center"
   },
   bottomsheetBody: {
     justifyContent: "center",
@@ -17,6 +18,15 @@ export default StyleSheet.create({
   },
   optionText: {
     paddingLeft: 10,
+    fontWeight: 600,
+    fontSize: 16,
+  },
+  filterOption: {
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: 0,
+  },
+  filterOptionText: {
     fontWeight: 600,
     fontSize: 16,
   },

@@ -12,6 +12,7 @@ const ThemedBouncyCheckbox = ({
   style,
   edgeSize = 2,
   checkmarkColor,
+  fillColor,
   ...props
 }) => {
   const colorScheme = useColorScheme();
@@ -23,9 +24,9 @@ const ThemedBouncyCheckbox = ({
       isChecked={value}
       disableBuiltInState
       disableText
-      fillColor={theme.secondary}
+      fillColor={fillColor ? fillColor : theme.secondary}
       unFillColor={theme.cardBackground}
-      iconStyle={theme.secondary}
+      iconStyle={fillColor ? fillColor : theme.secondary}
       innerIconStyle={{
         borderWidth: edgeSize,
         color: "#c40f0f"

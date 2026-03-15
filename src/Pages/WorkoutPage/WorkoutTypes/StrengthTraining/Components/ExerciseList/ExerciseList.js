@@ -12,7 +12,7 @@ import ExerciseRow from "./Components/ExerciseRow/ExerciseRow"
 import Plus from "../../../../../../Resources/Icons/UI-icons/Plus";
 import PickExerciseModal from "./Components/PickExerciseModal";
 
-const ExerciseList = ( {workout_id, refreshing, updateUI} ) => {
+const ExerciseList = ( {workout_id, refreshing, updateUI, showCompletedExercises = false} ) => {
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -87,7 +87,9 @@ const ExerciseList = ( {workout_id, refreshing, updateUI} ) => {
   return (
     <>
     <View>
-      {exercises.map((item) => renderItem(item))}
+      {exercises
+        .filter((item) => showCompletedExercises || Number(item.done) !== 1)
+        .map((item) => renderItem(item))}
     </View>
 
     <View style={{alignItems: "center", paddingTop: 30}}>

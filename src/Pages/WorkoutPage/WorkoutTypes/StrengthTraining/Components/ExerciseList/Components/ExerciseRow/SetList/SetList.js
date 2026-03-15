@@ -6,25 +6,27 @@ import { Colors } from "../../../../../../../../../Resources/GlobalStyling/color
 
 import styles from "./SetListStyle";
 import Title from "./Title";
-import DeleteSetModal from "./DeleteSetModal";
 
 import {
   ThemedCard,
+  ThemedBottomSheet,
   ThemedText,
   ThemedEditableCell,
   ThemedBouncyCheckbox
 } from "../../../../../../../../../Resources/ThemedComponents";
 import { weightliftingService as weightliftingRepository } from "../../../../../../../../../Services";
+import Delete from "../../../../../../../../../Resources/Icons/UI-icons/Delete";
+import Cross from "../../../../../../../../../Resources/Icons/UI-icons/Cross";
 
-const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
+const SetList = ({ sets, exerciseName, visibleColumns, onToggleSet, updateUI }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
 
   const db = useSQLiteContext();
   const [localSets, setLocalSets] = useState(sets);
 
-  const [deleteSetModal_visible, set_deleteSetModal_visible] = useState(false);
-  const [selectedSet, set_selectedSet] = useState("");
+  const [setOptionsVisible, setSetOptionsVisible] = useState(false);
+  const [selectedSet, set_selectedSet] = useState(null);
 
   useEffect(() => {
     setLocalSets(sets);
@@ -98,8 +100,8 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
             borderRightColor: "rgb(8, 7, 7)",
           }}
           onPress={() => {
-            set_deleteSetModal_visible(true);
-            set_selectedSet(set.sets_id);
+            set_selectedSet(set);
+            setSetOptionsVisible(true);
           }}>
             <ThemedText>{set.set_number}</ThemedText>          
           </TouchableOpacity>
@@ -142,6 +144,7 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
             size={18}
             edgeSize={2}
             checkmarkColor={theme.cardBackground}
+            fillColor={set.failed === 1 && theme.danger}
           />
         );
 
@@ -181,14 +184,55 @@ const SetList = ({ sets, visibleColumns, onToggleSet, updateUI }) => {
       ))}
     </ThemedCard>
 
-    <DeleteSetModal
-      visible={deleteSetModal_visible}
-      onClose={() => set_deleteSetModal_visible(false)}
-      onSubmit={ () => {
-        deleteSet(selectedSet);
-        set_deleteSetModal_visible(false);
-      }}
-      />
+    <ThemedBottomSheet
+      visible={setOptionsVisible}
+      onClose={() => setSetOptionsVisible(false)}
+    >
+      <View style={styles.bottomsheet_title}>
+        <ThemedText>Set: {selectedSet?.set_number}</ThemedText>
+        <ThemedText>{exerciseName}</ThemedText>
+      </View>
+
+      <View style={styles.bottomsheet_body}>
+        <TouchableOpacity
+          style={[styles.option, { paddingTop: 0 }]}
+          onPress={async () => {
+            if (!selectedSet) {
+              return;
+            }
+
+            await deleteSet(selectedSet.sets_id);
+            setSetOptionsVisible(false);
+          }}
+        >
+          <Delete width={24} height={24} />
+          <ThemedText style={styles.option_text}>
+            Delete set
+          </ThemedText>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.option}
+          onPress={async () => {
+            if (!selectedSet) {
+              return;
+            }
+
+            await updateField(
+              "failed",
+              selectedSet.failed === 1 ? 0 : 1,
+              selectedSet.sets_id
+            );
+            setSetOptionsVisible(false);
+          }}
+        >
+          <Cross width={24} height={24} />
+          <ThemedText style={styles.option_text}>
+            {selectedSet?.failed === 1 ? "Remove failed mark" : "Mark set as failed"}
+          </ThemedText>
+        </TouchableOpacity>
+      </View>
+    </ThemedBottomSheet>
     </>
   );
 };

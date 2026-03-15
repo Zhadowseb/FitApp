@@ -88,6 +88,7 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
         marginBottom: 5,
         marginLeft: 5,
         marginRight: 5,
+        backgroundColor: exercise.done && "rgba(96, 218, 171, 0.75)",
         borderColor: "#858584"}}>
 
       <View style={{

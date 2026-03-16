@@ -24,10 +24,7 @@ The app started as a replacement for spreadsheet-based training programs and is 
 ## Tech Stack
 
 - Framework: Expo + React Native
-- Navigation: `@react-navigation/native` + native stack
 - Database: `expo-sqlite`
-- Background location: `expo-location` + `expo-task-manager`
-- UI: custom themed components in `src/Resources/ThemedComponents`
 
 Main entry points:
 - `App.js`: navigation, SQLite provider, background location task
@@ -45,11 +42,6 @@ The app is structured in three layers around the local database:
   Contains raw SQL queries and persistence operations.
 - `src/Services`
   Contains app-level workflows, calculations, transactions, and multi-step domain logic.
-
-This means:
-- `Repository` should stay close to SQL
-- `Services` should hold loops, orchestration, derived values, and cross-table logic
-- UI pages should call services rather than writing SQL directly
 
 ---
 
@@ -108,7 +100,7 @@ The schema is initialized in `src/Database/db.js`.
 - `Day`
 - `Workout`
 
-### Strength training
+### Strength training hierarchy
 - `Exercise`
   Exercises attached to a workout
 - `Sets`
@@ -124,7 +116,7 @@ The schema is initialized in `src/Database/db.js`.
 - `Run`
   Structured run sets for a workout
 
-### Location
+### Location (development currently paused)
 - `LocationLog`
   GPS points logged while an active workout is running
 
@@ -196,6 +188,6 @@ npm run web
 
 ## Notes
 
-- The app currently uses a local SQLite database, not a remote backend.
-- `WeekPage` still exists in the codebase, but the main flow from `MicrocyclePage` now navigates more directly into workouts.
+- The app currently uses a local SQLite database, not a remote backend, but will in the future as the app develops to the next stage.
+- `WeekPage` still exists in the codebase, but the main flow from `MicrocyclePage` now navigates more directly into workouts. This means WeekPage currently isn't used, but will potentially be reintroduced at some point.
 - Larger schema changes may require explicit migrations or a reset of local app data during development.

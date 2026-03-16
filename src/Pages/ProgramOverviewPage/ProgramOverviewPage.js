@@ -199,6 +199,10 @@ const ProgramOverviewPage = ( {route} ) => {
     const programExerciseBestMap = Object.fromEntries(
         programExerciseBests.map((best) => [best.exercise_name, best])
     );
+    const filterDividerColor =
+        colorScheme === "dark"
+            ? "rgba(255, 255, 255, 0.08)"
+            : "rgba(0, 0, 0, 0.08)";
 
   return (
     <>
@@ -464,12 +468,27 @@ const ProgramOverviewPage = ( {route} ) => {
                     </ThemedText>
                 )}
 
-                {programExercises.map((exerciseName) => (
+                {programExercises.map((exerciseName, index) => (
                     <TouchableOpacity
                         key={exerciseName}
-                        style={[styles.option, styles.filter_option]}
+                        style={[
+                            styles.option,
+                            styles.filter_option,
+                            index < programExercises.length - 1 && styles.filter_option_divider,
+                            index < programExercises.length - 1 && {
+                                borderBottomColor: filterDividerColor,
+                            },
+                            !(visibleProgramBestExercises[exerciseName] ?? true) &&
+                                styles.filter_option_unselected,
+                        ]}
                         onPress={() => toggleProgramBestExercise(exerciseName)}>
-                        <ThemedText style={styles.filter_option_text}>
+                        <ThemedText
+                            style={[
+                                styles.filter_option_text,
+                                (visibleProgramBestExercises[exerciseName] ?? true)
+                                    ? styles.filter_option_text_selected
+                                    : styles.filter_option_text_unselected,
+                            ]}>
                             {exerciseName}
                         </ThemedText>
 

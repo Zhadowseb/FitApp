@@ -143,9 +143,23 @@ export default StyleSheet.create({
         justifyContent: "space-between",
         alignItems: "center",
     },
+    filter_option_divider: {
+        borderBottomWidth: 1,
+        paddingBottom: 14,
+        marginBottom: 4,
+    },
+    filter_option_unselected: {
+        opacity: 0.8,
+    },
     filter_option_text: {
         fontWeight: 600,
         fontSize: 16,
+    },
+    filter_option_text_selected: {
+        fontWeight: "700",
+    },
+    filter_option_text_unselected: {
+        fontWeight: "400",
     },
 
 });

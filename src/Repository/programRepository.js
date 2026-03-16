@@ -74,6 +74,45 @@ export async function getProgramName(db, programId) {
   );
 }
 
+export async function getProgramBestExerciseSelections(db, programId) {
+  return db.getAllAsync(
+    `SELECT exercise_name, is_selected
+     FROM Program_Best_Exercise
+     WHERE program_id = ?;`,
+    [programId]
+  );
+}
+
+export async function insertProgramBestExerciseSelection(
+  db,
+  { programId, exerciseName, isSelected = true }
+) {
+  await db.runAsync(
+    `INSERT OR IGNORE INTO Program_Best_Exercise (
+      program_id,
+      exercise_name,
+      is_selected
+    ) VALUES (?, ?, ?);`,
+    [programId, exerciseName, isSelected ? 1 : 0]
+  );
+}
+
+export async function upsertProgramBestExerciseSelection(
+  db,
+  { programId, exerciseName, isSelected }
+) {
+  await db.runAsync(
+    `INSERT INTO Program_Best_Exercise (
+      program_id,
+      exercise_name,
+      is_selected
+    ) VALUES (?, ?, ?)
+     ON CONFLICT(program_id, exercise_name)
+     DO UPDATE SET is_selected = excluded.is_selected;`,
+    [programId, exerciseName, isSelected ? 1 : 0]
+  );
+}
+
 export async function updateProgramStatus(db, { programId, status }) {
   await db.runAsync(
     `UPDATE Program
@@ -139,6 +178,25 @@ export async function getSetDoneStatesByDayId(db, dayId) {
      JOIN Workout w ON w.workout_id = e.workout_id
      WHERE w.day_id = ?;`,
     [dayId]
+  );
+}
+
+export async function getCompletedStrengthSetsByProgram(db, programId) {
+  return db.getAllAsync(
+    `SELECT
+        e.exercise_name,
+        s.weight,
+        s.reps
+     FROM Sets s
+     JOIN Exercise e ON e.exercise_id = s.exercise_id
+     JOIN Workout w ON w.workout_id = e.workout_id
+     JOIN Day d ON d.day_id = w.day_id
+     WHERE d.program_id = ?
+       AND s.done = 1
+       AND s.weight IS NOT NULL
+       AND s.reps IS NOT NULL
+     ORDER BY e.exercise_name COLLATE NOCASE ASC;`,
+    [programId]
   );
 }
 
@@ -230,6 +288,14 @@ export async function deleteMicrocyclesByProgram(db, programId) {
 export async function deleteEstimatedSetsByProgram(db, programId) {
   await db.runAsync(
     `DELETE FROM Estimated_Set
+     WHERE program_id = ?;`,
+    [programId]
+  );
+}
+
+export async function deleteProgramBestExercisesByProgram(db, programId) {
+  await db.runAsync(
+    `DELETE FROM Program_Best_Exercise
      WHERE program_id = ?;`,
     [programId]
   );

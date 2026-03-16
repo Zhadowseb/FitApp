@@ -65,6 +65,10 @@ export async function getStrengthWorkoutSummary(db, workoutId) {
   };
 }
 
+export async function getProgramExerciseNames(db, programId) {
+  return weightliftingRepository.getProgramExerciseNames(db, programId);
+}
+
 export async function getWorkoutExercises(db, workoutId) {
   const exercises = await weightliftingRepository.getExercisesByWorkout(
     db,

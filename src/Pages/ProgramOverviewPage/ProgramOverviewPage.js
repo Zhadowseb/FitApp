@@ -19,6 +19,8 @@ import AddEstimatedSet from './Components/rm_list/Components/AddEstimatedSet/Add
 import TodayShortcut from './Components/TodayShortcut/TodayShortcut';
 import MesocycleList from "./Components/MesocycleList/MesocycleList";
 import ThreeDots from "../../Resources/Icons/UI-icons/ThreeDots"
+import Cogwheel from "../../Resources/Icons/UI-icons/Cogwheel";
+import Checkmark from "../../Resources/Icons/UI-icons/Checkmark";
 
 import { ThemedTitle, 
         ThemedCard, 
@@ -47,8 +49,12 @@ const ProgramOverviewPage = ( {route} ) => {
     const [status, set_status] = useState("NOT_STARTET");
     const [program_name, set_program_name] = useState("");
     const [end_date, set_end_date] = useState("");
+    const [programExercises, set_programExercises] = useState([]);
+    const [visibleProgramBestExercises, set_visibleProgramBestExercises] = useState({});
+    const [programExerciseBests, set_programExerciseBests] = useState([]);
 
     const [OptionsBottomsheet_visible, set_OptionsBottomsheet_visible] = useState(false);
+    const [prSettingsBottomsheet_visible, set_prSettingsBottomsheet_visible] = useState(false);
 
     const refresh = () => {
         set_refreshKey(prev => prev + 1);
@@ -62,6 +68,8 @@ const ProgramOverviewPage = ( {route} ) => {
                 await Promise.all([
                     getStatus(),
                     getName(),
+                    loadProgramBestExerciseOptions(),
+                    loadProgramExerciseBests(),
                 ]);
                 const nextEndDate = await calculateEndDay();
                 set_end_date(nextEndDate);
@@ -107,6 +115,33 @@ const ProgramOverviewPage = ( {route} ) => {
         }
     }
 
+    const loadProgramBestExerciseOptions = async () => {
+        try {
+            const exercises = await programService.getProgramBestExerciseOptions(db, program_id);
+            const exerciseNames = exercises.map((exercise) => exercise.exercise_name);
+            const nextVisibleExercises = Object.fromEntries(
+                exercises.map((exercise) => [
+                    exercise.exercise_name,
+                    exercise.is_selected,
+                ])
+            );
+
+            set_programExercises(exerciseNames);
+            set_visibleProgramBestExercises(nextVisibleExercises);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    const loadProgramExerciseBests = async () => {
+        try {
+            const bests = await programService.getProgramExerciseBests(db, program_id);
+            set_programExerciseBests(bests);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
     const deleteProgram = async () => {
         try {
             await programService.deleteProgram(db, program_id);
@@ -133,6 +168,41 @@ const ProgramOverviewPage = ( {route} ) => {
         end.setDate(end.getDate() + result.total_days);
         return formatDate(end)
     }
+
+    const toggleProgramBestExercise = async (exerciseName) => {
+        const previousValue = visibleProgramBestExercises[exerciseName] ?? true;
+        const nextValue = !previousValue;
+
+        set_visibleProgramBestExercises((prev) => ({
+            ...prev,
+            [exerciseName]: nextValue,
+        }));
+
+        try {
+            await programService.setProgramBestExerciseSelection(db, {
+                programId: program_id,
+                exerciseName,
+                isSelected: nextValue,
+            });
+        } catch (error) {
+            console.error(error);
+            set_visibleProgramBestExercises((prev) => ({
+                ...prev,
+                [exerciseName]: previousValue,
+            }));
+        }
+    }
+
+    const selectedProgramBestExercises = programExercises.filter(
+        (exerciseName) => visibleProgramBestExercises[exerciseName] ?? true
+    );
+    const programExerciseBestMap = Object.fromEntries(
+        programExerciseBests.map((best) => [best.exercise_name, best])
+    );
+    const filterDividerColor =
+        colorScheme === "dark"
+            ? "rgba(255, 255, 255, 0.08)"
+            : "rgba(0, 0, 0, 0.08)";
 
   return (
     <>
@@ -171,12 +241,71 @@ const ProgramOverviewPage = ( {route} ) => {
             </ThemedView>
 
             {/* Program PR's */}
-            <ThemedTitle type="h2"> New Bests </ThemedTitle>
-            <ThemedCard style={styles.pr_container}>
+            <View style={styles.section_header}>
+                <ThemedTitle type="h2"> Program bests </ThemedTitle>
 
-                <ThemedText>
-                    coming soon...
-                </ThemedText>
+                <TouchableOpacity
+                    style={styles.section_header_icon}
+                    onPress={() => set_prSettingsBottomsheet_visible(true)}>
+                    <Cogwheel
+                        width={24}
+                        height={24} />
+                </TouchableOpacity>
+            </View>
+            <ThemedCard style={styles.pr_container}>
+                <ScrollView
+                    style={styles.pr_scroll}
+                    contentContainerStyle={styles.pr_body}
+                    nestedScrollEnabled>
+                    {selectedProgramBestExercises.length > 0 && (
+                        <View style={styles.pr_header}>
+                            <ThemedText
+                                size={10}
+                                style={{color: theme.quietText}}>
+                                1 Rep Max
+                            </ThemedText>
+                        </View>
+                    )}
+
+                    {programExercises.length === 0 && (
+                        <ThemedText>
+                            No exercises in this program yet.
+                        </ThemedText>
+                    )}
+
+                    {programExercises.length > 0 && selectedProgramBestExercises.length === 0 && (
+                        <ThemedText>
+                            No exercises selected.
+                        </ThemedText>
+                    )}
+
+                    {selectedProgramBestExercises.map((exerciseName) => {
+                        const programBest = programExerciseBestMap[exerciseName];
+
+                        return (
+                            <View
+                                key={exerciseName}
+                                style={styles.pr_exercise_row}>
+                                <View style={styles.pr_exercise_details}>
+                                    <ThemedText style={styles.pr_exercise_name}>
+                                        {exerciseName}
+                                    </ThemedText>
+                                    <ThemedText
+                                        size={12}
+                                        setColor={!programBest ? theme.quietText : undefined}>
+                                        {programBest?.setDisplayValue ?? "No completed sets."}
+                                    </ThemedText>
+                                </View>
+
+                                <ThemedText
+                                    size={12}
+                                    style={styles.pr_exercise_value}>
+                                    {programBest?.rmDisplayValue ?? ""}
+                                </ThemedText>
+                            </View>
+                        );
+                    })}
+                </ScrollView>
             </ThemedCard>
 
             {/* 1 rm estimates. */}
@@ -319,6 +448,58 @@ const ProgramOverviewPage = ( {route} ) => {
                 </TouchableOpacity>
             </View>
 
+
+        </ThemedBottomSheet>
+
+        <ThemedBottomSheet
+            visible={prSettingsBottomsheet_visible}
+            onClose={() => set_prSettingsBottomsheet_visible(false)}>
+
+            <View style={styles.bottomsheet_title}>
+                <ThemedTitle type={"h3"} style={{flex: 10}}>
+                    Filter exercises
+                </ThemedTitle>
+            </View>
+
+            <View style={styles.bottomsheet_body}>
+                {programExercises.length === 0 && (
+                    <ThemedText>
+                        No exercises in this program yet.
+                    </ThemedText>
+                )}
+
+                {programExercises.map((exerciseName, index) => (
+                    <TouchableOpacity
+                        key={exerciseName}
+                        style={[
+                            styles.option,
+                            styles.filter_option,
+                            index < programExercises.length - 1 && styles.filter_option_divider,
+                            index < programExercises.length - 1 && {
+                                borderBottomColor: filterDividerColor,
+                            },
+                            !(visibleProgramBestExercises[exerciseName] ?? true) &&
+                                styles.filter_option_unselected,
+                        ]}
+                        onPress={() => toggleProgramBestExercise(exerciseName)}>
+                        <ThemedText
+                            style={[
+                                styles.filter_option_text,
+                                (visibleProgramBestExercises[exerciseName] ?? true)
+                                    ? styles.filter_option_text_selected
+                                    : styles.filter_option_text_unselected,
+                            ]}>
+                            {exerciseName}
+                        </ThemedText>
+
+                        {(visibleProgramBestExercises[exerciseName] ?? true) && (
+                            <Checkmark
+                                width={24}
+                                height={24} />
+                        )}
+                    </TouchableOpacity>
+                ))}
+            </View>
 
         </ThemedBottomSheet>
         </>

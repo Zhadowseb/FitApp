@@ -40,7 +40,42 @@ export default StyleSheet.create({
     pr_container: {
         padding: 0,
         minHeight: 400,
+        maxHeight: 400,
         marginBottom: 12,
+        overflow: "hidden",
+    },
+    pr_scroll: {
+        flex: 1,
+    },
+    pr_body: {
+        padding: 16,
+        flexGrow: 1,
+    },
+    pr_exercise_row: {
+        paddingVertical: 8,
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    pr_exercise_details: {
+        flex: 1,
+        paddingRight: 12,
+    },
+    pr_exercise_name: {
+        fontWeight: "700",
+    },
+    pr_exercise_value: {
+        marginLeft: "auto",
+        textAlign: "right",
+    },
+    pr_header: {
+        alignItems: "flex-end",
+        borderBottomWidth: 1,
+        borderBottomColor: "#2e2e2eff",
+        paddingBottom: 8,
+        marginBottom: 4,
+    },
+    pr_header_value: {
+        textAlign: "right",
     },
     delete_button_container: {
         minHeight: 50,
@@ -71,6 +106,14 @@ export default StyleSheet.create({
 
 
     //PR containers
+    section_header: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    section_header_icon: {
+        marginLeft: "auto",
+        marginRight: 8,
+    },
 
 
     //BottomSheet Styling:
@@ -95,6 +138,28 @@ export default StyleSheet.create({
         paddingLeft: 10,
         fontWeight: 600,
         fontSize: 16,
+    },
+    filter_option: {
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    filter_option_divider: {
+        borderBottomWidth: 1,
+        paddingBottom: 14,
+        marginBottom: 4,
+    },
+    filter_option_unselected: {
+        opacity: 0.8,
+    },
+    filter_option_text: {
+        fontWeight: 600,
+        fontSize: 16,
+    },
+    filter_option_text_selected: {
+        fontWeight: "700",
+    },
+    filter_option_text_unselected: {
+        fontWeight: "400",
     },
 
 });

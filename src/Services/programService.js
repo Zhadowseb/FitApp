@@ -18,6 +18,36 @@ const WEEK_DAYS = [
   "Sunday",
 ];
 
+function formatDisplayNumber(value) {
+  return Number.isInteger(value) ? `${value}` : value.toFixed(1);
+}
+
+function calculateBrzyckiOneRepMax(weight, reps) {
+  const denominator = 1.0278 - 0.0278 * reps;
+
+  if (denominator <= 0) {
+    return null;
+  }
+
+  return weight / denominator;
+}
+
+function formatProgramBestDisplay({ weight, reps, estimatedOneRepMax }) {
+  const setText = `${reps} x ${formatDisplayNumber(weight)} kg`;
+
+  if (reps === 1) {
+    return {
+      setDisplayValue: setText,
+      rmDisplayValue: `${formatDisplayNumber(weight)} kg`,
+    };
+  }
+
+  return {
+    setDisplayValue: setText,
+    rmDisplayValue: `${formatDisplayNumber(Math.round(estimatedOneRepMax))} kg`,
+  };
+}
+
 async function cloneWorkoutContents(db, { sourceWorkoutId, targetWorkoutId }) {
   const exercises = await weightliftingRepository.getExercisesByWorkoutId(
     db,
@@ -91,6 +121,49 @@ export async function getProgramName(db, programId) {
   return programRepository.getProgramName(db, programId);
 }
 
+export async function getProgramBestExerciseOptions(db, programId) {
+  const exercises = await weightliftingRepository.getProgramExerciseNames(
+    db,
+    programId
+  );
+  const selections = await programRepository.getProgramBestExerciseSelections(
+    db,
+    programId
+  );
+  const selectionMap = new Map(
+    selections.map((selection) => [
+      selection.exercise_name,
+      Number(selection.is_selected) === 1,
+    ])
+  );
+
+  for (const exercise of exercises) {
+    if (!selectionMap.has(exercise.exercise_name)) {
+      await programRepository.insertProgramBestExerciseSelection(db, {
+        programId,
+        exerciseName: exercise.exercise_name,
+        isSelected: true,
+      });
+    }
+  }
+
+  return exercises.map((exercise) => ({
+    exercise_name: exercise.exercise_name,
+    is_selected: selectionMap.get(exercise.exercise_name) ?? true,
+  }));
+}
+
+export async function setProgramBestExerciseSelection(
+  db,
+  { programId, exerciseName, isSelected }
+) {
+  await programRepository.upsertProgramBestExerciseSelection(db, {
+    programId,
+    exerciseName,
+    isSelected,
+  });
+}
+
 export async function updateProgramStatus(db, { programId, status }) {
   await programRepository.updateProgramStatus(db, { programId, status });
 }
@@ -126,6 +199,52 @@ export async function getTodayProgramSnapshot(db, { programId, date }) {
   };
 }
 
+export async function getProgramExerciseBests(db, programId) {
+  const sets = await programRepository.getCompletedStrengthSetsByProgram(
+    db,
+    programId
+  );
+  const bestsByExercise = {};
+
+  for (const set of sets) {
+    const weight = Number(set.weight);
+    const reps = Number(set.reps);
+
+    if (!Number.isFinite(weight) || !Number.isFinite(reps) || reps < 1) {
+      continue;
+    }
+
+    const estimatedOneRepMax = calculateBrzyckiOneRepMax(weight, reps);
+
+    if (estimatedOneRepMax === null) {
+      continue;
+    }
+
+    const currentBest = bestsByExercise[set.exercise_name];
+
+    if (
+      !currentBest ||
+      estimatedOneRepMax > currentBest.estimatedOneRepMax
+    ) {
+      bestsByExercise[set.exercise_name] = {
+        exercise_name: set.exercise_name,
+        weight,
+        reps,
+        estimatedOneRepMax,
+        ...formatProgramBestDisplay({
+          weight,
+          reps,
+          estimatedOneRepMax,
+        }),
+      };
+    }
+  }
+
+  return Object.values(bestsByExercise).sort((left, right) =>
+    left.exercise_name.localeCompare(right.exercise_name)
+  );
+}
+
 export async function deleteProgram(db, programId) {
   await withTransaction(db, async () => {
     await programRepository.deleteSetsByProgram(db, programId);
@@ -135,6 +254,7 @@ export async function deleteProgram(db, programId) {
     await programRepository.deleteDaysByProgram(db, programId);
     await programRepository.deleteMicrocyclesByProgram(db, programId);
     await programRepository.deleteEstimatedSetsByProgram(db, programId);
+    await programRepository.deleteProgramBestExercisesByProgram(db, programId);
     await programRepository.deleteMesocyclesByProgram(db, programId);
     await programRepository.deleteProgramById(db, programId);
   });

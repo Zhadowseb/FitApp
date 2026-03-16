@@ -10,6 +10,15 @@ export const programSchemaSql = `
       CHECK (status IN ('COMPLETE', 'ACTIVE', 'NOT_STARTED'))
   );
 
+  CREATE TABLE IF NOT EXISTS Program_Best_Exercise (
+    program_best_exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    program_id INTEGER NOT NULL,
+    exercise_name TEXT NOT NULL,
+    is_selected INTEGER NOT NULL DEFAULT 1,
+
+    UNIQUE(program_id, exercise_name)
+  );
+
   CREATE TABLE IF NOT EXISTS Mesocycle(
       mesocycle_id INTEGER PRIMARY KEY AUTOINCREMENT,
       program_id INTEGER NOT NULL,

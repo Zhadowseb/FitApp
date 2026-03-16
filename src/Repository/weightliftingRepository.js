@@ -88,6 +88,18 @@ export async function getExercisesByWorkout(db, workoutId) {
   );
 }
 
+export async function getProgramExerciseNames(db, programId) {
+  return db.getAllAsync(
+    `SELECT DISTINCT e.exercise_name
+     FROM Exercise e
+     JOIN Workout w ON w.workout_id = e.workout_id
+     JOIN Day d ON d.day_id = w.day_id
+     WHERE d.program_id = ?
+     ORDER BY e.exercise_name COLLATE NOCASE ASC;`,
+    [programId]
+  );
+}
+
 export async function getExerciseSummariesByWorkout(db, workoutId) {
   return db.getAllAsync(
     `SELECT exercise_name, sets

@@ -14,11 +14,12 @@ import {checkUniformWeights,
 
 //UI icons
 import Cogwheel from "../../../../../../../../Resources/Icons/UI-icons/Cogwheel";
+import Note from "../../../../../../../../Resources/Icons/UI-icons/Note";
 
 import {ThemedCard,
         ThemedText,
-        ThemedButton,
         ThemedBouncyCheckbox,
+        ThemedModal,
         ThemedTitle} 
   from "../../../../../../../../Resources/ThemedComponents";
 import Expand from "../../../../../../../../Resources/Icons/UI-icons/Expand";
@@ -37,6 +38,7 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
   const [exerciseNote, setExerciseNote] = useState(exercise.note ?? "");
 
   const [panelModalVisible, set_panelModalVisible] = useState(false);
+  const [noteModalVisible, set_noteModalVisible] = useState(false);
   const [selectedExercise, set_selectedExercise] = useState(null);
 
   const db = useSQLiteContext();
@@ -138,6 +140,17 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
       </View>
 
       <View style={styles.icon_container}>
+
+        {exerciseNote.trim().length > 0 && (
+        <View style={styles.ui_icons}>
+          <TouchableOpacity
+            onPress={() => set_noteModalVisible(true)}>
+              <Note
+                width={24}
+                height={24} />
+          </TouchableOpacity>
+        </View>
+        )}
         
         <View style={styles.ui_icons}>
 
@@ -215,6 +228,16 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
           await saveExerciseSettings({ columns, note });
           set_panelModalVisible(false);
         }}/>
+
+      <ThemedModal
+        visible={noteModalVisible}
+        onClose={() => set_noteModalVisible(false)}
+        title="Note"
+      >
+        <ThemedText>
+          {exerciseNote}
+        </ThemedText>
+      </ThemedModal>
 
     </>
   );

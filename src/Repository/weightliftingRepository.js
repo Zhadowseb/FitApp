@@ -81,7 +81,8 @@ export async function getExercisesByWorkout(db, workoutId) {
         exercise_name,
         sets,
         done,
-        visible_columns
+        visible_columns,
+        note
      FROM Exercise
      WHERE workout_id = ?;`,
     [workoutId]
@@ -135,6 +136,7 @@ export async function createExercise(
     exerciseName,
     sets = 0,
     visibleColumns = null,
+    note = null,
     done = 0,
   }
 ) {
@@ -144,9 +146,10 @@ export async function createExercise(
       exercise_name,
       sets,
       visible_columns,
+      note,
       done
-    ) VALUES (?, ?, ?, ?, ?);`,
-    [workoutId, exerciseName, sets, visibleColumns, done]
+    ) VALUES (?, ?, ?, ?, ?, ?);`,
+    [workoutId, exerciseName, sets, visibleColumns, note, done]
   );
 }
 
@@ -268,6 +271,15 @@ export async function updateExerciseVisibleColumns(
      SET visible_columns = ?
      WHERE exercise_id = ?;`,
     [JSON.stringify(columns), exerciseId]
+  );
+}
+
+export async function updateExerciseNote(db, { exerciseId, note }) {
+  await db.runAsync(
+    `UPDATE Exercise
+     SET note = ?
+     WHERE exercise_id = ?;`,
+    [note, exerciseId]
   );
 }
 

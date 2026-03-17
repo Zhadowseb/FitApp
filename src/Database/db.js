@@ -6,6 +6,18 @@ import {
 import { runningSchemaSql } from './schema/running';
 import { locationSchemaSql } from './schema/location';
 
+async function ensureColumnExists(db, tableName, columnName, columnDefinition) {
+  const columns = await db.getAllAsync(`PRAGMA table_info(${tableName});`);
+
+  if (columns.some((column) => column.name === columnName)) {
+    return;
+  }
+
+  await db.execAsync(
+    `ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDefinition};`
+  );
+}
+
 export async function initializeDatabase(db) {
   await db.execAsync(`
     ${programSchemaSql}
@@ -16,6 +28,7 @@ export async function initializeDatabase(db) {
     PRAGMA journal_mode = WAL;
   `);
 
+  await ensureColumnExists(db, "Exercise", "note", "TEXT");
   await initializeWeightliftingData(db);
 
   /*

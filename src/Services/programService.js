@@ -60,6 +60,7 @@ async function cloneWorkoutContents(db, { sourceWorkoutId, targetWorkoutId }) {
       exerciseName: exercise.exercise_name,
       sets: exercise.sets,
       visibleColumns: exercise.visible_columns,
+      note: exercise.note,
       done: 0,
     });
 

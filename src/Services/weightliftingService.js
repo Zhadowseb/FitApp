@@ -177,6 +177,13 @@ export async function updateExerciseVisibleColumns(
   });
 }
 
+export async function updateExerciseNote(db, { exerciseId, note }) {
+  await weightliftingRepository.updateExerciseNote(db, {
+    exerciseId,
+    note,
+  });
+}
+
 export async function updateStrengthSetDone(db, { workoutId, setId, done }) {
   await withTransaction(db, async () => {
     await weightliftingRepository.updateSetDone(db, { setId, done });

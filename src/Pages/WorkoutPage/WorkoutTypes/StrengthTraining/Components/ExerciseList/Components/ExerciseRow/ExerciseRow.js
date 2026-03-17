@@ -34,6 +34,7 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
   
   const [expandedExercises, setExpandedExercises] = useState({});
   const [visibleColumns, set_VisibleColumns] = useState(exercise.visibleColumns);
+  const [exerciseNote, setExerciseNote] = useState(exercise.note ?? "");
 
   const [panelModalVisible, set_panelModalVisible] = useState(false);
   const [selectedExercise, set_selectedExercise] = useState(null);
@@ -44,6 +45,10 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
   useEffect(() => {
     set_VisibleColumns(exercise.visibleColumns);
   }, [exercise.visibleColumns]);
+
+  useEffect(() => {
+    setExerciseNote(exercise.note ?? "");
+  }, [exercise.note]);
 
   const toggleExpanded = (exercise_id) => {
     setExpandedExercises(prev => ({
@@ -71,13 +76,18 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
     }
   };
 
-  const saveColumns = async (columns) => {
+  const saveExerciseSettings = async ({ columns, note }) => {
     await weightliftingRepository.updateExerciseVisibleColumns(db, {
       exerciseId: exercise.exercise_id,
       columns,
     });
+    await weightliftingRepository.updateExerciseNote(db, {
+      exerciseId: exercise.exercise_id,
+      note,
+    });
 
     set_VisibleColumns(columns);
+    setExerciseNote(note);
   };
 
   return (
@@ -196,11 +206,14 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
       <PanelSettingsModal
         visible={panelModalVisible}
         currentColumns={visibleColumns}
-        exercise_id={selectedExercise}
-        deleteExercise={deleteExercise}
-        onClose={(columns) => {
-          saveColumns(columns);
-          set_panelModalVisible(false)
+        currentNote={exerciseNote}
+        onDelete={async () => {
+          await deleteExercise(selectedExercise);
+          set_panelModalVisible(false);
+        }}
+        onClose={async ({ columns, note }) => {
+          await saveExerciseSettings({ columns, note });
+          set_panelModalVisible(false);
         }}/>
 
     </>

@@ -12,17 +12,19 @@ export default StyleSheet.create({
         paddingBottom: 5,
         paddingTop: 5,
     },
+    note: {
+        flex: 2,
+        minWidth: 28,
+    },
     pause: {
         flex: 15,
-        borderLeftWidth: 0,
     },
     set:    {
         flex: 10,            
         paddingTop: 0,
         paddingBottom: 0
     },
-    x:      {flex: 5, maxWidth: 15},
-    reps:   {flex: 17},
+    reps:   {flex: 20},
     weight: {flex: 20},
     rpe:    {flex: 17},
     done:   {flex: 15, maxWidth: 40},  
@@ -95,6 +97,17 @@ export default StyleSheet.create({
         paddingLeft: 10,
         fontWeight: 600,
         fontSize: 16,
+    },
+    note_button: {
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    note_input: {
+        minHeight: 100,
+        textAlignVertical: "top",
+    },
+    note_section: {
+        paddingBottom: 12,
     },
 
 

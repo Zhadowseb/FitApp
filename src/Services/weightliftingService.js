@@ -3,9 +3,9 @@ import * as workoutService from "./workoutService";
 import { withTransaction } from "./shared";
 
 export const DEFAULT_VISIBLE_COLUMNS = {
+  note: true,
   rest: true,
   set: true,
-  x: true,
   reps: true,
   rpe: true,
   weight: true,
@@ -92,7 +92,10 @@ export async function getWorkoutExercises(db, workoutId) {
       sets: exerciseSets,
       setCount: exerciseSets.length,
       visibleColumns: exercise.visible_columns
-        ? JSON.parse(exercise.visible_columns)
+        ? {
+            ...DEFAULT_VISIBLE_COLUMNS,
+            ...JSON.parse(exercise.visible_columns),
+          }
         : DEFAULT_VISIBLE_COLUMNS,
     };
   });

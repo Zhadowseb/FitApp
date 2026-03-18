@@ -17,6 +17,12 @@ const Title = ({visibleColumns}) => {
   return (
     <View style={styles.container}>
 
+        {visibleColumns.note && (
+            <View style={[styles.note, styles.override]}>
+            <ThemedText style={[styles.titleText, {color: theme.quietText}]}>Note</ThemedText>
+            </View>
+        )}
+
         {visibleColumns.rest && (
             <View style={[styles.pause, styles.override]}> 
             <ThemedText style={[styles.titleText, {color: theme.quietText}]}>Rest</ThemedText>
@@ -26,12 +32,6 @@ const Title = ({visibleColumns}) => {
         {visibleColumns.set && (
             <View style={[styles.set, styles.override]}> 
             <ThemedText style={[styles.titleText, {color: theme.quietText}]}>Set</ThemedText>
-            </View>
-        )}
-
-        {visibleColumns.x && (
-            <View style={[styles.x, styles.override]}> 
-            <ThemedText style={[styles.titleText, {color: theme.quietText}]}> </ThemedText>
             </View>
         )}
 

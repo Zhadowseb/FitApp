@@ -32,9 +32,9 @@ export default function PanelSettingsModal({
   }, [visible, currentColumns, currentNote]);
 
   const columnConfig = [
+    { key: "note", label: "Note" },
     { key: "rest", label: "Rest" },
     { key: "set", label: "Set" },
-    { key: "x", label: "x" },
     { key: "reps", label: "Reps" },
     { key: "rpe", label: "RPE" },
     { key: "weight", label: "Weight" },

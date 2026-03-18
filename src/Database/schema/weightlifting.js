@@ -27,6 +27,7 @@ export const weightliftingSchemaSql = `
       pause INTEGER,
       rpe INTEGER,
       weight INTEGER,
+      rm_percentage INTEGER,
       reps INTEGER,
 
       done INTEGER NOT NULL DEFAULT 0,

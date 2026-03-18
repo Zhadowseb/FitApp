@@ -54,11 +54,52 @@ const SetList = ({
     { key: "set", style: styles.set },
     { key: "reps", style: styles.reps },
     { key: "rpe", style: styles.rpe },
+    { key: "rm_percentage", style: styles.rm_percentage },
     { key: "weight", style: styles.weight },
     { key: "done", style: styles.done },
   ];
 
   const activeColumns = columnConfig.filter((col) => visibleColumns[col.key]);
+
+  const parsePauseValue = (value) => {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+
+    const parsedValue = Number(value);
+
+    return Number.isFinite(parsedValue) ? parsedValue : null;
+  };
+
+  const formatPauseDisplay = (value) => {
+    const pauseValue = parsePauseValue(value);
+
+    if (pauseValue === null) {
+      return "";
+    }
+
+    if (pauseValue < 120) {
+      return pauseValue.toString();
+    }
+
+    const minutes = pauseValue / 60;
+
+    if (Number.isInteger(minutes)) {
+      return minutes.toString();
+    }
+
+    return Number(minutes.toFixed(2)).toString();
+  };
+
+  const getPauseSuffix = (value) => {
+    const pauseValue = parsePauseValue(value);
+
+    if (pauseValue === null) {
+      return "";
+    }
+
+    return pauseValue < 120 ? "sec" : "min";
+  };
 
   const deleteSet = async (setId) => {
     await weightliftingRepository.deleteSet(db, setId);
@@ -86,6 +127,70 @@ const SetList = ({
       value: nextValue,
       setId,
     });
+
+    updateUI();
+  };
+
+  const updateRmPercentage = async (value, setId) => {
+    const result = await weightliftingRepository.updateSetRmPercentage(db, {
+      setId,
+      rmPercentage: value,
+    });
+
+    setLocalSets((prev) =>
+      prev.map((set) => {
+        if (set.sets_id !== setId) {
+          return set;
+        }
+
+        return {
+          ...set,
+          rm_percentage: result.rmPercentage,
+          ...(result.weightUpdated ? { weight: result.weight } : {}),
+        };
+      })
+    );
+
+    set_selectedSet((prev) =>
+      prev?.sets_id === setId
+        ? {
+            ...prev,
+            rm_percentage: result.rmPercentage,
+            ...(result.weightUpdated ? { weight: result.weight } : {}),
+          }
+        : prev
+    );
+
+    updateUI();
+  };
+
+  const updateWeight = async (value, setId) => {
+    const result = await weightliftingRepository.updateSetWeight(db, {
+      setId,
+      weight: value,
+    });
+
+    setLocalSets((prev) =>
+      prev.map((set) =>
+        set.sets_id === setId
+          ? {
+              ...set,
+              weight: result.weight,
+              rm_percentage: result.rmPercentage,
+            }
+          : set
+      )
+    );
+
+    set_selectedSet((prev) =>
+      prev?.sets_id === setId
+        ? {
+            ...prev,
+            weight: result.weight,
+            rm_percentage: result.rmPercentage,
+          }
+        : prev
+    );
 
     updateUI();
   };
@@ -134,6 +239,8 @@ const SetList = ({
         return (
           <ThemedEditableCell
             value={set.pause?.toString() ?? ""}
+            displayFormatter={formatPauseDisplay}
+            suffixFormatter={getPauseSuffix}
             onCommit={(value) => updateField("pause", value, set.sets_id)}
           />
         );
@@ -178,12 +285,21 @@ const SetList = ({
           />
         );
 
+      case "rm_percentage":
+        return (
+          <ThemedEditableCell
+            value={set.rm_percentage?.toString() ?? ""}
+            suffix="%"
+            onCommit={(value) => updateRmPercentage(value, set.sets_id)}
+          />
+        );
+
       case "weight":
         return (
           <ThemedEditableCell
             value={set.weight?.toString() ?? ""}
             suffix="kg"
-            onCommit={(value) => updateField("weight", value, set.sets_id)}
+            onCommit={(value) => updateWeight(value, set.sets_id)}
           />
         );
 

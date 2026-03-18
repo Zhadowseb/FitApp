@@ -78,6 +78,7 @@ async function cloneWorkoutContents(db, { sourceWorkoutId, targetWorkoutId }) {
         pause: set.pause,
         rpe: set.rpe,
         weight: set.weight,
+        rmPercentage: set.rm_percentage,
         reps: set.reps,
         done: 0,
         failed: 0,

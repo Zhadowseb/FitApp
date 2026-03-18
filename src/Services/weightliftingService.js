@@ -8,9 +8,34 @@ export const DEFAULT_VISIBLE_COLUMNS = {
   set: true,
   reps: true,
   rpe: true,
+  rm_percentage: true,
   weight: true,
   done: true,
 };
+
+function normalizeOptionalNumber(value) {
+  if (value === "" || value === null || value === undefined) {
+    return null;
+  }
+
+  const parsedValue = Number(value);
+
+  return Number.isFinite(parsedValue) ? parsedValue : null;
+}
+
+async function getEstimatedWeightForSet(db, setId) {
+  const estimatedSet = await weightliftingRepository.getEstimatedWeightBySetId(
+    db,
+    setId
+  );
+  const estimatedWeight = Number(estimatedSet?.estimated_weight);
+
+  if (!Number.isFinite(estimatedWeight) || estimatedWeight <= 0) {
+    return null;
+  }
+
+  return estimatedWeight;
+}
 
 export async function getExerciseStorage(db) {
   return weightliftingRepository.getExerciseStorage(db);
@@ -236,6 +261,105 @@ export async function updateSetField(db, { field, value, setId }) {
   await weightliftingRepository.updateSetField(db, { field, value, setId });
 }
 
+export async function updateSetRmPercentage(db, { setId, rmPercentage }) {
+  const nextRmPercentage = normalizeOptionalNumber(rmPercentage);
+
+  return withTransaction(db, async () => {
+    await weightliftingRepository.updateSetField(db, {
+      field: "rm_percentage",
+      value: nextRmPercentage,
+      setId,
+    });
+
+    if (nextRmPercentage === null) {
+      return {
+        rmPercentage: null,
+        weightUpdated: false,
+        weight: null,
+      };
+    }
+
+    const estimatedWeight = await getEstimatedWeightForSet(db, setId);
+
+    if (estimatedWeight === null) {
+      return {
+        rmPercentage: nextRmPercentage,
+        weightUpdated: false,
+        weight: null,
+      };
+    }
+
+    const calculatedWeight = Math.round(
+      estimatedWeight * (nextRmPercentage / 100)
+    );
+
+    await weightliftingRepository.updateSetField(db, {
+      field: "weight",
+      value: calculatedWeight,
+      setId,
+    });
+
+    return {
+      rmPercentage: nextRmPercentage,
+      weightUpdated: true,
+      weight: calculatedWeight,
+    };
+  });
+}
+
+export async function updateSetWeight(db, { setId, weight }) {
+  const nextWeight = normalizeOptionalNumber(weight);
+
+  return withTransaction(db, async () => {
+    await weightliftingRepository.updateSetField(db, {
+      field: "weight",
+      value: nextWeight,
+      setId,
+    });
+
+    if (nextWeight === null) {
+      await weightliftingRepository.updateSetField(db, {
+        field: "rm_percentage",
+        value: null,
+        setId,
+      });
+
+      return {
+        weight: null,
+        rmPercentage: null,
+      };
+    }
+
+    const estimatedWeight = await getEstimatedWeightForSet(db, setId);
+
+    if (estimatedWeight === null) {
+      await weightliftingRepository.updateSetField(db, {
+        field: "rm_percentage",
+        value: null,
+        setId,
+      });
+
+      return {
+        weight: nextWeight,
+        rmPercentage: null,
+      };
+    }
+
+    const nextRmPercentage = Math.round((nextWeight / estimatedWeight) * 100);
+
+    await weightliftingRepository.updateSetField(db, {
+      field: "rm_percentage",
+      value: nextRmPercentage,
+      setId,
+    });
+
+    return {
+      weight: nextWeight,
+      rmPercentage: nextRmPercentage,
+    };
+  });
+}
+
 export async function getExerciseSets(db, exerciseId) {
   return weightliftingRepository.getExerciseSets(db, exerciseId);
 }
@@ -271,6 +395,7 @@ export async function saveExerciseSets(db, { exerciseId, sets }) {
         pause: set.pause,
         rpe: set.rpe,
         weight: set.weight,
+        rmPercentage: set.rm_percentage,
         reps: set.reps,
         done: set.done ? 1 : 0,
         failed: set.failed ? 1 : 0,

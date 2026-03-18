@@ -13,21 +13,22 @@ export default StyleSheet.create({
         paddingTop: 5,
     },
     note: {
-        flex: 2,
+        flex: 1,
         minWidth: 28,
     },
     pause: {
-        flex: 15,
+        flex: 20,
     },
     set:    {
-        flex: 10,            
+        flex: 8,            
         paddingTop: 0,
         paddingBottom: 0
     },
-    reps:   {flex: 20},
+    reps:   {flex: 13},
     weight: {flex: 20},
-    rpe:    {flex: 17},
-    done:   {flex: 15, maxWidth: 40},  
+    rpe:    {flex: 9},
+    rm_percentage: {flex: 14},
+    done:   {flex: 14, maxWidth: 40},  
 
     override: {
         borderLeftWidth: 0,

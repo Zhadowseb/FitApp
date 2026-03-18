@@ -9,6 +9,8 @@ const ThemedEditableCell = ({
   onCommit,
   keyboardType = "numeric",
   suffix = "",
+  suffixFormatter,
+  displayFormatter,
   textAlign = "center",
 }) => {
   const colorScheme = useColorScheme();
@@ -21,10 +23,22 @@ const ThemedEditableCell = ({
     setLocalValue(value);
   }, [value]);
 
+  const displayValue =
+    focused || !displayFormatter
+      ? localValue ?? ""
+      : displayFormatter(localValue ?? "");
+
+  const displaySuffix =
+    localValue === ""
+      ? ""
+      : suffixFormatter
+        ? suffixFormatter(localValue ?? "")
+        : suffix;
+
   return (
     <View style={styles.wrapper}>
       <TextInput
-        value={localValue ?? ""}
+        value={displayValue ?? ""}
         onFocus={() => setFocused(true)}
         onBlur={() => {
           setFocused(false);
@@ -44,14 +58,14 @@ const ThemedEditableCell = ({
         selectionColor={theme.primary}
       />
 
-      {!focused && suffix && localValue !== "" && (
+      {!focused && displaySuffix && (
         <ThemedText
           style={[
             styles.suffix,
             { color: theme.text },
           ]}
         >
-          {suffix}
+          {displaySuffix}
         </ThemedText>
       )}
     </View>

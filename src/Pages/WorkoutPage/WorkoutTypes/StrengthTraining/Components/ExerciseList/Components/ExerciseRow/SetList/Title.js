@@ -47,6 +47,12 @@ const Title = ({visibleColumns}) => {
             </View>
         )}
 
+        {visibleColumns.rm_percentage && (
+            <View style={[styles.rm_percentage, styles.override]}>
+            <ThemedText style={[styles.titleText, {color: theme.quietText}]}>1RM %</ThemedText>
+            </View>
+        )}
+
         {visibleColumns.weight && (
             <View style={[styles.weight, styles.override]}> 
             <ThemedText style={[styles.titleText, {color: theme.quietText}]}>Weight</ThemedText>

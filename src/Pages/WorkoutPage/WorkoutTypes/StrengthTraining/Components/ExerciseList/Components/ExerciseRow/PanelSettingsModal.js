@@ -37,6 +37,7 @@ export default function PanelSettingsModal({
     { key: "set", label: "Set" },
     { key: "reps", label: "Reps" },
     { key: "rpe", label: "RPE" },
+    { key: "rm_percentage", label: "1RM %" },
     { key: "weight", label: "Weight" },
     { key: "done", label: "Done" },
   ];

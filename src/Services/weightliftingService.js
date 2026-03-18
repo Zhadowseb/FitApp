@@ -399,6 +399,7 @@ export async function saveExerciseSets(db, { exerciseId, sets }) {
         reps: set.reps,
         done: set.done ? 1 : 0,
         failed: set.failed ? 1 : 0,
+        amrap: set.amrap ? 1 : 0,
         note: set.note,
       });
     }

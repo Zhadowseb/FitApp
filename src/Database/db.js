@@ -30,6 +30,7 @@ export async function initializeDatabase(db) {
 
   await ensureColumnExists(db, "Exercise", "note", "TEXT");
   await ensureColumnExists(db, "Sets", "rm_percentage", "INTEGER");
+  await ensureColumnExists(db, "Sets", "amrap", "INTEGER NOT NULL DEFAULT 0");
   await initializeWeightliftingData(db);
 
   /*

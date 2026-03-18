@@ -33,6 +33,7 @@ const SetPage = ( {route} ) =>  {
                 note: r.note ?? "",
                 done: r.done === 1,
                 failed: r.failed === 1,
+                amrap: r.amrap === 1,
             }));
 
             setInputs(formatted);

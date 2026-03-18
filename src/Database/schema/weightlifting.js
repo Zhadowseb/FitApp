@@ -32,6 +32,7 @@ export const weightliftingSchemaSql = `
 
       done INTEGER NOT NULL DEFAULT 0,
       failed INTEGER NOT NULL DEFAULT 0,
+      amrap INTEGER NOT NULL DEFAULT 0,
       note TEXT
   );
 

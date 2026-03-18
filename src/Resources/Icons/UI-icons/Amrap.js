@@ -16,7 +16,7 @@ function Amrap({width, height, color}) {
       height={height}
       color={color ? color : theme.iconColor}
       fill="none"
-      stroke="#141B34"
+      stroke={color ? color : theme.iconColor}
       strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"

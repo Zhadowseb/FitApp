@@ -19,6 +19,7 @@ import {
 import Cross from "../../../../../../../../../Resources/Icons/UI-icons/Cross";
 import Delete from "../../../../../../../../../Resources/Icons/UI-icons/Delete";
 import Note from "../../../../../../../../../Resources/Icons/UI-icons/Note";
+import Amrap from "../../../../../../../../../Resources/Icons/UI-icons/Amrap";
 import { weightliftingService as weightliftingRepository } from "../../../../../../../../../Services";
 
 const SetList = ({
@@ -49,17 +50,47 @@ const SetList = ({
   }
 
   const columnConfig = [
-    { key: "note", style: styles.note },
-    { key: "rest", style: styles.pause },
-    { key: "set", style: styles.set },
-    { key: "reps", style: styles.reps },
-    { key: "rpe", style: styles.rpe },
-    { key: "rm_percentage", style: styles.rm_percentage },
-    { key: "weight", style: styles.weight },
-    { key: "done", style: styles.done },
+    { key: "note", style: styles.note, flexValue: 1 },
+    { key: "rest", style: styles.pause, flexValue: 20 },
+    { key: "set", style: styles.set, flexValue: 8 },
+    { key: "reps", style: styles.reps, flexValue: 13 },
+    { key: "rpe", style: styles.rpe, flexValue: 9 },
+    { key: "rm_percentage", style: styles.rm_percentage, flexValue: 14 },
+    { key: "weight", style: styles.weight, flexValue: 20 },
+    { key: "done", style: styles.done, flexValue: 14 },
   ];
 
   const activeColumns = columnConfig.filter((col) => visibleColumns[col.key]);
+
+  const getRenderedColumns = (set) => {
+    if (set.amrap !== 1 || !visibleColumns.reps) {
+      return activeColumns;
+    }
+
+    const renderedColumns = [];
+
+    for (const column of activeColumns) {
+      if (column.key === "rpe") {
+        continue;
+      }
+
+      if (column.key === "reps") {
+        renderedColumns.push({
+          ...column,
+          mergedStyle: {
+            flex:
+              column.flexValue +
+              (visibleColumns.rpe ? 9 : 0),
+          },
+        });
+        continue;
+      }
+
+      renderedColumns.push(column);
+    }
+
+    return renderedColumns;
+  };
 
   const parsePauseValue = (value) => {
     if (value === null || value === undefined || value === "") {
@@ -273,6 +304,8 @@ const SetList = ({
         return (
           <ThemedEditableCell
             value={set.reps?.toString() ?? ""}
+            suffix={set.amrap === 1 ? "AMRAP" : ""}
+            showSuffixWhenEmpty={set.amrap === 1}
             onCommit={(value) => updateField("reps", value, set.sets_id)}
           />
         );
@@ -325,30 +358,35 @@ const SetList = ({
       <ThemedCard style={styles.wrapper}>
         <Title visibleColumns={visibleColumns} />
 
-        {localSets.map((set, rowIndex) => (
-          <View key={set.sets_id} style={styles.container}>
-            {activeColumns.map((col, colIndex) => {
-              const isFirst = colIndex === 0;
-              const isLast = colIndex === activeColumns.length - 1;
+        {localSets.map((set, rowIndex) => {
+          const renderedColumns = getRenderedColumns(set);
 
-              return (
-                <View
-                  key={col.key}
-                  style={[
-                    styles.editable_cell,
-                    styles.padding,
-                    col.style,
-                    isFirst && { borderLeftWidth: 0 },
-                    isLast && { borderRightWidth: 0 },
-                    rowIndex === localSets.length - 1 && styles.lastGrid,
-                  ]}
-                >
-                  {renderCellContent(col.key, set)}
-                </View>
-              );
-            })}
-          </View>
-        ))}
+          return (
+            <View key={set.sets_id} style={styles.container}>
+              {renderedColumns.map((col, colIndex) => {
+                const isFirst = colIndex === 0;
+                const isLast = colIndex === renderedColumns.length - 1;
+
+                return (
+                  <View
+                    key={col.key}
+                    style={[
+                      styles.editable_cell,
+                      styles.padding,
+                      col.style,
+                      col.mergedStyle,
+                      isFirst && { borderLeftWidth: 0 },
+                      isLast && { borderRightWidth: 0 },
+                      rowIndex === localSets.length - 1 && styles.lastGrid,
+                    ]}
+                  >
+                    {renderCellContent(col.key, set)}
+                  </View>
+                );
+              })}
+            </View>
+          );
+        })}
       </ThemedCard>
 
       <ThemedBottomSheet
@@ -377,7 +415,30 @@ const SetList = ({
           </View>
 
           <TouchableOpacity
-            style={[styles.option, { paddingTop: 0 }]}
+            style={styles.option}
+            onPress={async () => {
+              if (!selectedSet) {
+                return;
+              }
+
+              await updateField(
+                "amrap",
+                selectedSet.amrap === 1 ? 0 : 1,
+                selectedSet.sets_id
+              );
+              setSetOptionsVisible(false);
+            }}
+          >
+            <Amrap width={24} height={24} />
+            <ThemedText style={styles.option_text}>
+              {selectedSet?.amrap === 1
+                ? "Remove AMRAP mark"
+                : "Mark as AMRAP"}
+            </ThemedText>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.option}
             onPress={async () => {
               if (!selectedSet) {
                 return;

@@ -82,6 +82,7 @@ async function cloneWorkoutContents(db, { sourceWorkoutId, targetWorkoutId }) {
         reps: set.reps,
         done: 0,
         failed: 0,
+        amrap: set.amrap,
         note: set.note,
       });
     }

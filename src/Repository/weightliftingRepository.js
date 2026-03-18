@@ -216,6 +216,7 @@ export async function createSet(
     reps = null,
     done = 0,
     failed = 0,
+    amrap = 0,
     note = null,
   }
 ) {
@@ -232,8 +233,9 @@ export async function createSet(
       reps,
       done,
       failed,
+      amrap,
       note
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
     [
       setNumber,
       exerciseId,
@@ -246,6 +248,7 @@ export async function createSet(
       reps,
       done,
       failed,
+      amrap,
       note,
     ]
   );
@@ -394,7 +397,7 @@ export async function updateSetField(db, { field, value, setId }) {
 
 export async function getExerciseSets(db, exerciseId) {
   return db.getAllAsync(
-    `SELECT set_number, pause, rpe, weight, rm_percentage, reps, done, failed, note
+    `SELECT set_number, pause, rpe, weight, rm_percentage, reps, done, failed, amrap, note
      FROM Sets
      WHERE exercise_id = ?;`,
     [exerciseId]
@@ -422,6 +425,7 @@ export async function updateSetByExerciseAndNumber(
     reps,
     done,
     failed,
+    amrap,
     note,
   }
 ) {
@@ -434,6 +438,7 @@ export async function updateSetByExerciseAndNumber(
          reps = ?,
          done = ?,
          failed = ?,
+         amrap = ?,
          note = ?
      WHERE exercise_id = ?
        AND set_number = ?;`,
@@ -445,6 +450,7 @@ export async function updateSetByExerciseAndNumber(
       reps,
       done,
       failed,
+      amrap,
       note,
       exerciseId,
       setNumber,

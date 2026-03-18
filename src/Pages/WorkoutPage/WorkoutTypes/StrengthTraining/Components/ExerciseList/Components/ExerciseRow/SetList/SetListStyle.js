@@ -92,6 +92,7 @@ export default StyleSheet.create({
     },
     option: {
         flexDirection: "row",
+        alignItems: "center",
         paddingTop: 20,
     },
     option_text: {

@@ -4,25 +4,25 @@ import Dumbbell from "./Dumbbell";
 export const WORKOUT_ICONS = [
   {
     id: "Resistance",
-    short: "Res",
+    short: "Resist...",
     Icon: Dumbbell,
     selectable: true,
   },
   {
     id: "Upperbody",
-    short: "Res",
+    short: "Resist...",
     Icon: Dumbbell,
     selectable: false,
   },
   {
     id: "Legs",
-    short: "Res",
+    short: "Resist...",
     Icon: Dumbbell,
     selectable: false,
   },
   {
     id: "StrengthTraining",
-    short: "Res",
+    short: "Resist...",
     Icon: Dumbbell,
     selectable: false,
   },

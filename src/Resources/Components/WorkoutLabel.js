@@ -1,13 +1,15 @@
-import React, { useState } from "react";
-import { Modal, View, TouchableOpacity,Text, Button, ScrollView } from "react-native";
+import React from "react";
+import { ScrollView, StyleSheet, TouchableOpacity, View, useColorScheme } from "react-native";
 import { SELECTABLE_WORKOUT_ICONS } from "../Icons/WorkoutLabels/index";
-import { StyleSheet } from "react-native";
+import { Colors } from "../GlobalStyling/colors";
 
 
-import {ThemedButton, ThemedModal, ThemedText} 
+import {ThemedButton, ThemedText, ThemedWorkoutModal} 
   from "../ThemedComponents";
 
 export default function AddProgram({ visible, onClose, onSubmit }) {
+    const colorScheme = useColorScheme();
+    const theme = Colors[colorScheme] ?? Colors.light;
     
     const handleSubmit = (id) => {
         onSubmit({ id });
@@ -15,23 +17,40 @@ export default function AddProgram({ visible, onClose, onSubmit }) {
     };
 
     return (
-        <ThemedModal
+        <ThemedWorkoutModal
             visible={visible}
+            onClose={onClose}
             title="Choose a workout type">
 
             <ScrollView
-                horizontal>
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.list}>
                 {SELECTABLE_WORKOUT_ICONS.map(({ id, Icon }) => (
                     <TouchableOpacity
                         key={id}
-                        style={styles.icon}
+                        style={styles.option}
                         onPress={() => handleSubmit(id)}>
 
-                        <ThemedText> {id} </ThemedText>
+                        <View
+                            style={[
+                              styles.iconBox,
+                              {
+                                backgroundColor: theme.primary,
+                                borderColor: theme.iconColor,
+                              },
+                            ]}
+                        >
+                            <Icon
+                                width={72}
+                                height={72}
+                                color={theme.cardBackground}
+                                primaryColor={theme.cardBackground}
+                                backgroundColor="transparent"
+                            />
+                        </View>
 
-                        <Icon 
-                            width={50}
-                            height={50} />
+                        <ThemedText style={styles.label}>{id}</ThemedText>
                     </TouchableOpacity>
                 ))}
             </ScrollView>
@@ -42,19 +61,30 @@ export default function AddProgram({ visible, onClose, onSubmit }) {
                 width={100} 
                 onPress={onClose} />
 
-        </ThemedModal>
+        </ThemedWorkoutModal>
     );
 }
 
 const styles = StyleSheet.create({
-    icon: {
+    list: {
+        paddingVertical: 4,
+        paddingHorizontal: 4,
+    },
+    option: {
+        width: 120,
+        alignItems: "center",
+    },
+    iconBox: {
+        width: 90,
+        height: 90,
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: "#d7d7d7ff",
-        padding: 5,
-        marginLeft: 5,
-        marginRight: 5,
+        padding: 12,
         justifyContent: "center",
         alignItems: "center",
-  },
-})
+    },
+    label: {
+        textAlign: "center",
+        paddingTop: 8,
+    },
+});

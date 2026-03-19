@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Modal, View, TouchableOpacity,Text, Button, ScrollView } from "react-native";
-import { WORKOUT_ICONS } from "../Icons/WorkoutLabels/index";
+import { SELECTABLE_WORKOUT_ICONS } from "../Icons/WorkoutLabels/index";
 import { StyleSheet } from "react-native";
 
 
@@ -17,11 +17,11 @@ export default function AddProgram({ visible, onClose, onSubmit }) {
     return (
         <ThemedModal
             visible={visible}
-            title="Give your workout a label!">
+            title="Choose a workout type">
 
             <ScrollView
                 horizontal>
-                {WORKOUT_ICONS.map(({ id, Icon }) => (
+                {SELECTABLE_WORKOUT_ICONS.map(({ id, Icon }) => (
                     <TouchableOpacity
                         key={id}
                         style={styles.icon}

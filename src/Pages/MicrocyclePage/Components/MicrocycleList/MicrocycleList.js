@@ -13,7 +13,7 @@ import CircularProgression from "../../../../Resources/Components/CircularProgre
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
 import WeekdayIndicator from "../../../../Resources/Figures/WeekdayIndicator";
-import { WORKOUT_ICONS } from "../../../../Resources/Icons/WorkoutLabels";
+import { getWorkoutIconConfig } from "../../../../Resources/Icons/WorkoutLabels";
 import PickWorkoutModal from "../../../WeekPage/Components/Day/Components/PickWorkoutModal/PickWorkoutModal";
 import WorkoutLabel from "../../../../Resources/Components/WorkoutLabel";
 
@@ -105,7 +105,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
         let iconLabel = null;
 
         if (workouts.length === 1) {
-          const found = WORKOUT_ICONS.find((w) => w.id === workouts[0].label);
+          const found = getWorkoutIconConfig(workouts[0].label);
 
           icon = found?.Icon ?? null;
           iconLabel = found?.short ?? workouts[0].label;

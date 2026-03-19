@@ -114,7 +114,12 @@ const WorkoutPage = ({ route }) => {
 
       {workoutLabel === "Run" && <Run workout_id={workout_id} />}
 
-      {(workoutLabel === "Upperbody" || workoutLabel === "Legs") && (
+      {(
+        workoutLabel === "Resistance" ||
+        workoutLabel === "Upperbody" ||
+        workoutLabel === "Legs" ||
+        workoutLabel === "StrengthTraining"
+      ) && (
         <StrengthTraining workout_id={workout_id} date={workoutDate} />
       )}
 

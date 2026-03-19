@@ -14,6 +14,8 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
 import WeekdayIndicator from "../../../../Resources/Figures/WeekdayIndicator";
 import { getWorkoutIconConfig } from "../../../../Resources/Icons/WorkoutLabels";
+import ArmMuscle from "../../../../Resources/Icons/WorkoutLabels/ArmMuscle";
+import LegMuscle from "../../../../Resources/Icons/WorkoutLabels/LegMuscle";
 import PickWorkoutModal from "../../../WeekPage/Components/Day/Components/PickWorkoutModal/PickWorkoutModal";
 import WorkoutLabel from "../../../../Resources/Components/WorkoutLabel";
 
@@ -54,6 +56,12 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [newDate, setNewDate] = useState(new Date());
   const longPressHandledRef = useRef(false);
+  const strengthLabels = new Set([
+    "Resistance",
+    "Upperbody",
+    "Legs",
+    "StrengthTraining",
+  ]);
   const PICK_MODE = {
     NAVIGATE: "navigate",
     DELETE: "delete",
@@ -106,12 +114,17 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
 
         let icon = null;
         let iconLabel = null;
+        let stackedIcons = [];
 
         if (workouts.length === 1) {
-          const found = getWorkoutIconConfig(workouts[0].label);
+          if (strengthLabels.has(workouts[0].label)) {
+            stackedIcons = [ArmMuscle, LegMuscle];
+          } else {
+            const found = getWorkoutIconConfig(workouts[0].label);
 
-          icon = found?.Icon ?? null;
-          iconLabel = found?.short ?? workouts[0].label;
+            icon = found?.Icon ?? null;
+            iconLabel = found?.short ?? workouts[0].label;
+          }
         } else if (workouts.length > 1) {
           iconLabel = "Multi";
         }
@@ -127,6 +140,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
           completed,
           icon,
           iconLabel,
+          stackedIcons,
           workouts,
         });
       }
@@ -258,6 +272,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
         // simpelt default – kan udvides senere
         icon: null,
         iconLabel: null,
+        stackedIcons: [],
         workouts: [],
       });
     }
@@ -485,6 +500,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
                       completed={day.completed}
                       icon={day.icon}
                       iconLabel={day.iconLabel}
+                      stackedIcons={day.stackedIcons}
                     />
                   </TouchableOpacity>
                 ))}

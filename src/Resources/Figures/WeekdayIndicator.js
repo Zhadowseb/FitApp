@@ -11,10 +11,12 @@ const WeekdayIndicator = ({
   completed,
   icon: Icon,
   iconLabel,
+  stackedIcons = [],
 }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
-  const hasWorkout = Boolean(Icon || iconLabel);
+  const hasStackedIcons = stackedIcons.length > 0;
+  const hasWorkout = hasStackedIcons || Boolean(Icon || iconLabel);
 
   return (
     <View style={styles.container}>
@@ -36,7 +38,33 @@ const WeekdayIndicator = ({
         )}
       </View>
 
-      {hasWorkout && (
+      {hasStackedIcons && (
+        <View style={styles.stackedCircles}>
+          {stackedIcons.map((StackedIcon, index) => (
+            <View
+              key={`stacked-icon-${index}`}
+              style={[
+                styles.circle,
+                styles.stackedCircle,
+                active && styles.activeCircle,
+                {
+                  backgroundColor: completed ? theme.secondary : theme.primary,
+                },
+                index < stackedIcons.length - 1 && styles.stackedCircleSpacing,
+              ]}
+            >
+              <StackedIcon
+                width={active ? 22 : 24}
+                height={active ? 22 : 24}
+                backgroundColor="transparent"
+                primaryColor={theme.cardBackground}
+              />
+            </View>
+          ))}
+        </View>
+      )}
+
+      {!hasStackedIcons && hasWorkout && (
         <View
           style={[
             styles.circle,
@@ -107,6 +135,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 5,
     borderColor: "rgb(216, 111, 51)",
+    marginBottom: 4,
+  },
+  stackedCircles: {
+    width: 40,
+    marginBottom: 4,
+  },
+  stackedCircle: {
+    marginBottom: 0,
+  },
+  stackedCircleSpacing: {
     marginBottom: 4,
   },
   activeCircle: {

@@ -11,10 +11,12 @@ const WeekdayIndicator = ({
   completed,
   icon: Icon,
   iconLabel,
+  workoutCards = [],
 }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
-  const hasWorkout = Boolean(Icon || iconLabel);
+  const hasWorkoutCards = workoutCards.length > 0;
+  const hasWorkout = hasWorkoutCards || Boolean(Icon || iconLabel);
 
   return (
     <View style={styles.container}>
@@ -37,7 +39,58 @@ const WeekdayIndicator = ({
         )}
       </View>
 
-      {hasWorkout && (
+      {hasWorkoutCards && (
+        <View style={styles.workoutCards}>
+          {workoutCards.map((workoutCard, index) => {
+            const WorkoutIcon = workoutCard.icon;
+
+            return (
+              <View
+                key={workoutCard.key ?? `${workoutCard.iconLabel}-${index}`}
+                style={[
+                  styles.circle,
+                  styles.multiWorkoutCard,
+                  active && styles.activeCircle,
+                  index < workoutCards.length - 1 && styles.workoutCardSpacing,
+                  {
+                    backgroundColor: workoutCard.completed
+                      ? theme.secondary
+                      : theme.primary,
+                    borderColor: workoutCard.completed
+                      ? theme.secondaryDark
+                      : theme.primaryDark,
+                  },
+                ]}
+              >
+                {WorkoutIcon && (
+                  <WorkoutIcon
+                    width={active ? 22 : 28}
+                    height={active ? 22 : 28}
+                    color={theme.cardBackground}
+                    fill={theme.cardBackground}
+                    primaryColor={theme.cardBackground}
+                    backgroundColor="transparent"
+                  />
+                )}
+
+                {!WorkoutIcon && workoutCard.iconLabel && (
+                  <Text
+                    style={[
+                      styles.iconLabel,
+                      styles.iconLabelOnly,
+                      { color: theme.cardBackground },
+                    ]}
+                  >
+                    {workoutCard.iconLabel}
+                  </Text>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      {!hasWorkoutCards && hasWorkout && (
         <View
           style={[
             styles.circle,
@@ -109,6 +162,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 3,
     marginBottom: 10,
+  },
+  workoutCards: {
+    alignItems: "center",
+  },
+  multiWorkoutCard: {
+    marginBottom: 0,
+  },
+  workoutCardSpacing: {
+    marginBottom: 4,
   },
   activeCircle: {
     width: 40,

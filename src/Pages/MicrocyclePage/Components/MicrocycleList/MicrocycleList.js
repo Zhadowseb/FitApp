@@ -106,6 +106,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
 
         let icon = null;
         let iconLabel = null;
+        let workoutCards = [];
 
         if (workouts.length === 1) {
           const found = getWorkoutIconConfig(workouts[0].label);
@@ -113,7 +114,16 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
           icon = found?.Icon ?? null;
           iconLabel = found?.short ?? workouts[0].label;
         } else if (workouts.length > 1) {
-          iconLabel = "Multi";
+          workoutCards = workouts.map((workout) => {
+            const found = getWorkoutIconConfig(workout.label);
+
+            return {
+              key: workout.workout_id,
+              icon: found?.Icon ?? null,
+              iconLabel: found?.short ?? workout.label,
+              completed: workout.done === 1,
+            };
+          });
         }
 
         days.push({
@@ -127,6 +137,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
           completed,
           icon,
           iconLabel,
+          workoutCards,
           workouts,
         });
       }
@@ -258,6 +269,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
         // simpelt default – kan udvides senere
         icon: null,
         iconLabel: null,
+        workoutCards: [],
         workouts: [],
       });
     }
@@ -485,6 +497,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
                       completed={day.completed}
                       icon={day.icon}
                       iconLabel={day.iconLabel}
+                      workoutCards={day.workoutCards}
                     />
                   </TouchableOpacity>
                 ))}

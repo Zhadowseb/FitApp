@@ -87,6 +87,7 @@ export default StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     paddingTop: 12,
+    paddingBottom: 8,
   },
 
   weekdayTouchable: {

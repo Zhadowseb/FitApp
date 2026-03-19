@@ -25,6 +25,8 @@ import { weightliftingService, workoutService} from "../../../../Services";
 //Icons:
 import Filter from '../../../../Resources/Icons/UI-icons/Filter';
 import Checkmark from '../../../../Resources/Icons/UI-icons/Checkmark';
+import ArrowDoubleDown from '../../../../Resources/Icons/UI-icons/ArrowDoubleDown';
+import ArrowDoubleUp from '../../../../Resources/Icons/UI-icons/ArrowDoubleUp';
 
 const StrengthTraining = ({workout_id, date}) =>  {
   const colorScheme = useColorScheme();
@@ -35,6 +37,7 @@ const StrengthTraining = ({workout_id, date}) =>  {
   const [refreshing, set_refreshing] = useState(0);
   const [filterBottomsheetVisible, setFilterBottomsheetVisible] = useState(false);
   const [showCompletedExercises, setShowCompletedExercises] = useState(true);
+  const [expansionAction, setExpansionAction] = useState(null);
 
   const [totalSets, set_totalSets] = useState(0);
   const [doneSets, set_doneSets] = useState(0);
@@ -361,17 +364,55 @@ const StrengthTraining = ({workout_id, date}) =>  {
           </ThemedCard>
         </View>
 
-        <TouchableOpacity
-          style={{ alignSelf: "flex-end", marginRight: 8, marginBottom: 5 }}
-          onPress={() => {
-            setFilterBottomsheetVisible(true);
+        <View
+          style={{
+            alignSelf: "flex-end",
+            marginRight: 8,
+            marginBottom: 5,
+            flexDirection: "row",
+            alignItems: "center",
           }}
         >
-          <Filter
-            width={24}
-            height={24}/>
+          <TouchableOpacity
+            style={{ marginRight: 8 }}
+            onPress={() => {
+              setExpansionAction({
+                type: "expand",
+                key: Date.now(),
+              });
+            }}
+          >
+            <ArrowDoubleDown
+              width={24}
+              height={24}
+              color={theme.primary}/>
+          </TouchableOpacity>
 
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={{ marginRight: 8 }}
+            onPress={() => {
+              setExpansionAction({
+                type: "collapse",
+                key: Date.now(),
+              });
+            }}
+          >
+            <ArrowDoubleUp
+              width={24}
+              height={24}
+              color={theme.primary}/>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => {
+              setFilterBottomsheetVisible(true);
+            }}
+          >
+            <Filter
+              width={24}
+              height={24}/>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.working_sets}>
 
@@ -379,7 +420,8 @@ const StrengthTraining = ({workout_id, date}) =>  {
             workout_id = {workout_id}
             refreshing = {refreshing} 
             updateUI = {refresh}
-            showCompletedExercises={showCompletedExercises}/>
+            showCompletedExercises={showCompletedExercises}
+            expansionAction={expansionAction}/>
         </View> 
 
       </ScrollView>

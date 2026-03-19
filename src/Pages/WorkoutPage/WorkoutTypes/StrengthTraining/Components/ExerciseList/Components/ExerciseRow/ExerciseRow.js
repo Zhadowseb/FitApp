@@ -14,11 +14,12 @@ import {checkUniformWeights,
 
 //UI icons
 import Cogwheel from "../../../../../../../../Resources/Icons/UI-icons/Cogwheel";
+import Note from "../../../../../../../../Resources/Icons/UI-icons/Note";
 
 import {ThemedCard,
         ThemedText,
-        ThemedButton,
         ThemedBouncyCheckbox,
+        ThemedModal,
         ThemedTitle} 
   from "../../../../../../../../Resources/ThemedComponents";
 import Expand from "../../../../../../../../Resources/Icons/UI-icons/Expand";
@@ -28,14 +29,22 @@ import PanelSettingsModal from "./PanelSettingsModal";
 import { weightliftingService as weightliftingRepository } from "../../../../../../../../Services";
 
 
-const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
+const ExerciseRow = ({
+  exercise,
+  isExpanded,
+  onToggleExpanded,
+  updateUI,
+  onToggleSet,
+  updateWeight,
+}) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
   
-  const [expandedExercises, setExpandedExercises] = useState({});
   const [visibleColumns, set_VisibleColumns] = useState(exercise.visibleColumns);
+  const [exerciseNote, setExerciseNote] = useState(exercise.note ?? "");
 
   const [panelModalVisible, set_panelModalVisible] = useState(false);
+  const [noteModalVisible, set_noteModalVisible] = useState(false);
   const [selectedExercise, set_selectedExercise] = useState(null);
 
   const db = useSQLiteContext();
@@ -45,12 +54,9 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
     set_VisibleColumns(exercise.visibleColumns);
   }, [exercise.visibleColumns]);
 
-  const toggleExpanded = (exercise_id) => {
-    setExpandedExercises(prev => ({
-      ...prev,
-      [exercise_id]: !prev[exercise_id],
-    }));
-  };
+  useEffect(() => {
+    setExerciseNote(exercise.note ?? "");
+  }, [exercise.note]);
 
   const deleteExercise = async (exercise_id) => {
     try {
@@ -71,13 +77,18 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
     }
   };
 
-  const saveColumns = async (columns) => {
+  const saveExerciseSettings = async ({ columns, note }) => {
     await weightliftingRepository.updateExerciseVisibleColumns(db, {
       exerciseId: exercise.exercise_id,
       columns,
     });
+    await weightliftingRepository.updateExerciseNote(db, {
+      exerciseId: exercise.exercise_id,
+      note,
+    });
 
     set_VisibleColumns(columns);
+    setExerciseNote(note);
   };
 
   return (
@@ -111,10 +122,10 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
           {exercise.exercise_name}
         </ThemedTitle>
 
-        {expandedExercises[exercise.exercise_id] && (
+        {isExpanded && (
 
         <TouchableOpacity
-          onPress={() => toggleExpanded(exercise.exercise_id)}>
+          onPress={onToggleExpanded}>
           
           <View style={{paddingLeft: 5}}>
             <Colapse
@@ -128,6 +139,18 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
       </View>
 
       <View style={styles.icon_container}>
+
+        {exerciseNote.trim().length > 0 && (
+        <View style={styles.ui_icons}>
+          <TouchableOpacity
+            onPress={() => set_noteModalVisible(true)}>
+              <Note
+                width={24}
+                height={24}
+                color={theme.primary} />
+          </TouchableOpacity>
+        </View>
+        )}
         
         <View style={styles.ui_icons}>
 
@@ -135,7 +158,8 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
           onPress={() => addSet()}>
             <Plus
               width={24}
-              height={24} />
+              height={24}
+              color={theme.primary} />
         </TouchableOpacity>
         </View>
         
@@ -147,7 +171,8 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
           }}>
             <Cogwheel
               width={24}
-              height={24} />
+              height={24}
+              color={theme.primary} />
         </TouchableOpacity>
         </View>
 
@@ -156,9 +181,9 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
     </View> 
   
       <TouchableOpacity
-        onPress={() => toggleExpanded(exercise.exercise_id)}>
+        onPress={onToggleExpanded}>
 
-        {!expandedExercises[exercise.exercise_id] && exercise.sets.length !== 0 && (
+        {!isExpanded && exercise.sets.length !== 0 && (
           <ThemedCard style={{flexDirection: "row"}}>
             
             <View>
@@ -177,7 +202,7 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
         )}
       </TouchableOpacity>
 
-      {expandedExercises[exercise.exercise_id] && (
+      {isExpanded && (
         <View>
           <SetList 
               sets={exercise.sets}
@@ -196,12 +221,25 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
       <PanelSettingsModal
         visible={panelModalVisible}
         currentColumns={visibleColumns}
-        exercise_id={selectedExercise}
-        deleteExercise={deleteExercise}
-        onClose={(columns) => {
-          saveColumns(columns);
-          set_panelModalVisible(false)
+        currentNote={exerciseNote}
+        onDelete={async () => {
+          await deleteExercise(selectedExercise);
+          set_panelModalVisible(false);
+        }}
+        onClose={async ({ columns, note }) => {
+          await saveExerciseSettings({ columns, note });
+          set_panelModalVisible(false);
         }}/>
+
+      <ThemedModal
+        visible={noteModalVisible}
+        onClose={() => set_noteModalVisible(false)}
+        title="Note"
+      >
+        <ThemedText>
+          {exerciseNote}
+        </ThemedText>
+      </ThemedModal>
 
     </>
   );

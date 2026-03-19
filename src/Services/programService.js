@@ -60,6 +60,7 @@ async function cloneWorkoutContents(db, { sourceWorkoutId, targetWorkoutId }) {
       exerciseName: exercise.exercise_name,
       sets: exercise.sets,
       visibleColumns: exercise.visible_columns,
+      note: exercise.note,
       done: 0,
     });
 
@@ -77,9 +78,11 @@ async function cloneWorkoutContents(db, { sourceWorkoutId, targetWorkoutId }) {
         pause: set.pause,
         rpe: set.rpe,
         weight: set.weight,
+        rmPercentage: set.rm_percentage,
         reps: set.reps,
         done: 0,
         failed: 0,
+        amrap: set.amrap,
         note: set.note,
       });
     }

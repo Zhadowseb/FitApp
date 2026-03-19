@@ -3,8 +3,8 @@ import Svg, { Path } from "react-native-svg"
 import {useColorScheme} from "react-native"
 import { Colors } from "../../GlobalStyling/colors"
 
-function Plus({width, height, color}) {
-    
+function ArrowDoubleUp({width, height, color}) {
+
   const colorScheme = useColorScheme()
   const theme = Colors[colorScheme] ?? Colors.light
 
@@ -14,16 +14,16 @@ function Plus({width, height, color}) {
       viewBox="0 0 24 24"
       width={width}
       height={height}
-      color="currentColor"
+      color={color ? color : theme.iconColor}
       fill="none"
       stroke={color ? color : theme.iconColor}
       strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <Path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12s4.477 10 10 10 10-4.477 10-10zM12 8v8m4-4H8" />
+      <Path d="M18 11.5s-4.419-6-6-6c-1.581 0-6 6-6 6M18 18.5s-4.419-6-6-6c-1.581 0-6 6-6 6" />
     </Svg>
   )
 }
 
-export default Plus
+export default ArrowDoubleUp

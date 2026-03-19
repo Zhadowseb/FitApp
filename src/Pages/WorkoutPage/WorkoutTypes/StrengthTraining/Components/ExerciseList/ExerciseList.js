@@ -1,7 +1,7 @@
 // src/Components/ExerciseList/ExerciseList.js
-import { use, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
-import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
+import { useState } from "react";
+import { View, TouchableOpacity } from "react-native";
+import { useSQLiteContext } from "expo-sqlite";
 import { useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
 
@@ -12,8 +12,15 @@ import ExerciseRow from "./Components/ExerciseRow/ExerciseRow"
 import Plus from "../../../../../../Resources/Icons/UI-icons/Plus";
 import PickExerciseModal from "./Components/PickExerciseModal";
 
-const ExerciseList = ( {workout_id, refreshing, updateUI, showCompletedExercises = false} ) => {
+const ExerciseList = ({
+  workout_id,
+  refreshing,
+  updateUI,
+  showCompletedExercises = false,
+  expansionAction,
+}) => {
   const [exercises, setExercises] = useState([]);
+  const [expandedExercises, setExpandedExercises] = useState({});
   const [loading, setLoading] = useState(false);
 
   const [pickExerciseModal_visible, set_pickExerciseModal_visible] = useState(false);
@@ -30,6 +37,16 @@ const ExerciseList = ( {workout_id, refreshing, updateUI, showCompletedExercises
         workout_id
       );
       setExercises(exercises);
+      setExpandedExercises((prev) => {
+        const nextExpandedExercises = {};
+
+        for (const exercise of exercises) {
+          nextExpandedExercises[exercise.exercise_id] =
+            prev[exercise.exercise_id] ?? false;
+        }
+
+        return nextExpandedExercises;
+      });
 
     } catch (error) {
       console.error("Error loading exercises", error);
@@ -73,11 +90,37 @@ const ExerciseList = ( {workout_id, refreshing, updateUI, showCompletedExercises
     return unsubscribe;
   }, [navigation]);
 
+  useEffect(() => {
+    if (!expansionAction?.type) {
+      return;
+    }
+
+    setExpandedExercises((prev) => {
+      const nextExpandedExercises = { ...prev };
+
+      for (const exercise of exercises) {
+        nextExpandedExercises[exercise.exercise_id] =
+          expansionAction.type === "expand";
+      }
+
+      return nextExpandedExercises;
+    });
+  }, [expansionAction]);
+
+  const toggleExpanded = (exerciseId) => {
+    setExpandedExercises((prev) => ({
+      ...prev,
+      [exerciseId]: !prev[exerciseId],
+    }));
+  };
+
   const renderItem = (item) => (
     <View key={item.exercise_id}>
 
       <ExerciseRow 
         exercise={item}
+        isExpanded={Boolean(expandedExercises[item.exercise_id])}
+        onToggleExpanded={() => toggleExpanded(item.exercise_id)}
         updateUI={updateUI}
         onToggleSet={updateSetDone}
         refreshing={refreshing}/>

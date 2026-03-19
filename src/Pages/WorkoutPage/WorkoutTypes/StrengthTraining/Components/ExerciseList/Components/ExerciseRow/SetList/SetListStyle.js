@@ -12,20 +12,23 @@ export default StyleSheet.create({
         paddingBottom: 5,
         paddingTop: 5,
     },
+    note: {
+        flex: 1,
+        minWidth: 28,
+    },
     pause: {
-        flex: 15,
-        borderLeftWidth: 0,
+        flex: 20,
     },
     set:    {
-        flex: 10,            
+        flex: 8,            
         paddingTop: 0,
         paddingBottom: 0
     },
-    x:      {flex: 5, maxWidth: 15},
-    reps:   {flex: 17},
+    reps:   {flex: 13},
     weight: {flex: 20},
-    rpe:    {flex: 17},
-    done:   {flex: 15, maxWidth: 40},  
+    rpe:    {flex: 9},
+    rm_percentage: {flex: 14},
+    done:   {flex: 14, maxWidth: 40},  
 
     override: {
         borderLeftWidth: 0,
@@ -89,12 +92,24 @@ export default StyleSheet.create({
     },
     option: {
         flexDirection: "row",
+        alignItems: "center",
         paddingTop: 20,
     },
     option_text: {
         paddingLeft: 10,
         fontWeight: 600,
         fontSize: 16,
+    },
+    note_button: {
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    note_input: {
+        minHeight: 100,
+        textAlignVertical: "top",
+    },
+    note_section: {
+        paddingBottom: 12,
     },
 
 

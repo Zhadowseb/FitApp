@@ -11,6 +11,7 @@ export const weightliftingSchemaSql = `
       exercise_name TEXT NOT NULL,
       sets INTEGER NOT NULL,
       visible_columns TEXT,
+      note TEXT,
 
       done INTEGER NOT NULL DEFAULT 0
   );
@@ -26,10 +27,12 @@ export const weightliftingSchemaSql = `
       pause INTEGER,
       rpe INTEGER,
       weight INTEGER,
+      rm_percentage INTEGER,
       reps INTEGER,
 
       done INTEGER NOT NULL DEFAULT 0,
       failed INTEGER NOT NULL DEFAULT 0,
+      amrap INTEGER NOT NULL DEFAULT 0,
       note TEXT
   );
 

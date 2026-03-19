@@ -54,6 +54,21 @@ export async function deleteEstimatedSet(db, estimatedSetId) {
   );
 }
 
+export async function getEstimatedWeightBySetId(db, setId) {
+  return db.getFirstAsync(
+    `SELECT es.estimated_weight
+     FROM Sets s
+     JOIN Exercise e ON e.exercise_id = s.exercise_id
+     JOIN Workout w ON w.workout_id = e.workout_id
+     JOIN Day d ON d.day_id = w.day_id
+     LEFT JOIN Estimated_Set es
+       ON es.program_id = d.program_id
+      AND es.exercise_name = e.exercise_name
+     WHERE s.sets_id = ?;`,
+    [setId]
+  );
+}
+
 export async function getTotalPlannedSetsByWorkout(db, workoutId) {
   return db.getFirstAsync(
     `SELECT COALESCE(SUM(sets), 0) AS count
@@ -81,7 +96,8 @@ export async function getExercisesByWorkout(db, workoutId) {
         exercise_name,
         sets,
         done,
-        visible_columns
+        visible_columns,
+        note
      FROM Exercise
      WHERE workout_id = ?;`,
     [workoutId]
@@ -135,6 +151,7 @@ export async function createExercise(
     exerciseName,
     sets = 0,
     visibleColumns = null,
+    note = null,
     done = 0,
   }
 ) {
@@ -144,9 +161,10 @@ export async function createExercise(
       exercise_name,
       sets,
       visible_columns,
+      note,
       done
-    ) VALUES (?, ?, ?, ?, ?);`,
-    [workoutId, exerciseName, sets, visibleColumns, done]
+    ) VALUES (?, ?, ?, ?, ?, ?);`,
+    [workoutId, exerciseName, sets, visibleColumns, note, done]
   );
 }
 
@@ -194,9 +212,11 @@ export async function createSet(
     pause = null,
     rpe = null,
     weight = null,
+    rmPercentage = null,
     reps = null,
     done = 0,
     failed = 0,
+    amrap = 0,
     note = null,
   }
 ) {
@@ -209,11 +229,13 @@ export async function createSet(
       pause,
       rpe,
       weight,
+      rm_percentage,
       reps,
       done,
       failed,
+      amrap,
       note
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
     [
       setNumber,
       exerciseId,
@@ -222,9 +244,11 @@ export async function createSet(
       pause,
       rpe,
       weight,
+      rmPercentage,
       reps,
       done,
       failed,
+      amrap,
       note,
     ]
   );
@@ -268,6 +292,15 @@ export async function updateExerciseVisibleColumns(
      SET visible_columns = ?
      WHERE exercise_id = ?;`,
     [JSON.stringify(columns), exerciseId]
+  );
+}
+
+export async function updateExerciseNote(db, { exerciseId, note }) {
+  await db.runAsync(
+    `UPDATE Exercise
+     SET note = ?
+     WHERE exercise_id = ?;`,
+    [note, exerciseId]
   );
 }
 
@@ -364,7 +397,7 @@ export async function updateSetField(db, { field, value, setId }) {
 
 export async function getExerciseSets(db, exerciseId) {
   return db.getAllAsync(
-    `SELECT set_number, pause, rpe, weight, reps, done, failed, note
+    `SELECT set_number, pause, rpe, weight, rm_percentage, reps, done, failed, amrap, note
      FROM Sets
      WHERE exercise_id = ?;`,
     [exerciseId]
@@ -388,9 +421,11 @@ export async function updateSetByExerciseAndNumber(
     pause,
     rpe,
     weight,
+    rmPercentage,
     reps,
     done,
     failed,
+    amrap,
     note,
   }
 ) {
@@ -399,13 +434,27 @@ export async function updateSetByExerciseAndNumber(
      SET pause = ?,
          rpe = ?,
          weight = ?,
+         rm_percentage = ?,
          reps = ?,
          done = ?,
          failed = ?,
+         amrap = ?,
          note = ?
      WHERE exercise_id = ?
        AND set_number = ?;`,
-    [pause, rpe, weight, reps, done, failed, note, exerciseId, setNumber]
+    [
+      pause,
+      rpe,
+      weight,
+      rmPercentage,
+      reps,
+      done,
+      failed,
+      amrap,
+      note,
+      exerciseId,
+      setNumber,
+    ]
   );
 }
 

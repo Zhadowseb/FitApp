@@ -17,6 +17,12 @@ const Title = ({visibleColumns}) => {
   return (
     <View style={styles.container}>
 
+        {visibleColumns.note && (
+            <View style={[styles.note, styles.override]}>
+            <ThemedText style={[styles.titleText, {color: theme.quietText}]}>Note</ThemedText>
+            </View>
+        )}
+
         {visibleColumns.rest && (
             <View style={[styles.pause, styles.override]}> 
             <ThemedText style={[styles.titleText, {color: theme.quietText}]}>Rest</ThemedText>
@@ -29,12 +35,6 @@ const Title = ({visibleColumns}) => {
             </View>
         )}
 
-        {visibleColumns.x && (
-            <View style={[styles.x, styles.override]}> 
-            <ThemedText style={[styles.titleText, {color: theme.quietText}]}> </ThemedText>
-            </View>
-        )}
-
         {visibleColumns.reps && (
             <View style={[styles.reps, styles.override]}> 
             <ThemedText style={[styles.titleText, {color: theme.quietText}]}>Reps</ThemedText>
@@ -44,6 +44,12 @@ const Title = ({visibleColumns}) => {
         {visibleColumns.rpe && (
             <View style={[styles.rpe, styles.override]}> 
             <ThemedText style={[styles.titleText, {color: theme.quietText}]}>RPE</ThemedText>
+            </View>
+        )}
+
+        {visibleColumns.rm_percentage && (
+            <View style={[styles.rm_percentage, styles.override]}>
+            <ThemedText style={[styles.titleText, {color: theme.quietText}]}>1RM %</ThemedText>
             </View>
         )}
 

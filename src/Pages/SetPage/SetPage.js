@@ -28,10 +28,12 @@ const SetPage = ( {route} ) =>  {
                 pause: r.pause ?? "",
                 rpe: r.rpe ?? "",
                 weight: r.weight ?? "",
+                rm_percentage: r.rm_percentage ?? "",
                 reps: r.reps ?? "",
                 note: r.note ?? "",
                 done: r.done === 1,
                 failed: r.failed === 1,
+                amrap: r.amrap === 1,
             }));
 
             setInputs(formatted);

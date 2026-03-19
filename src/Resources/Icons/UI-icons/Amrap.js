@@ -1,10 +1,10 @@
 import * as React from "react"
-import Svg, { Path } from "react-native-svg"
+import Svg, { Circle, Path } from "react-native-svg"
 import {useColorScheme} from "react-native"
 import { Colors } from "../../GlobalStyling/colors"
 
-function Plus({width, height, color}) {
-    
+function Amrap({width, height, color}) {
+
   const colorScheme = useColorScheme()
   const theme = Colors[colorScheme] ?? Colors.light
 
@@ -14,16 +14,18 @@ function Plus({width, height, color}) {
       viewBox="0 0 24 24"
       width={width}
       height={height}
-      color="currentColor"
+      color={color ? color : theme.iconColor}
       fill="none"
       stroke={color ? color : theme.iconColor}
       strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <Path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12s4.477 10 10 10 10-4.477 10-10zM12 8v8m4-4H8" />
+      <Circle cx={15.002} cy={16} r={6} />
+      <Path d="M15.002 13.5V16l1.5 1M13.498 2h-5a1.5 1.5 0 100 3h5a1.5 1.5 0 100-3z" />
+      <Path d="M14.998 3.5c1.554.047 2.48.22 3.121.861.572.572.772 1.371.842 2.639M6.998 3.5c-1.553.047-2.48.22-3.121.861-.879.879-.879 2.293-.879 5.122v6.516c0 2.829 0 4.243.879 5.122.641.641 1.568.814 3.121.861" />
     </Svg>
   )
 }
 
-export default Plus
+export default Amrap

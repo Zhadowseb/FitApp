@@ -3,7 +3,7 @@ import Svg, { Path } from "react-native-svg"
 import {useColorScheme} from "react-native"
 import { Colors } from "../../GlobalStyling/colors"
 
-function Cogwheel({width, height}) {
+function Cogwheel({width, height, color}) {
 
   const colorScheme = useColorScheme()
   const theme = Colors[colorScheme] ?? Colors.light
@@ -14,9 +14,9 @@ function Cogwheel({width, height}) {
       viewBox="0 0 24 24"
       width={width}
       height={height}
-      color={theme.iconColor}
+      color={color ? color : theme.iconColor}
       fill="none"
-      stroke={theme.iconColor}
+      stroke={color ? color : theme.iconColor}
       strokeWidth={1.5}
     >
       <Path d="M15.5 12a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0z" />

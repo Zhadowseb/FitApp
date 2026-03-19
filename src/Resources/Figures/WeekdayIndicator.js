@@ -18,66 +18,59 @@ const WeekdayIndicator = ({
 
   return (
     <View style={styles.container}>
-      <Text
-        style={[
-          styles.label,
-          active && styles.activeLabel,
-          { color: theme.text },
-        ]}
-      >
-        {active ? "Today" : label}
-      </Text>
-
-      {!!dateLabel && (
-        <Text style={[styles.dateLabel, { color: theme.text }]}>
-          {dateLabel}
+      <View style={[styles.headerBadge, { borderColor: theme.iconColor }]}>
+        <Text
+          style={[
+            styles.label,
+            active && styles.activeLabel,
+            { color: theme.text },
+          ]}
+        >
+          {active ? "Today" : label}
         </Text>
-      )}
 
-      <View
-        style={[
-          styles.circle,
-          active && styles.activeCircle,
-          !hasWorkout && styles.emptyCircle,
-          {
-            backgroundColor: completed ? theme.secondary : theme.primary,
-          },
-        ]}
-      >
-        {Icon && (
-          <Icon
-            width={active ? 22 : 24}
-            height={active ? 22 : 24}
-            color={theme.cardBackground}
-            fill={theme.cardBackground}
-            primaryColor={theme.cardBackground}
-            backgroundColor="transparent"
-          />
-        )}
-
-        {!Icon && iconLabel && (
-          <Text
-            style={[
-              styles.iconLabel,
-              styles.iconLabelOnly,
-              { color: theme.cardBackground },
-            ]}
-          >
-            {iconLabel}
+        {!!dateLabel && (
+          <Text style={[styles.dateLabel, { color: theme.text }]}>
+            {dateLabel}
           </Text>
         )}
       </View>
 
-      {Icon && iconLabel && (
-        <Text
+      {hasWorkout && (
+        <View
           style={[
-            styles.iconLabelBelow,
-            { color: theme.text },
+            styles.circle,
+            active && styles.activeCircle,
+            {
+              backgroundColor: completed ? theme.secondary : theme.primary,
+            },
           ]}
         >
-          {iconLabel}
-        </Text>
+          {Icon && (
+            <Icon
+              width={active ? 22 : 24}
+              height={active ? 22 : 24}
+              color={theme.cardBackground}
+              fill={theme.cardBackground}
+              primaryColor={theme.cardBackground}
+              backgroundColor="transparent"
+            />
+          )}
+
+          {!Icon && iconLabel && (
+            <Text
+              style={[
+                styles.iconLabel,
+                styles.iconLabelOnly,
+                { color: theme.cardBackground },
+              ]}
+            >
+              {iconLabel}
+            </Text>
+          )}
+        </View>
       )}
+
     </View>
   );
 };
@@ -88,6 +81,15 @@ const styles = StyleSheet.create({
   container: {
     alignItems: "center",
     width: "100%",
+  },
+  headerBadge: {
+    minWidth: 44,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 4,
   },
   label: {
     fontSize: 10,
@@ -112,10 +114,6 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
   },
-  emptyCircle: {
-    opacity: 0.5,
-    borderWidth: 0,
-  },
   iconLabel: {
     fontSize: 8,
     opacity: 0.85,
@@ -125,19 +123,9 @@ const styles = StyleSheet.create({
     fontSize: 9,
     marginTop: 0,
   },
-  iconLabelBelow: {
-    fontSize: 7.5,
-    lineHeight: 8,
-    opacity: 0.85,
-    width: 40,
-    maxWidth: 40,
-    minHeight: 16,
-    textAlign: "center",
-    marginBottom: 6,
-  },
   dateLabel: {
     fontSize: 9,
     opacity: 0.7,
-    marginBottom: 2,
+    textAlign: "center",
   },
 });

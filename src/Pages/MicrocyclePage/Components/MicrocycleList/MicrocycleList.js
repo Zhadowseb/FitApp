@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { View, FlatList, TouchableOpacity } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useSQLiteContext } from "expo-sqlite";
@@ -53,9 +53,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
   const [labelModalVisible, setLabelModalVisible] = useState(false);
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [newDate, setNewDate] = useState(new Date());
-  const longPressHandledRef = useRef(false);
   const PICK_MODE = {
-    NAVIGATE: "navigate",
     DELETE: "delete",
     COPY: "copy",
   };
@@ -104,27 +102,21 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
           workouts.length > 0 &&
           workouts.every((workout) => workout.done === 1);
 
-        let icon = null;
-        let iconLabel = null;
-        let workoutCards = [];
+        const workoutCards = workouts.map((workout) => {
+          const found = getWorkoutIconConfig(workout.label);
 
-        if (workouts.length === 1) {
-          const found = getWorkoutIconConfig(workouts[0].label);
+          return {
+            key: workout.workout_id,
+            icon: found?.Icon ?? null,
+            iconLabel: found?.short ?? workout.label,
+            completed: workout.done === 1,
+            workout,
+          };
+        });
 
-          icon = found?.Icon ?? null;
-          iconLabel = found?.short ?? workouts[0].label;
-        } else if (workouts.length > 1) {
-          workoutCards = workouts.map((workout) => {
-            const found = getWorkoutIconConfig(workout.label);
-
-            return {
-              key: workout.workout_id,
-              icon: found?.Icon ?? null,
-              iconLabel: found?.short ?? workout.label,
-              completed: workout.done === 1,
-            };
-          });
-        }
+        const icon = workoutCards[0]?.icon ?? null;
+        const iconLabel =
+          workouts.length === 1 ? workoutCards[0]?.iconLabel ?? null : null;
 
         days.push({
           microcycleId: mc.microcycle_id,
@@ -306,23 +298,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
     });
   };
 
-  const handleWeekdayPress = (day) => {
-    if (!day.workouts?.length) {
-      return;
-    }
-
-    if (day.workouts.length === 1) {
-      navigateToWorkout(day.workouts[0], day);
-      return;
-    }
-
-    setSelectedDay(day);
-    setPickMode(PICK_MODE.NAVIGATE);
-    setPickWorkoutModalVisible(true);
-  };
-
   const handleWeekdayLongPress = (day) => {
-    longPressHandledRef.current = true;
     setSelectedDay(day);
     setDayOptionsVisible(true);
   };
@@ -475,20 +451,9 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
             <View>
               <View style={styles.weekdaysRow}>
                 {(weekSummaries[item.microcycle_id] ?? buildWeekdayIndicators(item)).map((day) => (
-                  <TouchableOpacity
+                  <View
                     key={`${item.microcycle_id}-${day.day}`}
                     style={styles.weekdayTouchable}
-                    delayLongPress={600}
-                    onPress={() => {
-                      if (longPressHandledRef.current) {
-                        longPressHandledRef.current = false;
-                        return;
-                      }
-                      handleWeekdayPress(day);
-                    }}
-                    onLongPress={() => {
-                      handleWeekdayLongPress(day);
-                    }}
                   >
                     <WeekdayIndicator
                       label={day.label}
@@ -498,8 +463,18 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
                       icon={day.icon}
                       iconLabel={day.iconLabel}
                       workoutCards={day.workoutCards}
+                      onWorkoutPress={(workout) => {
+                        if (!workout) {
+                          return;
+                        }
+
+                        navigateToWorkout(workout, day);
+                      }}
+                      onDayLongPress={() => {
+                        handleWeekdayLongPress(day);
+                      }}
                     />
-                  </TouchableOpacity>
+                  </View>
                 ))}
               </View>
             </View>

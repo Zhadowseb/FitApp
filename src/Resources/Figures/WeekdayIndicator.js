@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useColorScheme } from "react-native";
 
 import { Colors } from "../GlobalStyling/colors";
@@ -12,6 +12,8 @@ const WeekdayIndicator = ({
   icon: Icon,
   iconLabel,
   workoutCards = [],
+  onWorkoutPress,
+  onDayLongPress,
 }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
@@ -20,8 +22,14 @@ const WeekdayIndicator = ({
 
   return (
     <View style={styles.container}>
-      <View style={[styles.headerBadge, 
-        { borderColor: completed ? theme.secondary : theme.iconColor }]}>
+      <Pressable
+        delayLongPress={600}
+        onLongPress={onDayLongPress}
+        style={[
+          styles.headerBadge,
+          { borderColor: completed ? theme.secondary : theme.iconColor },
+        ]}
+      >
         <Text
           style={[
             styles.label,
@@ -37,7 +45,7 @@ const WeekdayIndicator = ({
             {dateLabel}
           </Text>
         )}
-      </View>
+      </Pressable>
 
       {hasWorkoutCards && (
         <View style={styles.workoutCards}>
@@ -45,8 +53,12 @@ const WeekdayIndicator = ({
             const WorkoutIcon = workoutCard.icon;
 
             return (
-              <View
+              <TouchableOpacity
                 key={workoutCard.key ?? `${workoutCard.iconLabel}-${index}`}
+                activeOpacity={0.85}
+                delayLongPress={600}
+                onPress={() => onWorkoutPress?.(workoutCard.workout)}
+                onLongPress={onDayLongPress}
                 style={[
                   styles.circle,
                   styles.multiWorkoutCard,
@@ -84,7 +96,7 @@ const WeekdayIndicator = ({
                     {workoutCard.iconLabel}
                   </Text>
                 )}
-              </View>
+              </TouchableOpacity>
             );
           })}
         </View>

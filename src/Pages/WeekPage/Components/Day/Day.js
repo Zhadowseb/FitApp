@@ -12,7 +12,7 @@ import PickWorkoutModal from './Components/PickWorkoutModal/PickWorkoutModal';
 import WorkoutLabel from "../../../../Resources/Components/WorkoutLabel";
 
 import styles from './DayStyle';
-import { WORKOUT_ICONS } from '../../../../Resources/Icons/WorkoutLabels/index';
+import { getWorkoutIconConfig } from '../../../../Resources/Icons/WorkoutLabels/index';
 
 //Icons:
 import ThreeDots from '../../../../Resources/Icons/UI-icons/ThreeDots';
@@ -58,8 +58,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
     const [pickMode, set_pickMode] = useState(null);
 
     //Helps show the correct icon.
-    const SelectedIcon =
-        WORKOUT_ICONS.find(item => item.id === focusText)?.Icon;
+    const SelectedIcon = getWorkoutIconConfig(focusText)?.Icon;
     
     //Visibility variabels for modals.
     const [pickWorkoutModal_visible, set_pickWorkoutModal_visible] = useState(false);

@@ -8,11 +8,13 @@ const WeekdayIndicator = ({
   label,
   dateLabel,
   active,
+  completed,
   icon: Icon,
   iconLabel,
 }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
+  const hasWorkout = Boolean(Icon || iconLabel);
 
   return (
     <View style={styles.container}>
@@ -36,27 +38,28 @@ const WeekdayIndicator = ({
         style={[
           styles.circle,
           active && styles.activeCircle,
+          !hasWorkout && styles.emptyCircle,
           {
-            backgroundColor: active ? theme.secondary : theme.primary,
-            borderColor: active ? theme.secondary : theme.primary,
+            backgroundColor: completed ? theme.secondary : theme.primary,
           },
         ]}
       >
         {Icon && (
           <Icon
-            width={active ? 22 : 18}
-            height={active ? 22 : 18}
+            width={active ? 22 : 24}
+            height={active ? 22 : 24}
+            color={theme.cardBackground}
             fill={theme.cardBackground}
             primaryColor={theme.cardBackground}
             backgroundColor="transparent"
           />
         )}
 
-        {iconLabel && (
+        {!Icon && iconLabel && (
           <Text
             style={[
               styles.iconLabel,
-              !Icon && styles.iconLabelOnly,
+              styles.iconLabelOnly,
               { color: theme.cardBackground },
             ]}
           >
@@ -64,6 +67,17 @@ const WeekdayIndicator = ({
           </Text>
         )}
       </View>
+
+      {Icon && iconLabel && (
+        <Text
+          style={[
+            styles.iconLabelBelow,
+            { color: theme.text },
+          ]}
+        >
+          {iconLabel}
+        </Text>
+      )}
     </View>
   );
 };
@@ -89,18 +103,37 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 2,
-    marginBottom: 10,
+    borderWidth: 5,
+    borderColor: "rgb(216, 111, 51)",
+    marginBottom: 4,
   },
   activeCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
   },
+  emptyCircle: {
+    opacity: 0.5,
+    borderWidth: 0,
+  },
   iconLabel: {
     fontSize: 8,
     opacity: 0.85,
     marginTop: 1,
+  },
+  iconLabelOnly: {
+    fontSize: 9,
+    marginTop: 0,
+  },
+  iconLabelBelow: {
+    fontSize: 7.5,
+    lineHeight: 8,
+    opacity: 0.85,
+    width: 40,
+    maxWidth: 40,
+    minHeight: 16,
+    textAlign: "center",
+    marginBottom: 6,
   },
   dateLabel: {
     fontSize: 9,

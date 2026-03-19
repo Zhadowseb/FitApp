@@ -13,7 +13,7 @@ import CircularProgression from "../../../../Resources/Components/CircularProgre
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
 import WeekdayIndicator from "../../../../Resources/Figures/WeekdayIndicator";
-import { WORKOUT_ICONS } from "../../../../Resources/Icons/WorkoutLabels";
+import { getWorkoutIconConfig } from "../../../../Resources/Icons/WorkoutLabels";
 import PickWorkoutModal from "../../../WeekPage/Components/Day/Components/PickWorkoutModal/PickWorkoutModal";
 import WorkoutLabel from "../../../../Resources/Components/WorkoutLabel";
 
@@ -100,12 +100,15 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
         });
         const date = dayRow?.date ?? buildMicrocycleDate(mc.period_start, i);
         const workouts = dayRow?.workouts ?? [];
+        const completed =
+          workouts.length > 0 &&
+          workouts.every((workout) => workout.done === 1);
 
         let icon = null;
         let iconLabel = null;
 
         if (workouts.length === 1) {
-          const found = WORKOUT_ICONS.find((w) => w.id === workouts[0].label);
+          const found = getWorkoutIconConfig(workouts[0].label);
 
           icon = found?.Icon ?? null;
           iconLabel = found?.short ?? workouts[0].label;
@@ -121,6 +124,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
           date,
           dateLabel: date.slice(0, 5),
           active: date === formatDate(new Date()),
+          completed,
           icon,
           iconLabel,
           workouts,
@@ -249,6 +253,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
         date: formattedDate,
         dateLabel: formattedDate.slice(0, 5),
         active: formattedDate === today,
+        completed: false,
 
         // simpelt default – kan udvides senere
         icon: null,
@@ -477,6 +482,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
                       label={day.label}
                       dateLabel={day.dateLabel}
                       active={day.active}
+                      completed={day.completed}
                       icon={day.icon}
                       iconLabel={day.iconLabel}
                     />

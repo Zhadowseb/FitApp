@@ -3,7 +3,7 @@ import Svg, { Path } from "react-native-svg"
 import {useColorScheme} from "react-native"
 import { Colors } from "../../GlobalStyling/colors"
 
-function Plus({width, height}) {
+function Plus({width, height, color}) {
     
   const colorScheme = useColorScheme()
   const theme = Colors[colorScheme] ?? Colors.light
@@ -16,7 +16,7 @@ function Plus({width, height}) {
       height={height}
       color="currentColor"
       fill="none"
-      stroke={theme.iconColor}
+      stroke={color ? color : theme.iconColor}
       strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"

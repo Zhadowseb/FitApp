@@ -29,11 +29,17 @@ import PanelSettingsModal from "./PanelSettingsModal";
 import { weightliftingService as weightliftingRepository } from "../../../../../../../../Services";
 
 
-const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
+const ExerciseRow = ({
+  exercise,
+  isExpanded,
+  onToggleExpanded,
+  updateUI,
+  onToggleSet,
+  updateWeight,
+}) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
   
-  const [expandedExercises, setExpandedExercises] = useState({});
   const [visibleColumns, set_VisibleColumns] = useState(exercise.visibleColumns);
   const [exerciseNote, setExerciseNote] = useState(exercise.note ?? "");
 
@@ -51,13 +57,6 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
   useEffect(() => {
     setExerciseNote(exercise.note ?? "");
   }, [exercise.note]);
-
-  const toggleExpanded = (exercise_id) => {
-    setExpandedExercises(prev => ({
-      ...prev,
-      [exercise_id]: !prev[exercise_id],
-    }));
-  };
 
   const deleteExercise = async (exercise_id) => {
     try {
@@ -123,10 +122,10 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
           {exercise.exercise_name}
         </ThemedTitle>
 
-        {expandedExercises[exercise.exercise_id] && (
+        {isExpanded && (
 
         <TouchableOpacity
-          onPress={() => toggleExpanded(exercise.exercise_id)}>
+          onPress={onToggleExpanded}>
           
           <View style={{paddingLeft: 5}}>
             <Colapse
@@ -147,7 +146,8 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
             onPress={() => set_noteModalVisible(true)}>
               <Note
                 width={24}
-                height={24} />
+                height={24}
+                color={theme.primary} />
           </TouchableOpacity>
         </View>
         )}
@@ -158,7 +158,8 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
           onPress={() => addSet()}>
             <Plus
               width={24}
-              height={24} />
+              height={24}
+              color={theme.primary} />
         </TouchableOpacity>
         </View>
         
@@ -170,7 +171,8 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
           }}>
             <Cogwheel
               width={24}
-              height={24} />
+              height={24}
+              color={theme.primary} />
         </TouchableOpacity>
         </View>
 
@@ -179,9 +181,9 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
     </View> 
   
       <TouchableOpacity
-        onPress={() => toggleExpanded(exercise.exercise_id)}>
+        onPress={onToggleExpanded}>
 
-        {!expandedExercises[exercise.exercise_id] && exercise.sets.length !== 0 && (
+        {!isExpanded && exercise.sets.length !== 0 && (
           <ThemedCard style={{flexDirection: "row"}}>
             
             <View>
@@ -200,7 +202,7 @@ const ExerciseRow = ( {exercise, updateUI, onToggleSet, updateWeight} ) => {
         )}
       </TouchableOpacity>
 
-      {expandedExercises[exercise.exercise_id] && (
+      {isExpanded && (
         <View>
           <SetList 
               sets={exercise.sets}

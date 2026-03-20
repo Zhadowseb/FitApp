@@ -22,7 +22,16 @@ function normalizeOptionalNumber(value) {
     return null;
   }
 
-  const parsedValue = Number(value);
+  const normalizedValue =
+    typeof value === "string"
+      ? value.trim().replace(",", ".").replace(/[^0-9.-]/g, "")
+      : value;
+
+  if (normalizedValue === "") {
+    return null;
+  }
+
+  const parsedValue = Number(normalizedValue);
 
   return Number.isFinite(parsedValue) ? parsedValue : null;
 }
@@ -70,9 +79,19 @@ async function getEstimatedWeightForSet(db, setId) {
     db,
     setId
   );
-  const estimatedWeight = Number(
-    estimatedSet?.adjusted_estimated_weight ?? estimatedSet?.estimated_weight
+  const baseEstimatedWeight = normalizeOptionalNumber(
+    estimatedSet?.estimated_weight
   );
+  const progressionWeight =
+    normalizeOptionalNumber(estimatedSet?.progression_weight) ?? 0;
+  const adjustedEstimatedWeight = normalizeOptionalNumber(
+    estimatedSet?.adjusted_estimated_weight
+  );
+  const estimatedWeight =
+    adjustedEstimatedWeight ??
+    (baseEstimatedWeight === null
+      ? null
+      : baseEstimatedWeight + progressionWeight);
 
   if (!Number.isFinite(estimatedWeight) || estimatedWeight <= 0) {
     return null;

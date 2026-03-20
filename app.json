@@ -26,6 +26,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
+      "softwareKeyboardLayoutMode": "resize",
       "package": "com.anonymous.programapp",
       "permissions": [
         "ACCESS_FINE_LOCATION",

@@ -3,6 +3,7 @@ import { useColorScheme } from "react-native";
 import { useEffect, useRef, useState } from "react";
 import { Colors } from "../GlobalStyling/colors";
 import ThemedText from "./ThemedText";
+import { useThemedKeyboardProtection } from "./ThemedKeyboardProtection";
 
 const ThemedEditableCell = ({
   value,
@@ -13,9 +14,12 @@ const ThemedEditableCell = ({
   displayFormatter,
   showSuffixWhenEmpty = false,
   textAlign = "center",
+  onFocus,
+  onBlur,
 }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
+  const { requestScrollToInput } = useThemedKeyboardProtection();
 
   const inputRef = useRef(null);
   const [localValue, setLocalValue] = useState(value);
@@ -48,12 +52,17 @@ const ThemedEditableCell = ({
       <TextInput
         ref={inputRef}
         value={displayValue ?? ""}
-        onFocus={() => setFocused(true)}
+        onFocus={(event) => {
+          setFocused(true);
+          requestScrollToInput(inputRef.current);
+          onFocus?.(event);
+        }}
         onBlur={() => {
           setFocused(false);
           if (localValue !== value) {
             onCommit?.(localValue);
           }
+          onBlur?.();
         }}
         onChangeText={setLocalValue}
         keyboardType={keyboardType}

@@ -1,5 +1,13 @@
 import { StatusBar } from 'expo-status-bar';
-import { AppState, View, Button, ScrollView, Text, TouchableOpacity, Switch, Vibration } from 'react-native';
+import {
+  AppState,
+  Button,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+  Vibration,
+} from 'react-native';
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
@@ -13,6 +21,7 @@ import styles from "../../WorkoutPageStyle";
 import { ThemedTitle, 
         ThemedCard, 
         ThemedBottomSheet,
+        ThemedKeyboardProtection,
         ThemedView, 
         ThemedText, 
         ThemedButton, 
@@ -232,9 +241,8 @@ const StrengthTraining = ({workout_id, date}) =>  {
 
 
   return (
-    <ThemedView>
-
-      <ScrollView>
+    <ThemedView style={{ flex: 1 }}>
+      <ThemedKeyboardProtection scroll>
 
         <View style={{ 
           justifyContent: "center",
@@ -424,7 +432,7 @@ const StrengthTraining = ({workout_id, date}) =>  {
             expansionAction={expansionAction}/>
         </View> 
 
-      </ScrollView>
+      </ThemedKeyboardProtection>
 
       <ThemedBottomSheet
         visible={filterBottomsheetVisible}

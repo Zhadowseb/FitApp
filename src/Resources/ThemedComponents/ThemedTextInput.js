@@ -1,7 +1,9 @@
 // src/Resources/Components/ThemedTextInput.js
 import { TextInput, View, StyleSheet, useColorScheme } from "react-native";
+import { useRef } from "react";
 import { Colors } from "../GlobalStyling/colors";
 import ThemedText from "./ThemedText";
+import { useThemedKeyboardProtection } from "./ThemedKeyboardProtection";
 
 const ThemedTextInput = ({
   value,
@@ -10,18 +12,26 @@ const ThemedTextInput = ({
   style,
   inputStyle,
   error,
+  onFocus,
   ...props
 }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
+  const inputRef = useRef(null);
+  const { requestScrollToInput } = useThemedKeyboardProtection();
 
   return (
     <View style={style}>
       <TextInput
+        ref={inputRef}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={theme.iconColor}
+        onFocus={(event) => {
+          requestScrollToInput(inputRef.current);
+          onFocus?.(event);
+        }}
         style={[
           styles.input,
           {

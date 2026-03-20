@@ -394,7 +394,8 @@ const ProgramOverviewPage = ( {route} ) => {
                     <Rm_List
                         program_id = {program_id}
                         refreshKey = {refreshKey}
-                        refresh = {refresh} />
+                        refresh = {refresh}
+                        programExerciseBestMap={programExerciseBestMap} />
                 </View>
 
                 <View style={styles.rm_footer}>

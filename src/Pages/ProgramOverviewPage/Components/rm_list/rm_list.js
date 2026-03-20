@@ -25,7 +25,12 @@ function formatWeight(value) {
   return Number.isInteger(parsedValue) ? `${parsedValue}` : parsedValue.toFixed(1);
 }
 
-const RmList = ({ program_id, refreshKey, refresh }) => {
+const RmList = ({
+  program_id,
+  refreshKey,
+  refresh,
+  programExerciseBestMap = {},
+}) => {
   const db = useSQLiteContext();
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
@@ -206,6 +211,7 @@ const RmList = ({ program_id, refreshKey, refresh }) => {
       <EditEstimatedSet
         visible={editEstimatedSet_visible}
         estimatedSet={selectedSet}
+        programBest={selectedSet ? programExerciseBestMap[selectedSet.exercise_name] : null}
         onClose={() => set_editEstimatedSet_visible(false)}
         onSubmit={handleSubmit}
         onDelete={handleDelete}

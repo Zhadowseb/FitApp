@@ -77,6 +77,7 @@ export default StyleSheet.create({
     pr_feature_body: {
         flex: 1,
         paddingHorizontal: 16,
+        paddingBottom: 10,
         justifyContent: "flex-start",
     },
     pr_feature_set_panel: {

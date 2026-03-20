@@ -405,7 +405,8 @@ const ProgramOverviewPage = ( {route} ) => {
                     <AddEstimatedSet 
                         visible={addEstimatedSet_visible}
                         onClose={() => set_AddEstimatedSet_visible(false)}
-                        onSubmit={handleAdd}/>
+                        onSubmit={handleAdd}
+                        programExerciseBestMap={programExerciseBestMap}/>
                 </View>
             </ThemedCard>
 

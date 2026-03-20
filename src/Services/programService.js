@@ -257,6 +257,10 @@ export async function deleteProgram(db, programId) {
     await programRepository.deleteDaysByProgram(db, programId);
     await programRepository.deleteMicrocyclesByProgram(db, programId);
     await programRepository.deleteEstimatedSetsByProgram(db, programId);
+    await weightliftingRepository.deleteRmWeightProgressionsByProgram(
+      db,
+      programId
+    );
     await programRepository.deleteProgramBestExercisesByProgram(db, programId);
     await programRepository.deleteMesocyclesByProgram(db, programId);
     await programRepository.deleteProgramById(db, programId);
@@ -283,6 +287,20 @@ export async function createMesocycle(
       weeks,
       focus,
     });
+    const mesocycleNumber = (mesocycleCount?.count ?? 0) + 1;
+    const estimatedSets = await weightliftingRepository.getEstimatedSets(
+      db,
+      programId
+    );
+
+    for (const estimatedSet of estimatedSets) {
+      await weightliftingRepository.insertRmWeightProgression(db, {
+        mesocycleId: mesocycleResult.lastInsertRowId,
+        exerciseName: estimatedSet.exercise_name,
+        progressionWeight:
+          mesocycleNumber > 1 ? (mesocycleNumber - 1) * 2.5 : 0,
+      });
+    }
 
     for (let week = 1; week <= weeks; week += 1) {
       const microcycleResult = await programRepository.insertMicrocycle(db, {
@@ -369,6 +387,10 @@ export async function deleteMesocycle(db, mesocycleId) {
     await programRepository.deleteWorkoutsByMesocycle(db, mesocycleId);
     await programRepository.deleteDaysByMesocycle(db, mesocycleId);
     await programRepository.deleteMicrocyclesByMesocycle(db, mesocycleId);
+    await weightliftingRepository.deleteRmWeightProgressionsByMesocycle(
+      db,
+      mesocycleId
+    );
     await programRepository.deleteMesocycleById(db, mesocycleId);
   });
 }

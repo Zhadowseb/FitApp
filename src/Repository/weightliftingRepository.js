@@ -23,6 +23,15 @@ export async function getEstimatedSets(db, programId) {
   );
 }
 
+export async function getEstimatedSetById(db, estimatedSetId) {
+  return db.getFirstAsync(
+    `SELECT estimated_set_id, program_id, exercise_name, estimated_weight
+     FROM Estimated_Set
+     WHERE estimated_set_id = ?;`,
+    [estimatedSetId]
+  );
+}
+
 export async function createEstimatedSet(
   db,
   { programId, exerciseName, estimatedWeight }
@@ -54,16 +63,154 @@ export async function deleteEstimatedSet(db, estimatedSetId) {
   );
 }
 
+export async function getMesocycleRmProgressions(db, mesocycleId) {
+  return db.getAllAsync(
+    `SELECT exercise_name, progression_weight
+     FROM RMWeightProgression
+     WHERE mesocycle_id = ?
+     ORDER BY exercise_name COLLATE NOCASE ASC;`,
+    [mesocycleId]
+  );
+}
+
+export async function insertRmWeightProgression(
+  db,
+  { mesocycleId, exerciseName, progressionWeight }
+) {
+  await db.runAsync(
+    `INSERT OR IGNORE INTO RMWeightProgression (
+      mesocycle_id,
+      exercise_name,
+      progression_weight
+    ) VALUES (?, ?, ?);`,
+    [mesocycleId, exerciseName, progressionWeight]
+  );
+}
+
+export async function getMesocycleEstimatedSetProgressions(db, mesocycleId) {
+  return db.getAllAsync(
+    `SELECT
+        m.mesocycle_id,
+        m.mesocycle_number,
+        es.exercise_name,
+        es.estimated_weight,
+        COALESCE(
+          rmp.progression_weight,
+          CASE
+            WHEN m.mesocycle_number > 1
+              THEN (m.mesocycle_number - 1) * 2.5
+            ELSE 0
+          END
+        ) AS progression_weight
+     FROM Mesocycle m
+     LEFT JOIN Estimated_Set es
+       ON es.program_id = m.program_id
+     LEFT JOIN RMWeightProgression rmp
+       ON rmp.mesocycle_id = m.mesocycle_id
+      AND rmp.exercise_name = es.exercise_name
+     WHERE m.mesocycle_id = ?
+       AND es.exercise_name IS NOT NULL
+     ORDER BY es.exercise_name COLLATE NOCASE ASC;`,
+    [mesocycleId]
+  );
+}
+
+export async function getMesocycleEstimatedSetProgressionsByProgram(db, programId) {
+  return db.getAllAsync(
+    `SELECT
+        m.mesocycle_id,
+        m.mesocycle_number,
+        es.exercise_name,
+        es.estimated_weight,
+        COALESCE(
+          rmp.progression_weight,
+          CASE
+            WHEN m.mesocycle_number > 1
+              THEN (m.mesocycle_number - 1) * 2.5
+            ELSE 0
+          END
+        ) AS progression_weight
+     FROM Mesocycle m
+     LEFT JOIN Estimated_Set es
+       ON es.program_id = m.program_id
+     LEFT JOIN RMWeightProgression rmp
+       ON rmp.mesocycle_id = m.mesocycle_id
+      AND rmp.exercise_name = es.exercise_name
+     WHERE m.program_id = ?
+       AND es.exercise_name IS NOT NULL
+     ORDER BY m.mesocycle_number ASC, es.exercise_name COLLATE NOCASE ASC;`,
+    [programId]
+  );
+}
+
+export async function deleteRmWeightProgressionsByProgram(db, programId) {
+  await db.runAsync(
+    `DELETE FROM RMWeightProgression
+     WHERE mesocycle_id IN (
+       SELECT mesocycle_id
+       FROM Mesocycle
+       WHERE program_id = ?
+     );`,
+    [programId]
+  );
+}
+
+export async function deleteRmWeightProgressionsByMesocycle(db, mesocycleId) {
+  await db.runAsync(
+    `DELETE FROM RMWeightProgression
+     WHERE mesocycle_id = ?;`,
+    [mesocycleId]
+  );
+}
+
+export async function deleteRmWeightProgressionsByProgramExercise(
+  db,
+  { programId, exerciseName }
+) {
+  await db.runAsync(
+    `DELETE FROM RMWeightProgression
+     WHERE exercise_name = ?
+       AND mesocycle_id IN (
+         SELECT mesocycle_id
+         FROM Mesocycle
+         WHERE program_id = ?
+       );`,
+    [exerciseName, programId]
+  );
+}
+
 export async function getEstimatedWeightBySetId(db, setId) {
   return db.getFirstAsync(
-    `SELECT es.estimated_weight
+    `SELECT
+        es.estimated_weight,
+        COALESCE(
+          rmp.progression_weight,
+          CASE
+            WHEN m.mesocycle_number > 1
+              THEN (m.mesocycle_number - 1) * 2.5
+            ELSE 0
+          END
+        ) AS progression_weight,
+        es.estimated_weight + COALESCE(
+          rmp.progression_weight,
+          CASE
+            WHEN m.mesocycle_number > 1
+              THEN (m.mesocycle_number - 1) * 2.5
+            ELSE 0
+          END
+        ) AS adjusted_estimated_weight
      FROM Sets s
      JOIN Exercise e ON e.exercise_id = s.exercise_id
      JOIN Workout w ON w.workout_id = e.workout_id
      JOIN Day d ON d.day_id = w.day_id
+     JOIN Microcycle mc ON mc.microcycle_id = d.microcycle_id
+     JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
      LEFT JOIN Estimated_Set es
        ON es.program_id = d.program_id
       AND es.exercise_name = e.exercise_name
+     LEFT JOIN RMWeightProgression rmp
+       ON rmp.mesocycle_id = m.mesocycle_id
+      AND rmp.exercise_name = e.exercise_name
      WHERE s.sets_id = ?;`,
     [setId]
   );

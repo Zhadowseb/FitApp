@@ -11,7 +11,7 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 
-import { programService } from "../../../../Services";
+import { programService, weightliftingService } from "../../../../Services";
 import AddMesocycleModal from "./AddMesocycleModal";
 import {
   ThemedTitle,
@@ -97,6 +97,29 @@ const styles = StyleSheet.create({
   periodText: {
     lineHeight: 18,
     textAlign: "center",
+  },
+  progressionSection: {
+    marginBottom: 16,
+  },
+  progressionHeader: {
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
+  progressionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  progressionExercise: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  progressionValue: {
+    fontWeight: "700",
+  },
+  progressionEmpty: {
+    lineHeight: 18,
   },
   statsRow: {
     flexDirection: "row",
@@ -195,15 +218,24 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
     try {
       setLoading(true);
       const cycles = await programService.getMesocyclesByProgram(db, program_id);
-      const workoutCounts =
-        await programService.getMesocycleWorkoutCountsByProgram(db, program_id);
+      const [workoutCounts, progressionPreviewMap] = await Promise.all([
+        programService.getMesocycleWorkoutCountsByProgram(db, program_id),
+        weightliftingService.getMesocycleProgressiveOverloadByProgram(
+          db,
+          program_id
+        ),
+      ]);
 
       const workoutCountMap = workoutCounts.reduce((acc, row) => {
         acc[row.mesocycle_id] = row.workout_count ?? 0;
         return acc;
       }, {});
 
-      const enriched = enrichMesocycles(cycles, workoutCountMap);
+      const enriched = enrichMesocycles(
+        cycles,
+        workoutCountMap,
+        progressionPreviewMap
+      );
       setMesocycles(enriched);
     } catch (error) {
       console.error("Error loading programs", error);
@@ -212,7 +244,7 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
     }
   };
 
-  const enrichMesocycles = (cycles, workoutCountMap) => {
+  const enrichMesocycles = (cycles, workoutCountMap, progressionPreviewMap) => {
     let weekOffset = 0;
 
     return cycles.map((cycle) => {
@@ -233,6 +265,7 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
         period_end: formatDate(end),
         workout_count: workoutCount,
         average_weekly_workouts: averageWeeklyWorkouts,
+        progression_preview: progressionPreviewMap[cycle.mesocycle_id] ?? [],
       };
     });
   };
@@ -375,6 +408,49 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
                   >
                     {item.period_start} - {item.period_end}
                   </ThemedText>
+                </View>
+
+                <View style={styles.progressionSection}>
+                  <ThemedText
+                    size={10}
+                    style={styles.progressionHeader}
+                    setColor={quietText}
+                  >
+                    Progressive overload
+                  </ThemedText>
+
+                  {item.progression_preview.length === 0 ? (
+                    <ThemedText
+                      size={12}
+                      style={styles.progressionEmpty}
+                      setColor={quietText}
+                    >
+                      No 1 RM values yet.
+                    </ThemedText>
+                  ) : (
+                    item.progression_preview.map((progression) => (
+                      <View
+                        key={`${item.mesocycle_id}-${progression.exercise_name}`}
+                        style={styles.progressionRow}
+                      >
+                        <ThemedText
+                          size={12}
+                          style={styles.progressionExercise}
+                          numberOfLines={1}
+                          setColor={textColor}
+                        >
+                          {progression.exercise_name}
+                        </ThemedText>
+                        <ThemedText
+                          size={12}
+                          style={styles.progressionValue}
+                          setColor={textColor}
+                        >
+                          {progression.progression_display}
+                        </ThemedText>
+                      </View>
+                    ))
+                  )}
                 </View>
 
                 <View style={styles.statsRow}>

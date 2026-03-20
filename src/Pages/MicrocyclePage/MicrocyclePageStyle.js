@@ -6,6 +6,25 @@ export default StyleSheet.create({
         flex: 1,
     },
 
+    section_container: {
+        paddingHorizontal: 10,
+    },
+
+    progression_card: {
+        marginTop: 0,
+        marginBottom: 14,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+    },
+
+    progression_summary: {
+        fontWeight: "600",
+    },
+
+    weeks_title: {
+        marginBottom: 6,
+    },
+
     card: {
         backgroundColor: "#fff",
         marginVertical: 10,

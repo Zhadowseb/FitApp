@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, TouchableOpacity } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
@@ -14,9 +14,13 @@ import { ThemedBottomSheet,
     ThemedHeader, 
     ThemedText, 
     ThemedTitle, 
-    ThemedPicker } from "../../Resources/ThemedComponents";
+    ThemedPicker,
+    ThemedCard } from "../../Resources/ThemedComponents";
 
-import { programService as programRepository } from "../../Services";
+import {
+  programService as programRepository,
+  weightliftingService,
+} from "../../Services";
 
 const MicrocyclePage = ( {route} ) => {
     const db = useSQLiteContext();
@@ -32,10 +36,32 @@ const MicrocyclePage = ( {route} ) => {
     const [refreshing, set_refreshing] = useState(0);
     const [OptionsBottomsheet_visible, set_OptionsBottomsheet_visible] = useState(false);
     const [focus, set_focus] = useState(mesocycle_focus);
+    const [progressiveOverloadSummary, setProgressiveOverloadSummary] = useState(
+        "No 1 RM values yet."
+    );
 
     const updateUI = () => {
         set_refreshing(prev => prev + 1);
     }
+
+    useEffect(() => {
+      const loadProgressiveOverload = async () => {
+        try {
+          const progressiveOverload =
+            await weightliftingService.getMesocycleProgressiveOverload(db, {
+              mesocycleId: mesocycle_id,
+              programId: program_id,
+              mesocycleNumber: mesocycle_number,
+            });
+
+          setProgressiveOverloadSummary(progressiveOverload.summary);
+        } catch (error) {
+          console.error("Failed to load mesocycle progression:", error);
+        }
+      };
+
+      loadProgressiveOverload();
+    }, [db, mesocycle_id, mesocycle_number, program_id, refreshing]);
 
     const deleteMesocycle = async () => {
         try {
@@ -95,6 +121,17 @@ const MicrocyclePage = ( {route} ) => {
             
 
             </ThemedHeader>
+
+            <View style={styles.section_container}>
+              <ThemedTitle type="h2">Progressive Overload</ThemedTitle>
+              <ThemedCard style={styles.progression_card}>
+                <ThemedText style={styles.progression_summary}>
+                  {progressiveOverloadSummary}
+                </ThemedText>
+              </ThemedCard>
+
+              <ThemedTitle type="h2" style={styles.weeks_title}>Weeks</ThemedTitle>
+            </View>
             
             <MicrocycleList
                 program_id={program_id}

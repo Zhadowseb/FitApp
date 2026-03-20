@@ -1,65 +1,84 @@
 import React, { useEffect, useState } from "react";
-import { Modal, View, Text, TextInput, Button } from "react-native";
 
 import styles from "./EditEstimatedSetStyle";
+import {
+  ThemedButton,
+  ThemedModal,
+  ThemedText,
+  ThemedTextInput,
+} from "../../../../../../Resources/ThemedComponents";
 
-export default function AddEstimatedSet({ 
-    visible, 
-    onClose, 
-    onSubmit, 
-    onDelete, 
-    estimatedSet }) {
+export default function EditEstimatedSet({
+  visible,
+  onClose,
+  onSubmit,
+  onDelete,
+  estimatedSet,
+}) {
+  const [estimated_weight, set_estimated_weight] = useState("");
 
-    const [estimated_weight, set_estimated_weight] = useState("");
+  useEffect(() => {
+    if (visible) {
+      set_estimated_weight(String(estimatedSet?.estimated_weight ?? ""));
+    }
+  }, [visible, estimatedSet]);
 
-    useEffect(() => {
-        if(visible){
-            set_estimated_weight(String(estimatedSet.estimated_weight));
-        }
+  const persistChanges = async () => {
+    const nextEstimatedWeight = estimated_weight.trim();
 
-    }, [visible]);
+    if (!estimatedSet || nextEstimatedWeight === "") {
+      return;
+    }
 
-  const handleSubmit = () => {
-    onSubmit({ 
-        id: estimatedSet.estimated_set_id, 
-        estimated_weight: estimated_weight });
+    if (nextEstimatedWeight === String(estimatedSet.estimated_weight ?? "")) {
+      return;
+    }
+
+    await onSubmit({
+      id: estimatedSet.estimated_set_id,
+      estimated_weight: nextEstimatedWeight,
+    });
+  };
+
+  const handleClose = async () => {
+    await persistChanges();
     onClose();
   };
 
-  const handleDelete = () => {
-    onDelete({
-        id: estimatedSet.estimated_set_id});
+  const handleDelete = async () => {
+    if (!estimatedSet) {
+      onClose();
+      return;
+    }
+
+    await onDelete({
+      id: estimatedSet.estimated_set_id,
+    });
     onClose();
   };
 
   return (
-    <Modal
+    <ThemedModal
       visible={visible}
-      transparent
-      animationType="fade" >
+      onClose={handleClose}
+      title={estimatedSet?.exercise_name ?? "Edit estimated 1 RM"}
+    >
+      <ThemedText size={12} style={styles.helperText}>
+        Close the modal to save changes.
+      </ThemedText>
 
-      <View style={styles.overlay}>
-        <View style={styles.modalBox}>
+      <ThemedTextInput
+        placeholder="Estimated Weight"
+        keyboardType="numeric"
+        value={estimated_weight}
+        onChangeText={set_estimated_weight}
+      />
 
-          <Text style={styles.title}>
-                {estimatedSet?.exercise_name ?? ""}
-          </Text>
-
-          <TextInput
-            keyboardType="numeric"
-            style={styles.input}
-            value={estimated_weight}
-            onChangeText={set_estimated_weight}
-          />
-
-          <View style={styles.row}>
-            <Button title="Cancel" color="red" onPress={onClose} />
-            <Button title="Delete" color="gray" onPress={handleDelete} />
-            <Button title="Save" color="green" onPress={handleSubmit} />
-          </View>
-
-        </View>
-      </View>
-    </Modal>
+      <ThemedButton
+        variant="danger"
+        title="Delete 1 RM"
+        onPress={handleDelete}
+      />
+    </ThemedModal>
   );
 }

@@ -36,9 +36,10 @@ const MicrocyclePage = ( {route} ) => {
     const [refreshing, set_refreshing] = useState(0);
     const [OptionsBottomsheet_visible, set_OptionsBottomsheet_visible] = useState(false);
     const [focus, set_focus] = useState(mesocycle_focus);
-    const [progressiveOverloadSummary, setProgressiveOverloadSummary] = useState(
-        "No 1 RM values yet."
-    );
+    const [progressiveOverload, setProgressiveOverload] = useState({
+        summary: "No 1 RM values yet.",
+        progressions: [],
+    });
 
     const updateUI = () => {
         set_refreshing(prev => prev + 1);
@@ -54,7 +55,7 @@ const MicrocyclePage = ( {route} ) => {
               mesocycleNumber: mesocycle_number,
             });
 
-          setProgressiveOverloadSummary(progressiveOverload.summary);
+          setProgressiveOverload(progressiveOverload);
         } catch (error) {
           console.error("Failed to load mesocycle progression:", error);
         }
@@ -126,8 +127,22 @@ const MicrocyclePage = ( {route} ) => {
               <ThemedTitle type="h2">Progressive Overload</ThemedTitle>
               <ThemedCard style={styles.progression_card}>
                 <ThemedText style={styles.progression_summary}>
-                  {progressiveOverloadSummary}
+                  {progressiveOverload.summary}
                 </ThemedText>
+
+                {progressiveOverload.progressions.map((progression) => (
+                  <View
+                    key={progression.exercise_name}
+                    style={styles.progression_row}
+                  >
+                    <ThemedText style={styles.progression_exercise}>
+                      {progression.exercise_name}
+                    </ThemedText>
+                    <ThemedText style={styles.progression_value}>
+                      {progression.progression_display}
+                    </ThemedText>
+                  </View>
+                ))}
               </ThemedCard>
 
               <ThemedTitle type="h2" style={styles.weeks_title}>Weeks</ThemedTitle>

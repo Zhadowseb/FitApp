@@ -19,6 +19,22 @@ export default StyleSheet.create({
 
     progression_summary: {
         fontWeight: "600",
+        marginBottom: 10,
+    },
+
+    progression_row: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingVertical: 4,
+    },
+
+    progression_exercise: {
+        flex: 1,
+        paddingRight: 12,
+    },
+
+    progression_value: {
+        fontWeight: "700",
     },
 
     weeks_title: {

@@ -83,6 +83,40 @@ async function ensureMesocycleProgressions(
   }
 }
 
+async function getSelectedProgramBestExerciseNames(db, programId) {
+  const programExercises = await weightliftingRepository.getProgramExerciseNames(
+    db,
+    programId
+  );
+  const selections = await programRepository.getProgramBestExerciseSelections(
+    db,
+    programId
+  );
+  const selectionMap = new Map(
+    selections.map((selection) => [
+      selection.exercise_name,
+      Number(selection.is_selected) === 1,
+    ])
+  );
+
+  for (const exercise of programExercises) {
+    if (!selectionMap.has(exercise.exercise_name)) {
+      await programRepository.insertProgramBestExerciseSelection(db, {
+        programId,
+        exerciseName: exercise.exercise_name,
+        isSelected: true,
+      });
+      selectionMap.set(exercise.exercise_name, true);
+    }
+  }
+
+  return new Set(
+    programExercises
+      .filter((exercise) => selectionMap.get(exercise.exercise_name) ?? true)
+      .map((exercise) => exercise.exercise_name)
+  );
+}
+
 export async function getExerciseStorage(db) {
   return weightliftingRepository.getExerciseStorage(db);
 }
@@ -163,7 +197,14 @@ export async function getMesocycleProgressiveOverload(
     db,
     mesocycleId
   );
-  const progressions = rows.map((row) => {
+  const selectedExerciseNames = await getSelectedProgramBestExerciseNames(
+    db,
+    programId
+  );
+  const filteredRows = rows.filter((row) =>
+    selectedExerciseNames.has(row.exercise_name)
+  );
+  const progressions = filteredRows.map((row) => {
     const progressionWeight = Number(row.progression_weight) || 0;
 
     return {
@@ -184,10 +225,12 @@ export async function getMesocycleProgressiveOverload(
 
   return {
     summary:
-      progressions.length === 0
+      rows.length === 0
         ? "No 1 RM values yet."
+        : progressions.length === 0
+          ? "No Program bests selected."
         : uniformProgressionWeight !== null
-          ? `All exercises: +${formatWeightDisplay(uniformProgressionWeight)} kg`
+          ? `Selected exercises: +${formatWeightDisplay(uniformProgressionWeight)} kg`
           : "Custom progression",
     progressions,
   };
@@ -209,9 +252,17 @@ export async function getMesocycleProgressiveOverloadByProgram(db, programId) {
       db,
       programId
     );
+  const selectedExerciseNames = await getSelectedProgramBestExerciseNames(
+    db,
+    programId
+  );
   const groupedProgressions = {};
 
   for (const row of rows) {
+    if (!selectedExerciseNames.has(row.exercise_name)) {
+      continue;
+    }
+
     if (!groupedProgressions[row.mesocycle_id]) {
       groupedProgressions[row.mesocycle_id] = [];
     }

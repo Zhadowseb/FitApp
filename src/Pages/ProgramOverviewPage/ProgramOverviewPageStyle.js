@@ -39,33 +39,53 @@ export default StyleSheet.create({
     },
     pr_container: {
         padding: 0,
-        minHeight: 400,
-        maxHeight: 400,
         marginBottom: 12,
-        overflow: "hidden",
     },
     pr_scroll: {
-        flex: 1,
+        marginBottom: 12,
     },
     pr_body: {
-        padding: 16,
+        paddingTop: 8,
+        paddingRight: 16,
         flexGrow: 1,
     },
-    pr_exercise_row: {
-        paddingVertical: 8,
+    pr_row: {
         flexDirection: "row",
-        alignItems: "center",
+        alignItems: "flex-start",
     },
-    pr_exercise_details: {
-        flex: 1,
-        paddingRight: 12,
+    pr_column: {
+        width: 136,
+        marginRight: 10,
     },
-    pr_exercise_name: {
+    pr_exercise_tile: {
+        width: "100%",
+        minHeight: 106,
+        borderRadius: 18,
+        paddingHorizontal: 10,
+        paddingVertical: 10,
+        marginBottom: 10,
+        justifyContent: "space-between",
+    },
+    pr_exercise_tile_name: {
         fontWeight: "700",
+        textAlign: "center",
+        marginBottom: 4,
     },
-    pr_exercise_value: {
-        marginLeft: "auto",
-        textAlign: "right",
+    pr_exercise_tile_set: {
+        textAlign: "center",
+        lineHeight: 16,
+    },
+    pr_exercise_tile_empty: {
+        textAlign: "center",
+        lineHeight: 16,
+    },
+    pr_exercise_tile_rm_label: {
+        textAlign: "center",
+        marginTop: 4,
+    },
+    pr_exercise_tile_rm_value: {
+        textAlign: "center",
+        fontWeight: "700",
     },
     pr_header: {
         alignItems: "flex-end",

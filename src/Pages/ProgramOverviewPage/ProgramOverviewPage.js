@@ -34,6 +34,16 @@ import { ThemedTitle,
 import Delete from '../../Resources/Icons/UI-icons/Delete';
 import { formatDate, parseCustomDate } from '../../Utils/dateUtils';
 
+const chunkArray = (items, size) => {
+    const chunks = [];
+
+    for (let index = 0; index < items.length; index += size) {
+        chunks.push(items.slice(index, index + size));
+    }
+
+    return chunks;
+};
+
 const ProgramOverviewPage = ( {route} ) => {
     const db = useSQLiteContext();
     const navigation = useNavigation();
@@ -196,9 +206,14 @@ const ProgramOverviewPage = ( {route} ) => {
     const selectedProgramBestExercises = programExercises.filter(
         (exerciseName) => visibleProgramBestExercises[exerciseName] ?? true
     );
+    const selectedProgramBestExerciseColumns = chunkArray(selectedProgramBestExercises, 3);
     const programExerciseBestMap = Object.fromEntries(
         programExerciseBests.map((best) => [best.exercise_name, best])
     );
+    const accentSoft = theme.primaryLight ?? "rgba(247, 116, 46, 0.18)";
+    const successSoft = theme.secondaryLight ?? "rgba(96, 218, 172, 0.18)";
+    const emptyTileBackground = theme.uiBackground ?? "rgba(255, 255, 255, 0.04)";
+    const tileTextColor = theme.cardBackground ?? theme.textInverted ?? theme.text;
     const filterDividerColor =
         colorScheme === "dark"
             ? "rgba(255, 255, 255, 0.08)"
@@ -252,61 +267,86 @@ const ProgramOverviewPage = ( {route} ) => {
                         height={24} />
                 </TouchableOpacity>
             </View>
-            <ThemedCard style={styles.pr_container}>
+            {programExercises.length === 0 && (
+                <ThemedText>
+                    No exercises in this program yet.
+                </ThemedText>
+            )}
+
+            {programExercises.length > 0 && selectedProgramBestExercises.length === 0 && (
+                <ThemedText>
+                    No exercises selected.
+                </ThemedText>
+            )}
+
+            {selectedProgramBestExercises.length > 0 && (
                 <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
                     style={styles.pr_scroll}
-                    contentContainerStyle={styles.pr_body}
-                    nestedScrollEnabled>
-                    {selectedProgramBestExercises.length > 0 && (
-                        <View style={styles.pr_header}>
-                            <ThemedText
-                                size={10}
-                                style={{color: theme.quietText}}>
-                                1 Rep Max
-                            </ThemedText>
-                        </View>
-                    )}
-
-                    {programExercises.length === 0 && (
-                        <ThemedText>
-                            No exercises in this program yet.
-                        </ThemedText>
-                    )}
-
-                    {programExercises.length > 0 && selectedProgramBestExercises.length === 0 && (
-                        <ThemedText>
-                            No exercises selected.
-                        </ThemedText>
-                    )}
-
-                    {selectedProgramBestExercises.map((exerciseName) => {
-                        const programBest = programExerciseBestMap[exerciseName];
-
-                        return (
+                    contentContainerStyle={styles.pr_body}>
+                    <View style={styles.pr_row}>
+                        {selectedProgramBestExerciseColumns.map((column, columnIndex) => (
                             <View
-                                key={exerciseName}
-                                style={styles.pr_exercise_row}>
-                                <View style={styles.pr_exercise_details}>
-                                    <ThemedText style={styles.pr_exercise_name}>
-                                        {exerciseName}
-                                    </ThemedText>
-                                    <ThemedText
-                                        size={12}
-                                        setColor={!programBest ? theme.quietText : undefined}>
-                                        {programBest?.setDisplayValue ?? "No completed sets."}
-                                    </ThemedText>
-                                </View>
+                                key={`pr-column-${columnIndex}`}
+                                style={styles.pr_column}>
+                                {column.map((exerciseName, rowIndex) => {
+                                    const programBest = programExerciseBestMap[exerciseName];
+                                    const hasCompletedSet = Boolean(programBest);
+                                    const tileBackground = hasCompletedSet
+                                        ? (columnIndex + rowIndex) % 2 === 0
+                                            ? accentSoft
+                                            : successSoft
+                                        : emptyTileBackground;
 
-                                <ThemedText
-                                    size={12}
-                                    style={styles.pr_exercise_value}>
-                                    {programBest?.rmDisplayValue ?? ""}
-                                </ThemedText>
+                                    return (
+                                        <View
+                                            key={exerciseName}
+                                            style={[
+                                                styles.pr_exercise_tile,
+                                                { backgroundColor: tileBackground },
+                                            ]}>
+                                            <View>
+                                                <ThemedText
+                                                    style={styles.pr_exercise_tile_name}
+                                                    setColor={hasCompletedSet ? tileTextColor : undefined}>
+                                                    {exerciseName}
+                                                </ThemedText>
+
+                                                <ThemedText
+                                                    size={12}
+                                                    style={
+                                                        hasCompletedSet
+                                                            ? styles.pr_exercise_tile_set
+                                                            : styles.pr_exercise_tile_empty
+                                                    }
+                                                    setColor={hasCompletedSet ? tileTextColor : theme.quietText}>
+                                                    {programBest?.setDisplayValue ?? "No completed sets."}
+                                                </ThemedText>
+                                            </View>
+
+                                    <View>
+                                        <ThemedText
+                                            size={18}
+                                            style={styles.pr_exercise_tile_rm_value}
+                                            setColor={hasCompletedSet ? tileTextColor : theme.quietText}>
+                                            {programBest?.rmDisplayValue ?? "--"}
+                                        </ThemedText>
+                                        <ThemedText
+                                            size={10}
+                                            style={styles.pr_exercise_tile_rm_label}
+                                            setColor={hasCompletedSet ? tileTextColor : theme.quietText}>
+                                            1 Rep Max
+                                        </ThemedText>
+                                    </View>
+                                </View>
+                            );
+                                })}
                             </View>
-                        );
-                    })}
+                        ))}
+                    </View>
                 </ScrollView>
-            </ThemedCard>
+            )}
 
             {/* 1 rm estimates. */}
             <ThemedTitle type="h2"> Estimated 1 RM's </ThemedTitle>

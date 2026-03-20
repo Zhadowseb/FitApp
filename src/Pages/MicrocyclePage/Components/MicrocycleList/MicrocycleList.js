@@ -15,7 +15,7 @@ import { useCallback } from "react";
 import WeekdayIndicator from "../../../../Resources/Figures/WeekdayIndicator";
 import { getWorkoutIconConfig } from "../../../../Resources/Icons/WorkoutLabels";
 import PickWorkoutModal from "../../../WeekPage/Components/Day/Components/PickWorkoutModal/PickWorkoutModal";
-import WorkoutLabel from "../../../../Resources/Components/WorkoutLabel";
+import AddWorkoutModal from "../../../../Resources/Components/AddWorkoutModal";
 
 import styles from "./MicrocycleListStyle";
 import { programService as programRepository } from "../../../../Services";
@@ -671,7 +671,7 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
       </View>
     </ThemedBottomSheet>
 
-    <WorkoutLabel
+    <AddWorkoutModal
       visible={labelModalVisible}
       onClose={() => {
         setLabelModalVisible(false);

@@ -7,7 +7,7 @@ import { Colors } from "../GlobalStyling/colors";
 import {ThemedButton, ThemedText, ThemedWorkoutModal} 
   from "../ThemedComponents";
 
-export default function AddProgram({ visible, onClose, onSubmit }) {
+export default function AddWorkoutModal({ visible, onClose, onSubmit }) {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme] ?? Colors.light;
     

@@ -9,7 +9,7 @@ import { useColorScheme } from "react-native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import PickWorkoutModal from './Components/PickWorkoutModal/PickWorkoutModal';
-import WorkoutLabel from "../../../../Resources/Components/WorkoutLabel";
+import AddWorkoutModal from "../../../../Resources/Components/AddWorkoutModal";
 
 import styles from './DayStyle';
 import { getWorkoutIconConfig } from '../../../../Resources/Icons/WorkoutLabels/index';
@@ -348,7 +348,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
 
         </ThemedBottomSheet>
 
-        <WorkoutLabel
+        <AddWorkoutModal
             visible={labelModal_visible}
             onClose={() => set_labelModal_visible(false)}
             onSubmit={async (labelId) => {

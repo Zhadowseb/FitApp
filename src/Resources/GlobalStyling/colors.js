@@ -4,8 +4,10 @@ export const Colors = {
     dark: {
         primary: "#f7742eff",
         primaryLight: "rgb(237, 178, 146)",
+        primaryDark: "rgb(190, 74, 11)",
         secondary: "#60daacff",
         secondaryLight: "rgb(178, 214, 200)",
+        secondaryDark: "rgb(24, 160, 108)",
         danger: "#ba0000ff",
 
         NOT_STARTED: "#9E9E9E",

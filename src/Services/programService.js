@@ -299,11 +299,23 @@ export async function createMesocycle(
     );
 
     for (const estimatedSet of estimatedSets) {
+      const previousProgression =
+        await weightliftingRepository.getLatestRmProgressionWeightBeforeMesocycle(
+          db,
+          {
+            programId,
+            exerciseName: estimatedSet.exercise_name,
+            mesocycleNumber,
+          }
+        );
+
       await weightliftingRepository.insertRmWeightProgression(db, {
         mesocycleId: mesocycleResult.lastInsertRowId,
         exerciseName: estimatedSet.exercise_name,
         progressionWeight:
-          mesocycleNumber > 1 ? (mesocycleNumber - 1) * 2.5 : 0,
+          mesocycleNumber > 1
+            ? Number(previousProgression?.progression_weight || 0) + 2.5
+            : 0,
       });
     }
 

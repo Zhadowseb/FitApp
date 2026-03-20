@@ -29,7 +29,15 @@ import { ThemedCard,
 import { formatDate, parseCustomDate } from "../../../../Utils/dateUtils";
 import Delete from "../../../../Resources/Icons/UI-icons/Delete";
 
-const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, refreshKey, updateui} ) => {
+const MicrocycleList = ({
+  program_id,
+  mesocycle_id,
+  period_start,
+  period_end,
+  refreshKey,
+  updateui,
+  headerComponent = null,
+}) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
   const db = useSQLiteContext();
@@ -488,6 +496,13 @@ const MicrocycleList = ( {program_id, mesocycle_id, period_start, period_end, re
     <FlatList
       data={microcycles}
       renderItem={renderItem}
+      ListHeaderComponent={
+        headerComponent ? (
+          <View style={styles.listHeader}>
+            {headerComponent}
+          </View>
+        ) : null
+      }
     />
 
     <ThemedBottomSheet

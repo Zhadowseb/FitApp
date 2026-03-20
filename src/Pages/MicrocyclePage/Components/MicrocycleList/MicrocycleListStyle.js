@@ -2,6 +2,10 @@ import { StyleSheet } from "react-native";
 
 export default StyleSheet.create({
 
+  listHeader: {
+    paddingTop: 0,
+  },
+
   status_section: {
     alignItems: "center",
     flex: 0.5,

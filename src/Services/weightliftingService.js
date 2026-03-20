@@ -27,18 +27,42 @@ function normalizeOptionalNumber(value) {
   return Number.isFinite(parsedValue) ? parsedValue : null;
 }
 
-function getDefaultMesocycleProgressionWeight(mesocycleNumber) {
+function formatWeightDisplay(value) {
+  return Number.isInteger(value) ? `${value}` : value.toFixed(1);
+}
+
+function formatSignedWeightDisplay(value) {
+  const parsedValue = Number(value) || 0;
+  const sign = parsedValue >= 0 ? "+" : "-";
+
+  return `${sign}${formatWeightDisplay(Math.abs(parsedValue))} kg`;
+}
+
+async function getDefaultMesocycleProgressionWeight(
+  db,
+  { programId, mesocycleNumber, exerciseName }
+) {
   const parsedMesocycleNumber = Number(mesocycleNumber);
 
   if (!Number.isFinite(parsedMesocycleNumber) || parsedMesocycleNumber <= 1) {
     return 0;
   }
 
-  return (parsedMesocycleNumber - 1) * 2.5;
-}
+  const previousProgression =
+    await weightliftingRepository.getLatestRmProgressionWeightBeforeMesocycle(
+      db,
+      {
+        programId,
+        exerciseName,
+        mesocycleNumber: parsedMesocycleNumber,
+      }
+    );
 
-function formatWeightDisplay(value) {
-  return Number.isInteger(value) ? `${value}` : value.toFixed(1);
+  if (previousProgression?.progression_weight !== undefined) {
+    return Number(previousProgression.progression_weight || 0) + 2.5;
+  }
+
+  return (parsedMesocycleNumber - 1) * 2.5;
 }
 
 async function getEstimatedWeightForSet(db, setId) {
@@ -67,13 +91,18 @@ async function ensureMesocycleProgressions(
   const existingExerciseNames = new Set(
     existingProgressions.map((progression) => progression.exercise_name)
   );
-  const defaultProgressionWeight =
-    getDefaultMesocycleProgressionWeight(mesocycleNumber);
 
   for (const estimatedSet of estimatedSets) {
     if (existingExerciseNames.has(estimatedSet.exercise_name)) {
       continue;
     }
+
+    const defaultProgressionWeight =
+      await getDefaultMesocycleProgressionWeight(db, {
+        programId,
+        mesocycleNumber,
+        exerciseName: estimatedSet.exercise_name,
+      });
 
     await weightliftingRepository.insertRmWeightProgression(db, {
       mesocycleId,
@@ -81,6 +110,87 @@ async function ensureMesocycleProgressions(
       progressionWeight: defaultProgressionWeight,
     });
   }
+}
+
+async function ensureProgramMesocycleProgressions(db, programId) {
+  const mesocycles = await programRepository.getMesocyclesByProgram(db, programId);
+
+  for (const mesocycle of mesocycles) {
+    await ensureMesocycleProgressions(db, {
+      mesocycleId: mesocycle.mesocycle_id,
+      programId,
+      mesocycleNumber: mesocycle.mesocycle_number,
+    });
+  }
+
+  return mesocycles;
+}
+
+function buildProgressionGroups(rows, selectedExerciseNames) {
+  const rowsByExercise = new Map();
+
+  for (const row of rows) {
+    if (!selectedExerciseNames.has(row.exercise_name)) {
+      continue;
+    }
+
+    const existingRows = rowsByExercise.get(row.exercise_name) ?? [];
+    existingRows.push(row);
+    rowsByExercise.set(row.exercise_name, existingRows);
+  }
+
+  const groupedProgressions = {};
+
+  for (const [exerciseName, exerciseRows] of rowsByExercise.entries()) {
+    const sortedRows = [...exerciseRows].sort(
+      (left, right) => left.mesocycle_number - right.mesocycle_number
+    );
+    let previousProgressionWeight = 0;
+
+    for (const row of sortedRows) {
+      const estimatedWeight = Number(row.estimated_weight);
+
+      if (!Number.isFinite(estimatedWeight)) {
+        continue;
+      }
+
+      const progressionWeight = Number(row.progression_weight) || 0;
+      const blockDelta = progressionWeight - previousProgressionWeight;
+      const previousWeight = estimatedWeight + previousProgressionWeight;
+      const currentWeight = estimatedWeight + progressionWeight;
+
+      if (!groupedProgressions[row.mesocycle_id]) {
+        groupedProgressions[row.mesocycle_id] = [];
+      }
+
+      groupedProgressions[row.mesocycle_id].push({
+        exercise_name: exerciseName,
+        estimated_weight: estimatedWeight,
+        estimated_weight_display: `${formatWeightDisplay(estimatedWeight)} kg`,
+        progression_weight: progressionWeight,
+        previous_progression_weight: previousProgressionWeight,
+        previous_weight: previousWeight,
+        previous_weight_display: `${formatWeightDisplay(previousWeight)} kg`,
+        current_weight: currentWeight,
+        current_weight_display: `${formatWeightDisplay(currentWeight)} kg`,
+        block_delta: blockDelta,
+        block_delta_display: formatSignedWeightDisplay(blockDelta),
+        progression_display: formatSignedWeightDisplay(blockDelta),
+        is_base_mesocycle: row.mesocycle_number === 1,
+        mesocycle_number: row.mesocycle_number,
+      });
+
+      previousProgressionWeight = progressionWeight;
+    }
+  }
+
+  for (const mesocycleId of Object.keys(groupedProgressions)) {
+    groupedProgressions[mesocycleId].sort((left, right) =>
+      left.exercise_name.localeCompare(right.exercise_name)
+    );
+  }
+
+  return groupedProgressions;
 }
 
 async function getSelectedProgramBestExerciseNames(db, programId) {
@@ -143,12 +253,16 @@ export async function createEstimatedSet(
     const mesocycles = await programRepository.getMesocyclesByProgram(db, programId);
 
     for (const mesocycle of mesocycles) {
+      const progressionWeight = await getDefaultMesocycleProgressionWeight(db, {
+        programId,
+        mesocycleNumber: mesocycle.mesocycle_number,
+        exerciseName,
+      });
+
       await weightliftingRepository.insertRmWeightProgression(db, {
         mesocycleId: mesocycle.mesocycle_id,
         exerciseName,
-        progressionWeight: getDefaultMesocycleProgressionWeight(
-          mesocycle.mesocycle_number
-        ),
+        progressionWeight,
       });
     }
   });
@@ -193,34 +307,25 @@ export async function getMesocycleProgressiveOverload(
     mesocycleNumber,
   });
 
-  const rows = await weightliftingRepository.getMesocycleEstimatedSetProgressions(
-    db,
-    mesocycleId
-  );
+  const rows =
+    await weightliftingRepository.getMesocycleEstimatedSetProgressionsByProgram(
+      db,
+      programId
+    );
   const selectedExerciseNames = await getSelectedProgramBestExerciseNames(
     db,
     programId
   );
-  const filteredRows = rows.filter((row) =>
-    selectedExerciseNames.has(row.exercise_name)
-  );
-  const progressions = filteredRows.map((row) => {
-    const progressionWeight = Number(row.progression_weight) || 0;
+  const groupedProgressions = buildProgressionGroups(rows, selectedExerciseNames);
+  const progressions = groupedProgressions[mesocycleId] ?? [];
 
-    return {
-      exercise_name: row.exercise_name,
-      progression_weight: progressionWeight,
-      progression_display: `+${formatWeightDisplay(progressionWeight)} kg`,
-    };
-  });
-
-  const uniformProgressionWeight =
+  const uniformBlockDelta =
     progressions.length > 0 &&
     progressions.every(
       (progression) =>
-        progression.progression_weight === progressions[0].progression_weight
+        progression.block_delta === progressions[0].block_delta
     )
-      ? progressions[0].progression_weight
+      ? progressions[0].block_delta
       : null;
 
   return {
@@ -229,23 +334,17 @@ export async function getMesocycleProgressiveOverload(
         ? "No 1 RM values yet."
         : progressions.length === 0
           ? "No Program bests selected."
-        : uniformProgressionWeight !== null
-          ? `Selected exercises: +${formatWeightDisplay(uniformProgressionWeight)} kg`
+        : mesocycleNumber === 1 && uniformBlockDelta === 0
+          ? "Base 1 RM values"
+        : uniformBlockDelta !== null
+          ? `This block: ${formatSignedWeightDisplay(uniformBlockDelta)}`
           : "Custom progression",
     progressions,
   };
 }
 
 export async function getMesocycleProgressiveOverloadByProgram(db, programId) {
-  const mesocycles = await programRepository.getMesocyclesByProgram(db, programId);
-
-  for (const mesocycle of mesocycles) {
-    await ensureMesocycleProgressions(db, {
-      mesocycleId: mesocycle.mesocycle_id,
-      programId,
-      mesocycleNumber: mesocycle.mesocycle_number,
-    });
-  }
+  await ensureProgramMesocycleProgressions(db, programId);
 
   const rows =
     await weightliftingRepository.getMesocycleEstimatedSetProgressionsByProgram(
@@ -256,26 +355,40 @@ export async function getMesocycleProgressiveOverloadByProgram(db, programId) {
     db,
     programId
   );
-  const groupedProgressions = {};
 
-  for (const row of rows) {
-    if (!selectedExerciseNames.has(row.exercise_name)) {
-      continue;
-    }
+  return buildProgressionGroups(rows, selectedExerciseNames);
+}
 
-    if (!groupedProgressions[row.mesocycle_id]) {
-      groupedProgressions[row.mesocycle_id] = [];
-    }
+export async function adjustMesocycleProgressionByDelta(
+  db,
+  { programId, mesocycleId, exerciseName, delta }
+) {
+  const numericDelta = Number(delta);
 
-    const progressionWeight = Number(row.progression_weight) || 0;
-    groupedProgressions[row.mesocycle_id].push({
-      exercise_name: row.exercise_name,
-      progression_weight: progressionWeight,
-      progression_display: `+${formatWeightDisplay(progressionWeight)} kg`,
-    });
+  if (!Number.isFinite(numericDelta) || numericDelta === 0) {
+    return;
   }
 
-  return groupedProgressions;
+  const mesocycles = await ensureProgramMesocycleProgressions(db, programId);
+  const currentMesocycle = mesocycles.find(
+    (mesocycle) => mesocycle.mesocycle_id === mesocycleId
+  );
+
+  if (!currentMesocycle) {
+    throw new Error("Mesocycle not found");
+  }
+
+  await withTransaction(db, async () => {
+    await weightliftingRepository.incrementRmWeightProgressionsFromMesocycle(
+      db,
+      {
+        programId,
+        exerciseName,
+        mesocycleNumber: currentMesocycle.mesocycle_number,
+        delta: numericDelta,
+      }
+    );
+  });
 }
 
 export async function getStrengthWorkoutSummary(db, workoutId) {

@@ -87,6 +87,41 @@ export async function insertRmWeightProgression(
   );
 }
 
+export async function getLatestRmProgressionWeightBeforeMesocycle(
+  db,
+  { programId, exerciseName, mesocycleNumber }
+) {
+  return db.getFirstAsync(
+    `SELECT rmp.progression_weight
+     FROM RMWeightProgression rmp
+     JOIN Mesocycle m ON m.mesocycle_id = rmp.mesocycle_id
+     WHERE m.program_id = ?
+       AND rmp.exercise_name = ?
+       AND m.mesocycle_number < ?
+     ORDER BY m.mesocycle_number DESC
+     LIMIT 1;`,
+    [programId, exerciseName, mesocycleNumber]
+  );
+}
+
+export async function incrementRmWeightProgressionsFromMesocycle(
+  db,
+  { programId, exerciseName, mesocycleNumber, delta }
+) {
+  await db.runAsync(
+    `UPDATE RMWeightProgression
+     SET progression_weight = progression_weight + ?
+     WHERE exercise_name = ?
+       AND mesocycle_id IN (
+         SELECT mesocycle_id
+         FROM Mesocycle
+         WHERE program_id = ?
+           AND mesocycle_number >= ?
+       );`,
+    [delta, exerciseName, programId, mesocycleNumber]
+  );
+}
+
 export async function getMesocycleEstimatedSetProgressions(db, mesocycleId) {
   return db.getAllAsync(
     `SELECT

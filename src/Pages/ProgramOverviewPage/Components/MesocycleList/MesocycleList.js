@@ -5,13 +5,13 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
+  useColorScheme,
 } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
-import { useColorScheme } from "react-native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 
-import { programService as programRepository } from "../../../../Services";
+import { programService, weightliftingService } from "../../../../Services";
 import AddMesocycleModal from "./AddMesocycleModal";
 import {
   ThemedTitle,
@@ -21,20 +21,175 @@ import {
 import Plus from "../../../../Resources/Icons/UI-icons/Plus";
 import { parseCustomDate, formatDate } from "../../../../Utils/dateUtils";
 
+const CARD_WIDTH = 228;
+const CARD_HEIGHT = 290;
+
 const styles = StyleSheet.create({
   loadingContainer: {
     justifyContent: "center",
     alignItems: "center",
     paddingTop: 40,
   },
-  focus: {
-    alignItems: "center",
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#4d4d4d",
+  listContent: {
+    paddingHorizontal: 4,
+    paddingVertical: 6,
   },
-  weeks: {
+  cardTouchable: {
+    marginRight: 10,
+  },
+  card: {
+    width: CARD_WIDTH,
+    minHeight: CARD_HEIGHT,
+    padding: 0,
+    overflow: "hidden",
+    borderWidth: 1.5,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+  },
+  cycleMeta: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  cycleEyebrow: {
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  cycleNumber: {
+    marginTop: 4,
+  },
+  statusPill: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignSelf: "flex-start",
+  },
+  statusText: {
+    fontWeight: "700",
+  },
+  cardBody: {
+    flex: 1,
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+  },
+  focusLabel: {
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: 6,
+  },
+  focusText: {
+    fontWeight: "700",
+    lineHeight: 24,
+    minHeight: 48,
+  },
+  periodBadge: {
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 16,
+    marginBottom: 16,
     alignItems: "center",
+  },
+  periodText: {
+    lineHeight: 18,
+    textAlign: "center",
+  },
+  progressionSection: {
+    marginBottom: 16,
+  },
+  progressionHeader: {
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
+  progressionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  progressionExercise: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  progressionValue: {
+    fontWeight: "700",
+  },
+  progressionEmpty: {
+    lineHeight: 18,
+  },
+  statsRow: {
+    flexDirection: "row",
+    marginBottom: 10,
+  },
+  statTile: {
+    flex: 1,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  statTileLeft: {
+    marginRight: 10,
+  },
+  statLabel: {
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  statValue: {
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  averageTile: {
+    marginTop: "auto",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  averageValueRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "center",
+    marginTop: 6,
+  },
+  averageValue: {
+    fontWeight: "700",
+  },
+  averageSuffix: {
+    marginLeft: 6,
+  },
+  addCard: {
+    width: CARD_WIDTH,
+    minHeight: CARD_HEIGHT,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    paddingHorizontal: 22,
+    backgroundColor: "transparent",
+  },
+  addIconBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1.5,
+    marginBottom: 18,
+  },
+  addTitle: {
+    fontWeight: "700",
+    marginBottom: 6,
+  },
+  addSubtitle: {
+    textAlign: "center",
+    lineHeight: 18,
   },
 });
 
@@ -49,19 +204,38 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
 
+  const accentColor = theme.primary ?? "#f7742e";
+  const accentSoft = theme.primaryLight ?? "rgba(247, 116, 46, 0.18)";
+  const successColor = theme.secondary ?? "#60daac";
+  const successSoft = theme.secondaryLight ?? "rgba(96, 218, 172, 0.18)";
+  const cardBackground = theme.cardBackground ?? theme.uiBackground ?? "#1b1918";
+  const cardBorder = theme.cardBorder ?? theme.iconColor ?? "#383838";
+  const quietText = theme.quietText ?? theme.iconColor ?? "#9591a5";
+  const invertedText = theme.textInverted ?? "#201e2b";
+  const textColor = theme.text ?? "#d4d4d4";
+
   const loadMesocycles = async () => {
     try {
       setLoading(true);
-      const cycles = await programRepository.getMesocyclesByProgram(db, program_id);
-      const workoutCounts =
-        await programRepository.getMesocycleWorkoutCountsByProgram(db, program_id);
+      const cycles = await programService.getMesocyclesByProgram(db, program_id);
+      const [workoutCounts, progressionPreviewMap] = await Promise.all([
+        programService.getMesocycleWorkoutCountsByProgram(db, program_id),
+        weightliftingService.getMesocycleProgressiveOverloadByProgram(
+          db,
+          program_id
+        ),
+      ]);
 
       const workoutCountMap = workoutCounts.reduce((acc, row) => {
         acc[row.mesocycle_id] = row.workout_count ?? 0;
         return acc;
       }, {});
 
-      const enriched = enrichMesocycles(cycles, workoutCountMap);
+      const enriched = enrichMesocycles(
+        cycles,
+        workoutCountMap,
+        progressionPreviewMap
+      );
       setMesocycles(enriched);
     } catch (error) {
       console.error("Error loading programs", error);
@@ -70,7 +244,7 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
     }
   };
 
-  const enrichMesocycles = (cycles, workoutCountMap) => {
+  const enrichMesocycles = (cycles, workoutCountMap, progressionPreviewMap) => {
     let weekOffset = 0;
 
     return cycles.map((cycle) => {
@@ -89,17 +263,16 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
         ...cycle,
         period_start: formatDate(start),
         period_end: formatDate(end),
+        workout_count: workoutCount,
         average_weekly_workouts: averageWeeklyWorkouts,
-        weightlifts: 0,
-        cardio: 0,
-        other: 0,
+        progression_preview: progressionPreviewMap[cycle.mesocycle_id] ?? [],
       };
     });
   };
 
   const handleAdd = async (data) => {
     try {
-      await programRepository.createMesocycle(db, {
+      await programService.createMesocycle(db, {
         programId: program_id,
         startDate: start_date,
         weeks: data.weeks,
@@ -132,93 +305,271 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
 
   return (
     <>
-      <ScrollView horizontal>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
+      >
         {mesocycles.map((item) => (
           <TouchableOpacity
             key={item.mesocycle_id}
+            style={styles.cardTouchable}
+            activeOpacity={0.9}
             onPress={() => {
               navigation.navigate("MicrocyclePage", {
                 mesocycle_id: item.mesocycle_id,
                 mesocycle_number: item.mesocycle_number,
                 mesocycle_focus: item.focus,
-                program_id: program_id,
+                program_id,
                 period_start: item.period_start,
                 period_end: item.period_end,
               });
             }}
           >
-            <View style={{ alignItems: "center" }}>
-              <ThemedTitle type="h3"> Cycle: {item.mesocycle_number} </ThemedTitle>
-            </View>
-
             <ThemedCard
-              style={{
-                width: 200,
-                height: 250,
-                flexDirection: "column",
-                borderWidth: item.done ? 3 : 0,
-                borderColor: theme.secondary,
-                backgroundColor: theme.primaryLight,
-              }}
+              style={[
+                styles.card,
+                {
+                  backgroundColor: cardBackground,
+                  borderColor: item.done ? successColor : cardBorder,
+                },
+              ]}
             >
-              <View style={styles.focus}>
-                <ThemedText size={13} setColor={theme.textInverted}>
-                  {" "}
-                  {item.focus}
-                </ThemedText>
-              </View>
-
-              <View style={styles.weeks}>
-                <ThemedText setColor={theme.textInverted}>
-                  Weeks: {item.weeks}
-                </ThemedText>
-              </View>
-
               <View
                 style={[
+                  styles.cardHeader,
                   {
-                    flex: 1,
-                    justifyContent: "flex-end",
-                    alignItems: "center",
+                    backgroundColor: item.done ? successSoft : accentSoft,
                   },
                 ]}
               >
-                <ThemedText setColor={theme.textInverted}>
-                  Avg. weekly workouts:
-                </ThemedText>
+                <View style={styles.cycleMeta}>
+                  <ThemedText
+                    size={10}
+                    style={styles.cycleEyebrow}
+                    setColor={quietText}
+                  >
+                    Mesocycle
+                  </ThemedText>
+                  <ThemedTitle type="h3" style={styles.cycleNumber}>
+                    #{item.mesocycle_number}
+                  </ThemedTitle>
+                </View>
 
-                <ThemedText setColor={theme.textInverted}>
-                  {item.average_weekly_workouts.toFixed(1)}
-                </ThemedText>
+                <View
+                  style={[
+                    styles.statusPill,
+                    {
+                      backgroundColor: item.done ? successColor : accentColor,
+                    },
+                  ]}
+                >
+                  <ThemedText
+                    size={10}
+                    style={styles.statusText}
+                    setColor={invertedText}
+                  >
+                    {item.done ? "Complete" : "Open"}
+                  </ThemedText>
+                </View>
+              </View>
+
+              <View style={styles.cardBody}>
+                <View>
+                  <ThemedText
+                    size={10}
+                    style={styles.focusLabel}
+                    setColor={quietText}
+                  >
+                    Focus
+                  </ThemedText>
+                  <ThemedText
+                    size={20}
+                    style={styles.focusText}
+                    numberOfLines={2}
+                    setColor={textColor}
+                  >
+                    {item.focus || "No focus"}
+                  </ThemedText>
+                </View>
+
+                <View
+                  style={[
+                    styles.periodBadge,
+                    {
+                      borderColor: item.done ? successSoft : accentSoft,
+                    },
+                  ]}
+                >
+                  <ThemedText
+                    size={11}
+                    style={styles.periodText}
+                    setColor={textColor}
+                  >
+                    {item.period_start} - {item.period_end}
+                  </ThemedText>
+                </View>
+
+                <View style={styles.progressionSection}>
+                  <ThemedText
+                    size={10}
+                    style={styles.progressionHeader}
+                    setColor={quietText}
+                  >
+                    Progressive overload
+                  </ThemedText>
+
+                  {item.progression_preview.length === 0 ? (
+                    <ThemedText
+                      size={12}
+                      style={styles.progressionEmpty}
+                      setColor={quietText}
+                    >
+                      No 1 RM values yet.
+                    </ThemedText>
+                  ) : (
+                    item.progression_preview.map((progression) => (
+                      <View
+                        key={`${item.mesocycle_id}-${progression.exercise_name}`}
+                        style={styles.progressionRow}
+                      >
+                        <ThemedText
+                          size={12}
+                          style={styles.progressionExercise}
+                          numberOfLines={1}
+                          setColor={textColor}
+                        >
+                          {progression.exercise_name}
+                        </ThemedText>
+                        <ThemedText
+                          size={12}
+                          style={styles.progressionValue}
+                          setColor={textColor}
+                        >
+                          {progression.progression_display}
+                        </ThemedText>
+                      </View>
+                    ))
+                  )}
+                </View>
+
+                <View style={styles.statsRow}>
+                  <View
+                    style={[
+                      styles.statTile,
+                      styles.statTileLeft,
+                      { backgroundColor: accentSoft },
+                    ]}
+                  >
+                    <ThemedText
+                      size={9}
+                      style={styles.statLabel}
+                      setColor={quietText}
+                    >
+                      Weeks
+                    </ThemedText>
+                    <ThemedText
+                      size={18}
+                      style={styles.statValue}
+                      setColor={cardBackground}
+                    >
+                      {item.weeks}
+                    </ThemedText>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.statTile,
+                      { backgroundColor: successSoft },
+                    ]}
+                  >
+                    <ThemedText
+                      size={9}
+                      style={styles.statLabel}
+                      setColor={quietText}
+                    >
+                      Workouts
+                    </ThemedText>
+                    <ThemedText
+                      size={18}
+                      style={styles.statValue}
+                      setColor={cardBackground}
+                    >
+                      {item.workout_count}
+                    </ThemedText>
+                  </View>
+                </View>
+
+                <View
+                  style={[
+                    styles.averageTile,
+                    {
+                      backgroundColor: item.done ? successSoft : accentSoft,
+                    },
+                  ]}
+                >
+                  <ThemedText
+                    size={10}
+                    style={styles.statLabel}
+                    setColor={quietText}
+                  >
+                    Avg. weekly workouts
+                  </ThemedText>
+
+                  <View style={styles.averageValueRow}>
+                    <ThemedText
+                      size={22}
+                      style={styles.averageValue}
+                      setColor={cardBackground}
+                    >
+                      {item.average_weekly_workouts.toFixed(1)}
+                    </ThemedText>
+                    <ThemedText
+                      size={12}
+                      style={styles.averageSuffix}
+                      setColor={quietText}
+                    >
+                      per week
+                    </ThemedText>
+                  </View>
+                </View>
               </View>
             </ThemedCard>
-
-            <View style={{ alignItems: "center" }}>
-              <ThemedText size={10}>
-                {" "}
-                {item.period_start} - {item.period_end}{" "}
-              </ThemedText>
-            </View>
           </TouchableOpacity>
         ))}
 
         <TouchableOpacity
+          style={styles.cardTouchable}
+          activeOpacity={0.9}
           onPress={() => {
             setModalVisible(true);
           }}
         >
           <ThemedCard
-            style={{
-              justifyContent: "center",
-              alignItems: "center",
-              marginTop: 35,
-              width: 200,
-              height: 250,
-              borderWidth: 1,
-              backgroundColor: "currentColor",
-            }}
+            style={[
+              styles.addCard,
+              {
+                borderColor: cardBorder,
+              },
+            ]}
           >
-            <Plus width={24} height={24} />
+            <View
+              style={[
+                styles.addIconBadge,
+                {
+                  backgroundColor: accentSoft,
+                  borderColor: accentColor,
+                },
+              ]}
+            >
+              <Plus width={28} height={28} color={accentColor} />
+            </View>
+            <ThemedText size={18} style={styles.addTitle}>
+              Add mesocycle
+            </ThemedText>
+            <ThemedText size={12} style={styles.addSubtitle} setColor={quietText}>
+              Create the next training block with a focus and duration.
+            </ThemedText>
           </ThemedCard>
         </TouchableOpacity>
       </ScrollView>

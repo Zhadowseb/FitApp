@@ -1,33 +1,99 @@
 import { StyleSheet } from "react-native";
 
 export default StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center"
+  modal: {
+    maxHeight: 520,
   },
-  modalBox: {
-    width: "80%",
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 10,
+
+  content: {
+    gap: 14,
+    flexGrow: 1,
+    flexShrink: 1,
+    minHeight: 0,
   },
-  title: {
-    fontSize: 20,
-    marginBottom: 15,
-    fontWeight: "bold",
+
+  scrollArea: {
+    flexGrow: 1,
+    minHeight: 0,
   },
-  input: {
-    padding: 10,
+
+  scrollContent: {
+    gap: 14,
+    paddingBottom: 2,
+  },
+
+  section: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    marginVertical: 8,
+    borderRadius: 20,
+    padding: 14,
+    gap: 10,
   },
-  row: {
+
+  sectionHeader: {
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 15,
-  }
+    gap: 10,
+  },
+
+  sectionLabel: {
+    fontWeight: "700",
+    letterSpacing: 0.7,
+    textTransform: "uppercase",
+  },
+
+  exerciseName: {
+    fontWeight: "700",
+    lineHeight: 24,
+  },
+
+  estimatedBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+
+  estimatedBadgeText: {
+    fontWeight: "700",
+    letterSpacing: 0.4,
+  },
+
+  suggestedWeight: {
+    fontWeight: "700",
+    lineHeight: 28,
+  },
+
+  useBestButton: {
+    marginTop: 2,
+  },
+
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  inputContainer: {
+    flex: 1,
+  },
+
+  unitBadge: {
+    minWidth: 54,
+    height: 48,
+    borderWidth: 1,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+
+  actions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 2,
+  },
+
+  actionButton: {
+    flex: 1,
+  },
 });

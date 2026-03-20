@@ -70,6 +70,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     maxHeight: 400,
+    overflow: "hidden",
   },
 
   title: {
@@ -81,5 +82,8 @@ const styles = StyleSheet.create({
 
   body: {
     gap: 12,
+    flexGrow: 1,
+    flexShrink: 1,
+    minHeight: 0,
   },
 });

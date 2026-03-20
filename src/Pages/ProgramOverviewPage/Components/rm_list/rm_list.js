@@ -1,120 +1,224 @@
-import { use, useState, useEffect } from "react";
-import { View, Text, FlatList, TouchableOpacity, ScrollView, RefreshControl } from "react-native";
-import { SQLiteDatabase, useSQLiteContext } from "expo-sqlite";
-import { useNavigation } from "@react-navigation/native";
+import { useState, useEffect } from "react";
+import {
+  View,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  useColorScheme,
+} from "react-native";
+import { useSQLiteContext } from "expo-sqlite";
+import { Colors } from "../../../../Resources/GlobalStyling/colors";
 
-import styles from "./Rm_listStyle"
-import { weightliftingService as weightliftingRepository } from "../../../../Services";
+import styles from "./Rm_listStyle";
+import { weightliftingService } from "../../../../Services";
 import EditEstimatedSet from "./Components/EditEstimatedSet/EditEstimatedSet";
 
-import { ThemedTitle, ThemedCard, ThemedView, ThemedText } 
-  from "../../../../Resources/ThemedComponents";
+import { ThemedText } from "../../../../Resources/ThemedComponents";
 
-const rm_list = ( {program_id, refreshKey, refresh} ) => {
-    const db = useSQLiteContext();
-    const navigation = useNavigation();
+function formatWeight(value) {
+  const parsedValue = Number(value);
 
-    const [loading, setLoading] = useState(false);
-    const [editEstimatedSet_visible, set_editEstimatedSet_visible] = useState(false);
+  if (!Number.isFinite(parsedValue)) {
+    return "--";
+  }
 
-    const [estimated_sets, setEstimated_sets] = useState([]);
-    const [selectedSet, setSelectedSet] = useState(null);
+  return Number.isInteger(parsedValue) ? `${parsedValue}` : parsedValue.toFixed(1);
+}
 
-    const loadEstimated_Sets = async () => {
-        try{
-            setLoading(true);
-            const estimated_sets =
-                await weightliftingRepository.getEstimatedSets(db, program_id);
-            setEstimated_sets(estimated_sets);
-        } catch(error) {
-            console.error("Error loading estimated sets", error);
-        } finally {
-            setLoading(false);
-        }
+const RmList = ({
+  program_id,
+  refreshKey,
+  refresh,
+  programExerciseBestMap = {},
+}) => {
+  const db = useSQLiteContext();
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme] ?? Colors.light;
+
+  const [loading, setLoading] = useState(false);
+  const [editEstimatedSet_visible, set_editEstimatedSet_visible] = useState(false);
+  const [estimated_sets, setEstimated_sets] = useState([]);
+  const [selectedSet, setSelectedSet] = useState(null);
+
+  const accentSoft = theme.primaryLight ?? "rgba(247, 116, 46, 0.18)";
+  const successSoft = theme.secondaryLight ?? "rgba(96, 218, 172, 0.18)";
+  const badgeBackground = theme.cardBackground ?? theme.uiBackground ?? "#1b1918";
+  const badgeTextColor = theme.text ?? "#d4d4d4";
+  const quietText = theme.quietText ?? theme.iconColor ?? "#9591a5";
+  const tileTextColor = theme.cardBackground ?? theme.textInverted ?? "#201e2b";
+  const emptyBackground = theme.uiBackground ?? "rgba(255, 255, 255, 0.04)";
+  const emptyBorder = theme.cardBorder ?? theme.iconColor ?? "#383838";
+
+  const loadEstimatedSets = async () => {
+    try {
+      setLoading(true);
+      const nextEstimatedSets = await weightliftingService.getEstimatedSets(
+        db,
+        program_id
+      );
+      setEstimated_sets(nextEstimatedSets);
+    } catch (error) {
+      console.error("Error loading estimated sets", error);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const handleSubmit = async (data) => {
-        try{
-            await weightliftingRepository.updateEstimatedSetWeight(db, {
-                estimatedSetId: data.id,
-                estimatedWeight: data.estimated_weight,
-            });
-            refresh();
-        } catch (error) {
-            console.error(error);
-        } finally { setLoading(false); }
+  const handleSubmit = async (data) => {
+    try {
+      await weightliftingService.updateEstimatedSetWeight(db, {
+        estimatedSetId: data.id,
+        estimatedWeight: data.estimated_weight,
+      });
+      refresh();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const handleDelete = async (data) => {
-        try{
-            await weightliftingRepository.deleteEstimatedSet(db, data.id);
-            refresh();
-        } catch (error) {
-            console.error(error);
-        } finally { setLoading(false); }
+  const handleDelete = async (data) => {
+    try {
+      await weightliftingService.deleteEstimatedSet(db, data.id);
+      refresh();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    useEffect(() => {
-         loadEstimated_Sets();
-    }, [program_id, refreshKey]);
+  useEffect(() => {
+    loadEstimatedSets();
+  }, [program_id, refreshKey]);
 
+  if (loading) {
     return (
-    <View>
-        <ScrollView
-            nestedScrollEnabled 
-            style={styles.wrapper} >
-        
-        {/* Header */}
-        {estimated_sets.length > 0 && (
-            <View style={styles.headerRow}>
-                <ThemedText style={[styles.exerciseHeader, styles.headerText]}>
-                    Exercise
-                </ThemedText>
-                
-                <ThemedText style={[styles.rmHeader, styles.headerText]}>
-                    1 Rep Max (in kg)
-                </ThemedText>
-            </View>
-        )}
-
-        {/* Empty state */}
-        {!loading && estimated_sets.length === 0 && (
-            <ThemedText>No 1 RM have been set.</ThemedText>
-        )}
-
-        {/* List items */}
-        {estimated_sets.map(item => (
-            <TouchableOpacity
-                key={item.estimated_set_id}
-                style={styles.container}
-                onPress={() => {
-                    setSelectedSet(item);
-                    set_editEstimatedSet_visible(true);
-                }}>
-                <View style={styles.item_container}>
-                    <View style={styles.exercise_name}>
-                        <ThemedText>{item.exercise_name}</ThemedText>
-                    </View>
-
-                    <View style={styles.estimated_weight}>
-                        <ThemedText>{item.estimated_weight} kg</ThemedText>
-                    </View>
-                </View>
-            </TouchableOpacity>
-        ))}
-        </ScrollView>
-
-        <EditEstimatedSet
-            visible={editEstimatedSet_visible}
-            estimatedSet={selectedSet}
-            onClose={() => set_editEstimatedSet_visible(false)}
-            onSubmit={handleSubmit}
-            onDelete={handleDelete}
-            refreshKey={refreshKey}
-        />
-    </View>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" />
+      </View>
     );
+  }
 
+  return (
+    <View style={styles.container}>
+      <ScrollView
+        nestedScrollEnabled
+        style={styles.wrapper}
+        contentContainerStyle={styles.list}
+      >
+        {estimated_sets.length > 0 && (
+          <View style={styles.metaRow}>
+            <ThemedText size={12} setColor={quietText}>
+              {estimated_sets.length} estimated lifts
+            </ThemedText>
+            <ThemedText size={11} style={styles.metaHint} setColor={quietText}>
+              Tap a row to edit
+            </ThemedText>
+          </View>
+        )}
+
+        {estimated_sets.length === 0 && (
+          <View
+            style={[
+              styles.emptyState,
+              {
+                backgroundColor: emptyBackground,
+                borderColor: emptyBorder,
+              },
+            ]}
+          >
+            <ThemedText style={styles.emptyText}>
+              No 1 RM have been set.
+            </ThemedText>
+            <ThemedText
+              size={12}
+              style={styles.emptyHint}
+              setColor={quietText}
+            >
+              Add your first estimate below to start using weight targets.
+            </ThemedText>
+          </View>
+        )}
+
+        {estimated_sets.map((item, index) => {
+          const tileBackground = index % 2 === 0 ? accentSoft : successSoft;
+
+          return (
+            <TouchableOpacity
+              key={item.estimated_set_id}
+              style={[
+                styles.estimateTile,
+                { backgroundColor: tileBackground },
+              ]}
+              activeOpacity={0.88}
+              onPress={() => {
+                setSelectedSet(item);
+                set_editEstimatedSet_visible(true);
+              }}
+            >
+              <View style={styles.estimateContent}>
+                <ThemedText
+                  size={10}
+                  style={styles.estimateEyebrow}
+                  setColor={quietText}
+                >
+                  Exercise
+                </ThemedText>
+                <ThemedText
+                  size={18}
+                  style={styles.estimateExerciseName}
+                  setColor={tileTextColor}
+                >
+                  {item.exercise_name}
+                </ThemedText>
+                <ThemedText
+                  size={11}
+                  style={styles.estimateHint}
+                  setColor={quietText}
+                >
+                  Estimated one rep max
+                </ThemedText>
+              </View>
+
+              <View
+                style={[
+                  styles.weightBadge,
+                  { backgroundColor: badgeBackground },
+                ]}
+              >
+                <ThemedText
+                  size={24}
+                  style={styles.weightValue}
+                  setColor={badgeTextColor}
+                >
+                  {formatWeight(item.estimated_weight)}
+                </ThemedText>
+                <ThemedText
+                  size={10}
+                  style={styles.weightLabel}
+                  setColor={badgeTextColor}
+                >
+                  kg
+                </ThemedText>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      <EditEstimatedSet
+        visible={editEstimatedSet_visible}
+        estimatedSet={selectedSet}
+        programBest={selectedSet ? programExerciseBestMap[selectedSet.exercise_name] : null}
+        onClose={() => set_editEstimatedSet_visible(false)}
+        onSubmit={handleSubmit}
+        onDelete={handleDelete}
+        refreshKey={refreshKey}
+      />
+    </View>
+  );
 };
 
-export default rm_list;
+export default RmList;

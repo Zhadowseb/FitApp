@@ -42,6 +42,15 @@ export const weightliftingSchemaSql = `
       exercise_name TEXT NOT NULL,
       estimated_weight INTEGER NOT NULL DEFAULT 0
   );
+
+  CREATE TABLE IF NOT EXISTS RMWeightProgression (
+      rm_weight_progression_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      mesocycle_id INTEGER NOT NULL,
+      exercise_name TEXT NOT NULL,
+      progression_weight REAL NOT NULL DEFAULT 0,
+
+      UNIQUE(mesocycle_id, exercise_name)
+  );
 `;
 
 export async function initializeWeightliftingData(db) {

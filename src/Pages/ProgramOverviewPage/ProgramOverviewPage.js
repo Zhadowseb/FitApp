@@ -199,6 +199,19 @@ const ProgramOverviewPage = ( {route} ) => {
     const programExerciseBestMap = Object.fromEntries(
         programExerciseBests.map((best) => [best.exercise_name, best])
     );
+    const accentSoft = theme.primaryLight ?? "rgba(247, 116, 46, 0.18)";
+    const successSoft = theme.secondaryLight ?? "rgba(96, 218, 172, 0.18)";
+    const emptyTileBackground = theme.uiBackground ?? "rgba(255, 255, 255, 0.04)";
+    const tileTextColor = theme.cardBackground ?? theme.textInverted ?? theme.text;
+    const badgeBackground = theme.cardBackground ?? "#1b1918";
+    const badgeTextColor = theme.text ?? "#d4d4d4";
+    const emptyBorder = theme.cardBorder ?? theme.iconColor ?? "#383838";
+    const estimatedBadgeBackground = theme.primary ?? accentSoft;
+    const estimatedBadgeText = theme.cardBackground ?? theme.textInverted ?? "#201e2b";
+    const detailPanelBackground =
+        colorScheme === "dark"
+            ? "rgba(14, 15, 18, 0.18)"
+            : "rgba(255, 255, 255, 0.65)";
     const filterDividerColor =
         colorScheme === "dark"
             ? "rgba(255, 255, 255, 0.08)"
@@ -252,61 +265,126 @@ const ProgramOverviewPage = ( {route} ) => {
                         height={24} />
                 </TouchableOpacity>
             </View>
-            <ThemedCard style={styles.pr_container}>
+            {programExercises.length === 0 && (
+                <ThemedText>
+                    No exercises in this program yet.
+                </ThemedText>
+            )}
+
+            {programExercises.length > 0 && selectedProgramBestExercises.length === 0 && (
+                <ThemedText>
+                    No exercises selected.
+                </ThemedText>
+            )}
+
+            {selectedProgramBestExercises.length > 0 && (
                 <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
                     style={styles.pr_scroll}
-                    contentContainerStyle={styles.pr_body}
-                    nestedScrollEnabled>
-                    {selectedProgramBestExercises.length > 0 && (
-                        <View style={styles.pr_header}>
-                            <ThemedText
-                                size={10}
-                                style={{color: theme.quietText}}>
-                                1 Rep Max
-                            </ThemedText>
-                        </View>
-                    )}
-
-                    {programExercises.length === 0 && (
-                        <ThemedText>
-                            No exercises in this program yet.
-                        </ThemedText>
-                    )}
-
-                    {programExercises.length > 0 && selectedProgramBestExercises.length === 0 && (
-                        <ThemedText>
-                            No exercises selected.
-                        </ThemedText>
-                    )}
-
-                    {selectedProgramBestExercises.map((exerciseName) => {
+                    contentContainerStyle={styles.pr_body}>
+                    {selectedProgramBestExercises.map((exerciseName, index) => {
                         const programBest = programExerciseBestMap[exerciseName];
+                        const hasCompletedSet = Boolean(programBest);
+                        const cardBackground = hasCompletedSet
+                            ? index % 2 === 0
+                                ? accentSoft
+                                : successSoft
+                            : emptyTileBackground;
 
                         return (
-                            <View
+                            <ThemedCard
                                 key={exerciseName}
-                                style={styles.pr_exercise_row}>
-                                <View style={styles.pr_exercise_details}>
-                                    <ThemedText style={styles.pr_exercise_name}>
-                                        {exerciseName}
-                                    </ThemedText>
+                                style={[
+                                    styles.pr_feature_card,
+                                    {
+                                        backgroundColor: cardBackground,
+                                        borderColor: hasCompletedSet ? "transparent" : emptyBorder,
+                                    },
+                                ]}>
+                                <View style={styles.pr_feature_header}>
+                                    <View
+                                        style={[
+                                            styles.pr_feature_rank,
+                                            { backgroundColor: badgeBackground },
+                                        ]}>
+                                        <ThemedText
+                                            size={10}
+                                            style={styles.pr_feature_rank_text}
+                                            setColor={badgeTextColor}>
+                                            {programBest?.performedDate
+                                                ? `achieved on ${programBest.performedDate}`
+                                                : "No PR"}
+                                        </ThemedText>
+                                    </View>
+
                                     <ThemedText
-                                        size={12}
-                                        setColor={!programBest ? theme.quietText : undefined}>
-                                        {programBest?.setDisplayValue ?? "No completed sets."}
+                                        size={20}
+                                        style={styles.pr_feature_name}
+                                        numberOfLines={2}
+                                        setColor={hasCompletedSet ? tileTextColor : undefined}>
+                                        {exerciseName}
                                     </ThemedText>
                                 </View>
 
-                                <ThemedText
-                                    size={12}
-                                    style={styles.pr_exercise_value}>
-                                    {programBest?.rmDisplayValue ?? ""}
-                                </ThemedText>
-                            </View>
+                                <View style={styles.pr_feature_body}>
+                                    <View
+                                        style={[
+                                            styles.pr_feature_set_panel,
+                                            { backgroundColor: detailPanelBackground },
+                                        ]}>
+                                        <ThemedText
+                                            size={10}
+                                            style={styles.pr_feature_set_label}
+                                            setColor={hasCompletedSet ? tileTextColor : theme.quietText}>
+                                            Best set
+                                        </ThemedText>
+                                        <ThemedText
+                                            size={12}
+                                            style={
+                                                hasCompletedSet
+                                                    ? styles.pr_feature_set_value
+                                                    : styles.pr_feature_set_empty
+                                            }
+                                            setColor={hasCompletedSet ? tileTextColor : theme.quietText}>
+                                            {programBest?.setDisplayValue ?? "No completed sets."}
+                                        </ThemedText>
+                                    </View>
+
+                                    <View style={styles.pr_feature_footer}>
+                                        <ThemedText
+                                            size={30}
+                                            style={styles.pr_feature_rm_value}
+                                            setColor={hasCompletedSet ? tileTextColor : theme.quietText}>
+                                            {programBest?.rmDisplayValue ?? "--"}
+                                        </ThemedText>
+                                        {programBest?.isEstimated && (
+                                            <View
+                                                style={[
+                                                    styles.pr_feature_estimated_badge,
+                                                    { backgroundColor: estimatedBadgeBackground },
+                                                ]}>
+                                                <ThemedText
+                                                    size={10}
+                                                    style={styles.pr_feature_estimated_text}
+                                                    setColor={estimatedBadgeText}>
+                                                    {programBest.estimatedLabel}
+                                                </ThemedText>
+                                            </View>
+                                        )}
+                                        <ThemedText
+                                            size={10}
+                                            style={styles.pr_feature_rm_label}
+                                            setColor={hasCompletedSet ? tileTextColor : theme.quietText}>
+                                            1 Rep Max
+                                        </ThemedText>
+                                    </View>
+                                </View>
+                            </ThemedCard>
                         );
                     })}
                 </ScrollView>
-            </ThemedCard>
+            )}
 
             {/* 1 rm estimates. */}
             <ThemedTitle type="h2"> Estimated 1 RM's </ThemedTitle>
@@ -316,7 +394,8 @@ const ProgramOverviewPage = ( {route} ) => {
                     <Rm_List
                         program_id = {program_id}
                         refreshKey = {refreshKey}
-                        refresh = {refresh} />
+                        refresh = {refresh}
+                        programExerciseBestMap={programExerciseBestMap} />
                 </View>
 
                 <View style={styles.rm_footer}>
@@ -327,7 +406,8 @@ const ProgramOverviewPage = ( {route} ) => {
                     <AddEstimatedSet 
                         visible={addEstimatedSet_visible}
                         onClose={() => set_AddEstimatedSet_visible(false)}
-                        onSubmit={handleAdd}/>
+                        onSubmit={handleAdd}
+                        programExerciseBestMap={programExerciseBestMap}/>
                 </View>
             </ThemedCard>
 

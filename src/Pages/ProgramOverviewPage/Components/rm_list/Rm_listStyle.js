@@ -7,37 +7,95 @@ export default StyleSheet.create({
 
   wrapper: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingTop: 14,
+    paddingBottom: 8,
   },
 
-  headerRow: {
+  metaRow: {
     flexDirection: "row",
-    paddingVertical: 4,
-    borderBottomWidth: 1,
-    borderColor: "#ccc",
-    marginBottom: 4,
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 14,
   },
 
-  exerciseHeader: {
-    flex: 1,
-  },
-  rmHeader: {
-    flex: 1,
+  metaHint: {
+    textAlign: "right",
   },
 
-  item_container: {
-    flex: 1,
+  list: {
+    paddingBottom: 8,
+  },
+
+  estimateTile: {
     flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 22,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    marginBottom: 10,
   },
-  
-  exercise_name: {
+
+  estimateContent: {
     flex: 1,
+    paddingRight: 12,
   },
 
-  estimated_weight: {
-    flex: 1,
+  estimateEyebrow: {
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    marginBottom: 6,
   },
 
+  estimateExerciseName: {
+    fontWeight: "700",
+    marginBottom: 6,
+  },
 
+  estimateHint: {
+    lineHeight: 16,
+  },
 
+  weightBadge: {
+    minWidth: 82,
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  weightValue: {
+    fontWeight: "700",
+    textAlign: "center",
+  },
+
+  weightLabel: {
+    marginTop: 2,
+    textAlign: "center",
+  },
+
+  emptyState: {
+    borderRadius: 22,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 18,
+    alignItems: "center",
+  },
+
+  emptyText: {
+    textAlign: "center",
+    marginBottom: 6,
+  },
+
+  emptyHint: {
+    textAlign: "center",
+    lineHeight: 18,
+  },
+
+  loadingContainer: {
+    paddingTop: 32,
+    paddingBottom: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

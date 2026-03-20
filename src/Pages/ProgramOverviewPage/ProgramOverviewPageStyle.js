@@ -37,34 +37,82 @@ export default StyleSheet.create({
         minHeight: 50,
         marginBottom: 12,
     },
-    pr_container: {
-        padding: 0,
-        marginBottom: 12,
-    },
     pr_scroll: {
         marginBottom: 12,
     },
     pr_body: {
         paddingTop: 8,
+        paddingLeft: 2,
         paddingRight: 16,
         flexGrow: 1,
     },
-    pr_row: {
-        flexDirection: "row",
-        alignItems: "flex-start",
+    pr_feature_card: {
+        width: 228,
+        minHeight: 176,
+        padding: 0,
+        overflow: "hidden",
+        borderWidth: 1.5,
+        marginRight: 12,
     },
-    pr_column: {
-        width: 136,
-        marginRight: 10,
+    pr_feature_header: {
+        paddingHorizontal: 16,
+        paddingTop: 16,
+        paddingBottom: 10,
     },
-    pr_exercise_tile: {
-        width: "100%",
-        minHeight: 106,
-        borderRadius: 18,
+    pr_feature_rank: {
+        alignSelf: "flex-start",
+        borderRadius: 999,
         paddingHorizontal: 10,
-        paddingVertical: 10,
+        paddingVertical: 6,
         marginBottom: 10,
-        justifyContent: "space-between",
+    },
+    pr_feature_rank_text: {
+        fontWeight: "700",
+        letterSpacing: 0.8,
+    },
+    pr_feature_name: {
+        fontWeight: "700",
+        lineHeight: 24,
+    },
+    pr_feature_body: {
+        flex: 1,
+        paddingHorizontal: 16,
+        justifyContent: "flex-start",
+    },
+    pr_feature_set_panel: {
+        borderRadius: 18,
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+    },
+    pr_feature_set_label: {
+        letterSpacing: 0.8,
+        textTransform: "uppercase",
+        marginBottom: 6,
+    },
+    pr_feature_set_value: {
+        lineHeight: 18,
+    },
+    pr_feature_set_empty: {
+        lineHeight: 18,
+    },
+    pr_feature_footer: {
+        marginTop: 6,
+    },
+    pr_feature_rm_value: {
+        fontWeight: "700",
+    },
+    pr_feature_estimated_badge: {
+        alignSelf: "flex-start",
+        borderRadius: 12,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        marginTop: 4,
+    },
+    pr_feature_estimated_text: {
+        fontWeight: "700",
+    },
+    pr_feature_rm_label: {
+        marginTop: 4,
     },
     pr_exercise_tile_name: {
         fontWeight: "700",

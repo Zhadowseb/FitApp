@@ -186,7 +186,8 @@ export async function getCompletedStrengthSetsByProgram(db, programId) {
     `SELECT
         e.exercise_name,
         s.weight,
-        s.reps
+        s.reps,
+        COALESCE(s.date, d.date) AS performed_date
      FROM Sets s
      JOIN Exercise e ON e.exercise_id = s.exercise_id
      JOIN Workout w ON w.workout_id = e.workout_id

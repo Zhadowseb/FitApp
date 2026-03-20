@@ -39,12 +39,16 @@ function formatProgramBestDisplay({ weight, reps, estimatedOneRepMax }) {
     return {
       setDisplayValue: setText,
       rmDisplayValue: `${formatDisplayNumber(weight)} kg`,
+      isEstimated: false,
+      estimatedLabel: null,
     };
   }
 
   return {
     setDisplayValue: setText,
     rmDisplayValue: `${formatDisplayNumber(Math.round(estimatedOneRepMax))} kg`,
+    isEstimated: true,
+    estimatedLabel: "estimated",
   };
 }
 
@@ -233,6 +237,7 @@ export async function getProgramExerciseBests(db, programId) {
         exercise_name: set.exercise_name,
         weight,
         reps,
+        performedDate: set.performed_date ?? null,
         estimatedOneRepMax,
         ...formatProgramBestDisplay({
           weight,

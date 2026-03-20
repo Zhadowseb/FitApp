@@ -34,16 +34,6 @@ import { ThemedTitle,
 import Delete from '../../Resources/Icons/UI-icons/Delete';
 import { formatDate, parseCustomDate } from '../../Utils/dateUtils';
 
-const chunkArray = (items, size) => {
-    const chunks = [];
-
-    for (let index = 0; index < items.length; index += size) {
-        chunks.push(items.slice(index, index + size));
-    }
-
-    return chunks;
-};
-
 const ProgramOverviewPage = ( {route} ) => {
     const db = useSQLiteContext();
     const navigation = useNavigation();
@@ -206,7 +196,6 @@ const ProgramOverviewPage = ( {route} ) => {
     const selectedProgramBestExercises = programExercises.filter(
         (exerciseName) => visibleProgramBestExercises[exerciseName] ?? true
     );
-    const selectedProgramBestExerciseColumns = chunkArray(selectedProgramBestExercises, 3);
     const programExerciseBestMap = Object.fromEntries(
         programExerciseBests.map((best) => [best.exercise_name, best])
     );
@@ -214,6 +203,15 @@ const ProgramOverviewPage = ( {route} ) => {
     const successSoft = theme.secondaryLight ?? "rgba(96, 218, 172, 0.18)";
     const emptyTileBackground = theme.uiBackground ?? "rgba(255, 255, 255, 0.04)";
     const tileTextColor = theme.cardBackground ?? theme.textInverted ?? theme.text;
+    const badgeBackground = theme.cardBackground ?? "#1b1918";
+    const badgeTextColor = theme.text ?? "#d4d4d4";
+    const emptyBorder = theme.cardBorder ?? theme.iconColor ?? "#383838";
+    const estimatedBadgeBackground = theme.primary ?? accentSoft;
+    const estimatedBadgeText = theme.cardBackground ?? theme.textInverted ?? "#201e2b";
+    const detailPanelBackground =
+        colorScheme === "dark"
+            ? "rgba(14, 15, 18, 0.18)"
+            : "rgba(255, 255, 255, 0.65)";
     const filterDividerColor =
         colorScheme === "dark"
             ? "rgba(255, 255, 255, 0.08)"
@@ -285,66 +283,106 @@ const ProgramOverviewPage = ( {route} ) => {
                     showsHorizontalScrollIndicator={false}
                     style={styles.pr_scroll}
                     contentContainerStyle={styles.pr_body}>
-                    <View style={styles.pr_row}>
-                        {selectedProgramBestExerciseColumns.map((column, columnIndex) => (
-                            <View
-                                key={`pr-column-${columnIndex}`}
-                                style={styles.pr_column}>
-                                {column.map((exerciseName, rowIndex) => {
-                                    const programBest = programExerciseBestMap[exerciseName];
-                                    const hasCompletedSet = Boolean(programBest);
-                                    const tileBackground = hasCompletedSet
-                                        ? (columnIndex + rowIndex) % 2 === 0
-                                            ? accentSoft
-                                            : successSoft
-                                        : emptyTileBackground;
+                    {selectedProgramBestExercises.map((exerciseName, index) => {
+                        const programBest = programExerciseBestMap[exerciseName];
+                        const hasCompletedSet = Boolean(programBest);
+                        const cardBackground = hasCompletedSet
+                            ? index % 2 === 0
+                                ? accentSoft
+                                : successSoft
+                            : emptyTileBackground;
 
-                                    return (
-                                        <View
-                                            key={exerciseName}
-                                            style={[
-                                                styles.pr_exercise_tile,
-                                                { backgroundColor: tileBackground },
-                                            ]}>
-                                            <View>
-                                                <ThemedText
-                                                    style={styles.pr_exercise_tile_name}
-                                                    setColor={hasCompletedSet ? tileTextColor : undefined}>
-                                                    {exerciseName}
-                                                </ThemedText>
-
-                                                <ThemedText
-                                                    size={12}
-                                                    style={
-                                                        hasCompletedSet
-                                                            ? styles.pr_exercise_tile_set
-                                                            : styles.pr_exercise_tile_empty
-                                                    }
-                                                    setColor={hasCompletedSet ? tileTextColor : theme.quietText}>
-                                                    {programBest?.setDisplayValue ?? "No completed sets."}
-                                                </ThemedText>
-                                            </View>
-
-                                    <View>
+                        return (
+                            <ThemedCard
+                                key={exerciseName}
+                                style={[
+                                    styles.pr_feature_card,
+                                    {
+                                        backgroundColor: cardBackground,
+                                        borderColor: hasCompletedSet ? "transparent" : emptyBorder,
+                                    },
+                                ]}>
+                                <View style={styles.pr_feature_header}>
+                                    <View
+                                        style={[
+                                            styles.pr_feature_rank,
+                                            { backgroundColor: badgeBackground },
+                                        ]}>
                                         <ThemedText
-                                            size={18}
-                                            style={styles.pr_exercise_tile_rm_value}
+                                            size={10}
+                                            style={styles.pr_feature_rank_text}
+                                            setColor={badgeTextColor}>
+                                            {programBest?.performedDate
+                                                ? `achieved on ${programBest.performedDate}`
+                                                : "No PR"}
+                                        </ThemedText>
+                                    </View>
+
+                                    <ThemedText
+                                        size={20}
+                                        style={styles.pr_feature_name}
+                                        numberOfLines={2}
+                                        setColor={hasCompletedSet ? tileTextColor : undefined}>
+                                        {exerciseName}
+                                    </ThemedText>
+                                </View>
+
+                                <View style={styles.pr_feature_body}>
+                                    <View
+                                        style={[
+                                            styles.pr_feature_set_panel,
+                                            { backgroundColor: detailPanelBackground },
+                                        ]}>
+                                        <ThemedText
+                                            size={10}
+                                            style={styles.pr_feature_set_label}
+                                            setColor={hasCompletedSet ? tileTextColor : theme.quietText}>
+                                            Best set
+                                        </ThemedText>
+                                        <ThemedText
+                                            size={12}
+                                            style={
+                                                hasCompletedSet
+                                                    ? styles.pr_feature_set_value
+                                                    : styles.pr_feature_set_empty
+                                            }
+                                            setColor={hasCompletedSet ? tileTextColor : theme.quietText}>
+                                            {programBest?.setDisplayValue ?? "No completed sets."}
+                                        </ThemedText>
+                                    </View>
+
+                                    <View style={styles.pr_feature_footer}>
+                                        <ThemedText
+                                            size={30}
+                                            style={styles.pr_feature_rm_value}
                                             setColor={hasCompletedSet ? tileTextColor : theme.quietText}>
                                             {programBest?.rmDisplayValue ?? "--"}
                                         </ThemedText>
+                                        {programBest?.isEstimated && (
+                                            <View
+                                                style={[
+                                                    styles.pr_feature_estimated_badge,
+                                                    { backgroundColor: estimatedBadgeBackground },
+                                                ]}>
+                                                <ThemedText
+                                                    size={10}
+                                                    style={styles.pr_feature_estimated_text}
+                                                    setColor={estimatedBadgeText}>
+                                                    {programBest.estimatedLabel}
+                                                </ThemedText>
+                                            </View>
+                                        )}
                                         <ThemedText
                                             size={10}
-                                            style={styles.pr_exercise_tile_rm_label}
+                                            style={styles.pr_feature_rm_label}
                                             setColor={hasCompletedSet ? tileTextColor : theme.quietText}>
                                             1 Rep Max
                                         </ThemedText>
                                     </View>
                                 </View>
-                            );
-                                })}
-                            </View>
-                        ))}
-                    </View>
+                            </ThemedCard>
+                        );
+                    })}
                 </ScrollView>
             )}
 

@@ -13,6 +13,10 @@ export default StyleSheet.create({
     minHeight: 0,
   },
 
+  shortcut_card_empty: {
+    minHeight: 0,
+  },
+
   touchable: {
     paddingHorizontal: 10,
     paddingVertical: 0,
@@ -23,6 +27,11 @@ export default StyleSheet.create({
   },
 
   touchable_complete: {
+    paddingTop: 10,
+    paddingBottom: 10,
+  },
+
+  touchable_empty: {
     paddingTop: 10,
     paddingBottom: 10,
   },
@@ -129,6 +138,12 @@ export default StyleSheet.create({
   },
 
   hero_title_complete: {
+    width: "100%",
+    marginBottom: 0,
+    textAlign: "center",
+  },
+
+  hero_title_empty: {
     width: "100%",
     marginBottom: 0,
     textAlign: "center",

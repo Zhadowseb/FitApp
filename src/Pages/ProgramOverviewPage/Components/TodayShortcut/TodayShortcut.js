@@ -84,6 +84,7 @@ const TodayShortcut = ({ program_id }) => {
   const isCompletedMultiWorkout = isMultiWorkout && allWorkoutsDone;
   const isCompletedSingleWorkout =
     workoutCount === 1 && Number(workouts[0]?.done) === 1;
+  const isRestDay = Boolean(day) && !hasWorkouts;
   const sectionDateLabel = day?.Weekday ? `${day.Weekday} - ${date}` : date;
   const remainingWorkoutCount = Math.max(workoutCount - completedWorkoutCount, 0);
 
@@ -110,8 +111,8 @@ const TodayShortcut = ({ program_id }) => {
     footerCopy = "Tap anywhere on the card to choose a workout.";
   } else if (day) {
     headline = "Rest day";
-    description = "There are no workouts scheduled for today.";
-    footerCopy = "Nothing to open today.";
+    description = null;
+    footerCopy = null;
   }
 
   const cardBackground = !hasWorkouts
@@ -147,11 +148,10 @@ const TodayShortcut = ({ program_id }) => {
     ? theme.secondary ?? "#60daac"
     : theme.primary ?? "#f7742e";
   const ctaTextColor = theme.cardBackground ?? theme.textInverted ?? "#1b1918";
-  const dateBadgeBackground = theme.cardBackground ?? "#1b1918";
+  const dateBadgeBackground =
+    theme.primaryLight ?? theme.primary ?? "rgba(247, 116, 46, 0.18)";
   const dateBadgeTextColor =
-    colorScheme === "dark"
-      ? theme.text ?? "#d4d4d4"
-      : "#f3f1f7";
+    theme.cardBackground ?? theme.textInverted ?? theme.title ?? "#201e2b";
   const previewScrollThreshold = 4;
   const visibleWorkoutPreviews = workouts.map((workout) => ({
     ...workout,
@@ -193,6 +193,7 @@ const TodayShortcut = ({ program_id }) => {
         style={[
           styles.shortcut_card,
           isCompletedSingleWorkout && styles.shortcut_card_complete,
+          isRestDay && styles.shortcut_card_empty,
           {
             backgroundColor: cardBackground,
             borderColor: cardBorder,
@@ -204,6 +205,7 @@ const TodayShortcut = ({ program_id }) => {
             styles.touchable,
             isMultiWorkout && styles.touchable_multi,
             isCompletedSingleWorkout && styles.touchable_complete,
+            isRestDay && styles.touchable_empty,
           ]}
         >
           {!useCompactSingleWorkoutHeader && (
@@ -315,7 +317,14 @@ const TodayShortcut = ({ program_id }) => {
                   ]}
                 >
                   {headline && (
-                    <ThemedTitle type="h3" style={[styles.hero_title, { color: headlineColor }]}>
+                    <ThemedTitle
+                      type="h3"
+                      style={[
+                        styles.hero_title,
+                        isRestDay && styles.hero_title_empty,
+                        { color: headlineColor },
+                      ]}
+                    >
                       {headline}
                     </ThemedTitle>
                   )}

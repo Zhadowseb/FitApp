@@ -18,13 +18,15 @@ export const Colors = {
         textInverted: "#3d3c3c",
         quietText: "rgb(81, 76, 73)",
         title: "#fff",
+
         background: "#0E0F12",
         cardBackground: "#1b1918ff",
         cardBorder: "#383838ff",
         navBackground: "#201e2b",
+        uiBackground: "#2f2b3d",
+
         iconColor: "#9591a5",
         iconColorFocused: "#fff",
-        uiBackground: "#2f2b3d",
     },
 
     light: {

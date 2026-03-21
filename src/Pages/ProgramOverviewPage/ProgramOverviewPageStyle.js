@@ -154,12 +154,6 @@ export default StyleSheet.create({
         padding: 16,
     },
 
-    //Day containers
-    day_touchable: {
-        borderColor: "#000000ff",
-        borderWidth: 1,
-    },
-
     //RM containers
     rm_body: {
         flex: 300,

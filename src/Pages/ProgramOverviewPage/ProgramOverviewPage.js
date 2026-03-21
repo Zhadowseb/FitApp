@@ -284,13 +284,13 @@ const ProgramOverviewPage = ( {route} ) => {
 
         <ScrollView 
             style={styles.container}
+            nestedScrollEnabled
             contentContainerStyle={{ paddingBottom: insets.bottom + 15}}>
 
             {/* Workout shortcut */}
-            <View style={styles.day_body}>    
+            <View>    
                 <TodayShortcut
-                    program_id = {program_id}
-                    style = {styles.day_touchable}/>
+                    program_id = {program_id}/>
             </View>
 
             {/* Mesocycle list */}

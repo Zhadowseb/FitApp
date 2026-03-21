@@ -93,7 +93,7 @@ const TodayShortcut = ({ program_id }) => {
   let footerCopy = null;
 
   if (hasWorkouts && allWorkoutsDone) {
-    headline = isCompletedSingleWorkout ? "Training complete" : "Today's training is done";
+    headline = isCompletedSingleWorkout ? "Workout complete" : "Today's training is done";
     description =
       workoutCount === 1
         ? null

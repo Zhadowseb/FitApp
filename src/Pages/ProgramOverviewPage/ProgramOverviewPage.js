@@ -46,7 +46,7 @@ const ProgramOverviewPage = ( {route} ) => {
 
     const [addEstimatedSet_visible, set_AddEstimatedSet_visible] = useState(false);
     const [refreshKey, set_refreshKey] = useState(0);
-    const [status, set_status] = useState("NOT_STARTET");
+    const [status, set_status] = useState("NOT_STARTED");
     const [program_name, set_program_name] = useState("");
     const [end_date, set_end_date] = useState("");
     const [programExercises, set_programExercises] = useState([]);
@@ -216,6 +216,56 @@ const ProgramOverviewPage = ( {route} ) => {
         colorScheme === "dark"
             ? "rgba(255, 255, 255, 0.08)"
             : "rgba(0, 0, 0, 0.08)";
+    const settingsLabelColor =
+        theme.quietText ??
+        (colorScheme === "dark"
+            ? "rgba(212, 212, 212, 0.72)"
+            : "rgba(32, 30, 43, 0.66)");
+    const settingsOutlineColor =
+        theme.cardBorder ??
+        (colorScheme === "dark"
+            ? "rgba(255, 255, 255, 0.08)"
+            : "rgba(0, 0, 0, 0.08)");
+    const settingsPanelBackground =
+        colorScheme === "dark"
+            ? "rgba(255, 255, 255, 0.04)"
+            : "rgba(255, 255, 255, 0.68)";
+    const settingsEditorBackground =
+        colorScheme === "dark"
+            ? "rgba(14, 15, 18, 0.56)"
+            : "rgba(255, 255, 255, 0.84)";
+    const settingsSelectedTextColor =
+        colorScheme === "dark"
+            ? theme.cardBackground ?? theme.textInverted ?? "#1b1918"
+            : theme.title ?? "#201e2b";
+    const statusOptions = [
+        {
+            value: "NOT_STARTED",
+            label: "Not started",
+            description: "Keep the program staged until you are ready to begin.",
+            color: theme.NOT_STARTED ?? "#9E9E9E",
+            surface:
+                colorScheme === "dark"
+                    ? "rgba(158, 158, 158, 0.20)"
+                    : "rgba(158, 158, 158, 0.14)",
+        },
+        {
+            value: "ACTIVE",
+            label: "Active",
+            description: "Use this while the program is active and sessions are in progress.",
+            color: theme.ACTIVE ?? theme.primary ?? "#f7742e",
+            surface: accentSoft,
+        },
+        {
+            value: "COMPLETE",
+            label: "Complete",
+            description: "Mark the cycle as finished when the final week is done.",
+            color: theme.COMPLETE ?? theme.secondary ?? "#60daac",
+            surface: successSoft,
+        },
+    ];
+    const currentStatusOption =
+        statusOptions.find((option) => option.value === status) ?? statusOptions[0];
 
   return (
     <>
@@ -413,84 +463,116 @@ const ProgramOverviewPage = ( {route} ) => {
 
             {/* Program setting and status */}
             <ThemedTitle type="h2"> Settings </ThemedTitle>
-            <ThemedCard>
-
-                {/* Change status of the program */}
-                <View style={{alignItems: "center", paddingBottom: 10}}>
-                    <ThemedText>
-                        Program status
-                    </ThemedText>
-                </View>
-
-                <View style={{flexDirection: "row", flex: 1}}>
-                    
-                    <View style={{flex: 1,
-                        opacity: status === "COMPLETE" ? 1 : 0.2}}>
-                        <ThemedButton
-                            title="COMPLETE"
-                            style={{backgroundColor: theme.COMPLETE}}
-                            width={80}
-                            textSize={8} 
-                            onPress={ () => {
-                                changeStatus("COMPLETE") }}/>
+            <ThemedCard style={styles.settings_card}>
+                <View style={styles.settings_section}>
+                    <View style={styles.settings_section_header}>
+                        <ThemedText
+                            size={11}
+                            style={[
+                                styles.settings_section_eyebrow,
+                                { color: settingsLabelColor },
+                            ]}>
+                            Lifecycle
+                        </ThemedText>
+                        <ThemedText
+                            size={12}
+                            style={{ color: settingsLabelColor }}>
+                            Current: {currentStatusOption.label}
+                        </ThemedText>
                     </View>
 
-                    <View style={{flex: 1,
-                        opacity: status === "ACTIVE" ? 1 : 0.2}}>
-                        <ThemedButton
-                            title="ACTIVE"
-                            style={{backgroundColor: theme.ACTIVE}}
-                            width={80}
-                            textSize={8}
-                            onPress={ () => {
-                                changeStatus("ACTIVE") }} />
-                    </View>
+                    {statusOptions.map((option) => {
+                        const isSelected = status === option.value;
 
+                        return (
+                            <TouchableOpacity
+                                key={option.value}
+                                style={[
+                                    styles.settings_status_tile,
+                                    {
+                                        backgroundColor: isSelected
+                                            ? option.surface
+                                            : settingsPanelBackground,
+                                        borderColor: isSelected
+                                            ? option.color
+                                            : settingsOutlineColor,
+                                    },
+                                ]}
+                                onPress={() => changeStatus(option.value)}>
+                                <View
+                                    style={[
+                                        styles.settings_status_marker,
+                                        { backgroundColor: option.color },
+                                    ]}
+                                />
 
-                    <View style={{flex: 1, 
-                        opacity: status === "NOT_STARTED" ? 1 : 0.2}}>
-                        <ThemedButton
-                            title="NOT STARTED"
-                            style={{backgroundColor: theme.NOT_STARTED}}
-                            width={80}
-                            textSize={8} 
-                            onPress={ () => {
-                                changeStatus("NOT_STARTED") }}/>
-                    </View>
+                                <View style={styles.settings_status_content}>
+                                    <ThemedText
+                                        size={16}
+                                        style={styles.settings_status_title}
+                                        setColor={
+                                            isSelected
+                                                ? settingsSelectedTextColor
+                                                : theme.title
+                                        }>
+                                        {option.label}
+                                    </ThemedText>
+
+                                    <ThemedText
+                                        size={12}
+                                        style={styles.settings_status_description}
+                                        setColor={
+                                            isSelected
+                                                ? settingsSelectedTextColor
+                                                : settingsLabelColor
+                                        }>
+                                        {option.description}
+                                    </ThemedText>
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    })}
                 </View>
 
-                {/* Change program name */}
-                <View style={{
-                    alignItems: "center", 
-                    paddingBottom: 10,
-                    paddingTop: 10}}>
-                    <ThemedText>
-                        Program name
-                    </ThemedText>
-                </View>
+                <View style={styles.settings_section_last}>
+                    <View style={styles.settings_section_header}>
+                        <ThemedText
+                            size={11}
+                            style={[
+                                styles.settings_section_eyebrow,
+                                { color: settingsLabelColor },
+                            ]}>
+                            Program name
+                        </ThemedText>
+                        <ThemedText
+                            size={12}
+                            style={{ color: settingsLabelColor }}>
+                            Click to rename
+                        </ThemedText>
+                    </View>
 
-                <View style={{
-                    flexDirection: "row",
-                    alignItems: "center",}}>
-                    <ThemedText> Current name: </ThemedText>
-                    
-                    <View style={{
-                        borderWidth: 1,
-                        borderColor: "#525252",
-                        padding: 10,
-                        borderRadius: 5,
-                    }}>
+                    <View
+                        style={[
+                            styles.settings_name_editor,
+                            {
+                                backgroundColor: settingsEditorBackground,
+                                borderColor: settingsOutlineColor,
+                            },
+                        ]}>
                         <ThemedEditableCell
                             value={program_name ?? ""}
+                            keyboardType="default"
+                            textAlign="left"
                             onCommit={async (v) => {
+                                set_program_name(v);
                                 await programService.updateProgramName(db, {
                                     programId: program_id,
                                     programName: v,
                                 });
-                            }}/>
+                            }}
+                        />
                     </View>
                 </View>
-
             </ThemedCard>
 
             
@@ -503,7 +585,7 @@ const ProgramOverviewPage = ( {route} ) => {
 
             <View style={styles.bottomsheet_title}>
                 <ThemedTitle type={"h3"} style={{flex: 10}}> 
-                    test 
+                    Program actions 
                 </ThemedTitle>
 
 

@@ -184,6 +184,61 @@ export default StyleSheet.create({
         marginRight: 8,
     },
 
+    settings_card: {
+        padding: 18,
+    },
+    settings_section: {
+        marginBottom: 18,
+    },
+    settings_section_last: {
+        marginBottom: 4,
+    },
+    settings_section_header: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: 10,
+    },
+    settings_section_eyebrow: {
+        fontWeight: "700",
+        letterSpacing: 1.2,
+        textTransform: "uppercase",
+    },
+    settings_status_tile: {
+        borderWidth: 1,
+        borderRadius: 24,
+        padding: 16,
+        marginBottom: 10,
+        flexDirection: "row",
+        alignItems: "flex-start",
+    },
+    settings_status_marker: {
+        width: 10,
+        height: 10,
+        borderRadius: 999,
+        marginTop: 6,
+        marginRight: 12,
+        flexShrink: 0,
+    },
+    settings_status_content: {
+        flex: 1,
+        paddingRight: 10,
+    },
+    settings_status_title: {
+        fontWeight: "700",
+        marginBottom: 4,
+    },
+    settings_status_description: {
+        lineHeight: 18,
+    },
+    settings_name_editor: {
+        minHeight: 58,
+        borderWidth: 1,
+        borderRadius: 24,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        justifyContent: "center",
+    },
 
     //BottomSheet Styling:
 

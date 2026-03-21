@@ -9,9 +9,18 @@ export default StyleSheet.create({
     marginBottom: 12,
   },
 
+  shortcut_card_complete: {
+    minHeight: 0,
+  },
+
   touchable: {
     paddingHorizontal: 10,
     paddingVertical: 0,
+  },
+
+  touchable_complete: {
+    paddingTop: 10,
+    paddingBottom: 10,
   },
 
   top_row: {
@@ -85,6 +94,25 @@ export default StyleSheet.create({
     marginTop: 12,
   },
 
+  complete_summary_row: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    marginTop: 12,
+  },
+
+  summary_panel_complete: {
+    flex: 1,
+    marginTop: 0,
+    marginRight: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  complete_workout_badge: {
+    borderWidth: 0,
+    borderRadius: 20,
+  },
+
   hero_workout_label: {
     marginTop: 6,
     fontWeight: "700",
@@ -94,6 +122,12 @@ export default StyleSheet.create({
   hero_title: {
     padding: 0,
     marginBottom: 8,
+  },
+
+  hero_title_complete: {
+    width: "100%",
+    marginBottom: 0,
+    textAlign: "center",
   },
 
   hero_description: {

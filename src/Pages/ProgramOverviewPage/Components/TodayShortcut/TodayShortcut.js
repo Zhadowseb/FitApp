@@ -84,6 +84,8 @@ const TodayShortcut = ({ program_id }) => {
   const completedWorkoutCount = workouts.filter((workout) => workout.done === 1).length;
   const hasWorkouts = workoutCount > 0;
   const allWorkoutsDone = hasWorkouts && completedWorkoutCount === workoutCount;
+  const isCompletedSingleWorkout =
+    workoutCount === 1 && Number(workouts[0]?.done) === 1;
   const sectionDateLabel = day?.Weekday ? `${day.Weekday} - ${date}` : date;
   const remainingWorkoutCount = Math.max(workoutCount - completedWorkoutCount, 0);
 
@@ -93,7 +95,7 @@ const TodayShortcut = ({ program_id }) => {
   let footerCopy = null;
 
   if (hasWorkouts && allWorkoutsDone) {
-    headline = "Today's training is done";
+    headline = isCompletedSingleWorkout ? "Training complete" : "Today's training is done";
     description =
       workoutCount === 1
         ? null
@@ -184,13 +186,19 @@ const TodayShortcut = ({ program_id }) => {
       <ThemedCard
         style={[
           styles.shortcut_card,
+          isCompletedSingleWorkout && styles.shortcut_card_complete,
           {
             backgroundColor: cardBackground,
             borderColor: cardBorder,
           },
         ]}
       >
-        <View style={styles.touchable}>
+        <View
+          style={[
+            styles.touchable,
+            isCompletedSingleWorkout && styles.touchable_complete,
+          ]}
+        >
           {!useCompactSingleWorkoutHeader && (
             <View style={styles.top_row}>
               <View style={styles.top_meta}>
@@ -213,38 +221,111 @@ const TodayShortcut = ({ program_id }) => {
           )}
 
           {(headline || description) && (
-            <TouchableOpacity
-              disabled={!hasWorkouts}
-              activeOpacity={0.92}
-              onPress={handleShortcutPress}
-            >
-              <View
-                style={[
-                  styles.summary_panel,
-                  {
-                    backgroundColor: panelBackground,
-                    borderColor: chipBackground,
-                  },
-                ]}
+            isCompletedSingleWorkout ? (
+              <TouchableOpacity
+                disabled={!hasWorkouts}
+                activeOpacity={0.92}
+                onPress={handleShortcutPress}
               >
-                {headline && (
-                  <ThemedTitle type="h3" style={[styles.hero_title, { color: headlineColor }]}>
-                    {headline}
-                  </ThemedTitle>
-                )}
-                {description && (
-                  <ThemedText
-                    style={styles.hero_description}
-                    setColor={supportiveColor}
+                <View style={styles.complete_summary_row}>
+                  <View
+                    style={[
+                      styles.summary_panel,
+                      styles.summary_panel_complete,
+                      {
+                        backgroundColor: panelBackground,
+                        borderColor: chipBackground,
+                      },
+                    ]}
                   >
-                    {description}
-                  </ThemedText>
-                )}
-              </View>
-            </TouchableOpacity>
+                    {headline && (
+                      <ThemedTitle
+                        type="h3"
+                        style={[
+                          styles.hero_title,
+                          styles.hero_title_complete,
+                          { color: headlineColor },
+                        ]}
+                      >
+                        {headline}
+                      </ThemedTitle>
+                    )}
+                    {description && (
+                      <ThemedText
+                        style={styles.hero_description}
+                        setColor={supportiveColor}
+                      >
+                        {description}
+                      </ThemedText>
+                    )}
+                  </View>
+
+                  <View
+                    style={[
+                      styles.hero_workout_badge,
+                      styles.complete_workout_badge,
+                      {
+                        backgroundColor: panelBackground,
+                        borderColor: chipBackground,
+                      },
+                    ]}
+                  >
+                    {HeroWorkoutIcon && (
+                      <HeroWorkoutIcon
+                        width={24}
+                        height={24}
+                        color={headlineColor}
+                        fill={headlineColor}
+                        primaryColor={headlineColor}
+                        backgroundColor="transparent"
+                      />
+                    )}
+
+                    <ThemedText
+                      size={10}
+                      style={styles.hero_workout_label}
+                      setColor={supportiveColor}
+                      numberOfLines={1}
+                    >
+                      {singleWorkout.label}
+                    </ThemedText>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                disabled={!hasWorkouts}
+                activeOpacity={0.92}
+                onPress={handleShortcutPress}
+              >
+                <View
+                  style={[
+                    styles.summary_panel,
+                    {
+                      backgroundColor: panelBackground,
+                      borderColor: chipBackground,
+                    },
+                  ]}
+                >
+                  {headline && (
+                    <ThemedTitle type="h3" style={[styles.hero_title, { color: headlineColor }]}>
+                      {headline}
+                    </ThemedTitle>
+                  )}
+                  {description && (
+                    <ThemedText
+                      style={styles.hero_description}
+                      setColor={supportiveColor}
+                    >
+                      {description}
+                    </ThemedText>
+                  )}
+                </View>
+              </TouchableOpacity>
+            )
           )}
 
-          {hasWorkouts && (
+          {hasWorkouts && !isCompletedSingleWorkout && (
             <View
               style={[
                 styles.plan_section,

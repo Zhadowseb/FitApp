@@ -112,6 +112,145 @@ async function cloneWorkoutContents(db, { sourceWorkoutId, targetWorkoutId }) {
   }
 }
 
+function formatSetCountLabel(count) {
+  return count === 1 ? "1 set" : `${count} sets`;
+}
+
+function formatExerciseRepSummary(exercise, exerciseSets) {
+  const numericSetCount = Number(exercise.sets);
+  const setCount =
+    Number.isFinite(numericSetCount) && numericSetCount > 0
+      ? numericSetCount
+      : exerciseSets.length;
+  const validReps = exerciseSets
+    .map((set) => Number(set.reps))
+    .filter((reps) => Number.isFinite(reps) && reps > 0);
+
+  if (validReps.length === 0) {
+    return setCount > 0 ? formatSetCountLabel(setCount) : null;
+  }
+
+  const firstReps = validReps[0];
+  const allSame = validReps.every((reps) => reps === firstReps);
+
+  if (allSame && setCount > 0) {
+    return `${setCount} x ${firstReps}`;
+  }
+
+  const preview = validReps.slice(0, 4).join("/");
+  return validReps.length > 4 ? `${preview}/...` : preview;
+}
+
+function buildRunPreviewItems(runSets) {
+  const activeCounts = {
+    WARMUP: 0,
+    WORKING_SET: 0,
+    COOLDOWN: 0,
+  };
+  const activeDoneCounts = {
+    WARMUP: 0,
+    WORKING_SET: 0,
+    COOLDOWN: 0,
+  };
+
+  for (const runSet of runSets) {
+    if (Number(runSet.is_pause) === 1) {
+      continue;
+    }
+
+    if (activeCounts[runSet.type] !== undefined) {
+      activeCounts[runSet.type] += 1;
+      if (Number(runSet.done) === 1) {
+        activeDoneCounts[runSet.type] += 1;
+      }
+    }
+  }
+
+  const previewItems = [];
+
+  if (activeCounts.WARMUP > 0) {
+    previewItems.push({
+      label: "Warmup",
+      detail: formatSetCountLabel(activeCounts.WARMUP),
+      done: activeDoneCounts.WARMUP === activeCounts.WARMUP,
+    });
+  }
+
+  if (activeCounts.WORKING_SET > 0) {
+    previewItems.push({
+      label: "Working sets",
+      detail: formatSetCountLabel(activeCounts.WORKING_SET),
+      done: activeDoneCounts.WORKING_SET === activeCounts.WORKING_SET,
+    });
+  }
+
+  if (activeCounts.COOLDOWN > 0) {
+    previewItems.push({
+      label: "Cooldown",
+      detail: formatSetCountLabel(activeCounts.COOLDOWN),
+      done: activeDoneCounts.COOLDOWN === activeCounts.COOLDOWN,
+    });
+  }
+
+  if (previewItems.length > 0) {
+    return previewItems;
+  }
+
+  if (runSets.length > 0) {
+    return [
+      {
+        label: "Running session",
+        detail: formatSetCountLabel(runSets.length),
+        done: runSets.every((runSet) => Number(runSet.done) === 1),
+      },
+    ];
+  }
+
+  return [];
+}
+
+async function buildWorkoutPreview(db, workout) {
+  const exercises = await weightliftingRepository.getExercisesByWorkout(
+    db,
+    workout.workout_id
+  );
+
+  if (exercises.length > 0) {
+    const sets = await weightliftingRepository.getSetsByWorkout(db, workout.workout_id);
+    const setsByExerciseId = {};
+
+    for (const set of sets) {
+      if (!setsByExerciseId[set.exercise_id]) {
+        setsByExerciseId[set.exercise_id] = [];
+      }
+
+      setsByExerciseId[set.exercise_id].push(set);
+    }
+
+    return {
+      ...workout,
+      previewItems: exercises.map((exercise) => ({
+        label: exercise.exercise_name,
+        detail: formatExerciseRepSummary(
+          exercise,
+          setsByExerciseId[exercise.exercise_id] ?? []
+        ),
+        done: Number(exercise.done) === 1,
+      })),
+    };
+  }
+
+  const runSets = await runningRepository.getOrderedRunSetsForWorkout(
+    db,
+    workout.workout_id
+  );
+
+  return {
+    ...workout,
+    previewItems: buildRunPreviewItems(runSets),
+  };
+}
+
 export async function createProgram(db, { programName, startDate, status }) {
   await programRepository.createProgram(db, { programName, startDate, status });
 }
@@ -195,10 +334,13 @@ export async function getTodayProgramSnapshot(db, { programId, date }) {
 
   const workouts = await programRepository.getWorkoutsByDayId(db, day.day_id);
   const sets = await programRepository.getSetDoneStatesByDayId(db, day.day_id);
+  const workoutsWithPreview = await Promise.all(
+    workouts.map((workout) => buildWorkoutPreview(db, workout))
+  );
 
   return {
     day,
-    workouts,
+    workouts: workoutsWithPreview,
     counts: {
       total: sets.length,
       done: sets.filter((set) => set.done === 1).length,

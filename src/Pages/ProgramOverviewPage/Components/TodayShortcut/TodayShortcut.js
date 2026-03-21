@@ -3,7 +3,6 @@ import { ScrollView, TouchableOpacity, View, useColorScheme } from "react-native
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 
-import PickWorkoutModal from "../../../WeekPage/Components/Day/Components/PickWorkoutModal/PickWorkoutModal";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 import { getWorkoutIconConfig } from "../../../../Resources/Icons/WorkoutLabels";
 import { getTodaysDate } from "../../../../Utils/dateUtils";
@@ -23,7 +22,6 @@ const TodayShortcut = ({ program_id }) => {
 
   const [day, set_day] = useState(null);
   const [workouts, set_workouts] = useState([]);
-  const [pickWorkoutModal_visible, set_pickWorkoutModal_visible] = useState(false);
 
   const date = getTodaysDate();
 
@@ -75,15 +73,15 @@ const TodayShortcut = ({ program_id }) => {
   const handleShortcutPress = () => {
     if (workoutCount === 1) {
       openWorkout(workouts[0]);
-    } else if (workoutCount > 1) {
-      set_pickWorkoutModal_visible(true);
     }
   };
 
   const workoutCount = workouts.length;
   const completedWorkoutCount = workouts.filter((workout) => workout.done === 1).length;
   const hasWorkouts = workoutCount > 0;
+  const isMultiWorkout = workoutCount > 1;
   const allWorkoutsDone = hasWorkouts && completedWorkoutCount === workoutCount;
+  const isCompletedMultiWorkout = isMultiWorkout && allWorkoutsDone;
   const isCompletedSingleWorkout =
     workoutCount === 1 && Number(workouts[0]?.done) === 1;
   const sectionDateLabel = day?.Weekday ? `${day.Weekday} - ${date}` : date;
@@ -100,7 +98,7 @@ const TodayShortcut = ({ program_id }) => {
       workoutCount === 1
         ? null
         : "All planned workouts are complete. Tap to reopen one of them.";
-    actionLabel = workoutCount === 1 ? null : "Review workouts";
+    actionLabel = null;
   } else if (hasWorkouts && workoutCount === 1) {
     headline = null;
     description = null;
@@ -108,7 +106,7 @@ const TodayShortcut = ({ program_id }) => {
   } else if (hasWorkouts) {
     headline = `${remainingWorkoutCount || workoutCount} of ${workoutCount} workouts left`;
     description = "Tap to choose which workout you want to open.";
-    actionLabel = "Choose workout";
+    actionLabel = null;
     footerCopy = "Tap anywhere on the card to choose a workout.";
   } else if (day) {
     headline = "Rest day";
@@ -166,11 +164,19 @@ const TodayShortcut = ({ program_id }) => {
     0
   );
   const planSummaryLabel =
-    totalExerciseCount > 0
-      ? `${totalExerciseCount} ${
-          totalExerciseCount === 1 ? "EXERCISE" : "EXERCISES"
-        } TODAY`
-      : "EXERCISES TODAY";
+    isMultiWorkout
+      ? `${workoutCount} ${workoutCount === 1 ? "WORKOUT" : "WORKOUTS"} - ${
+          totalExerciseCount > 0
+            ? `${totalExerciseCount} ${
+                totalExerciseCount === 1 ? "EXERCISE" : "EXERCISES"
+              }`
+            : "EXERCISES"
+        }`
+      : totalExerciseCount > 0
+        ? `${totalExerciseCount} ${
+            totalExerciseCount === 1 ? "EXERCISE" : "EXERCISES"
+          } TODAY`
+        : "EXERCISES TODAY";
   const singleWorkout = workoutCount === 1 ? workouts[0] : null;
   const workoutIconConfig = singleWorkout
     ? getWorkoutIconConfig(singleWorkout.label)
@@ -192,10 +198,11 @@ const TodayShortcut = ({ program_id }) => {
             borderColor: cardBorder,
           },
         ]}
-      >
+      > 
         <View
           style={[
             styles.touchable,
+            isMultiWorkout && styles.touchable_multi,
             isCompletedSingleWorkout && styles.touchable_complete,
           ]}
         >
@@ -220,7 +227,7 @@ const TodayShortcut = ({ program_id }) => {
             </View>
           )}
 
-          {(headline || description) && (
+          {(headline || description) && !isMultiWorkout && (
             isCompletedSingleWorkout ? (
               <TouchableOpacity
                 disabled={!hasWorkouts}
@@ -332,12 +339,42 @@ const TodayShortcut = ({ program_id }) => {
                 useCompactSingleWorkoutHeader && styles.plan_section_compact,
               ]}
             >
-              {(!useCompactSingleWorkoutHeader || actionLabel) && (
-                <View style={styles.plan_header}>
+              {isCompletedMultiWorkout && (
+                <View
+                  style={[
+                    styles.plan_complete_banner,
+                    {
+                      backgroundColor: panelBackground,
+                      borderColor: chipBackground,
+                    },
+                  ]}
+                >
+                  <ThemedTitle
+                    type="h3"
+                    style={[
+                      styles.plan_complete_banner_title,
+                      { color: headlineColor },
+                    ]}
+                  >
+                    Workouts complete
+                  </ThemedTitle>
+                </View>
+              )}
+
+              {!isCompletedMultiWorkout && (!useCompactSingleWorkoutHeader || actionLabel) && (
+                <View
+                  style={[
+                    styles.plan_header,
+                    isMultiWorkout && !actionLabel && styles.plan_header_centered,
+                  ]}
+                >
                   {!useCompactSingleWorkoutHeader && (
                     <ThemedText
                       size={11}
-                      style={styles.plan_section_label}
+                      style={[
+                        styles.plan_section_label,
+                        isMultiWorkout && !actionLabel && styles.plan_section_label_centered,
+                      ]}
                       setColor={supportiveColor}
                     >
                       {planSummaryLabel}
@@ -364,7 +401,11 @@ const TodayShortcut = ({ program_id }) => {
                 </View>
               )}
 
-              {visibleWorkoutPreviews.map((workout) => (
+              {visibleWorkoutPreviews.map((workout) => {
+                const workoutHeaderIconConfig = getWorkoutIconConfig(workout.label);
+                const WorkoutHeaderIcon = workoutHeaderIconConfig?.Icon ?? null;
+
+                return (
                 <View key={workout.workout_id}>
                   {singleWorkout && (
                     <TouchableOpacity
@@ -445,6 +486,7 @@ const TodayShortcut = ({ program_id }) => {
                   <View
                     style={[
                       styles.plan_card,
+                      isCompletedMultiWorkout && styles.plan_card_compact,
                       singleWorkout && styles.plan_card_joined,
                       {
                         backgroundColor: panelBackground,
@@ -453,22 +495,53 @@ const TodayShortcut = ({ program_id }) => {
                     ]}
                   >
                   {workoutCount > 1 && (
-                    <View style={styles.plan_card_header}>
-                      <ThemedText
-                        size={13}
-                        style={styles.plan_card_title}
-                        setColor={headlineColor}
-                        numberOfLines={1}
-                      >
-                        {workout.label}
-                      </ThemedText>
+                    <View
+                      style={[
+                        styles.plan_card_header,
+                        isCompletedMultiWorkout && styles.plan_card_header_compact,
+                      ]}
+                    >
+                      <View style={styles.plan_card_title_row}>
+                        {WorkoutHeaderIcon && (
+                          <View
+                            style={[
+                              styles.plan_card_title_icon_wrap,
+                              { backgroundColor: cardBackground },
+                            ]}
+                          >
+                            <WorkoutHeaderIcon
+                              width={14}
+                              height={14}
+                              color={headlineColor}
+                              fill={headlineColor}
+                              primaryColor={headlineColor}
+                              backgroundColor="transparent"
+                            />
+                          </View>
+                        )}
 
-                      {workout.done === 1 && (
+                        <ThemedText
+                          size={13}
+                          style={styles.plan_card_title}
+                          setColor={headlineColor}
+                          numberOfLines={1}
+                        >
+                          {workout.label}
+                        </ThemedText>
+                      </View>
+
+                      <TouchableOpacity
+                        activeOpacity={0.92}
+                        onPress={() => openWorkout(workout)}
+                      >
                         <View
                           style={[
                             styles.plan_status_chip,
                             {
-                              backgroundColor: theme.secondary ?? "#60daac",
+                              backgroundColor:
+                                Number(workout.done) === 1
+                                  ? theme.secondary ?? "#60daac"
+                                  : theme.primary ?? "#f7742e",
                             },
                           ]}
                         >
@@ -477,14 +550,14 @@ const TodayShortcut = ({ program_id }) => {
                             style={styles.plan_status_text}
                             setColor={ctaTextColor}
                           >
-                            Done
+                            {Number(workout.done) === 1 ? "Done (Open)" : "Open"}
                           </ThemedText>
                         </View>
-                      )}
+                      </TouchableOpacity>
                     </View>
                   )}
 
-                  {workout.previewItems.length > 0 ? (
+                  {!isCompletedMultiWorkout && workout.previewItems.length > 0 ? (
                     <>
                       <ScrollView
                         style={[
@@ -556,7 +629,7 @@ const TodayShortcut = ({ program_id }) => {
                         </View>
                       )}
                     </>
-                  ) : (
+                  ) : !isCompletedMultiWorkout ? (
                     <ThemedText
                       size={12}
                       style={styles.plan_empty_text}
@@ -564,14 +637,14 @@ const TodayShortcut = ({ program_id }) => {
                     >
                       No exercises added yet.
                     </ThemedText>
-                  )}
+                  ) : null}
                 </View>
                 </View>
-              ))}
+              )})}
             </View>
           )}
 
-          {footerCopy && (
+          {footerCopy && !isMultiWorkout && (
             <View
               style={[
                 styles.footer_row,
@@ -584,15 +657,6 @@ const TodayShortcut = ({ program_id }) => {
           )}
         </View>
       </ThemedCard>
-
-      <PickWorkoutModal
-        workouts={workouts}
-        visible={pickWorkoutModal_visible}
-        onClose={() => set_pickWorkoutModal_visible(false)}
-        onSubmit={(workout) => {
-          openWorkout(workout);
-        }}
-      />
     </>
   );
 };

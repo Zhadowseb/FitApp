@@ -18,6 +18,10 @@ export default StyleSheet.create({
     paddingVertical: 0,
   },
 
+  touchable_multi: {
+    paddingTop: 10,
+  },
+
   touchable_complete: {
     paddingTop: 10,
     paddingBottom: 10,
@@ -142,6 +146,23 @@ export default StyleSheet.create({
     marginTop: 10,
   },
 
+  plan_complete_banner: {
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+
+  plan_complete_banner_title: {
+    width: "100%",
+    padding: 0,
+    marginBottom: 0,
+    textAlign: "center",
+  },
+
   plan_header: {
     flexDirection: "row",
     alignItems: "center",
@@ -149,11 +170,21 @@ export default StyleSheet.create({
     marginBottom: 10,
   },
 
+  plan_header_centered: {
+    justifyContent: "center",
+  },
+
   plan_section_label: {
     fontWeight: "700",
     letterSpacing: 1.2,
     flex: 1,
     paddingRight: 10,
+  },
+
+  plan_section_label_centered: {
+    flex: 0,
+    paddingRight: 0,
+    textAlign: "center",
   },
 
   plan_action_chip: {
@@ -174,6 +205,10 @@ export default StyleSheet.create({
     borderRadius: 22,
     padding: 14,
     marginBottom: 10,
+  },
+
+  plan_card_compact: {
+    paddingVertical: 12,
   },
 
   plan_card_joined: {
@@ -209,10 +244,30 @@ export default StyleSheet.create({
     marginBottom: 8,
   },
 
+  plan_card_header_compact: {
+    marginBottom: 0,
+  },
+
   plan_card_title: {
-    flex: 1,
     fontWeight: "700",
+    flexShrink: 1,
+  },
+
+  plan_card_title_row: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
     paddingRight: 10,
+  },
+
+  plan_card_title_icon_wrap: {
+    width: 26,
+    height: 26,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 8,
+    flexShrink: 0,
   },
 
   plan_status_chip: {

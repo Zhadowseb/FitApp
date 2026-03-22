@@ -266,6 +266,7 @@ const ProgramOverviewPage = ( {route} ) => {
     ];
     const currentStatusOption =
         statusOptions.find((option) => option.value === status) ?? statusOptions[0];
+    const headerTitle = (program_name ?? "").trim() || "Program";
 
   return (
     <>
@@ -276,8 +277,23 @@ const ProgramOverviewPage = ( {route} ) => {
                     set_OptionsBottomsheet_visible(true) }}>
                     <ThreeDots width={20} height={20} />
                 </TouchableOpacity> } >
-            
-            <ThemedText size={18}> Program Overview  </ThemedText>
+            <View style={styles.page_header_title_group}>
+                <ThemedText
+                    size={10}
+                    style={[
+                        styles.page_header_title_eyebrow,
+                        { color: settingsLabelColor },
+                    ]}>
+                    Program overview
+                </ThemedText>
+
+                <ThemedTitle
+                    type="h3"
+                    style={styles.page_header_title_main}
+                    numberOfLines={1}>
+                    {headerTitle}
+                </ThemedTitle>
+            </View>
         
         </ThemedHeader>
 

@@ -278,7 +278,6 @@ const ProgramOverviewPage = ( {route} ) => {
                 </TouchableOpacity> } >
             
             <ThemedText size={18}> Program Overview  </ThemedText>
-            <ThemedText size={10}> {start_date} - {end_date}  </ThemedText>
         
         </ThemedHeader>
 
@@ -472,12 +471,7 @@ const ProgramOverviewPage = ( {route} ) => {
                                 styles.settings_section_eyebrow,
                                 { color: settingsLabelColor },
                             ]}>
-                            Lifecycle
-                        </ThemedText>
-                        <ThemedText
-                            size={12}
-                            style={{ color: settingsLabelColor }}>
-                            Current: {currentStatusOption.label}
+                            Program status
                         </ThemedText>
                     </View>
 
@@ -532,6 +526,67 @@ const ProgramOverviewPage = ( {route} ) => {
                             </TouchableOpacity>
                         );
                     })}
+                </View>
+
+                <View style={styles.settings_section}>
+                    <View style={styles.settings_section_header}>
+                        <ThemedText
+                            size={11}
+                            style={[
+                                styles.settings_section_eyebrow,
+                                { color: settingsLabelColor },
+                            ]}>
+                            Period
+                        </ThemedText>
+                    </View>
+
+                    <View
+                        style={[
+                            styles.settings_period_panel,
+                            {
+                                backgroundColor: settingsPanelBackground,
+                                borderColor: settingsOutlineColor,
+                            },
+                        ]}>
+                        <View style={styles.settings_period_row}>
+                            <View style={styles.settings_period_block}>
+                                <ThemedText
+                                    size={10}
+                                    style={styles.settings_period_label}
+                                    setColor={settingsLabelColor}>
+                                    Start
+                                </ThemedText>
+                                <ThemedText
+                                    size={14}
+                                    style={styles.settings_period_value}
+                                    setColor={theme.title}>
+                                    {start_date}
+                                </ThemedText>
+                            </View>
+
+                            <View
+                                style={[
+                                    styles.settings_period_divider,
+                                    { backgroundColor: settingsOutlineColor },
+                                ]}
+                            />
+
+                            <View style={styles.settings_period_block}>
+                                <ThemedText
+                                    size={10}
+                                    style={styles.settings_period_label}
+                                    setColor={settingsLabelColor}>
+                                    End
+                                </ThemedText>
+                                <ThemedText
+                                    size={14}
+                                    style={styles.settings_period_value}
+                                    setColor={theme.title}>
+                                    {end_date || "-"}
+                                </ThemedText>
+                            </View>
+                        </View>
+                    </View>
                 </View>
 
                 <View style={styles.settings_section_last}>

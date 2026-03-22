@@ -225,6 +225,33 @@ export default StyleSheet.create({
     settings_status_description: {
         lineHeight: 18,
     },
+    settings_period_panel: {
+        borderWidth: 1,
+        borderRadius: 24,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+    },
+    settings_period_row: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    settings_period_block: {
+        flex: 1,
+    },
+    settings_period_label: {
+        fontWeight: "700",
+        letterSpacing: 0.8,
+        textTransform: "uppercase",
+        marginBottom: 6,
+    },
+    settings_period_value: {
+        fontWeight: "700",
+    },
+    settings_period_divider: {
+        width: 1,
+        alignSelf: "stretch",
+        marginHorizontal: 14,
+    },
     settings_name_editor: {
         minHeight: 58,
         borderWidth: 1,

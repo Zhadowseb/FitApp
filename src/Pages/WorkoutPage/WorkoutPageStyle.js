@@ -1,6 +1,27 @@
 import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
+  pageHeaderTitleGroup: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  pageHeaderTitleEyebrow: {
+    fontWeight: "700",
+    letterSpacing: 0.9,
+    textTransform: "uppercase",
+    marginBottom: 1,
+  },
+
+  pageHeaderTitleMain: {
+    textAlign: "center",
+  },
+
+  pageHeaderTitleMeta: {
+    marginTop: 1,
+    textAlign: "center",
+  },
+
   bottomsheetTitle: {
     borderBottomWidth: 1,
     borderBottomColor: "#2e2e2eff",

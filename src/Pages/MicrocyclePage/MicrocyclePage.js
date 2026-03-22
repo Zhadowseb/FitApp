@@ -44,6 +44,8 @@ const MicrocyclePage = ({ route }) => {
     period_start,
     period_end,
   } = route.params;
+  const headerEyebrowColor = theme.quietText ?? theme.iconColor;
+  const headerTitle = `Block ${mesocycle_number}`;
 
   const [refreshing, set_refreshing] = useState(0);
   const [OptionsBottomsheet_visible, set_OptionsBottomsheet_visible] =
@@ -191,11 +193,25 @@ const MicrocyclePage = ({ route }) => {
             </TouchableOpacity>
           }
         >
-          <ThemedText size={18}>Mesocycle {mesocycle_number}</ThemedText>
-          <ThemedText size={10}>
-            {" "}
-            {period_start} - {period_end}{" "}
-          </ThemedText>
+          <View style={styles.page_header_title_group}>
+            <ThemedText
+              size={10}
+              style={[
+                styles.page_header_title_eyebrow,
+                { color: headerEyebrowColor },
+              ]}
+            >
+              Block
+            </ThemedText>
+
+            <ThemedTitle
+              type="h3"
+              style={styles.page_header_title_main}
+              numberOfLines={1}
+            >
+              {headerTitle}
+            </ThemedTitle>
+          </View>
         </ThemedHeader>
 
         <MicrocycleList

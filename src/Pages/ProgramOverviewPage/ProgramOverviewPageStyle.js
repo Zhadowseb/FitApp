@@ -47,7 +47,7 @@ export default StyleSheet.create({
         flexGrow: 1,
     },
     pr_feature_card: {
-        width: 228,
+        width: 236,
         minHeight: 176,
         padding: 0,
         overflow: "hidden",

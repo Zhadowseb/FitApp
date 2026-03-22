@@ -5,6 +5,22 @@ export default StyleSheet.create({
     flex: 1,
   },
 
+  page_header_title_group: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  page_header_title_eyebrow: {
+    fontWeight: "700",
+    letterSpacing: 0.9,
+    textTransform: "uppercase",
+    marginBottom: 1,
+  },
+
+  page_header_title_main: {
+    textAlign: "center",
+  },
+
   section_container: {
     paddingHorizontal: 10,
   },

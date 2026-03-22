@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
-import { View, TouchableOpacity } from "react-native";
+import { View, TouchableOpacity, useColorScheme } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation } from "@react-navigation/native";
 import { useSQLiteContext } from "expo-sqlite";
+import { Colors } from "../../Resources/GlobalStyling/colors";
 
 import styles from "./WorkoutPageStyle";
 import {
   ThemedBottomSheet,
   ThemedHeader,
   ThemedText,
+  ThemedTitle,
   ThemedView,
 } from "../../Resources/ThemedComponents";
 import ThreeDots from "../../Resources/Icons/UI-icons/ThreeDots";
@@ -22,6 +24,8 @@ import StrengthTraining from "./WorkoutTypes/StrengthTraining/StrengthTraining";
 const WorkoutPage = ({ route }) => {
   const db = useSQLiteContext();
   const navigation = useNavigation();
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme] ?? Colors.light;
 
   const {
     workout_id,
@@ -63,6 +67,7 @@ const WorkoutPage = ({ route }) => {
   const workoutDate = metadata?.date ?? initialDate ?? "";
   const programId = metadata?.program_id ?? initialProgramId;
   const workoutSubtitle = [workoutDay, workoutDate].filter(Boolean).join(" - ");
+  const headerEyebrowColor = theme.quietText ?? theme.iconColor;
 
   const deleteWorkout = async () => {
     try {
@@ -108,8 +113,34 @@ const WorkoutPage = ({ route }) => {
           </TouchableOpacity>
         }
       >
-        <ThemedText size={18}> {workoutLabel} </ThemedText>
-        <ThemedText size={10}> {workoutSubtitle} </ThemedText>
+        <View style={styles.pageHeaderTitleGroup}>
+          <ThemedText
+            size={10}
+            style={[
+              styles.pageHeaderTitleEyebrow,
+              { color: headerEyebrowColor },
+            ]}
+          >
+            Workout
+          </ThemedText>
+
+          <ThemedTitle
+            type="h3"
+            style={styles.pageHeaderTitleMain}
+            numberOfLines={1}
+          >
+            {workoutLabel}
+          </ThemedTitle>
+
+          {!!workoutSubtitle && (
+            <ThemedText
+              size={10}
+              style={[styles.pageHeaderTitleMeta, { color: headerEyebrowColor }]}
+            >
+              {workoutSubtitle}
+            </ThemedText>
+          )}
+        </View>
       </ThemedHeader>
 
       {workoutLabel === "Run" && <Run workout_id={workout_id} />}

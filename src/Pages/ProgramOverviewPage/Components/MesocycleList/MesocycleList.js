@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
+  useWindowDimensions,
   useColorScheme,
 } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
@@ -21,7 +22,6 @@ import {
 import Plus from "../../../../Resources/Icons/UI-icons/Plus";
 import { parseCustomDate, formatDate } from "../../../../Utils/dateUtils";
 
-const CARD_WIDTH = 228;
 const CARD_HEIGHT = 290;
 
 const styles = StyleSheet.create({
@@ -38,7 +38,6 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   card: {
-    width: CARD_WIDTH,
     minHeight: CARD_HEIGHT,
     padding: 0,
     overflow: "hidden",
@@ -85,17 +84,41 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     minHeight: 48,
   },
-  periodBadge: {
-    borderRadius: 16,
+  periodPanel: {
     borderWidth: 1,
+    borderRadius: 20,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     marginTop: 16,
     marginBottom: 16,
+  },
+  periodPanelLabel: {
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  periodRow: {
+    flexDirection: "row",
     alignItems: "center",
   },
-  periodText: {
-    lineHeight: 18,
+  periodBlock: {
+    flex: 1,
+    alignItems: "center",
+  },
+  periodSubLabel: {
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  periodDivider: {
+    width: 1,
+    alignSelf: "stretch",
+    marginHorizontal: 12,
+  },
+  periodValue: {
+    fontWeight: "700",
     textAlign: "center",
   },
   progressionSection: {
@@ -165,7 +188,6 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   addCard: {
-    width: CARD_WIDTH,
     minHeight: CARD_HEIGHT,
     justifyContent: "center",
     alignItems: "center",
@@ -196,6 +218,7 @@ const styles = StyleSheet.create({
 const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
   const db = useSQLiteContext();
   const navigation = useNavigation();
+  const { width } = useWindowDimensions();
 
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
@@ -213,6 +236,15 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
   const quietText = theme.quietText ?? theme.iconColor ?? "#9591a5";
   const invertedText = theme.textInverted ?? "#201e2b";
   const textColor = theme.text ?? "#d4d4d4";
+  const periodPanelBackground =
+    colorScheme === "dark"
+      ? "rgba(255, 255, 255, 0.04)"
+      : "rgba(255, 255, 255, 0.68)";
+  const periodDividerColor =
+    colorScheme === "dark"
+      ? "rgba(255, 255, 255, 0.08)"
+      : "rgba(0, 0, 0, 0.08)";
+  const cardWidth = Math.max(width - 52, 236);
 
   const loadMesocycles = async () => {
     try {
@@ -330,6 +362,7 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
               style={[
                 styles.card,
                 {
+                  width: cardWidth,
                   backgroundColor: cardBackground,
                   borderColor: item.done ? successColor : cardBorder,
                 },
@@ -395,19 +428,63 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
 
                 <View
                   style={[
-                    styles.periodBadge,
+                    styles.periodPanel,
                     {
-                      borderColor: item.done ? successSoft : accentSoft,
+                      backgroundColor: periodPanelBackground,
+                      borderColor: item.done ? successSoft : cardBorder,
                     },
                   ]}
                 >
                   <ThemedText
-                    size={11}
-                    style={styles.periodText}
-                    setColor={textColor}
+                    size={10}
+                    style={styles.periodPanelLabel}
+                    setColor="#fff"
                   >
-                    {item.period_start} - {item.period_end}
+                    Period
                   </ThemedText>
+
+                  <View style={styles.periodRow}>
+                    <View style={styles.periodBlock}>
+                      <ThemedText
+                        size={9}
+                        style={styles.periodSubLabel}
+                        setColor={quietText}
+                      >
+                        Start
+                      </ThemedText>
+                      <ThemedText
+                        size={12}
+                        style={styles.periodValue}
+                        setColor={textColor}
+                      >
+                        {item.period_start}
+                      </ThemedText>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.periodDivider,
+                        { backgroundColor: periodDividerColor },
+                      ]}
+                    />
+
+                    <View style={styles.periodBlock}>
+                      <ThemedText
+                        size={9}
+                        style={styles.periodSubLabel}
+                        setColor={quietText}
+                      >
+                        End
+                      </ThemedText>
+                      <ThemedText
+                        size={12}
+                        style={styles.periodValue}
+                        setColor={textColor}
+                      >
+                        {item.period_end}
+                      </ThemedText>
+                    </View>
+                  </View>
                 </View>
 
                 <View style={styles.progressionSection}>
@@ -549,6 +626,7 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
             style={[
               styles.addCard,
               {
+                width: cardWidth,
                 borderColor: cardBorder,
               },
             ]}

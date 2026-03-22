@@ -309,7 +309,7 @@ const ProgramOverviewPage = ( {route} ) => {
             </View>
 
             {/* Mesocycle list */}
-            <ThemedTitle type="h2"> Mesocycle's </ThemedTitle>
+            <ThemedTitle type="h2"> Blocks </ThemedTitle>
             <ThemedView style={styles.mesocycle_container}>
                     <MesocycleList 
                         program_id = {program_id}

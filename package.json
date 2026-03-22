@@ -3,8 +3,11 @@
   "version": "0.2.0",
   "main": "index.js",
   "scripts": {
-    "start": "expo start",
+    "start": "expo start --dev-client --scheme exp+programapp-dev",
+    "start:dev": "expo start --dev-client --scheme exp+programapp-dev",
+    "start:go": "expo start --go",
     "android": "expo run:android",
+    "android:dev": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web"
   },

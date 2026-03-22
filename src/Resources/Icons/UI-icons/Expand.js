@@ -3,10 +3,11 @@ import Svg, { Path } from "react-native-svg"
 import {useColorScheme} from "react-native"
 import { Colors } from "../../GlobalStyling/colors"
 
-function Expand({width, height}) {
+function Expand({width, height, color}) {
 
   const colorScheme = useColorScheme()
   const theme = Colors[colorScheme] ?? Colors.light
+  const strokeColor = color ?? theme.iconColor
 
   return (
     <Svg
@@ -14,9 +15,9 @@ function Expand({width, height}) {
       viewBox="0 0 24 24"
       width={width}
       height={height}
-      color={theme.iconColor}
+      color={strokeColor}
       fill="none"
-      stroke={theme.iconColor}
+      stroke={strokeColor}
       strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"

@@ -1,33 +1,30 @@
-// src/Components/ExerciseList/ExerciseList.js
-import { useState, useEffect } from "react";
-import { View, Text, Button, TouchableOpacity } from "react-native";
-import { useSQLiteContext } from "expo-sqlite";
-import { useNavigation } from "@react-navigation/native";
+import { useEffect, useState } from "react";
+import { TouchableOpacity, View } from "react-native";
 import { useColorScheme } from "react-native";
+import { useSQLiteContext } from "expo-sqlite";
+
 import { Colors } from "../../../../../../../../Resources/GlobalStyling/colors";
-
-
 import styles from "./ExerciseRowStyle";
 import SetList from "./SetList/SetList";
-import {checkUniformWeights, 
-        checkUniformReps} from "../../Utils/checkUniformSets";
+import {
+  checkUniformReps,
+  checkUniformWeights,
+} from "../../Utils/checkUniformSets";
 
-//UI icons
 import Cogwheel from "../../../../../../../../Resources/Icons/UI-icons/Cogwheel";
 import Note from "../../../../../../../../Resources/Icons/UI-icons/Note";
-
-import {ThemedCard,
-        ThemedText,
-        ThemedBouncyCheckbox,
-        ThemedModal,
-        ThemedTitle} 
-  from "../../../../../../../../Resources/ThemedComponents";
 import Expand from "../../../../../../../../Resources/Icons/UI-icons/Expand";
 import Plus from "../../../../../../../../Resources/Icons/UI-icons/Plus";
 import Colapse from "../../../../../../../../Resources/Icons/UI-icons/Colapse";
+
+import {
+  ThemedBouncyCheckbox,
+  ThemedModal,
+  ThemedText,
+  ThemedTitle,
+} from "../../../../../../../../Resources/ThemedComponents";
 import PanelSettingsModal from "./PanelSettingsModal";
 import { weightliftingService as weightliftingRepository } from "../../../../../../../../Services";
-
 
 const ExerciseRow = ({
   exercise,
@@ -39,29 +36,25 @@ const ExerciseRow = ({
 }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
-  
-  const [visibleColumns, set_VisibleColumns] = useState(exercise.visibleColumns);
-  const [exerciseNote, setExerciseNote] = useState(exercise.note ?? "");
 
-  const [panelModalVisible, set_panelModalVisible] = useState(false);
-  const [noteModalVisible, set_noteModalVisible] = useState(false);
-  const [selectedExercise, set_selectedExercise] = useState(null);
+  const [visibleColumns, setVisibleColumns] = useState(exercise.visibleColumns);
+  const [exerciseNote, setExerciseNote] = useState(exercise.note ?? "");
+  const [panelModalVisible, setPanelModalVisible] = useState(false);
+  const [noteModalVisible, setNoteModalVisible] = useState(false);
 
   const db = useSQLiteContext();
-  const navigation = useNavigation();
 
   useEffect(() => {
-    set_VisibleColumns(exercise.visibleColumns);
+    setVisibleColumns(exercise.visibleColumns);
   }, [exercise.visibleColumns]);
 
   useEffect(() => {
     setExerciseNote(exercise.note ?? "");
   }, [exercise.note]);
 
-  const deleteExercise = async (exercise_id) => {
+  const deleteExercise = async (exerciseId) => {
     try {
-      await weightliftingRepository.deleteExercise(db, exercise_id);
- 
+      await weightliftingRepository.deleteExercise(db, exerciseId);
       updateUI?.();
     } catch (error) {
       console.error(error);
@@ -87,135 +80,191 @@ const ExerciseRow = ({
       note,
     });
 
-    set_VisibleColumns(columns);
+    setVisibleColumns(columns);
     setExerciseNote(note);
   };
 
+  const isDone = Number(exercise.done) === 1;
+  const hasSets = exercise.sets.length > 0;
+  const hasNote = exerciseNote.trim().length > 0;
+
+  const primaryColor = theme.primary ?? theme.iconColor ?? theme.text;
+  const secondaryColor = theme.secondary ?? primaryColor;
+  const cardBorder = theme.cardBorder ?? theme.iconColor ?? theme.text;
+  const cardSurface = theme.cardBackground ?? theme.background;
+  const innerSurface = theme.uiBackground ?? cardSurface;
+  const quietText = theme.quietText ?? theme.iconColor ?? theme.text;
+  const titleColor = theme.title ?? theme.text;
+
+  const exerciseSummary = hasSets
+    ? `${exercise.setCount} ${exercise.setCount === 1 ? "set" : "sets"} | ${checkUniformReps(exercise.sets)} reps | ${checkUniformWeights(exercise.sets)} kg`
+    : "No sets added yet";
+
   return (
     <>
-      <View style={{
-        borderWidth: 0.2,
-        borderRadius: 20,
-        marginBottom: 5,
-        marginLeft: 5,
-        marginRight: 5,
-        backgroundColor: exercise.done && "rgba(96, 218, 171, 0.75)",
-        borderColor: "#858584"}}>
-
-      <View style={{
-        paddingTop: 10,
-        paddingBottom: 10,
-        flexDirection: "row"}}>
-      
-      <View style={[styles.done_box]}>
-          <ThemedBouncyCheckbox
-            value={exercise.done === 1}
-            size= "20"
-            edgeSize={2}
-            disabled
-            checkmarkColor={theme.cardBackground}
-          />
-      </View>
-      
-      <View style={{flexDirection: "row"}}>
-        <ThemedTitle type={"h3"}>
-          {exercise.exercise_name}
-        </ThemedTitle>
-
-        {isExpanded && (
-
-        <TouchableOpacity
-          onPress={onToggleExpanded}>
-          
-          <View style={{paddingLeft: 5}}>
-            <Colapse
-              width={24}
-              height={24}
-            />
-          </View>
-
-        </TouchableOpacity>
-        )}
-      </View>
-
-      <View style={styles.icon_container}>
-
-        {exerciseNote.trim().length > 0 && (
-        <View style={styles.ui_icons}>
+      <View
+        style={[
+          styles.exerciseCard,
+          {
+            backgroundColor: isDone ? "rgba(96, 218, 172, 0.1)" : cardSurface,
+            borderColor: isDone ? secondaryColor : cardBorder,
+          },
+        ]}
+      >
+        <View style={styles.headerRow}>
           <TouchableOpacity
-            onPress={() => set_noteModalVisible(true)}>
-              <Note
-                width={24}
-                height={24}
-                color={theme.primary} />
+            activeOpacity={0.88}
+            onPress={onToggleExpanded}
+            style={styles.headerMain}
+          >
+            <View
+              style={[
+                styles.checkboxShell,
+                {
+                  backgroundColor: isDone ? secondaryColor : innerSurface,
+                  borderColor: isDone ? secondaryColor : cardBorder,
+                },
+              ]}
+            >
+              <ThemedBouncyCheckbox
+                value={isDone}
+                size={20}
+                edgeSize={2}
+                disabled
+                fillColor={secondaryColor}
+                checkmarkColor={cardSurface}
+                style={styles.checkbox}
+              />
+            </View>
+
+            <View style={styles.titleBlock}>
+              <ThemedTitle
+                type="h3"
+                style={[styles.exerciseTitle, { color: titleColor }]}
+                numberOfLines={1}
+              >
+                {exercise.exercise_name}
+              </ThemedTitle>
+
+              <ThemedText
+                size={11}
+                style={styles.exerciseMeta}
+                setColor={quietText}
+              >
+                {hasSets
+                  ? `${exercise.setCount} ${exercise.setCount === 1 ? "set" : "sets"} planned`
+                  : "No sets added yet"}
+              </ThemedText>
+            </View>
           </TouchableOpacity>
+
+          <View style={styles.actionsRow}>
+            {hasNote && (
+              <TouchableOpacity
+                activeOpacity={0.88}
+                style={[
+                  styles.actionButton,
+                  {
+                    backgroundColor: innerSurface,
+                    borderColor: cardBorder,
+                  },
+                ]}
+                onPress={() => setNoteModalVisible(true)}
+              >
+                <Note width={18} height={18} color={primaryColor} />
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              activeOpacity={0.88}
+              style={[
+                styles.actionButton,
+                {
+                  backgroundColor: innerSurface,
+                  borderColor: cardBorder,
+                },
+              ]}
+              onPress={addSet}
+            >
+              <Plus width={18} height={18} color={primaryColor} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.88}
+              style={[
+                styles.actionButton,
+                {
+                  backgroundColor: innerSurface,
+                  borderColor: cardBorder,
+                },
+              ]}
+              onPress={() => {
+                setPanelModalVisible(true);
+              }}
+            >
+              <Cogwheel width={18} height={18} color={primaryColor} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.88}
+              style={[
+                styles.actionButton,
+                {
+                  backgroundColor: innerSurface,
+                  borderColor: cardBorder,
+                },
+              ]}
+              onPress={onToggleExpanded}
+            >
+              {isExpanded ? (
+                <Colapse width={18} height={18} color={primaryColor} />
+              ) : (
+                <Expand width={18} height={18} color={primaryColor} />
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
-        )}
-        
-        <View style={styles.ui_icons}>
 
-        <TouchableOpacity
-          onPress={() => addSet()}>
-            <Plus
-              width={24}
-              height={24}
-              color={theme.primary} />
-        </TouchableOpacity>
-        </View>
-        
-        <View style={styles.ui_icons}>
-        <TouchableOpacity
-          onPress={() => {
-            set_panelModalVisible(true);
-            set_selectedExercise(exercise.exercise_id);
-          }}>
-            <Cogwheel
-              width={24}
-              height={24}
-              color={theme.primary} />
-        </TouchableOpacity>
-        </View>
-
-      </View>
-
-    </View> 
-  
-      <TouchableOpacity
-        onPress={onToggleExpanded}>
-
-        {!isExpanded && exercise.sets.length !== 0 && (
-          <ThemedCard style={{flexDirection: "row"}}>
-            
-            <View>
-              <ThemedText>
-               {exercise.setCount} sets of {checkUniformReps(exercise.sets)} with {checkUniformWeights(exercise.sets)} kg
+        {!isExpanded && (
+          <TouchableOpacity
+            activeOpacity={0.88}
+            onPress={onToggleExpanded}
+            style={[
+              styles.summaryRow,
+              {
+                backgroundColor: innerSurface,
+                borderColor: cardBorder,
+              },
+            ]}
+          >
+            <View style={styles.summaryTextBlock}>
+              <ThemedText
+                size={12}
+                style={styles.summaryValue}
+                setColor={hasSets ? undefined : quietText}
+              >
+                {exerciseSummary}
               </ThemedText>
             </View>
 
-            <View style={{marginLeft: "auto"}}>
-              <Expand
-                width={20}
-                height={20}
-              />
+            <View style={styles.summaryIcon}>
+              <Expand width={18} height={18} />
             </View>
-          </ThemedCard>
+          </TouchableOpacity>
         )}
-      </TouchableOpacity>
 
-      {isExpanded && (
-        <View>
-          <SetList 
+        {isExpanded && (
+          <View style={styles.expandedSection}>
+            <SetList
               sets={exercise.sets}
               exerciseName={exercise.exercise_name}
               visibleColumns={visibleColumns}
               onToggleSet={onToggleSet}
               updateWeight={updateWeight}
-              updateUI={updateUI} 
-              />
-        </View>
-      )}
-
-      {/* White border wrapping exercise and sheets */}
+              updateUI={updateUI}
+            />
+          </View>
+        )}
       </View>
 
       <PanelSettingsModal
@@ -223,24 +272,22 @@ const ExerciseRow = ({
         currentColumns={visibleColumns}
         currentNote={exerciseNote}
         onDelete={async () => {
-          await deleteExercise(selectedExercise);
-          set_panelModalVisible(false);
+          await deleteExercise(exercise.exercise_id);
+          setPanelModalVisible(false);
         }}
         onClose={async ({ columns, note }) => {
           await saveExerciseSettings({ columns, note });
-          set_panelModalVisible(false);
-        }}/>
+          setPanelModalVisible(false);
+        }}
+      />
 
       <ThemedModal
         visible={noteModalVisible}
-        onClose={() => set_noteModalVisible(false)}
+        onClose={() => setNoteModalVisible(false)}
         title="Note"
       >
-        <ThemedText>
-          {exerciseNote}
-        </ThemedText>
+        <ThemedText>{exerciseNote}</ThemedText>
       </ThemedModal>
-
     </>
   );
 };

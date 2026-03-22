@@ -1,103 +1,97 @@
-// src/Components/ExerciseList/ExerciseListStyle.js
 import { StyleSheet } from "react-native";
 
 export default StyleSheet.create({
-  
-  wrapper: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-
-  exercise_container: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    overflow: "hidden",
+  exerciseCard: {
+    borderWidth: 1,
+    borderRadius: 24,
+    marginBottom: 8,
+    marginHorizontal: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
   },
 
   headerRow: {
     flexDirection: "row",
-    paddingVertical: 4,
-    borderBottomWidth: 1,
-    borderColor: "#ccc",
-    marginBottom: 4,
+    alignItems: "flex-start",
   },
 
-  //Columns pacing
-  exercise_alignment: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  exercise_name: {
-    flex: 50,
-  },
-  exercise_sets: {
-    flex: 20,
-  },
-  exercise_x: {
-    flex: 10,
-  },
-  exercise_reps: {
-    flex: 20,
-  },
-  exercise_weight: {
-    flex: 30,
-  },
-  exercise_done: {
-    flex: 10,
-  },
-
-  headerText: {
-    fontWeight: "bold",
-    alignContent: "center",
-  },
-
-  checkbox: {
-    marginRight: 8,
-  },
-
-  SetList_container: {
+  headerMain: {
+    flex: 1,
     flexDirection: "row",
-    padding: 5,
-    width: "100%",
-  },
-  SetList: {
-    width: "100%",
-  },
-
-  expandable: {
-    fontSize: 14,
-    alignContent: "center",
     alignItems: "center",
-  },
-
-  hideset: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-
-  //NEW STYLING
-
-  done_box: {
-    paddingLeft: 10,
-    paddingRight: "10",
-    justifyContent: "center",
-  },
-
-  icon_container: {
-    marginLeft: "auto", 
-    flexDirection: "row",
     paddingRight: 10,
   },
 
-  ui_icons: {
-    justifyContent: "center", 
-    paddingLeft: 5
+  checkboxShell: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
   },
 
+  checkbox: {
+    marginLeft: 2,
+  },
 
+  titleBlock: {
+    flex: 1,
+    justifyContent: "center",
+    paddingRight: 8,
+  },
 
+  exerciseTitle: {
+    marginBottom: 2,
+  },
+
+  exerciseMeta: {
+    lineHeight: 16,
+  },
+
+  actionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  actionButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 6,
+  },
+
+  summaryRow: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  summaryTextBlock: {
+    flex: 1,
+    paddingRight: 8,
+  },
+
+  summaryValue: {
+    fontWeight: "600",
+    lineHeight: 18,
+  },
+
+  summaryIcon: {
+    marginLeft: "auto",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  expandedSection: {
+    marginTop: 10,
+  },
 });

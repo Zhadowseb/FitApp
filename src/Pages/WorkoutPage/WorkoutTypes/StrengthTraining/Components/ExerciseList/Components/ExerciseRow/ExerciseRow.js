@@ -6,10 +6,7 @@ import { useSQLiteContext } from "expo-sqlite";
 import { Colors } from "../../../../../../../../Resources/GlobalStyling/colors";
 import styles from "./ExerciseRowStyle";
 import SetList from "./SetList/SetList";
-import {
-  checkUniformReps,
-  checkUniformWeights,
-} from "../../Utils/checkUniformSets";
+import { formatExerciseSetSummary } from "../../Utils/checkUniformSets";
 
 import Cogwheel from "../../../../../../../../Resources/Icons/UI-icons/Cogwheel";
 import Note from "../../../../../../../../Resources/Icons/UI-icons/Note";
@@ -96,9 +93,10 @@ const ExerciseRow = ({
   const quietText = theme.quietText ?? theme.iconColor ?? theme.text;
   const titleColor = theme.title ?? theme.text;
 
-  const exerciseSummary = hasSets
-    ? `${exercise.setCount} ${exercise.setCount === 1 ? "set" : "sets"} | ${checkUniformReps(exercise.sets)} reps | ${checkUniformWeights(exercise.sets)} kg`
-    : "No sets added yet";
+  const exerciseSummary = formatExerciseSetSummary(
+    exercise.sets,
+    exercise.setCount
+  );
 
   return (
     <>

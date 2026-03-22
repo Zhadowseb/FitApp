@@ -1,10 +1,8 @@
-import { View, Text, ScrollView } from "react-native";
-import { StyleSheet } from "react-native";
+import { View } from "react-native";
 import { useColorScheme } from "react-native";
 import { Colors } from "../../../../../../../../../Resources/GlobalStyling/colors";
 
-import {ThemedCard,
-        ThemedText} 
+import {ThemedText} 
   from "../../../../../../../../../Resources/ThemedComponents";
 
 import styles from "./SetListStyle";
@@ -69,4 +67,3 @@ const Title = ({visibleColumns}) => {
 };
 
 export default Title;
-

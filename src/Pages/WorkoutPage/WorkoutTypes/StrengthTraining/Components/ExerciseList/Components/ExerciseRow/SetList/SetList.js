@@ -284,19 +284,24 @@ const SetList = ({
               alignItems: "center",
               width: "100%",
               height: "100%",
-              borderTopWidth: 1,
-              borderLeftWidth: 1,
-              borderBottomWidth: 2,
-              borderRightWidth: 2,
+              borderTopWidth: 2,
+              borderLeftWidth: 2,
+              borderBottomWidth: 3,
+              borderRightWidth: 3,
               backgroundColor: "rgb(32, 30, 29)",
-              borderTopColor: "rgb(48, 45, 43)",
-              borderLeftColor: "rgb(48, 45, 43)",
+              borderTopColor: "rgb(106, 100, 98)",
+              borderLeftColor: "rgb(106, 100, 98)",
               borderBottomColor: "rgb(8, 7, 7)",
               borderRightColor: "rgb(8, 7, 7)",
             }}
             onPress={() => handleOpenSetOptions(set)}
           >
-            <ThemedText>{set.set_number}</ThemedText>
+            <ThemedText
+              style={styles.set_chip_text}
+              setColor={theme.primary ?? theme.text}
+            >
+              {set.set_number}
+            </ThemedText>
           </TouchableOpacity>
         );
 

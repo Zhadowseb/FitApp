@@ -1,4 +1,3 @@
-// src/Components/ExerciseList/ExerciseListStyle.js
 import { StyleSheet } from "react-native";
 
 export default StyleSheet.create({
@@ -30,7 +29,9 @@ export default StyleSheet.create({
     set:    {
         flex: 8,            
         paddingTop: 0,
-        paddingBottom: 0
+        paddingBottom: 0,
+        borderLeftWidth: 0,
+        borderBottomWidth: 0,
     },
     reps:   {flex: 13},
     weight: {flex: 20},
@@ -111,6 +112,10 @@ export default StyleSheet.create({
     note_button: {
         justifyContent: "center",
         alignItems: "center",
+    },
+    set_chip_text: {
+        fontWeight: "700",
+        letterSpacing: 0.2,
     },
     note_input: {
         minHeight: 100,

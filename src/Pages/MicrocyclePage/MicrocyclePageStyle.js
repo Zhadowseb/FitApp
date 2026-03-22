@@ -29,30 +29,6 @@ export default StyleSheet.create({
     marginBottom: 14,
   },
 
-  progression_summary_card: {
-    borderWidth: 1,
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 10,
-  },
-
-  progression_summary_label: {
-    fontWeight: "700",
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-    marginBottom: 4,
-  },
-
-  progression_summary_value: {
-    fontWeight: "700",
-  },
-
-  progression_summary_caption: {
-    marginTop: 4,
-    lineHeight: 18,
-  },
-
   progression_selector_scroll: {
     marginBottom: 10,
   },

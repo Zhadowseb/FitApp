@@ -68,23 +68,6 @@ const MicrocyclePage = ({ route }) => {
     (progression) =>
       progression.exercise_name === selectedProgressionExerciseName
   );
-  const rawProgressionSummary = progressiveOverload.summary ?? "";
-  const summaryIsBlock = rawProgressionSummary.startsWith("This block:");
-  const progressionSummaryLabel = summaryIsBlock ? "This block" : "Overview";
-  const progressionSummaryValue = summaryIsBlock
-    ? rawProgressionSummary.replace("This block:", "").trim()
-    : rawProgressionSummary;
-  const progressionSummaryCaption = summaryIsBlock
-    ? "Average progression across selected exercises"
-    : rawProgressionSummary === "Custom progression"
-      ? "Selected exercises use different overload values"
-      : rawProgressionSummary === "Base 1 RM values"
-        ? "No extra load has been added in this block"
-        : rawProgressionSummary === "No Program bests selected."
-          ? "Choose exercises in Program bests to track overload"
-          : rawProgressionSummary === "No 1 RM values yet."
-            ? "Add 1 RM values on Program Overview to enable overload"
-            : null;
 
   useEffect(() => {
     const loadProgressiveOverload = async () => {
@@ -226,42 +209,6 @@ const MicrocyclePage = ({ route }) => {
               <ThemedTitle type="h2">Progressive Overload</ThemedTitle>
 
               <View style={styles.progression_section}>
-                <View
-                  style={[
-                    styles.progression_summary_card,
-                    {
-                      backgroundColor: theme.cardBackground,
-                      borderColor: summaryIsBlock
-                        ? theme.secondary
-                        : theme.cardBorder ?? theme.iconColor,
-                    },
-                  ]}
-                >
-                  <ThemedText
-                    size={10}
-                    style={styles.progression_summary_label}
-                    setColor={theme.quietText}
-                  >
-                    {progressionSummaryLabel}
-                  </ThemedText>
-                  <ThemedText
-                    size={summaryIsBlock ? 22 : 18}
-                    style={styles.progression_summary_value}
-                    setColor={summaryIsBlock ? theme.secondary : undefined}
-                  >
-                    {progressionSummaryValue}
-                  </ThemedText>
-                  {!!progressionSummaryCaption && (
-                    <ThemedText
-                      size={12}
-                      style={styles.progression_summary_caption}
-                      setColor={theme.quietText}
-                    >
-                      {progressionSummaryCaption}
-                    </ThemedText>
-                  )}
-                </View>
-
                 {selectedProgression ? (
                   <>
                     <ScrollView

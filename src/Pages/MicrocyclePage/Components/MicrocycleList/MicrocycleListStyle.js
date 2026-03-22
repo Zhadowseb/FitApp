@@ -6,49 +6,83 @@ export default StyleSheet.create({
     paddingTop: 0,
   },
 
-  status_section: {
-    alignItems: "center",
-    flex: 0.5,
-    paddingRight: 10,
+  card: {
+    flexDirection: "column",
+    paddingTop: 14,
+    paddingBottom: 12,
+  },
+
+  cardHeader: {
     flexDirection: "row",
-    
+    alignItems: "flex-start",
+    justifyContent: "space-between",
   },
 
-  body: {
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    flex: 0.8,
-  },
-
-  focus: {
-    flex: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  done: {
-    justifyContent: "center",
-    alignItems: "center",
-    margin: 15,
-  },
-
-  weeks: {
+  cardHeaderContent: {
     flex: 1,
-    marginTop: 6,
+    paddingRight: 12,
   },
 
-  header_status: {
+  cardHeaderEyebrow: {
+    fontWeight: "700",
+    letterSpacing: 0.9,
+    textTransform: "uppercase",
+    marginBottom: 2,
+  },
+
+  cardHeaderTitle: {
+    marginBottom: 4,
+  },
+
+  cardHeaderSummary: {
+    lineHeight: 16,
+  },
+
+  cardHeaderSide: {
+    alignItems: "flex-end",
+  },
+
+  statusPill: {
+    minHeight: 30,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    justifyContent: "center",
     alignItems: "center",
-    flexDirection: "column",
+    marginBottom: 8,
   },
 
-  label: {
-    fontSize: 14,
-    fontWeight: "bold",
+  statusPillText: {
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
 
+  optionsButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
+  progressTrack: {
+    height: 8,
+    borderRadius: 999,
+    overflow: "hidden",
+    marginTop: 12,
+    marginBottom: 12,
+  },
+
+  progressFill: {
+    height: "100%",
+    borderRadius: 999,
+  },
+
+  weekdaysShell: {
+    paddingTop: 2,
+  },
 
   loadingContainer: {
     flex: 1,
@@ -80,22 +114,22 @@ export default StyleSheet.create({
     paddingTop: 20,
   },
 
-  options: {
-    flex: 0.2,
-    alignItems: 'center',
-    justifyContent: "center",
-  },
-
   weekdaysRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingTop: 2,
+    paddingBottom: 2,
   },
 
   weekdayTouchable: {
     flex: 1,
+    alignItems: "center",
+  },
+
+  focus: {
+    flex: 8,
+    justifyContent: "center",
     alignItems: "center",
   },
 });

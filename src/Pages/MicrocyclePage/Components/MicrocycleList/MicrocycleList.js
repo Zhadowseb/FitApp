@@ -9,7 +9,6 @@ import ThreeDots from "../../../../Resources/Icons/UI-icons/ThreeDots"
 import Copy from "../../../../Resources/Icons/UI-icons/Copy";
 import Plus from "../../../../Resources/Icons/UI-icons/Plus";
 import CalenderPastePicker from "../../../../Resources/Components/CalenderPastePicker/CalenderPasteModal";
-import CircularProgression from "../../../../Resources/Components/CircularProgression"
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
 import WeekdayIndicator from "../../../../Resources/Figures/WeekdayIndicator";
@@ -22,7 +21,6 @@ import { programService as programRepository } from "../../../../Services";
 
 import { ThemedCard, 
         ThemedText, 
-        ThemedBouncyCheckbox,
         ThemedBottomSheet,
         ThemedPicker,
         ThemedTitle } from "../../../../Resources/ThemedComponents";
@@ -396,97 +394,153 @@ const MicrocycleList = ({
 
     const counts =
       workoutCounts[item.microcycle_id] ?? { total: 0, done: 0 };
-
-    const progress =
+    const completionPercent =
       counts.total > 0
-        ? (counts.done / counts.total) * 100
+        ? Math.round((counts.done / counts.total) * 100)
         : 0;
+    const isWeekComplete = counts.total > 0 && counts.done === counts.total;
+    const weekSummaryText =
+      counts.total === 0
+        ? "No workouts scheduled this week"
+        : `${counts.done} of ${counts.total} workouts complete`;
+    const weekStatusLabel =
+      counts.total === 0
+        ? "Empty"
+        : isWeekComplete
+          ? "Complete"
+          : `${counts.total - counts.done} left`;
+    const quietText = theme.quietText ?? theme.iconColor;
+    const cardBorder = theme.cardBorder ?? theme.iconColor;
+    const softSurface = theme.uiBackground ?? theme.cardBackground;
+    const titleColor = theme.title ?? theme.text;
+    const statusBackground = isWeekComplete
+      ? theme.secondaryLight ?? theme.secondary
+      : softSurface;
+    const statusTextColor = isWeekComplete
+      ? theme.secondary
+      : theme.text;
+    const progressTrackColor = softSurface;
+    const progressFillColor = isWeekComplete ? theme.secondary : theme.primary;
 
     return (
-      <ThemedCard style={{flexDirection: "column", paddingTop: "0", paddingBottom: "0",}}>
+      <ThemedCard
+        style={[
+          styles.card,
+          {
+            borderWidth: 1,
+            borderColor: isWeekComplete ? theme.secondary : cardBorder,
+          },
+        ]}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.cardHeaderContent}>
+            <ThemedText
+              size={10}
+              style={styles.cardHeaderEyebrow}
+              setColor={quietText}
+            >
+              Week {item.microcycle_number}
+            </ThemedText>
 
-            <View style={{flexDirection: "row"}}>
-            <View style={styles.status_section}>
+            <ThemedTitle
+              type="h3"
+              style={[styles.cardHeaderTitle, { color: titleColor }]}
+            >
+              {item.focus || "No focus set"}
+            </ThemedTitle>
 
-                <View style={styles.done}>
-                    <ThemedBouncyCheckbox
-                      value={item.done === 1}
-                      size={24}
-                      edgeSize={2}
-                      disabled
-                      checkmarkColor={theme.cardBackground} />
-                </View>              
+            <ThemedText
+              size={11}
+              style={styles.cardHeaderSummary}
+              setColor={quietText}
+            >
+              {weekSummaryText}
+            </ThemedText>
+          </View>
 
-                <View style={styles.header_status}>
-                    <ThemedText style={styles.label}>Week</ThemedText>
-                    <ThemedText> {item.microcycle_number} </ThemedText>
-                </View>
-
+          <View style={styles.cardHeaderSide}>
+            <View
+              style={[
+                styles.statusPill,
+                { backgroundColor: statusBackground, borderColor: cardBorder },
+              ]}
+            >
+              <ThemedText
+                size={10}
+                style={styles.statusPillText}
+                setColor={statusTextColor}
+              >
+                {weekStatusLabel}
+              </ThemedText>
             </View>
 
-            <View style={styles.body}>
-
-                <ThemedText>
-                  {item.focus}
-                </ThemedText>
-                
-            </View>
-
-              <CircularProgression
-                size = {60}
-                strokeWidth = {5} 
-                text= {`${counts.done}/${counts.total}`}
-                textSize = {16}
-                progressPercent = {progress}
+            <TouchableOpacity
+              style={[
+                styles.optionsButton,
+                { backgroundColor: softSurface, borderColor: cardBorder },
+              ]}
+              onPress={async () => {
+                set_selectedWeek(item);
+                set_OptionsBottomsheet_visible(true);
+              }}
+            >
+              <ThreeDots
+                width={"20"}
+                height={"20"}
               />
+            </TouchableOpacity>
+          </View>
+        </View>
 
-            <View style={{justifyContent: "center"}}>
-              <TouchableOpacity
-                  style={styles.options}
-                  onPress={async () => {
-                      set_selectedWeek(item);
-                      set_OptionsBottomsheet_visible(true);
-                  }}>
+        {counts.total > 0 && (
+          <View
+            style={[
+              styles.progressTrack,
+              { backgroundColor: progressTrackColor },
+            ]}
+          >
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  width: `${completionPercent}%`,
+                  backgroundColor: progressFillColor,
+                },
+              ]}
+            />
+          </View>
+        )}
 
-                  <ThreeDots
-                      width={"20"}
-                      height={"20"}/>
+        <View style={styles.weekdaysShell}>
+          <View style={styles.weekdaysRow}>
+            {(weekSummaries[item.microcycle_id] ?? buildWeekdayIndicators(item)).map((day) => (
+              <View
+                key={`${item.microcycle_id}-${day.day}`}
+                style={styles.weekdayTouchable}
+              >
+                <WeekdayIndicator
+                  label={day.label}
+                  dateLabel={day.dateLabel}
+                  active={day.active}
+                  completed={day.completed}
+                  icon={day.icon}
+                  iconLabel={day.iconLabel}
+                  workoutCards={day.workoutCards}
+                  onWorkoutPress={(workout) => {
+                    if (!workout) {
+                      return;
+                    }
 
-              </TouchableOpacity>   
-            </View>
-            </View>
-
-            <View>
-              <View style={styles.weekdaysRow}>
-                {(weekSummaries[item.microcycle_id] ?? buildWeekdayIndicators(item)).map((day) => (
-                  <View
-                    key={`${item.microcycle_id}-${day.day}`}
-                    style={styles.weekdayTouchable}
-                  >
-                    <WeekdayIndicator
-                      label={day.label}
-                      dateLabel={day.dateLabel}
-                      active={day.active}
-                      completed={day.completed}
-                      icon={day.icon}
-                      iconLabel={day.iconLabel}
-                      workoutCards={day.workoutCards}
-                      onWorkoutPress={(workout) => {
-                        if (!workout) {
-                          return;
-                        }
-
-                        navigateToWorkout(workout, day);
-                      }}
-                      onDayLongPress={() => {
-                        handleWeekdayLongPress(day);
-                      }}
-                    />
-                  </View>
-                ))}
+                    navigateToWorkout(workout, day);
+                  }}
+                  onDayLongPress={() => {
+                    handleWeekdayLongPress(day);
+                  }}
+                />
               </View>
-            </View>
-
+            ))}
+          </View>
+        </View>
       </ThemedCard>
     );
   };

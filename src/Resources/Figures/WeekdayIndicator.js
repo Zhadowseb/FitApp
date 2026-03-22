@@ -19,6 +19,40 @@ const WeekdayIndicator = ({
   const theme = Colors[colorScheme] ?? Colors.light;
   const hasWorkoutCards = workoutCards.length > 0;
   const hasWorkout = hasWorkoutCards || Boolean(Icon || iconLabel);
+  const [dayNumber, monthNumber] = (dateLabel ?? "").split(".");
+  const quietText = theme.quietText ?? theme.iconColor ?? theme.text;
+  const titleColor = theme.title ?? theme.text;
+  const surfaceColor = theme.uiBackground ?? theme.cardBackground ?? theme.background;
+  const activeSurface = theme.primaryLight ?? surfaceColor;
+  const completedSurface = theme.secondary ?? surfaceColor;
+  const cardBorder = theme.cardBorder ?? theme.iconColor ?? theme.text;
+  const activeBorder = theme.primary ?? cardBorder;
+  const completedBorder = theme.secondary ?? cardBorder;
+  const activeText = theme.primaryDark ?? titleColor;
+  const completedText = theme.cardBackground ?? theme.background ?? titleColor;
+  const badgeBackgroundColor = active
+    ? activeSurface
+    : completed
+      ? completedSurface
+      : surfaceColor;
+  const badgeBorderColor = active
+    ? activeBorder
+    : completed
+      ? completedBorder
+      : cardBorder;
+  const badgeLabelColor = active
+    ? activeText
+    : completed
+      ? completedText
+      : quietText;
+  const badgeDateColor = active
+    ? activeText
+    : completed
+      ? completedText
+      : titleColor;
+  const weekdayTextColor = completed
+    ? completedText
+    : theme.title ?? "#fff";
 
   return (
     <View style={styles.container}>
@@ -27,23 +61,34 @@ const WeekdayIndicator = ({
         onLongPress={onDayLongPress}
         style={[
           styles.headerBadge,
-          { borderColor: completed ? theme.secondary : theme.iconColor },
+          {
+            backgroundColor: badgeBackgroundColor,
+            borderColor: badgeBorderColor,
+          },
         ]}
       >
         <Text
           style={[
-            styles.label,
-            active && styles.activeLabel,
-            { color: theme.text },
+            styles.weekdayLabel,
+            active && styles.weekdayLabelActive,
+            { color: weekdayTextColor },
           ]}
         >
           {active ? "Today" : label}
         </Text>
 
         {!!dateLabel && (
-          <Text style={[styles.dateLabel, { color: theme.text }]}>
-            {dateLabel}
-          </Text>
+          <View style={styles.dateRow}>
+            <Text style={[styles.dateNumber, { color: badgeDateColor }]}>
+              {dayNumber ?? dateLabel}
+            </Text>
+
+            {!!monthNumber && (
+              <Text style={[styles.dateMonth, { color: badgeLabelColor }]}>
+                .{monthNumber}
+              </Text>
+            )}
+          </View>
         )}
       </Pressable>
 
@@ -150,21 +195,43 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   headerBadge: {
-    minWidth: 44,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
+    minWidth: 42,
+    minHeight: 50,
+    paddingHorizontal: 4,
+    paddingVertical: 6,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 14,
     alignItems: "center",
-    marginBottom: 4,
+    justifyContent: "center",
+    marginBottom: 6,
   },
-  label: {
-    fontSize: 10,
-    fontWeight: "600",
-  },
-  activeLabel: {
-    fontSize: 12,
+  weekdayLabel: {
+    fontSize: 9,
     fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
+  },
+  weekdayLabelActive: {
+    fontSize: 9,
+    letterSpacing: 0.8,
+  },
+  dateRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "center",
+    marginTop: 2,
+  },
+  dateNumber: {
+    fontSize: 15,
+    fontWeight: "700",
+    lineHeight: 16,
+  },
+  dateMonth: {
+    fontSize: 9,
+    fontWeight: "700",
+    marginLeft: 1,
+    marginBottom: 1,
+    opacity: 0.8,
   },
   circle: {
     width: 40,
@@ -197,10 +264,5 @@ const styles = StyleSheet.create({
   iconLabelOnly: {
     fontSize: 9,
     marginTop: 0,
-  },
-  dateLabel: {
-    fontSize: 9,
-    opacity: 0.7,
-    textAlign: "center",
   },
 });

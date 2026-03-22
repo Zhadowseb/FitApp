@@ -40,29 +40,12 @@ export default StyleSheet.create({
 
   cardHeaderSide: {
     alignItems: "flex-end",
-  },
-
-  statusPill: {
-    minHeight: 30,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    borderWidth: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-
-  statusPillText: {
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    justifyContent: "flex-start",
   },
 
   optionsButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 14,
-    borderWidth: 1,
+    width: 28,
+    height: 28,
     alignItems: "center",
     justifyContent: "center",
   },

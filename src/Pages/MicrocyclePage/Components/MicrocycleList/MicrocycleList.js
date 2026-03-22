@@ -403,22 +403,10 @@ const MicrocycleList = ({
       counts.total === 0
         ? "No workouts scheduled this week"
         : `${counts.done} of ${counts.total} workouts complete`;
-    const weekStatusLabel =
-      counts.total === 0
-        ? "Empty"
-        : isWeekComplete
-          ? "Complete"
-          : `${counts.total - counts.done} left`;
     const quietText = theme.quietText ?? theme.iconColor;
     const cardBorder = theme.cardBorder ?? theme.iconColor;
     const softSurface = theme.uiBackground ?? theme.cardBackground;
     const titleColor = theme.title ?? theme.text;
-    const statusBackground = isWeekComplete
-      ? theme.secondaryLight ?? theme.secondary
-      : softSurface;
-    const statusTextColor = isWeekComplete
-      ? theme.secondary
-      : theme.text;
     const progressTrackColor = softSurface;
     const progressFillColor = isWeekComplete ? theme.secondary : theme.primary;
 
@@ -459,26 +447,8 @@ const MicrocycleList = ({
           </View>
 
           <View style={styles.cardHeaderSide}>
-            <View
-              style={[
-                styles.statusPill,
-                { backgroundColor: statusBackground, borderColor: cardBorder },
-              ]}
-            >
-              <ThemedText
-                size={10}
-                style={styles.statusPillText}
-                setColor={statusTextColor}
-              >
-                {weekStatusLabel}
-              </ThemedText>
-            </View>
-
             <TouchableOpacity
-              style={[
-                styles.optionsButton,
-                { backgroundColor: softSurface, borderColor: cardBorder },
-              ]}
+              style={styles.optionsButton}
               onPress={async () => {
                 set_selectedWeek(item);
                 set_OptionsBottomsheet_visible(true);

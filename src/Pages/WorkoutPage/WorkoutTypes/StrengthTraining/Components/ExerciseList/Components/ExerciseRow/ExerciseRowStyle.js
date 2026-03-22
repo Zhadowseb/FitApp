@@ -93,5 +93,7 @@ export default StyleSheet.create({
 
   expandedSection: {
     marginTop: 10,
+    marginHorizontal: -6,
+    marginBottom: -6
   },
 });

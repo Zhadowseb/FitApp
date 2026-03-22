@@ -8,6 +8,14 @@ export default StyleSheet.create({
         flex: 1,
     },
 
+    wrapper: {
+        marginHorizontal: 0,
+        marginVertical: 0,
+        paddingHorizontal: 4,
+        paddingVertical: 4,
+        borderRadius: 18,
+    },
+
     padding: {
         paddingBottom: 5,
         paddingTop: 5,

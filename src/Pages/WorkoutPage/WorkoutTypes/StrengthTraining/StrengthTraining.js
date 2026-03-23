@@ -1,41 +1,36 @@
-import { StatusBar } from 'expo-status-bar';
 import {
   AppState,
-  Button,
-  Switch,
-  Text,
   TouchableOpacity,
   View,
   Vibration,
-} from 'react-native';
+} from "react-native";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
 
-import ExerciseList from './Components/ExerciseList/ExerciseList';
-import CircularProgression from '../../../../Resources/Components/CircularProgression';
+import ExerciseList from "./Components/ExerciseList/ExerciseList";
+import CircularProgression from "../../../../Resources/Components/CircularProgression";
 import { useColorScheme } from "react-native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 
-import styles from "../../WorkoutPageStyle";
-import { ThemedTitle, 
-        ThemedCard, 
-        ThemedBottomSheet,
-        ThemedKeyboardProtection,
-        ThemedView, 
-        ThemedText, 
-        ThemedButton, 
-        ThemedModal,
-        ThemedHeader } 
-  from "../../../../Resources/ThemedComponents";
-import { formatTime, formatWorkoutStart } from '../../../../Utils/timeUtils';
-import { weightliftingService, workoutService} from "../../../../Services";
+import pageStyles from "../../WorkoutPageStyle";
+import styles from "./StrengthTrainingStyle";
+import {
+  ThemedCard,
+  ThemedBottomSheet,
+  ThemedKeyboardProtection,
+  ThemedView,
+  ThemedText,
+  ThemedButton,
+} from "../../../../Resources/ThemedComponents";
+import { formatTime, formatWorkoutStart } from "../../../../Utils/timeUtils";
+import { weightliftingService, workoutService } from "../../../../Services";
 
 //Icons:
-import Filter from '../../../../Resources/Icons/UI-icons/Filter';
-import Checkmark from '../../../../Resources/Icons/UI-icons/Checkmark';
-import ArrowDoubleDown from '../../../../Resources/Icons/UI-icons/ArrowDoubleDown';
-import ArrowDoubleUp from '../../../../Resources/Icons/UI-icons/ArrowDoubleUp';
+import Filter from "../../../../Resources/Icons/UI-icons/Filter";
+import Checkmark from "../../../../Resources/Icons/UI-icons/Checkmark";
+import ArrowDoubleDown from "../../../../Resources/Icons/UI-icons/ArrowDoubleDown";
+import ArrowDoubleUp from "../../../../Resources/Icons/UI-icons/ArrowDoubleUp";
 
 const StrengthTraining = ({workout_id, date}) =>  {
   const colorScheme = useColorScheme();
@@ -237,152 +232,222 @@ const StrengthTraining = ({workout_id, date}) =>  {
     set_isRunning(false);
     set_isDone(false);
     refresh();
-  }
+  };
 
+  const primaryColor = theme.primary ?? theme.iconColor ?? theme.text;
+  const secondaryColor = theme.secondary ?? primaryColor;
+  const cardSurface = theme.cardBackground ?? theme.background;
+  const innerSurface = theme.uiBackground ?? cardSurface;
+  const cardBorder = theme.cardBorder ?? theme.iconColor ?? theme.text;
+  const titleColor = theme.title ?? theme.text;
+  const quietText = theme.quietText ?? theme.iconColor ?? theme.text;
+  const invertedText = theme.textInverted ?? theme.background ?? "#0E0F12";
+
+  const currentElapsed = elapsed_time + computeCurrentElapsed();
+  const resolvedTotalSets = Math.max(Number(totalSets) || 0, 0);
+  const resolvedDoneSets = Math.max(Number(doneSets) || 0, 0);
+  const progressPercent =
+    resolvedTotalSets > 0
+      ? Math.min(100, (resolvedDoneSets / resolvedTotalSets) * 100)
+      : 0;
+
+  const statusLabel = isDone
+    ? "Complete"
+    : isRunning
+      ? "In progress"
+      : original_start_time !== null
+        ? "Paused"
+        : "Ready";
+  const statusTone = isDone ? secondaryColor : primaryColor;
+  const statusBackground = isDone
+    ? theme.secondaryLight ?? innerSurface
+    : isRunning
+      ? theme.primaryLight ?? innerSurface
+      : innerSurface;
+  const statusTextColor = isDone || isRunning ? invertedText : titleColor;
+  const timerHint = isRunning
+      ? "Timer is currently running"
+      : original_start_time !== null
+        ? "Resume whenever you are ready"
+        : null;
+  const startedDisplay =
+    original_start_time !== null
+      ? formatWorkoutStart(original_start_time)
+      : "Not started yet";
+  const progressCaption =
+    resolvedTotalSets > 0
+      ? `${Math.round(progressPercent)}% complete`
+      : "No sets yet";
 
   return (
     <ThemedView style={{ flex: 1 }}>
       <ThemedKeyboardProtection scroll>
+        <View style={styles.heroShell}>
+          <ThemedCard
+            style={[
+              styles.heroCard,
+              {
+                backgroundColor: isDone
+                  ? "rgba(96, 218, 172, 0.08)"
+                  : cardSurface,
+                borderColor: isDone
+                  ? secondaryColor
+                  : isRunning
+                    ? primaryColor
+                    : cardBorder,
+              },
+            ]}
+          >
+            <View
+              pointerEvents="none"
+              style={[
+                styles.heroAccentPrimary,
+                { backgroundColor: isDone ? secondaryColor : primaryColor },
+              ]}
+            />
+            <View
+              pointerEvents="none"
+              style={[
+                styles.heroAccentSecondary,
+                { backgroundColor: secondaryColor },
+              ]}
+            />
 
-        <View style={{ 
-          justifyContent: "center",
-          width: "95%"}}>
-
-
-          <ThemedCard style={{
-            alignItems: "center",
-            justifyContent: "center",
-            width: "100%",
-            height: 200}}>
-
-              {/*Buttons, Timer Info, Timer Display, Progression Circle */}
-              <View style={{flexDirection: "column", alignItems: "center"}}>
-                
-                  {/* Timer Info, Timer display, Progression Circle*/}
-                  <View style={{ 
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    flex: 1,
-                    flexDirection: "row"}}>
-                      
-                      {/*Workout timer info. */}
-                      <View style={{
-                        alignItems: "center",
-                        width: "50%"}}>
-
-                        {original_start_time !== null ? (
-                          <View style={{height: 30}}> 
-                              <ThemedText size={10} setColor={theme.quietText}>
-                                  Workout started on:
-                              </ThemedText>
-                              <ThemedText size={10} setColor={theme.quietText}>
-                                  {formatWorkoutStart(original_start_time)}
-                              </ThemedText>
-                          </View>
-                        ) : (
-                          <View style={{height: 30, justifyContent: "center"}}>
-                            <ThemedText size={10} setColor={theme.quietText}>
-                                Workout not started.
-                            </ThemedText>
-                          </View>
-                        )}
-
-                        {/* Actual time display */}
-                        <ThemedText size={15}>
-                            Elapsed time
-                        </ThemedText>
-                        <ThemedText size={30}>
-                            {formatTime(elapsed_time + computeCurrentElapsed())}
-                        </ThemedText>
-                      </View>
-
-                      {/* Set progression circle */}
-                      <View style={{  
-                        width: "50%",
-                        alignItems: "center",
-                        justifyContent: "center"}}>
-                        <CircularProgression
-                          size = {110}
-                          strokeWidth = {12} 
-                          text= {doneSets + "/" + totalSets}
-                          textSize = {16}
-                          progressPercent = {(doneSets/totalSets) * 100}
-                        />
-                      </View>
+            <View style={styles.heroContentRow}>
+              <View style={styles.heroInfoColumn}>
+                <View style={styles.heroStatusRow}>
+                  <View
+                    style={[
+                      styles.heroStatusBadge,
+                      {
+                        backgroundColor: statusBackground,
+                        borderColor: isDone || isRunning ? statusTone : cardBorder,
+                      },
+                    ]}
+                  >
+                    <ThemedText
+                      style={styles.heroStatusBadgeText}
+                      setColor={statusTextColor}
+                    >
+                      {statusLabel}
+                    </ThemedText>
                   </View>
+                </View>
 
-                  {/* Timer buttons */}
-                  <View style={{
-                    flexDirection: "row",
-                    height: 50}}>
+                <ThemedText style={styles.heroTimerLabel} setColor={quietText}>
+                  Elapsed time
+                </ThemedText>
+                <ThemedText style={styles.heroTimerValue} setColor={titleColor}>
+                  {formatTime(currentElapsed)}
+                </ThemedText>
+                {timerHint ? (
+                  <ThemedText style={styles.heroTimerHint} setColor={quietText}>
+                    {timerHint}
+                  </ThemedText>
+                ) : null}
 
-                      {!isRunning && !isDone && (
-                      <View style={{paddingRight: 5}}>
-                          <ThemedButton
-                              title={
-                                  (original_start_time !== null) ?
-                                      "Continue"
-                                      : "Start" }
-                              onPress={startWorkout}
-                              variant='secondary'
-                              disabled={isDone || isRunning}>
-                          </ThemedButton>
-                      </View>
-                      )}
-
-                      {isRunning && (
-                      <View>
-                          <ThemedButton
-                              title={"Pause"}
-                              onPress={pauseWorkout}
-                              variant='primary'
-                              disabled={!isRunning || isDone}>
-                          </ThemedButton>
-                      </View>
-                      )}
-
-                      {!isRunning && !isDone && (original_start_time !== null) && (
-                      <View style={{paddingLeft: 5}}>
-                          <ThemedButton
-                              title={"Finish"}
-                              onPress={endWorkout}
-                              variant='danger'
-                              disabled={
-                                  original_start_time === null ||
-                                  isDone}>
-                          </ThemedButton>
-                      </View>
-                      )}
-
-                      {isDone && (
-                          <View style={{paddingTop: 5}}>
-                              <ThemedButton
-                                  title={"Restart"}
-                                  onPress={restartWorkout}
-                                  variant='danger'
-                                  disabled={
-                                      original_start_time === null ||
-                                      !isDone}>
-                              </ThemedButton>
-                          </View>
-                      )}
-
+                <View style={styles.heroMetaRow}>
+                  <View
+                    style={[
+                      styles.heroMetaCard,
+                      {
+                        backgroundColor: innerSurface,
+                        borderColor: cardBorder,
+                      },
+                    ]}
+                  >
+                    <ThemedText style={styles.heroMetaLabel} setColor={quietText}>
+                      Started
+                    </ThemedText>
+                    <ThemedText style={styles.heroMetaValue} setColor={titleColor}>
+                      {startedDisplay}
+                    </ThemedText>
                   </View>
+                </View>
               </View>
+
+              <View style={styles.heroProgressColumn}>
+                <CircularProgression
+                  size={136}
+                  strokeWidth={12}
+                  text={`${resolvedDoneSets}/${resolvedTotalSets}`}
+                  textSize={24}
+                  label="Sets"
+                  caption={progressCaption}
+                  progressPercent={progressPercent}
+                  bgColor={innerSurface}
+                  pgColor={isDone ? secondaryColor : primaryColor}
+                  centerColor={cardSurface}
+                />
+              </View>
+            </View>
+
+            <View style={styles.heroActionsRow}>
+              {!isRunning && !isDone && (
+                <View
+                  style={[
+                    styles.heroActionSlot,
+                    original_start_time !== null && styles.heroActionSlotSpaced,
+                  ]}
+                >
+                  <ThemedButton
+                    title={original_start_time !== null ? "Continue" : "Start"}
+                    onPress={startWorkout}
+                    variant="primary"
+                    disabled={isDone || isRunning}
+                    style={styles.heroActionButton}
+                  />
+                </View>
+              )}
+
+              {!isRunning && !isDone && original_start_time !== null && (
+                <View style={styles.heroActionSlot}>
+                  <ThemedButton
+                    title="Finish"
+                    onPress={endWorkout}
+                    variant="secondary"
+                    disabled={original_start_time === null || isDone}
+                    style={styles.heroActionButton}
+                  />
+                </View>
+              )}
+
+              {isRunning && (
+                <View style={styles.heroActionSlot}>
+                  <ThemedButton
+                    title="Pause"
+                    onPress={pauseWorkout}
+                    variant="primary"
+                    disabled={!isRunning || isDone}
+                    style={styles.heroActionButton}
+                  />
+                </View>
+              )}
+
+              {isDone && (
+                <View style={styles.heroActionSlot}>
+                  <ThemedButton
+                    title="Restart"
+                    onPress={restartWorkout}
+                    variant="danger"
+                    disabled={original_start_time === null || !isDone}
+                    style={styles.heroActionButton}
+                  />
+                </View>
+              )}
+            </View>
           </ThemedCard>
         </View>
 
-        <View
-          style={{
-            alignSelf: "flex-end",
-            marginRight: 8,
-            marginBottom: 5,
-            flexDirection: "row",
-            alignItems: "center",
-          }}
-        >
+        <View style={styles.toolbar}>
           <TouchableOpacity
-            style={{ marginRight: 8 }}
+            style={[
+              styles.toolbarButton,
+              {
+                backgroundColor: innerSurface,
+                borderColor: cardBorder,
+              },
+            ]}
             onPress={() => {
               setExpansionAction({
                 type: "expand",
@@ -390,14 +455,17 @@ const StrengthTraining = ({workout_id, date}) =>  {
               });
             }}
           >
-            <ArrowDoubleDown
-              width={24}
-              height={24}
-              color={theme.primary}/>
+            <ArrowDoubleDown width={24} height={24} color={primaryColor} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={{ marginRight: 8 }}
+            style={[
+              styles.toolbarButton,
+              {
+                backgroundColor: innerSurface,
+                borderColor: cardBorder,
+              },
+            ]}
             onPress={() => {
               setExpansionAction({
                 type: "collapse",
@@ -405,32 +473,34 @@ const StrengthTraining = ({workout_id, date}) =>  {
               });
             }}
           >
-            <ArrowDoubleUp
-              width={24}
-              height={24}
-              color={theme.primary}/>
+            <ArrowDoubleUp width={24} height={24} color={primaryColor} />
           </TouchableOpacity>
 
           <TouchableOpacity
+            style={[
+              styles.toolbarButton,
+              {
+                backgroundColor: innerSurface,
+                borderColor: cardBorder,
+              },
+            ]}
             onPress={() => {
               setFilterBottomsheetVisible(true);
             }}
           >
-            <Filter
-              width={24}
-              height={24}/>
+            <Filter width={24} height={24} color={primaryColor} />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.working_sets}>
-
-          <ExerciseList 
-            workout_id = {workout_id}
-            refreshing = {refreshing} 
-            updateUI = {refresh}
+        <View style={styles.workingSets}>
+          <ExerciseList
+            workout_id={workout_id}
+            refreshing={refreshing}
+            updateUI={refresh}
             showCompletedExercises={showCompletedExercises}
-            expansionAction={expansionAction}/>
-        </View> 
+            expansionAction={expansionAction}
+          />
+        </View>
 
       </ThemedKeyboardProtection>
 
@@ -438,18 +508,18 @@ const StrengthTraining = ({workout_id, date}) =>  {
         visible={filterBottomsheetVisible}
         onClose={() => setFilterBottomsheetVisible(false)}
       >
-        <View style={styles.bottomsheetTitle}>
+        <View style={pageStyles.bottomsheetTitle}>
           <ThemedText>Filter exercises</ThemedText>
         </View>
 
-        <View style={styles.bottomsheetBody}>
+        <View style={pageStyles.bottomsheetBody}>
           <TouchableOpacity
-            style={[styles.option, styles.filterOption]}
+            style={[pageStyles.option, pageStyles.filterOption]}
             onPress={() => {
               setShowCompletedExercises((prev) => !prev);
             }}
           >
-            <ThemedText style={styles.filterOptionText}>
+            <ThemedText style={pageStyles.filterOptionText}>
               Show completed exercises
             </ThemedText>
 

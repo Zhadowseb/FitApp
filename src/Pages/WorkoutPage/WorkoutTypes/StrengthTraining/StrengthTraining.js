@@ -265,11 +265,7 @@ const StrengthTraining = ({workout_id, date}) =>  {
       ? theme.primaryLight ?? innerSurface
       : innerSurface;
   const statusTextColor = isDone || isRunning ? invertedText : titleColor;
-  const timerHint = isRunning
-      ? "Timer is currently running"
-      : original_start_time !== null
-        ? "Resume whenever you are ready"
-        : null;
+  const timerHint = null;
   const startedDisplay =
     original_start_time !== null
       ? formatWorkoutStart(original_start_time)

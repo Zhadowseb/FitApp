@@ -380,20 +380,6 @@ const Run = ({ workout_id }) => {
   const invertedText = theme.textInverted ?? theme.background ?? "#0E0F12";
 
   const currentElapsed = elapsed_time + computeCurrentElapsed();
-  const statusLabel = isDone
-    ? "Complete"
-    : isRunning
-      ? "In progress"
-      : original_start_time !== null
-        ? "Paused"
-        : "Ready";
-  const statusTone = isDone ? secondaryColor : primaryColor;
-  const statusBackground = isDone
-    ? theme.secondaryLight ?? innerSurface
-    : isRunning
-      ? theme.primaryLight ?? innerSurface
-      : innerSurface;
-  const statusTextColor = isDone || isRunning ? invertedText : titleColor;
   const startedDisplay =
     original_start_time !== null
       ? formatWorkoutStart(original_start_time)
@@ -489,31 +475,14 @@ const Run = ({ workout_id }) => {
 
             <View style={styles.heroContentRow}>
               <View style={styles.heroInfoColumn}>
-                <View style={styles.heroStatusRow}>
-                  <View
-                    style={[
-                      styles.heroStatusBadge,
-                      {
-                        backgroundColor: statusBackground,
-                        borderColor: isDone || isRunning ? statusTone : cardBorder,
-                      },
-                    ]}
-                  >
-                    <ThemedText
-                      style={styles.heroStatusBadgeText}
-                      setColor={statusTextColor}
-                    >
-                      {statusLabel}
-                    </ThemedText>
-                  </View>
+                <View style={styles.heroTimerBlock}>
+                  <ThemedText style={styles.heroTimerLabel} setColor={quietText}>
+                    Elapsed time
+                  </ThemedText>
+                  <ThemedText style={styles.heroTimerValue} setColor={titleColor}>
+                    {formatTime(currentElapsed)}
+                  </ThemedText>
                 </View>
-
-                <ThemedText style={styles.heroTimerLabel} setColor={quietText}>
-                  Elapsed time
-                </ThemedText>
-                <ThemedText style={styles.heroTimerValue} setColor={titleColor}>
-                  {formatTime(currentElapsed)}
-                </ThemedText>
 
                 <View
                   style={[

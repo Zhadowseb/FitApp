@@ -48,6 +48,12 @@ export default StyleSheet.create({
     paddingRight: 14,
   },
 
+  heroTimerBlock: {
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 78,
+  },
+
   heroStatusRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -74,22 +80,27 @@ export default StyleSheet.create({
     letterSpacing: 0.9,
     textTransform: "uppercase",
     marginBottom: 4,
+    textAlign: "center",
   },
 
   heroTimerValue: {
-    fontSize: 36,
-    lineHeight: 40,
+    fontSize: 40,
+    lineHeight: 44,
     fontWeight: "800",
     letterSpacing: 0.5,
     fontVariant: ["tabular-nums"],
+    textAlign: "center",
   },
 
   heroMetaCard: {
-    marginTop: 14,
+    marginTop: 11,
     borderRadius: 18,
     borderWidth: 1,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    minHeight: 78,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   heroMetaLabel: {
@@ -98,12 +109,14 @@ export default StyleSheet.create({
     letterSpacing: 0.8,
     textTransform: "uppercase",
     marginBottom: 6,
+    textAlign: "center",
   },
 
   heroMetaValue: {
     fontSize: 12,
     lineHeight: 17,
     fontWeight: "700",
+    textAlign: "center",
   },
 
   heroLiveColumn: {
@@ -117,7 +130,9 @@ export default StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 14,
     paddingVertical: 14,
+    minHeight: 78,
     alignItems: "center",
+    justifyContent: "center",
   },
 
   heroLiveSubCard: {
@@ -126,7 +141,9 @@ export default StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 12,
+    minHeight: 78,
     alignItems: "center",
+    justifyContent: "center",
   },
 
   heroLiveLabel: {

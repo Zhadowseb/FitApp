@@ -92,6 +92,15 @@ export async function initializeDatabase(db) {
     ["done", "INTEGER NOT NULL DEFAULT 0"],
   ]);
 
+  await db.execAsync(`
+    UPDATE Exercise
+    SET sets = (
+      SELECT COUNT(*)
+      FROM Sets
+      WHERE Sets.exercise_id = Exercise.exercise_id
+    );
+  `);
+
   await initializeWeightliftingData(db);
 
   /*

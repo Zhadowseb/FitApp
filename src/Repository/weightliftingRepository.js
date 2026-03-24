@@ -253,9 +253,10 @@ export async function getEstimatedWeightBySetId(db, setId) {
 
 export async function getTotalPlannedSetsByWorkout(db, workoutId) {
   return db.getFirstAsync(
-    `SELECT COALESCE(SUM(sets), 0) AS count
-     FROM Exercise
-     WHERE workout_id = ?;`,
+    `SELECT COUNT(*) AS count
+     FROM Sets s
+     JOIN Exercise e ON e.exercise_id = s.exercise_id
+     WHERE e.workout_id = ?;`,
     [workoutId]
   );
 }

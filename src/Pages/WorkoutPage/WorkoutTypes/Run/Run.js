@@ -1,491 +1,634 @@
-import { StatusBar } from 'expo-status-bar';
-import { AppState, View, Button, ScrollView, Text, TouchableOpacity, Switch } from 'react-native';
+import { AppState, TouchableOpacity, View, Vibration } from "react-native";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
+import { useColorScheme } from "react-native";
+
 import RunSetList from "./RunSetList";
-// import * as Location from 'expo-location';
-
-import { useColorScheme, Vibration } from "react-native";
+import Plus from "../../../../Resources/Icons/UI-icons/Plus";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
-
-import { ThemedTitle, 
-        ThemedCard, 
-        ThemedView, 
-        ThemedText, 
-        ThemedSwitch, 
-        ThemedModal,
-        ThemedHeader,
-        ThemedButton, } 
-  from "../../../../Resources/ThemedComponents";
-
-import WorkoutStopwatch from '../../../../Resources/Components/StopWatch';
-import Plus from '../../../../Resources/Icons/UI-icons/Plus';
-import styles from './RunStyle';
-
-import { formatTime, formatWorkoutStart } from '../../../../Utils/timeUtils';
 import {
-    runningService as runningRepository,
-    workoutService as workoutRepository,
+  ThemedCard,
+  ThemedView,
+  ThemedText,
+  ThemedButton,
+  ThemedKeyboardProtection,
+} from "../../../../Resources/ThemedComponents";
+import styles from "./RunStyle";
+
+import { formatTime, formatWorkoutStart } from "../../../../Utils/timeUtils";
+import {
+  runningService as runningRepository,
+  workoutService as workoutRepository,
 } from "../../../../Services";
 
-// const LOCATION_TASK = 'background-location-task';
-const Run = ({workout_id}) =>  {
-    const colorScheme = useColorScheme();
-    const theme = Colors[colorScheme] ?? Colors.light;
-    const db = useSQLiteContext();
+const TYPE_LABELS = {
+  WARMUP: "Warmup",
+  WORKING_SET: "Run block",
+  COOLDOWN: "Cooldown",
+};
 
-    const [updateCount, set_updateCount] = useState(0);
-    const triggerReload = () => {
-        set_updateCount(prev => prev + 1);
-    };
+const Run = ({ workout_id }) => {
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme] ?? Colors.light;
+  const db = useSQLiteContext();
 
-    const [warmupEmpty, set_WarmupEmpty] = useState(true);
-    const [workingEmpty, set_WorkingEmpty] = useState(true);
-    const [cooldownEmpty, set_CooldownEmpty] = useState(true);
+  const [updateCount, set_updateCount] = useState(0);
+  const triggerReload = () => {
+    set_updateCount((prev) => prev + 1);
+  };
 
+  const [warmupEmpty, set_WarmupEmpty] = useState(true);
+  const [workingEmpty, set_WorkingEmpty] = useState(true);
+  const [cooldownEmpty, set_CooldownEmpty] = useState(true);
 
-    //Workout timer state:
-    const [original_start_time, set_original_start_time] = useState(null);
-    const [timer_start, set_timer_start] = useState(null);
-    const [elapsed_time, set_elapsed_time] = useState(0);
-    const [isDone, set_isDone] = useState(false);
-    const [isRunning, set_isRunning] = useState(false);
-    
-    const [activeSet, set_activeSet] = useState("");
-    const [activeSet_remainingTime, set_activeSet_remainingTime] = useState(0);
+  const [original_start_time, set_original_start_time] = useState(null);
+  const [timer_start, set_timer_start] = useState(null);
+  const [elapsed_time, set_elapsed_time] = useState(0);
+  const [isDone, set_isDone] = useState(false);
+  const [isRunning, set_isRunning] = useState(false);
+  const [totalDistance, set_totalDistance] = useState(0);
 
-    const previousActiveSetRef = useRef(null);
-    const timerStartRef = useRef(null);
-    const elapsedTimeRef = useRef(0);
+  const [activeSet, set_activeSet] = useState(null);
+  const [activeSet_remainingTime, set_activeSet_remainingTime] = useState(0);
+  const [activeSetDetails, set_activeSetDetails] = useState(null);
 
-    useEffect(() => {
-        timerStartRef.current = timer_start;
-    }, [timer_start]);
+  const previousActiveSetRef = useRef(null);
+  const timerStartRef = useRef(null);
+  const elapsedTimeRef = useRef(0);
 
-    useEffect(() => {
-        elapsedTimeRef.current = elapsed_time;
-    }, [elapsed_time]);
+  useEffect(() => {
+    timerStartRef.current = timer_start;
+  }, [timer_start]);
 
-    const persistCurrentTimerState = useCallback(async () => {
-        await workoutRepository.persistWorkoutTimerState(db, {
-            workoutId: workout_id,
-            timerStart: timerStartRef.current,
-            elapsedTime: elapsedTimeRef.current,
-        });
-    }, [db, workout_id]);
+  useEffect(() => {
+    elapsedTimeRef.current = elapsed_time;
+  }, [elapsed_time]);
 
+  const persistCurrentTimerState = useCallback(async () => {
+    await workoutRepository.persistWorkoutTimerState(db, {
+      workoutId: workout_id,
+      timerStart: timerStartRef.current,
+      elapsedTime: elapsedTimeRef.current,
+    });
+  }, [db, workout_id]);
 
-    //Focus coming back to the page
-    useFocusEffect(
-        useCallback(() => {
-            const reload = async () => {
-                const row = await workoutRepository.getWorkoutTimerState(db, workout_id);
-                const nextIsDone = Number(row.done) === 1;
+  const clearActiveSegment = () => {
+    previousActiveSetRef.current = null;
+    set_activeSet(null);
+    set_activeSet_remainingTime(0);
+    set_activeSetDetails(null);
+  };
 
-                set_isRunning(row.timer_start !== null && !nextIsDone);
-                set_isDone(nextIsDone);
-                set_original_start_time(row.original_start_time);
-                set_timer_start(row.timer_start);
-                set_elapsed_time(row.elapsed_time);
-            }
-            reload();
+  const loadRunSummary = useCallback(async () => {
+    const rows = await runningRepository.getOrderedRunSetsForWorkout(db, workout_id);
+    const distanceSum = rows.reduce((total, row) => {
+      if (row.is_pause) {
+        return total;
+      }
 
-        }, [workout_id])
-    );
+      const distance = Number(row.distance);
+      return total + (Number.isFinite(distance) ? distance : 0);
+    }, 0);
 
-    useEffect(() => {
-        const subscription = AppState.addEventListener("change", (nextAppState) => {
-            if (nextAppState === "inactive" || nextAppState === "background") {
-                persistCurrentTimerState();
-            }
-        });
+    set_totalDistance(distanceSum);
+  }, [db, workout_id]);
 
-        return () => {
-            subscription.remove();
-        };
-    }, [persistCurrentTimerState]);
+  const computeCurrentElapsed = () => {
+    if (!timer_start) return 0;
 
-    useEffect(() => {
-        return () => {
-            persistCurrentTimerState();
-        };
-    }, [persistCurrentTimerState]);
+    return Math.floor((Date.now() - timer_start) / 1000);
+  };
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            
-            if(isRunning){
-                let currentTime = computeCurrentElapsed();
-                calculateActiveSet(elapsed_time + currentTime);
-            }
+  const calculateActiveSet = async (currentElapsed) => {
+    const sets = await runningRepository.getOrderedRunSetsForWorkout(db, workout_id);
 
-        }, 1000);
+    if (!sets.length) {
+      clearActiveSegment();
+      return;
+    }
 
-        return () => clearInterval(interval);
-    }, [timer_start, isRunning, workout_id]);
-    
+    let remainingElapsed = currentElapsed;
 
-    const computeCurrentElapsed = () => {
-        if (!timer_start) return 0;
+    for (let i = 0; i < sets.length; i++) {
+      const setDuration = (sets[i].time ?? 0) * 60;
 
-        return Math.floor(
-            (Date.now() - timer_start) / 1000
-        );
-    };
-
-    const updateElapsed = async () => {
-        const newElapsed = Math.floor(
-            elapsed_time + computeCurrentElapsed()
-        );
-        
-        await workoutRepository.persistWorkoutTimerState(db, {
-            workoutId: workout_id,
-            timerStart: null,
-            elapsedTime: newElapsed,
-        });
-
-        elapsedTimeRef.current = newElapsed;
-        timerStartRef.current = null;
-        set_elapsed_time(newElapsed);
-        return newElapsed;
-    };
-
-    const startWorkout = async () => {
-        const row = await workoutRepository.getWorkoutOriginalStartTime(db, workout_id);
-
-        //Miliseconds since 1. januar 1970 at 00:00:00 UTC
-        const start_time = Date.now();
-
-        if(row.original_start_time === null){
-            set_original_start_time(start_time);
-            await workoutRepository.setWorkoutOriginalStartTime(db, {
-                workoutId: workout_id,
-                startTime: start_time,
-            });
-        } 
-
-        await workoutRepository.persistWorkoutTimerState(db, {
-            workoutId: workout_id,
-            timerStart: start_time,
-            elapsedTime: elapsed_time,
-        });
-
-        Vibration.vibrate(500);
-        timerStartRef.current = start_time;
-        set_isRunning(true);
-        set_timer_start(start_time);
-
-        // await startTracking();
-    };
-
-    /*
-    const startTracking = async () => {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') return;
-
-        await Location.requestBackgroundPermissionsAsync();
-
-        const hasStarted = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK);
-        if (hasStarted) return;
-
-        await Location.startLocationUpdatesAsync(LOCATION_TASK, {
-            accuracy: Location.Accuracy.High,
-            timeInterval: 2000,         //Miliseconds - aka 2 seconds
-            distanceInterval: 5,        //Meters - aka 5 meters
-            showsBackgroundLocationIndicator: true,
-            foregroundService: {
-                notificationTitle: "Workout tracking active",
-                notificationBody: "Tracking your run...",
-            },
-        });
-    };
-    */
-
-    const pauseWorkout = async () => {
-        
-        const newElapsed = await updateElapsed();
-
-        Vibration.vibrate([0, 100, 100, 100]);
-        set_isRunning(false);
-        set_timer_start(null);
-        set_elapsed_time(newElapsed);
-    };
-
-    const endWorkout = async () => {
-        const finalElapsed = timer_start ? await updateElapsed() : elapsed_time;
-
-        set_isRunning(false);
-        set_isDone(true);
-        set_timer_start(null);
-        set_elapsed_time(finalElapsed);
-
-        // await Location.stopLocationUpdatesAsync(LOCATION_TASK);
-        
-        await workoutRepository.setWorkoutDone(db, {
-            workoutId: workout_id,
+      if (remainingElapsed >= setDuration) {
+        if (!sets[i].done) {
+          await runningRepository.updateRunSetDone(db, {
+            runId: sets[i].Run_id,
             done: true,
-        });
-
-    };
-
-    const restartWorkout = async () => {
-        await workoutRepository.resetWorkoutState(db, workout_id);
-        set_original_start_time(null);
-        set_timer_start(null);
-        set_elapsed_time(0);
-        set_isRunning(false);
-        set_isDone(false);
-        triggerReload();
-    }
-
-    const calculateActiveSet = async (currentElapsed) => {
-        const sets = await runningRepository.getOrderedRunSetsForWorkout(
-            db,
-            workout_id
-        );
-
-        let remainingElapsed = currentElapsed; 
-
-        for (let i = 0; i < sets.length; i++) { 
-            const setDuration = (sets[i].time ?? 0) * 60; 
-       
-             if (remainingElapsed >= setDuration) { 
-                if (!sets[i].done) { 
-                    await runningRepository.updateRunSetDone(db, {
-                        runId: sets[i].Run_id,
-                        done: true,
-                    });
-                    } 
-                remainingElapsed -= setDuration; 
-            } else {  
-                const newActiveSet = sets[i].Run_id;
-                //Vibration function for sets.
-                if (previousActiveSetRef.current !== newActiveSet) {
-                    previousActiveSetRef.current = newActiveSet;
-
-                    if (sets[i].is_pause) {
-                        Vibration.vibrate([0, 100, 100, 100]);
-                    } else {
-                        Vibration.vibrate(500);
-                    }
-                }
-
-                set_activeSet(newActiveSet);
-                set_activeSet_remainingTime(
-                    Math.max(0, setDuration - remainingElapsed)); 
-                return; 
-            } 
-        } 
-                
-        set_activeSet(null);
-        set_activeSet_remainingTime(0);
-    }
-
-    const addSet = async (setVariety) => {
-        try {
-            await runningRepository.addRunSet(db, {
-                workoutId: workout_id,
-                type: setVariety,
-            });
-            triggerReload();
-        } catch (error) {
-            console.error("Failed to add warmup set:", error);
+          });
         }
-    };
+        remainingElapsed -= setDuration;
+        continue;
+      }
 
-    return(
-    <>
-    <ScrollView>
+      const newActiveSet = sets[i].Run_id;
 
-    <View>
-        <ThemedCard style={{alignItems: "center"}}>
+      if (previousActiveSetRef.current !== newActiveSet) {
+        previousActiveSetRef.current = newActiveSet;
 
-            <View style={{flexDirection: "column", alignItems: "center"}}>
-                <View style={{paddingBottom: 10, alignItems: "center"}}>
-                    
-                    {original_start_time !== null ? (
-                        <View> 
-                            <ThemedText size={10} setColor={theme.quietText}>
-                                Workout started on:
-                            </ThemedText>
-                            <ThemedText size={10} setColor={theme.quietText}>
-                                {formatWorkoutStart(original_start_time)}
-                            </ThemedText>
-                        </View>
-                    ) : (
-                        <ThemedText size={10} setColor={theme.quietText}>
-                            workout has not been started yet.
-                        </ThemedText>
-                    )}
+        if (sets[i].is_pause) {
+          Vibration.vibrate([0, 100, 100, 100]);
+        } else {
+          Vibration.vibrate(500);
+        }
+      }
 
-                    <ThemedText size={15}>
-                        Elapsed time
-                    </ThemedText>
-                    <ThemedText size={30}>
-                        {formatTime(elapsed_time + computeCurrentElapsed())}
-                    </ThemedText>
-                </View>
+      set_activeSet(newActiveSet);
+      set_activeSetDetails(sets[i]);
+      set_activeSet_remainingTime(Math.max(0, setDuration - remainingElapsed));
+      return;
+    }
 
-                <View style={{flexDirection: "row"}}>
+    clearActiveSegment();
+  };
 
-                    {!isRunning && !isDone && (
-                    <View style={{paddingRight: 5}}>
-                        <ThemedButton
-                            title={
-                                (original_start_time !== null) ?
-                                    "Continue"
-                                    : "Start" }
-                            onPress={startWorkout}
-                            variant='secondary'
-                            disabled={isDone || isRunning}>
-                        </ThemedButton>
-                    </View>
-                    )}
+  useFocusEffect(
+    useCallback(() => {
+      const reload = async () => {
+        const row = await workoutRepository.getWorkoutTimerState(db, workout_id);
+        const nextIsDone = Number(row.done) === 1;
+        const currentElapsed =
+          row.elapsed_time +
+          (row.timer_start
+            ? Math.floor((Date.now() - row.timer_start) / 1000)
+            : 0);
 
-                    {isRunning && (
-                    <View>
-                        <ThemedButton
-                            title={"Pause"}
-                            onPress={pauseWorkout}
-                            variant='primary'
-                            disabled={!isRunning || isDone}>
-                        </ThemedButton>
-                    </View>
-                    )}
+        set_isRunning(row.timer_start !== null && !nextIsDone);
+        set_isDone(nextIsDone);
+        set_original_start_time(row.original_start_time);
+        set_timer_start(row.timer_start);
+        set_elapsed_time(row.elapsed_time);
 
-                    {!isRunning && !isDone && (original_start_time !== null) && (
-                    <View style={{paddingLeft: 5}}>
-                        <ThemedButton
-                            title={"End Workout"}
-                            onPress={endWorkout}
-                            variant='danger'
-                            disabled={
-                                original_start_time === null ||
-                                isDone}>
-                        </ThemedButton>
-                    </View>
-                    )}
+        if (row.original_start_time !== null && !nextIsDone) {
+          await calculateActiveSet(currentElapsed);
+        } else {
+          clearActiveSegment();
+        }
 
-                    {isDone && (
-                        <View style={{paddingTop: 5}}>
-                            <ThemedButton
-                                title={"Restart"}
-                                onPress={restartWorkout}
-                                variant='danger'
-                                disabled={
-                                    original_start_time === null ||
-                                    !isDone}>
-                            </ThemedButton>
-                        </View>
-                    )}
+        await loadRunSummary();
+      };
 
-                </View>
-            </View>
-
-        </ThemedCard>
-    </View>
-
-    <View>
-        <View style={{flexDirection: "row", alignItems: "center"}}>
-            <View style={{opacity: warmupEmpty ? 0.2 : 1}}>
-                <ThemedTitle type={"h2"}>
-                    Warmup
-                </ThemedTitle>
-            </View>
-
-            <View style={{marginLeft: "auto", marginRight: "15"}}>
-                <TouchableOpacity
-                    onPress={ () => {
-                        addSet("WARMUP")
-                    }}>
-                    <Plus
-                        width={24}
-                        height={24}/>
-                </TouchableOpacity>
-            </View>
-        </View>
-
-        <RunSetList
-            reloadKey={updateCount}
-            triggerReload={triggerReload}
-            empty={set_WarmupEmpty}
-            workout_id={workout_id}
-            type="WARMUP" 
-            activeSet={activeSet}
-            activeSet_remainingTime={activeSet_remainingTime}
-            />
-    </View>
-
-
-
-    <View>
-        <View style={{flexDirection: "row", alignItems: "center"}}>
-            <View style={{opacity: workingEmpty ? 0.2 : 1}}>
-                <ThemedTitle type={"h2"}>
-                    Working Sets
-                </ThemedTitle>
-            </View>
-
-            <View style={{marginLeft: "auto", marginRight: "15"}}>
-                <TouchableOpacity
-                    onPress={ () => {
-                        addSet("WORKING_SET");
-                    }}>
-                    <Plus
-                        width={24}
-                        height={24}/>
-                </TouchableOpacity>
-            </View>
-        </View>
-
-        <RunSetList
-            reloadKey={updateCount}
-            triggerReload={triggerReload}
-            empty={set_WorkingEmpty}
-            workout_id={workout_id}
-            type="WORKING_SET"
-            activeSet={activeSet}
-            activeSet_remainingTime={activeSet_remainingTime}
-        />
-
-    </View>
-
-
-    <View>
-        <View style={{flexDirection: "row", alignItems: "center"}}>
-            <View style={{opacity: cooldownEmpty ? 0.2 : 1}}>
-                <ThemedTitle type={"h2"}>
-                    Cooldown
-                </ThemedTitle>
-            </View>
-
-            <View style={{marginLeft: "auto", marginRight: "15"}}>
-                <TouchableOpacity
-                    onPress={ () => {
-                        addSet("COOLDOWN");
-                    }}>
-                    <Plus
-                        width={24}
-                        height={24}/>
-                </TouchableOpacity>
-            </View>
-        </View>
-
-        <RunSetList
-            reloadKey={updateCount}
-            triggerReload={triggerReload}
-            empty={set_CooldownEmpty}
-            workout_id={workout_id}
-            type="COOLDOWN"
-            activeSet={activeSet}
-            activeSet_remainingTime={activeSet_remainingTime}
-        />
-    </View>
-    </ScrollView>
-    </>
+      reload();
+    }, [db, workout_id, loadRunSummary])
   );
-}
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "inactive" || nextAppState === "background") {
+        persistCurrentTimerState();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [persistCurrentTimerState]);
+
+  useEffect(() => {
+    return () => {
+      persistCurrentTimerState();
+    };
+  }, [persistCurrentTimerState]);
+
+  useEffect(() => {
+    if (original_start_time === null || isDone) {
+      clearActiveSegment();
+      return;
+    }
+
+    calculateActiveSet(isRunning ? elapsed_time + computeCurrentElapsed() : elapsed_time);
+  }, [updateCount, original_start_time, isDone]);
+
+  useEffect(() => {
+    loadRunSummary();
+  }, [loadRunSummary, updateCount]);
+
+  useEffect(() => {
+    if (!isRunning) return;
+
+    const interval = setInterval(() => {
+      const currentTime = computeCurrentElapsed();
+      calculateActiveSet(elapsed_time + currentTime);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [timer_start, isRunning, workout_id, elapsed_time]);
+
+  const updateElapsed = async () => {
+    const newElapsed = Math.floor(elapsed_time + computeCurrentElapsed());
+
+    await workoutRepository.persistWorkoutTimerState(db, {
+      workoutId: workout_id,
+      timerStart: null,
+      elapsedTime: newElapsed,
+    });
+
+    elapsedTimeRef.current = newElapsed;
+    timerStartRef.current = null;
+    set_elapsed_time(newElapsed);
+    return newElapsed;
+  };
+
+  const startWorkout = async () => {
+    const row = await workoutRepository.getWorkoutOriginalStartTime(db, workout_id);
+    const start_time = Date.now();
+
+    if (row.original_start_time === null) {
+      set_original_start_time(start_time);
+      await workoutRepository.setWorkoutOriginalStartTime(db, {
+        workoutId: workout_id,
+        startTime: start_time,
+      });
+    }
+
+    await workoutRepository.persistWorkoutTimerState(db, {
+      workoutId: workout_id,
+      timerStart: start_time,
+      elapsedTime: elapsed_time,
+    });
+
+    Vibration.vibrate(500);
+    timerStartRef.current = start_time;
+    set_isRunning(true);
+    set_timer_start(start_time);
+  };
+
+  const pauseWorkout = async () => {
+    const newElapsed = await updateElapsed();
+
+    Vibration.vibrate([0, 100, 100, 100]);
+    set_isRunning(false);
+    set_timer_start(null);
+    set_elapsed_time(newElapsed);
+    await calculateActiveSet(newElapsed);
+  };
+
+  const endWorkout = async () => {
+    const finalElapsed = timer_start ? await updateElapsed() : elapsed_time;
+
+    set_isRunning(false);
+    set_isDone(true);
+    set_timer_start(null);
+    set_elapsed_time(finalElapsed);
+    clearActiveSegment();
+
+    await workoutRepository.setWorkoutDone(db, {
+      workoutId: workout_id,
+      done: true,
+    });
+  };
+
+  const restartWorkout = async () => {
+    await workoutRepository.resetWorkoutState(db, workout_id);
+    set_original_start_time(null);
+    set_timer_start(null);
+    set_elapsed_time(0);
+    set_isRunning(false);
+    set_isDone(false);
+    clearActiveSegment();
+    triggerReload();
+  };
+
+  const addSet = async (setVariety) => {
+    try {
+      await runningRepository.addRunSet(db, {
+        workoutId: workout_id,
+        type: setVariety,
+      });
+      triggerReload();
+    } catch (error) {
+      console.error("Failed to add run set:", error);
+    }
+  };
+
+  const primaryColor = theme.primary ?? theme.iconColor ?? theme.text;
+  const secondaryColor = theme.secondary ?? primaryColor;
+  const cardSurface = theme.cardBackground ?? theme.background;
+  const innerSurface = theme.uiBackground ?? cardSurface;
+  const cardBorder = theme.cardBorder ?? theme.iconColor ?? theme.text;
+  const titleColor = theme.title ?? theme.text;
+  const quietText = theme.quietText ?? theme.iconColor ?? theme.text;
+  const invertedText = theme.textInverted ?? theme.background ?? "#0E0F12";
+
+  const currentElapsed = elapsed_time + computeCurrentElapsed();
+  const statusLabel = isDone
+    ? "Complete"
+    : isRunning
+      ? "In progress"
+      : original_start_time !== null
+        ? "Paused"
+        : "Ready";
+  const statusTone = isDone ? secondaryColor : primaryColor;
+  const statusBackground = isDone
+    ? theme.secondaryLight ?? innerSurface
+    : isRunning
+      ? theme.primaryLight ?? innerSurface
+      : innerSurface;
+  const statusTextColor = isDone || isRunning ? invertedText : titleColor;
+  const startedDisplay =
+    original_start_time !== null
+      ? formatWorkoutStart(original_start_time)
+      : "Not started yet";
+
+  const formattedTotalDistance = `${Number(totalDistance.toFixed(2)).toString()} km`;
+  const totalDistanceTitle = totalDistance > 0 ? "Planned" : "No distance";
+
+  const totalDistanceMeta =
+    totalDistance > 0 ? "Across all run blocks" : null;
+
+  const activeSegmentMeta = activeSetDetails
+    ? [
+        activeSetDetails.is_pause
+          ? "Recovery block"
+          : `Set ${activeSetDetails.set_number}`,
+        activeSetDetails.distance ? `${activeSetDetails.distance} km` : null,
+        activeSetDetails.time ? `${activeSetDetails.time} min` : null,
+      ]
+        .filter(Boolean)
+        .join(" • ")
+    : isDone
+      ? "All planned run blocks finished"
+      : original_start_time === null
+        ? "Build your run below and start when ready"
+        : "Current block is waiting to resume";
+
+  const sectionConfigs = [
+    {
+      type: "WARMUP",
+      title: "Warmup",
+      badge: "Warmup",
+      accent: primaryColor,
+      badgeBackground: theme.primaryLight ?? innerSurface,
+      badgeTextColor: invertedText,
+      emptySetter: set_WarmupEmpty,
+      isEmpty: warmupEmpty,
+    },
+    {
+      type: "WORKING_SET",
+      title: "Run Blocks",
+      badge: "Main Work",
+      accent: secondaryColor,
+      badgeBackground: theme.secondaryLight ?? innerSurface,
+      badgeTextColor: invertedText,
+      emptySetter: set_WorkingEmpty,
+      isEmpty: workingEmpty,
+    },
+    {
+      type: "COOLDOWN",
+      title: "Cooldown",
+      badge: "Cooldown",
+      accent: quietText,
+      badgeBackground: innerSurface,
+      badgeTextColor: titleColor,
+      emptySetter: set_CooldownEmpty,
+      isEmpty: cooldownEmpty,
+    },
+  ];
+
+  return (
+    <ThemedView style={{ flex: 1 }}>
+      <ThemedKeyboardProtection scroll>
+        <View style={styles.heroShell}>
+          <ThemedCard
+            style={[
+              styles.heroCard,
+              {
+                backgroundColor: isDone
+                  ? "rgba(96, 218, 172, 0.08)"
+                  : cardSurface,
+                borderColor: isDone
+                  ? secondaryColor
+                  : isRunning
+                    ? primaryColor
+                    : cardBorder,
+              },
+            ]}
+          >
+            <View
+              pointerEvents="none"
+              style={[
+                styles.heroAccentPrimary,
+                { backgroundColor: isDone ? secondaryColor : primaryColor },
+              ]}
+            />
+            <View
+              pointerEvents="none"
+              style={[
+                styles.heroAccentSecondary,
+                { backgroundColor: secondaryColor },
+              ]}
+            />
+
+            <View style={styles.heroContentRow}>
+              <View style={styles.heroInfoColumn}>
+                <View style={styles.heroStatusRow}>
+                  <View
+                    style={[
+                      styles.heroStatusBadge,
+                      {
+                        backgroundColor: statusBackground,
+                        borderColor: isDone || isRunning ? statusTone : cardBorder,
+                      },
+                    ]}
+                  >
+                    <ThemedText
+                      style={styles.heroStatusBadgeText}
+                      setColor={statusTextColor}
+                    >
+                      {statusLabel}
+                    </ThemedText>
+                  </View>
+                </View>
+
+                <ThemedText style={styles.heroTimerLabel} setColor={quietText}>
+                  Elapsed time
+                </ThemedText>
+                <ThemedText style={styles.heroTimerValue} setColor={titleColor}>
+                  {formatTime(currentElapsed)}
+                </ThemedText>
+
+                <View
+                  style={[
+                    styles.heroMetaCard,
+                    {
+                      backgroundColor: innerSurface,
+                      borderColor: cardBorder,
+                    },
+                  ]}
+                >
+                  <ThemedText style={styles.heroMetaLabel} setColor={quietText}>
+                    Started
+                  </ThemedText>
+                  <ThemedText style={styles.heroMetaValue} setColor={titleColor}>
+                    {startedDisplay}
+                  </ThemedText>
+                </View>
+              </View>
+
+              <View style={styles.heroLiveColumn}>
+                <View
+                  style={[
+                    styles.heroLiveCard,
+                    {
+                      backgroundColor: innerSurface,
+                      borderColor: isRunning ? primaryColor : cardBorder,
+                    },
+                  ]}
+                >
+                  <ThemedText style={styles.heroLiveLabel} setColor={quietText}>
+                    Total Distance
+                  </ThemedText>
+                  <ThemedText style={styles.heroLiveTitle} setColor={titleColor}>
+                    {totalDistanceTitle}
+                  </ThemedText>
+                  <ThemedText style={styles.heroLiveValue} setColor={titleColor}>
+                    {formattedTotalDistance}
+                  </ThemedText>
+                  {totalDistanceMeta ? (
+                    <ThemedText style={styles.heroLiveMeta} setColor={quietText}>
+                      {totalDistanceMeta}
+                    </ThemedText>
+                  ) : null}
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.heroActionsRow}>
+              {!isRunning && !isDone && (
+                <View
+                  style={[
+                    styles.heroActionSlot,
+                    original_start_time !== null && styles.heroActionSlotSpaced,
+                  ]}
+                >
+                  <ThemedButton
+                    title={original_start_time !== null ? "Continue" : "Start"}
+                    onPress={startWorkout}
+                    variant="primary"
+                    disabled={isDone || isRunning}
+                    style={styles.heroActionButton}
+                  />
+                </View>
+              )}
+
+              {!isRunning && !isDone && original_start_time !== null && (
+                <View style={styles.heroActionSlot}>
+                  <ThemedButton
+                    title="Finish Run"
+                    onPress={endWorkout}
+                    variant="secondary"
+                    disabled={original_start_time === null || isDone}
+                    style={styles.heroActionButton}
+                  />
+                </View>
+              )}
+
+              {isRunning && (
+                <View style={styles.heroActionSlot}>
+                  <ThemedButton
+                    title="Pause"
+                    onPress={pauseWorkout}
+                    variant="primary"
+                    disabled={!isRunning || isDone}
+                    style={styles.heroActionButton}
+                  />
+                </View>
+              )}
+
+              {isDone && (
+                <View style={styles.heroActionSlot}>
+                  <ThemedButton
+                    title="Restart"
+                    onPress={restartWorkout}
+                    variant="danger"
+                    disabled={original_start_time === null || !isDone}
+                    style={styles.heroActionButton}
+                  />
+                </View>
+              )}
+            </View>
+          </ThemedCard>
+        </View>
+
+        {sectionConfigs.map((section) => (
+          <View key={section.type} style={styles.sectionShell}>
+            <ThemedCard
+              style={[
+                styles.sectionCard,
+                {
+                  backgroundColor: cardSurface,
+                  borderColor:
+                    section.isEmpty || section.type === "COOLDOWN"
+                      ? cardBorder
+                      : section.accent,
+                },
+              ]}
+            >
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionTitleBlock}>
+                  <View
+                    style={[
+                      styles.sectionBadge,
+                      {
+                        backgroundColor: section.badgeBackground,
+                        borderColor:
+                          section.isEmpty || section.type === "COOLDOWN"
+                            ? cardBorder
+                            : section.accent,
+                      },
+                    ]}
+                  >
+                    <ThemedText
+                      style={styles.sectionBadgeText}
+                      setColor={section.badgeTextColor}
+                    >
+                      {section.badge}
+                    </ThemedText>
+                  </View>
+                  <ThemedText
+                    style={styles.sectionTitle}
+                    setColor={section.isEmpty ? quietText : titleColor}
+                  >
+                    {section.title}
+                  </ThemedText>
+                </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.sectionAddButton,
+                    {
+                      backgroundColor: innerSurface,
+                      borderColor:
+                        section.isEmpty || section.type === "COOLDOWN"
+                          ? cardBorder
+                          : section.accent,
+                      opacity: section.isEmpty ? 0.7 : 1,
+                    },
+                  ]}
+                  onPress={() => addSet(section.type)}
+                >
+                  <Plus width={20} height={20} color={section.accent} />
+                </TouchableOpacity>
+              </View>
+
+              <RunSetList
+                reloadKey={updateCount}
+                triggerReload={triggerReload}
+                empty={section.emptySetter}
+                workout_id={workout_id}
+                type={section.type}
+                activeSet={activeSet}
+                activeSet_remainingTime={activeSet_remainingTime}
+              />
+            </ThemedCard>
+          </View>
+        ))}
+      </ThemedKeyboardProtection>
+    </ThemedView>
+  );
+};
 
 export default Run;
-

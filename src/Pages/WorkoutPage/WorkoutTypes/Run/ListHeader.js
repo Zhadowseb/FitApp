@@ -16,13 +16,13 @@ const ListHeader = ({ styles }) => {
     <View style={{ flexDirection: "row" }}>
       <View style={[styles.set, styles.sharedGrid, styles.title]}>
         <ThemedText size={10} style={{ color: theme.quietText }}>
-          Set
+          SET
         </ThemedText>
       </View>
 
       <View style={[styles.distance, styles.sharedGrid, styles.title]}>
         <ThemedText size={10} style={{ color: theme.quietText }}>
-          Distance
+          DISTANCE
         </ThemedText>
         <ThemedText size={10} style={{ color: theme.quietText }}>
           (km)
@@ -31,7 +31,7 @@ const ListHeader = ({ styles }) => {
 
       <View style={[styles.pace, styles.sharedGrid, styles.title]}>
         <ThemedText size={10} style={{ color: theme.quietText }}>
-          Pace
+          PACE
         </ThemedText>
         <ThemedText size={10} style={{ color: theme.quietText }}>
           (min/km)
@@ -40,7 +40,7 @@ const ListHeader = ({ styles }) => {
 
       <View style={[styles.time, styles.sharedGrid, styles.title]}>
         <ThemedText size={10} style={{ color: theme.quietText }}>
-          Time
+          TIME
         </ThemedText>
         <ThemedText size={10} style={{ color: theme.quietText }}>
           (min)
@@ -49,7 +49,7 @@ const ListHeader = ({ styles }) => {
 
       <View style={[styles.zone, styles.sharedGrid, styles.title]}>
         <ThemedText size={10} style={{ color: theme.quietText }}>
-          Zone
+          ZONE
         </ThemedText>
         <ThemedText size={10} style={{ color: theme.quietText }}>
           (bpm/zone)

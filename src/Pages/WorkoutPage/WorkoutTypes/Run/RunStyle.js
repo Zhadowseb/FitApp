@@ -120,6 +120,15 @@ export default StyleSheet.create({
     alignItems: "center",
   },
 
+  heroLiveSubCard: {
+    marginTop: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+
   heroLiveLabel: {
     fontSize: 10,
     fontWeight: "800",
@@ -150,6 +159,15 @@ export default StyleSheet.create({
     lineHeight: 15,
     fontWeight: "600",
     textAlign: "center",
+  },
+
+  heroLiveSubValue: {
+    marginTop: 6,
+    fontSize: 20,
+    lineHeight: 24,
+    fontWeight: "800",
+    textAlign: "center",
+    fontVariant: ["tabular-nums"],
   },
 
   heroActionsRow: {

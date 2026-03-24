@@ -28,6 +28,45 @@ const TYPE_LABELS = {
   COOLDOWN: "Cooldown",
 };
 
+const parsePaceToMinutes = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const normalized = String(value)
+    .trim()
+    .replace(",", ".")
+    .replace(/[’′]/g, "'")
+    .replace(/[”″]/g, "")
+    .replace(/\s+/g, "");
+
+  const splitMatch = normalized.match(/^(\d+)[\:'](\d{1,2})$/);
+
+  if (splitMatch) {
+    const minutes = Number(splitMatch[1]);
+    const seconds = Number(splitMatch[2]);
+
+    if (Number.isFinite(minutes) && Number.isFinite(seconds)) {
+      return minutes + seconds / 60;
+    }
+  }
+
+  const numericValue = Number(normalized.replace(/[^0-9.]/g, ""));
+  return Number.isFinite(numericValue) ? numericValue : null;
+};
+
+const formatPaceDisplay = (paceMinutes) => {
+  if (!Number.isFinite(paceMinutes) || paceMinutes <= 0) {
+    return "--'--''";
+  }
+
+  const totalSeconds = Math.round(paceMinutes * 60);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${minutes}'${String(seconds).padStart(2, "0")}`;
+};
+
 const Run = ({ workout_id }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
@@ -48,6 +87,7 @@ const Run = ({ workout_id }) => {
   const [isDone, set_isDone] = useState(false);
   const [isRunning, set_isRunning] = useState(false);
   const [totalDistance, set_totalDistance] = useState(0);
+  const [avgPaceMinutes, set_avgPaceMinutes] = useState(null);
 
   const [activeSet, set_activeSet] = useState(null);
   const [activeSet_remainingTime, set_activeSet_remainingTime] = useState(0);
@@ -82,16 +122,42 @@ const Run = ({ workout_id }) => {
 
   const loadRunSummary = useCallback(async () => {
     const rows = await runningRepository.getOrderedRunSetsForWorkout(db, workout_id);
-    const distanceSum = rows.reduce((total, row) => {
+    let distanceSum = 0;
+    let totalDurationMinutes = 0;
+
+    for (const row of rows) {
       if (row.is_pause) {
-        return total;
+        continue;
       }
 
       const distance = Number(row.distance);
-      return total + (Number.isFinite(distance) ? distance : 0);
-    }, 0);
+
+      if (!Number.isFinite(distance) || distance <= 0) {
+        continue;
+      }
+
+      distanceSum += distance;
+
+      const durationMinutes = Number(row.time);
+
+      if (Number.isFinite(durationMinutes) && durationMinutes > 0) {
+        totalDurationMinutes += durationMinutes;
+        continue;
+      }
+
+      const paceMinutes = parsePaceToMinutes(row.pace);
+
+      if (Number.isFinite(paceMinutes) && paceMinutes > 0) {
+        totalDurationMinutes += paceMinutes * distance;
+      }
+    }
 
     set_totalDistance(distanceSum);
+    set_avgPaceMinutes(
+      distanceSum > 0 && totalDurationMinutes > 0
+        ? totalDurationMinutes / distanceSum
+        : null
+    );
   }, [db, workout_id]);
 
   const computeCurrentElapsed = () => {
@@ -334,10 +400,7 @@ const Run = ({ workout_id }) => {
       : "Not started yet";
 
   const formattedTotalDistance = `${Number(totalDistance.toFixed(2)).toString()} km`;
-  const totalDistanceTitle = totalDistance > 0 ? "Planned" : "No distance";
-
-  const totalDistanceMeta =
-    totalDistance > 0 ? "Across all run blocks" : null;
+  const avgPaceDisplay = formatPaceDisplay(avgPaceMinutes);
 
   const activeSegmentMeta = activeSetDetails
     ? [
@@ -483,17 +546,26 @@ const Run = ({ workout_id }) => {
                   <ThemedText style={styles.heroLiveLabel} setColor={quietText}>
                     Total Distance
                   </ThemedText>
-                  <ThemedText style={styles.heroLiveTitle} setColor={titleColor}>
-                    {totalDistanceTitle}
-                  </ThemedText>
                   <ThemedText style={styles.heroLiveValue} setColor={titleColor}>
                     {formattedTotalDistance}
                   </ThemedText>
-                  {totalDistanceMeta ? (
-                    <ThemedText style={styles.heroLiveMeta} setColor={quietText}>
-                      {totalDistanceMeta}
-                    </ThemedText>
-                  ) : null}
+                </View>
+
+                <View
+                  style={[
+                    styles.heroLiveSubCard,
+                    {
+                      backgroundColor: innerSurface,
+                      borderColor: cardBorder,
+                    },
+                  ]}
+                >
+                  <ThemedText style={styles.heroLiveLabel} setColor={quietText}>
+                    Avg Pace
+                  </ThemedText>
+                  <ThemedText style={styles.heroLiveSubValue} setColor={titleColor}>
+                    {avgPaceDisplay}
+                  </ThemedText>
                 </View>
               </View>
             </View>

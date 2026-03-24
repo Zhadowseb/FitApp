@@ -360,19 +360,20 @@ const Run = ({ workout_id }) => {
       type: "WARMUP",
       title: "Warmup",
       badge: "Warmup",
-      accent: primaryColor,
-      badgeBackground: theme.primaryLight ?? innerSurface,
-      badgeTextColor: invertedText,
+      accent: quietText,
+      badgeBackground: innerSurface,
+      badgeTextColor: titleColor,
       emptySetter: set_WarmupEmpty,
       isEmpty: warmupEmpty,
     },
     {
       type: "WORKING_SET",
-      title: "Run Blocks",
+      title: "Working Sets",
       badge: "Main Work",
-      accent: secondaryColor,
-      badgeBackground: theme.secondaryLight ?? innerSurface,
+      accent: primaryColor,
+      badgeBackground: theme.primaryLight ?? innerSurface,
       badgeTextColor: invertedText,
+      titleColor: primaryColor,
       emptySetter: set_WorkingEmpty,
       isEmpty: workingEmpty,
     },
@@ -383,6 +384,7 @@ const Run = ({ workout_id }) => {
       accent: quietText,
       badgeBackground: innerSurface,
       badgeTextColor: titleColor,
+      titleColor: titleColor,
       emptySetter: set_CooldownEmpty,
       isEmpty: cooldownEmpty,
     },
@@ -590,7 +592,11 @@ const Run = ({ workout_id }) => {
                   </View>
                   <ThemedText
                     style={styles.sectionTitle}
-                    setColor={section.isEmpty ? quietText : titleColor}
+                    setColor={
+                      section.isEmpty
+                        ? quietText
+                        : section.titleColor ?? titleColor
+                    }
                   >
                     {section.title}
                   </ThemedText>

@@ -52,6 +52,33 @@ export async function getWorkoutTimerState(db, workoutId) {
   );
 }
 
+export async function clearActiveWorkoutFlags(db) {
+  await db.runAsync(
+    `UPDATE Workout
+     SET is_active = 0;`
+  );
+}
+
+export async function setWorkoutActiveFlag(db, { workoutId, isActive }) {
+  await db.runAsync(
+    `UPDATE Workout
+     SET is_active = ?
+     WHERE workout_id = ?;`,
+    [isActive ? 1 : 0, workoutId]
+  );
+}
+
+export async function getActiveWorkoutForTracking(db) {
+  return db.getFirstAsync(
+    `SELECT workout_id
+     FROM Workout
+     WHERE is_active = 1
+       AND timer_start IS NOT NULL
+       AND done = 0
+     LIMIT 1;`
+  );
+}
+
 export async function persistWorkoutTimerState(
   db,
   { workoutId, timerStart, elapsedTime }
@@ -136,6 +163,7 @@ export async function resetWorkoutStateFields(db, workoutId) {
   await db.runAsync(
     `UPDATE Workout
      SET done = 0,
+         is_active = 0,
          original_start_time = NULL,
          timer_start = NULL,
          elapsed_time = 0

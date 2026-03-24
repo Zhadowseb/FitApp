@@ -1,4 +1,4 @@
-import { AppState, TouchableOpacity, View, Vibration } from "react-native";
+import { Alert, AppState, TouchableOpacity, View, Vibration } from "react-native";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSQLiteContext } from "expo-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
@@ -18,6 +18,7 @@ import styles from "./RunStyle";
 
 import { formatTime, formatWorkoutStart } from "../../../../Utils/timeUtils";
 import {
+  locationService,
   runningService as runningRepository,
   workoutService as workoutRepository,
 } from "../../../../Services";
@@ -87,7 +88,6 @@ const Run = ({ workout_id }) => {
   const [isDone, set_isDone] = useState(false);
   const [isRunning, set_isRunning] = useState(false);
   const [totalDistance, set_totalDistance] = useState(0);
-  const [avgPaceMinutes, set_avgPaceMinutes] = useState(null);
 
   const [activeSet, set_activeSet] = useState(null);
   const [activeSet_remainingTime, set_activeSet_remainingTime] = useState(0);
@@ -120,44 +120,13 @@ const Run = ({ workout_id }) => {
     set_activeSetDetails(null);
   };
 
-  const loadRunSummary = useCallback(async () => {
-    const rows = await runningRepository.getOrderedRunSetsForWorkout(db, workout_id);
-    let distanceSum = 0;
-    let totalDurationMinutes = 0;
-
-    for (const row of rows) {
-      if (row.is_pause) {
-        continue;
-      }
-
-      const distance = Number(row.distance);
-
-      if (!Number.isFinite(distance) || distance <= 0) {
-        continue;
-      }
-
-      distanceSum += distance;
-
-      const durationMinutes = Number(row.time);
-
-      if (Number.isFinite(durationMinutes) && durationMinutes > 0) {
-        totalDurationMinutes += durationMinutes;
-        continue;
-      }
-
-      const paceMinutes = parsePaceToMinutes(row.pace);
-
-      if (Number.isFinite(paceMinutes) && paceMinutes > 0) {
-        totalDurationMinutes += paceMinutes * distance;
-      }
+  const loadTrackedRunSummary = useCallback(async () => {
+    try {
+      const summary = await locationService.getTrackedRunSummary(db, workout_id);
+      set_totalDistance(summary.totalDistanceKm);
+    } catch (error) {
+      console.error("Failed to load tracked run summary:", error);
     }
-
-    set_totalDistance(distanceSum);
-    set_avgPaceMinutes(
-      distanceSum > 0 && totalDurationMinutes > 0
-        ? totalDurationMinutes / distanceSum
-        : null
-    );
   }, [db, workout_id]);
 
   const computeCurrentElapsed = () => {
@@ -234,11 +203,19 @@ const Run = ({ workout_id }) => {
           clearActiveSegment();
         }
 
-        await loadRunSummary();
+        if (row.timer_start !== null && !nextIsDone) {
+          try {
+            await locationService.ensureRunTracking(db, workout_id);
+          } catch (error) {
+            console.warn("Unable to ensure location tracking:", error);
+          }
+        }
+
+        await loadTrackedRunSummary();
       };
 
       reload();
-    }, [db, workout_id, loadRunSummary])
+    }, [db, workout_id, loadTrackedRunSummary])
   );
 
   useEffect(() => {
@@ -269,8 +246,8 @@ const Run = ({ workout_id }) => {
   }, [updateCount, original_start_time, isDone]);
 
   useEffect(() => {
-    loadRunSummary();
-  }, [loadRunSummary, updateCount]);
+    loadTrackedRunSummary();
+  }, [loadTrackedRunSummary, updateCount]);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -282,6 +259,18 @@ const Run = ({ workout_id }) => {
 
     return () => clearInterval(interval);
   }, [timer_start, isRunning, workout_id, elapsed_time]);
+
+  useEffect(() => {
+    if (!isRunning) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      loadTrackedRunSummary();
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [isRunning, loadTrackedRunSummary]);
 
   const updateElapsed = async () => {
     const newElapsed = Math.floor(elapsed_time + computeCurrentElapsed());
@@ -299,41 +288,77 @@ const Run = ({ workout_id }) => {
   };
 
   const startWorkout = async () => {
-    const row = await workoutRepository.getWorkoutOriginalStartTime(db, workout_id);
-    const start_time = Date.now();
+    try {
+      const row = await workoutRepository.getWorkoutOriginalStartTime(db, workout_id);
+      const start_time = Date.now();
+      const isFreshStart = row.original_start_time === null;
 
-    if (row.original_start_time === null) {
-      set_original_start_time(start_time);
-      await workoutRepository.setWorkoutOriginalStartTime(db, {
+      if (isFreshStart) {
+        await workoutRepository.setWorkoutOriginalStartTime(db, {
+          workoutId: workout_id,
+          startTime: start_time,
+        });
+      }
+
+      await workoutRepository.persistWorkoutTimerState(db, {
         workoutId: workout_id,
-        startTime: start_time,
+        timerStart: start_time,
+        elapsedTime: elapsed_time,
       });
+
+      try {
+        await locationService.startRunTracking(db, workout_id, {
+          resetLogs: isFreshStart,
+        });
+      } catch (trackingError) {
+        await workoutRepository.persistWorkoutTimerState(db, {
+          workoutId: workout_id,
+          timerStart: null,
+          elapsedTime: elapsed_time,
+        });
+
+        if (isFreshStart) {
+          await workoutRepository.setWorkoutOriginalStartTime(db, {
+            workoutId: workout_id,
+            startTime: null,
+          });
+        }
+
+        throw trackingError;
+      }
+
+      Vibration.vibrate(500);
+      if (isFreshStart) {
+        set_original_start_time(start_time);
+      }
+      timerStartRef.current = start_time;
+      set_isRunning(true);
+      set_timer_start(start_time);
+      await loadTrackedRunSummary();
+    } catch (error) {
+      console.error("Failed to start run tracking:", error);
+      Alert.alert(
+        "Location tracking could not start",
+        "Check that location is allowed and turned on, then try again."
+      );
     }
-
-    await workoutRepository.persistWorkoutTimerState(db, {
-      workoutId: workout_id,
-      timerStart: start_time,
-      elapsedTime: elapsed_time,
-    });
-
-    Vibration.vibrate(500);
-    timerStartRef.current = start_time;
-    set_isRunning(true);
-    set_timer_start(start_time);
   };
 
   const pauseWorkout = async () => {
     const newElapsed = await updateElapsed();
+    await locationService.stopRunTracking(db);
 
     Vibration.vibrate([0, 100, 100, 100]);
     set_isRunning(false);
     set_timer_start(null);
     set_elapsed_time(newElapsed);
     await calculateActiveSet(newElapsed);
+    await loadTrackedRunSummary();
   };
 
   const endWorkout = async () => {
     const finalElapsed = timer_start ? await updateElapsed() : elapsed_time;
+    await locationService.stopRunTracking(db);
 
     set_isRunning(false);
     set_isDone(true);
@@ -345,15 +370,20 @@ const Run = ({ workout_id }) => {
       workoutId: workout_id,
       done: true,
     });
+
+    await loadTrackedRunSummary();
   };
 
   const restartWorkout = async () => {
+    await locationService.stopRunTracking(db);
+    await locationService.clearTrackedRunData(db, workout_id);
     await workoutRepository.resetWorkoutState(db, workout_id);
     set_original_start_time(null);
     set_timer_start(null);
     set_elapsed_time(0);
     set_isRunning(false);
     set_isDone(false);
+    set_totalDistance(0);
     clearActiveSegment();
     triggerReload();
   };
@@ -380,6 +410,8 @@ const Run = ({ workout_id }) => {
   const invertedText = theme.textInverted ?? theme.background ?? "#0E0F12";
 
   const currentElapsed = elapsed_time + computeCurrentElapsed();
+  const avgPaceMinutes =
+    totalDistance > 0 ? currentElapsed / 60 / totalDistance : null;
   const startedDisplay =
     original_start_time !== null
       ? formatWorkoutStart(original_start_time)

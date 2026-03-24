@@ -23,3 +23,22 @@ export async function createLocationLog(
     [workoutId, latitude, longitude, accuracy, timestamp]
   );
 }
+
+export async function getLatestLocationLogByWorkout(db, workoutId) {
+  return db.getFirstAsync(
+    `SELECT *
+     FROM LocationLog
+     WHERE workout_id = ?
+     ORDER BY timestamp DESC
+     LIMIT 1;`,
+    [workoutId]
+  );
+}
+
+export async function deleteLocationLogsByWorkout(db, workoutId) {
+  await db.runAsync(
+    `DELETE FROM LocationLog
+     WHERE workout_id = ?;`,
+    [workoutId]
+  );
+}

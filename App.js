@@ -5,7 +5,6 @@ import { initializeDatabase } from './src/Database/db';
 import { useColorScheme, StatusBar } from "react-native"
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as TaskManager from 'expo-task-manager';
-import * as Location from 'expo-location';
 
 
 import HomePage from './src/Pages/HomePage/HomePage';
@@ -18,41 +17,16 @@ import SetPage from './src/Pages/SetPage/SetPage';
 import ExerciseStoragePage from "./src/Pages/ExerciseStoragePage/ExerciseStoragePage";
 
 import { Colors } from './src/Resources/GlobalStyling/colors';
+import { locationService } from "./src/Services";
 
 import * as SQLite from 'expo-sqlite';
 
-const LOCATION_TASK = 'background-location-task';
-TaskManager.defineTask(LOCATION_TASK, async ({ data, error }) => {
+TaskManager.defineTask(locationService.RUN_LOCATION_TASK, async ({ data, error }) => {
   if (error) return;
   if (!data?.locations?.length) return;
 
   const db = await SQLite.openDatabaseAsync('datab.db');
-
-  const workout = await db.getFirstAsync(
-    `SELECT workout_id FROM Workout
-     WHERE is_active = 1 AND timer_start IS NOT NULL AND done = 0
-     LIMIT 1;`
-  );
-
-  if (!workout) return;
-
-  
-  for (const location of data.locations) {
-    await db.runAsync(
-      `INSERT INTO LocationLog 
-       (workout_id, latitude, longitude, accuracy, timestamp)
-       VALUES (?, ?, ?, ?, ?);`,
-      [
-        workout.workout_id,
-        location.coords.latitude,
-        location.coords.longitude,
-        location.coords.accuracy,
-        location.timestamp
-      ]
-    );
-  } 
-
-  console.log("inserted new location.");
+  await locationService.recordTrackedLocations(db, data.locations);
 });
 
 

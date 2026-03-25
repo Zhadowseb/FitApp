@@ -262,6 +262,19 @@ export async function ensureRunTracking(db, workoutId) {
   }
 }
 
+export async function syncRunTrackingState(db) {
+  await workoutRepository.normalizeActiveWorkoutFlags(db);
+
+  const activeWorkout = await workoutRepository.getActiveWorkoutForTracking(db);
+  const hasStarted = await Location.hasStartedLocationUpdatesAsync(RUN_LOCATION_TASK);
+
+  if (activeWorkout?.workout_id || !hasStarted) {
+    return;
+  }
+
+  await Location.stopLocationUpdatesAsync(RUN_LOCATION_TASK);
+}
+
 export async function stopRunTracking(db) {
   await workoutRepository.clearActiveWorkoutFlags(db);
 

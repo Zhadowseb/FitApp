@@ -113,6 +113,14 @@ const Run = ({ workout_id }) => {
     });
   }, [db, workout_id]);
 
+  const stopRunTrackingSafely = useCallback(async () => {
+    try {
+      await locationService.stopRunTracking(db);
+    } catch (error) {
+      console.error("Failed to stop run tracking cleanly:", error);
+    }
+  }, [db]);
+
   const clearActiveSegment = () => {
     previousActiveSetRef.current = null;
     set_activeSet(null);
@@ -183,6 +191,12 @@ const Run = ({ workout_id }) => {
   useFocusEffect(
     useCallback(() => {
       const reload = async () => {
+        try {
+          await locationService.syncRunTrackingState(db);
+        } catch (error) {
+          console.warn("Unable to sync run tracking state:", error);
+        }
+
         const row = await workoutRepository.getWorkoutTimerState(db, workout_id);
         const nextIsDone = Number(row.done) === 1;
         const currentElapsed =
@@ -346,7 +360,7 @@ const Run = ({ workout_id }) => {
 
   const pauseWorkout = async () => {
     const newElapsed = await updateElapsed();
-    await locationService.stopRunTracking(db);
+    await stopRunTrackingSafely();
 
     Vibration.vibrate([0, 100, 100, 100]);
     set_isRunning(false);
@@ -358,7 +372,7 @@ const Run = ({ workout_id }) => {
 
   const endWorkout = async () => {
     const finalElapsed = timer_start ? await updateElapsed() : elapsed_time;
-    await locationService.stopRunTracking(db);
+    await stopRunTrackingSafely();
 
     set_isRunning(false);
     set_isDone(true);
@@ -375,7 +389,7 @@ const Run = ({ workout_id }) => {
   };
 
   const restartWorkout = async () => {
-    await locationService.stopRunTracking(db);
+    await stopRunTrackingSafely();
     await locationService.clearTrackedRunData(db, workout_id);
     await workoutRepository.resetWorkoutState(db, workout_id);
     set_original_start_time(null);

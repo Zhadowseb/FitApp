@@ -1,6 +1,7 @@
+import { useEffect } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { SQLiteProvider } from 'expo-sqlite';
+import { SQLiteProvider, useSQLiteContext } from 'expo-sqlite';
 import { initializeDatabase } from './src/Database/db';
 import { useColorScheme, StatusBar } from "react-native"
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -21,16 +22,47 @@ import { locationService } from "./src/Services";
 
 import * as SQLite from 'expo-sqlite';
 
+let hasInitializedTaskDatabase = false;
+
 TaskManager.defineTask(locationService.RUN_LOCATION_TASK, async ({ data, error }) => {
   if (error) return;
   if (!data?.locations?.length) return;
 
-  const db = await SQLite.openDatabaseAsync('datab.db');
-  await locationService.recordTrackedLocations(db, data.locations);
+  try {
+    const db = await SQLite.openDatabaseAsync('datab.db');
+
+    if (!hasInitializedTaskDatabase) {
+      await initializeDatabase(db);
+      hasInitializedTaskDatabase = true;
+    }
+
+    await locationService.recordTrackedLocations(db, data.locations);
+  } catch (taskError) {
+    console.error("Failed to persist tracked run locations:", taskError);
+  }
 });
 
 
 const Stack = createNativeStackNavigator();
+
+function AppTrackingRecovery() {
+  const db = useSQLiteContext();
+
+  useEffect(() => {
+    const recoverTrackingState = async () => {
+      try {
+        await locationService.syncRunTrackingState(db);
+      } catch (error) {
+        console.warn("Failed to recover run tracking state:", error);
+      }
+    };
+
+    recoverTrackingState();
+  }, [db]);
+
+  return null;
+}
+
 export default function App() {
 
   const colorScheme = useColorScheme()
@@ -65,6 +97,7 @@ export default function App() {
         databaseName="datab.db"
         onInit={initializeDatabase}
         options={{ useNewConnection: false }}>
+        <AppTrackingRecovery />
 
         <NavigationContainer theme={navTheme}>
           <Stack.Navigator initialRouteName='HomePage'

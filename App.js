@@ -82,7 +82,7 @@ export default function App() {
 
             <Stack.Screen name="LoginPage" component={LoginPage} options={{ headerShown: false }} />
             <Stack.Screen name="RegisterPage" component={RegisterPage} options={{ headerShown: false }} />
-            <Stack.Screen name="HomePage" component={HomePage} />
+            <Stack.Screen name="HomePage" component={HomePage} options={{ headerShown: false }} />
             <Stack.Screen name="ProgramPage" component={ProgramPage} options={{headerShown: false}} />
             <Stack.Screen name="ProgramOverviewPage" component={ProgramOverviewPage} options={{headerShown: false}} />
             <Stack.Screen name="MicrocyclePage" component={MicrocyclePage} options={{headerShown: false}} />

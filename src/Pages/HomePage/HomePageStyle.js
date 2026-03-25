@@ -1,16 +1,27 @@
-import { Button, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
   container: {
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 16,
-    paddingTop: 30,
+    flex: 1,
   },
   button_spacing: {
     padding: 12,
     borderRadius: 8,
     marginVertical: 5, 
     marginHorizontal: 50, 
+  },
+  pageHeaderTitleGroup: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pageHeaderTitleEyebrow: {
+    fontWeight: "800",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: 2,
+  },
+  pageHeaderTitleMain: {
+    textAlign: "center",
+    lineHeight: 26,
   },
 });

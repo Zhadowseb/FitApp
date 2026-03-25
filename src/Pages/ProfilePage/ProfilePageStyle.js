@@ -40,7 +40,22 @@ export default StyleSheet.create({
   cardTitle: {
     marginBottom: 8,
   },
+  accountValue: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
   cardBody: {
     lineHeight: 20,
+  },
+  actions: {
+    marginTop: 24,
+  },
+  logoutButton: {
+    marginTop: 0,
+  },
+  errorText: {
+    marginTop: 12,
+    textAlign: "center",
   },
 });

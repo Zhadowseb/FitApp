@@ -11,33 +11,25 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-export async function testSupabaseConnection() {
-  const response = await fetch(`${supabaseUrl}/rest/v1/`, {
-    method: "GET",
-    headers: {
-      apikey: supabaseAnonKey,
-      Authorization: `Bearer ${supabaseAnonKey}`,
-      Accept: "application/openapi+json",
-    },
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `Supabase svarede ${response.status}${errorText ? `: ${errorText}` : ""}`
-    );
-  }
-
-  return {
-    ok: true,
-    status: response.status,
-  };
-}
-
 export async function registerWithEmail({ email, password }) {
   const normalizedEmail = email.trim().toLowerCase();
 
   const { data, error } = await supabase.auth.signUp({
+    email: normalizedEmail,
+    password,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function loginWithEmail({ email, password }) {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const { data, error } = await supabase.auth.signInWithPassword({
     email: normalizedEmail,
     password,
   });

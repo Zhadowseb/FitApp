@@ -28,9 +28,13 @@ export default StyleSheet.create({
 
   content: {
     flex: 1,
-    justifyContent: "center",
     paddingHorizontal: 22,
     paddingVertical: 32,
+  },
+
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
   },
 
   heroBlock: {
@@ -82,10 +86,20 @@ export default StyleSheet.create({
     marginBottom: 10,
   },
 
-  cardBody: {
-    fontSize: 14,
-    lineHeight: 21,
-    maxWidth: 280,
+  formSection: {
+    marginTop: 14,
+  },
+
+  inputLabel: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
+
+  inputWrapper: {
+    marginTop: 0,
   },
 
   actions: {
@@ -95,5 +109,16 @@ export default StyleSheet.create({
   primaryButton: {
     borderRadius: 18,
     height: 52,
+  },
+
+  secondaryActionButton: {
+    marginTop: 18,
+  },
+
+  connectionStatus: {
+    marginTop: 12,
+    marginBottom: 12,
+    fontSize: 13,
+    lineHeight: 19,
   },
 });

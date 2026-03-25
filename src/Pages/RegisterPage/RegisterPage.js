@@ -2,7 +2,7 @@ import { StatusBar } from "expo-status-bar";
 import { View, useColorScheme } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
-import styles from "./LoginPageStyle";
+import styles from "./RegisterPageStyle";
 import { Colors } from "../../Resources/GlobalStyling/colors";
 import {
   ThemedButton,
@@ -11,7 +11,7 @@ import {
   ThemedView,
 } from "../../Resources/ThemedComponents";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const navigation = useNavigation();
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
@@ -26,14 +26,14 @@ export default function LoginPage() {
         pointerEvents="none"
         style={[
           styles.heroAccentPrimary,
-          { backgroundColor: theme.primary ?? theme.iconColor },
+          { backgroundColor: theme.secondary ?? theme.primary },
         ]}
       />
       <View
         pointerEvents="none"
         style={[
           styles.heroAccentSecondary,
-          { backgroundColor: theme.secondary ?? theme.primary },
+          { backgroundColor: theme.primary ?? theme.iconColor },
         ]}
       />
 
@@ -43,16 +43,16 @@ export default function LoginPage() {
             FitVen Cloud
           </ThemedText>
           <ThemedText style={styles.title} setColor={titleColor}>
-            Login
+            Register
           </ThemedText>
           <ThemedText style={styles.subtitle} setColor={quietText}>
-            This page will be used for Supabase login and cloud sync.
+            This page will be used to create a new cloud account.
           </ThemedText>
         </View>
 
         <ThemedCard
           style={[
-            styles.loginCard,
+            styles.registerCard,
             {
               backgroundColor: cardSurface,
               borderColor: cardBorder,
@@ -60,23 +60,23 @@ export default function LoginPage() {
           ]}
         >
           <ThemedText style={styles.cardLabel} setColor={quietText}>
-            Account
+            New account
           </ThemedText>
           <ThemedText style={styles.cardTitle} setColor={titleColor}>
-            Login form goes here
+            Registration form goes here
           </ThemedText>
           <ThemedText style={styles.cardBody} setColor={quietText}>
-            We will add email, password and Supabase auth on top of this layout
-            next.
+            We will add the actual Supabase sign-up flow here next.
           </ThemedText>
         </ThemedCard>
 
         <View style={styles.actions}>
           <ThemedButton
-            title="Create account"
-            onPress={() => navigation.navigate("RegisterPage")}
+            title="Back to login"
+            variant="secondary"
+            onPress={() => navigation.goBack()}
             fullWidth
-            style={styles.primaryButton}
+            style={styles.secondaryButton}
           />
         </View>
       </View>

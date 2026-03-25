@@ -58,7 +58,7 @@ export default StyleSheet.create({
     maxWidth: 300,
   },
 
-  loginCard: {
+  registerCard: {
     marginHorizontal: 0,
     marginVertical: 0,
     paddingHorizontal: 18,
@@ -92,7 +92,7 @@ export default StyleSheet.create({
     marginTop: 18,
   },
 
-  primaryButton: {
+  secondaryButton: {
     borderRadius: 18,
     height: 52,
   },

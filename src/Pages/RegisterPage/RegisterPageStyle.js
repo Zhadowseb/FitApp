@@ -29,7 +29,8 @@ export default StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 22,
-    paddingVertical: 32,
+    paddingTop: 20,
+    paddingBottom: 32,
   },
 
   scrollContent: {
@@ -122,10 +123,5 @@ export default StyleSheet.create({
     marginBottom: 12,
     fontSize: 13,
     lineHeight: 19,
-  },
-
-  secondaryButton: {
-    borderRadius: 18,
-    height: 52,
   },
 });

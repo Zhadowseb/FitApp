@@ -1,14 +1,14 @@
 import { StatusBar } from "expo-status-bar";
 import { View, useColorScheme } from "react-native";
-import { useNavigation } from "@react-navigation/native";
 import { useState } from "react";
 
 import styles from "./RegisterPageStyle";
 import { Colors } from "../../Resources/GlobalStyling/colors";
-import { testSupabaseConnection } from "../../Database/supaBaseClient";
+import { registerWithEmail } from "../../Database/supaBaseClient";
 import {
   ThemedButton,
   ThemedCard,
+  ThemedHeader,
   ThemedKeyboardProtection,
   ThemedText,
   ThemedTextInput,
@@ -16,13 +16,12 @@ import {
 } from "../../Resources/ThemedComponents";
 
 export default function RegisterPage() {
-  const navigation = useNavigation();
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [retypePassword, setRetypePassword] = useState("");
-  const [connectionState, setConnectionState] = useState({
+  const [submitState, setSubmitState] = useState({
     status: "idle",
     message: "",
   });
@@ -32,38 +31,83 @@ export default function RegisterPage() {
   const cardBorder = theme.cardBorder ?? theme.iconColor ?? theme.text;
   const passwordsMismatch =
     retypePassword.length > 0 && password !== retypePassword;
+  const isFormIncomplete =
+    email.trim().length === 0 ||
+    password.length === 0 ||
+    retypePassword.length === 0;
+  const passwordTooShort = password.length > 0 && password.length < 6;
   const statusColor =
-    connectionState.status === "success"
+    submitState.status === "success"
       ? theme.secondary ?? titleColor
-      : connectionState.status === "error"
+      : submitState.status === "error"
         ? theme.danger ?? titleColor
         : quietText;
 
-  const handleTestConnection = async () => {
-    setConnectionState({
+  const handleRegister = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail || !password || !retypePassword) {
+      setSubmitState({
+        status: "error",
+        message: "Fill out email and both password fields first.",
+      });
+      return;
+    }
+
+    if (passwordsMismatch) {
+      setSubmitState({
+        status: "error",
+        message: "Passwords do not match.",
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      setSubmitState({
+        status: "error",
+        message: "Password must be at least 6 characters.",
+      });
+      return;
+    }
+
+    setSubmitState({
       status: "loading",
-      message: "Tester forbindelse til Supabase...",
+      message: "Creating account...",
     });
 
     try {
-      const result = await testSupabaseConnection();
-      setConnectionState({
-        status: "success",
-        message: `Forbindelse OK (${result.status}).`,
+      const result = await registerWithEmail({
+        email: normalizedEmail,
+        password,
       });
+
+      const needsEmailConfirmation = !result.session;
+
+      setSubmitState({
+        status: "success",
+        message: needsEmailConfirmation
+          ? "Account created. Check your email to confirm the account."
+          : "Account created. You can now sign in.",
+      });
+
+      setEmail(normalizedEmail);
+      setPassword("");
+      setRetypePassword("");
     } catch (error) {
-      setConnectionState({
+      setSubmitState({
         status: "error",
         message:
           error instanceof Error
             ? error.message
-            : "Kunne ikke oprette forbindelse til Supabase.",
+            : "Could not create account.",
       });
     }
   };
 
   return (
     <ThemedView style={styles.container}>
+      <ThemedHeader />
+
       <View
         pointerEvents="none"
         style={[
@@ -135,6 +179,7 @@ export default function RegisterPage() {
                 secureTextEntry
                 autoCapitalize="none"
                 autoCorrect={false}
+                error={passwordTooShort ? "Password must be at least 6 characters." : undefined}
                 style={styles.inputWrapper}
               />
             </View>
@@ -159,32 +204,29 @@ export default function RegisterPage() {
           <View style={styles.actions}>
             <ThemedButton
               title={
-                connectionState.status === "loading"
-                  ? "Testing..."
-                  : "Test Supabase connection"
+                submitState.status === "loading"
+                  ? "Registering..."
+                  : "Register"
               }
-              onPress={handleTestConnection}
+              onPress={handleRegister}
               fullWidth
               style={styles.primaryButton}
-              disabled={connectionState.status === "loading"}
+              disabled={
+                submitState.status === "loading" ||
+                isFormIncomplete ||
+                passwordsMismatch ||
+                passwordTooShort
+              }
             />
 
-            {connectionState.message ? (
+            {submitState.message ? (
               <ThemedText
                 style={styles.connectionStatus}
                 setColor={statusColor}
               >
-                {connectionState.message}
+                {submitState.message}
               </ThemedText>
             ) : null}
-
-            <ThemedButton
-              title="Back to login"
-              variant="secondary"
-              onPress={() => navigation.goBack()}
-              fullWidth
-              style={styles.secondaryButton}
-            />
           </View>
         </ThemedKeyboardProtection>
       </View>

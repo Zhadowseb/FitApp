@@ -2,6 +2,12 @@
 
 All changes to the project, are logged here.
 
+
+
+## [0.2.2.1] - 2026-03-25
+### Added
+- Fix bug that corrupted loading of all SQLite info.
+
 ---
 
 ## [0.2.2] - 2026-03-25

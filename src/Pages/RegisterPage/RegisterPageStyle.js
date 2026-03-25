@@ -28,9 +28,13 @@ export default StyleSheet.create({
 
   content: {
     flex: 1,
-    justifyContent: "center",
     paddingHorizontal: 22,
     paddingVertical: 32,
+  },
+
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
   },
 
   heroBlock: {
@@ -88,8 +92,36 @@ export default StyleSheet.create({
     maxWidth: 280,
   },
 
+  formSection: {
+    marginTop: 14,
+  },
+
+  inputLabel: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
+
+  inputWrapper: {
+    marginTop: 0,
+  },
+
   actions: {
     marginTop: 18,
+  },
+
+  primaryButton: {
+    borderRadius: 18,
+    height: 52,
+  },
+
+  connectionStatus: {
+    marginTop: 12,
+    marginBottom: 12,
+    fontSize: 13,
+    lineHeight: 19,
   },
 
   secondaryButton: {

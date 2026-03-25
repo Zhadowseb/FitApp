@@ -10,6 +10,15 @@ export default StyleSheet.create({
     marginVertical: 5, 
     marginHorizontal: 50, 
   },
+  headerAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    overflow: "hidden",
+  },
   pageHeaderTitleGroup: {
     alignItems: "center",
     justifyContent: "center",

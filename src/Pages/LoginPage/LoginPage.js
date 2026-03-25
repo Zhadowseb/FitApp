@@ -63,8 +63,6 @@ export default function LoginPage() {
         status: "success",
         message: "Login successful.",
       });
-
-      navigation.replace("HomePage");
     } catch (error) {
       setSubmitState({
         status: "error",

@@ -1,9 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
-import { View, useColorScheme } from 'react-native';
+import { TouchableOpacity, View, useColorScheme } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
 import styles from './HomePageStyle';
 import { Colors } from '../../Resources/GlobalStyling/colors';
+import Male from '../../Resources/Icons/UI-icons/Male';
 
 import { 
   ThemedView,  
@@ -22,7 +23,27 @@ export default function App() {
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedHeader showBack={false}>
+      <ThemedHeader
+        showBack={false}
+        right={
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate("ProfilePage")}
+          >
+            <View
+              style={[
+                styles.headerAvatar,
+                {
+                  backgroundColor: theme.uiBackground ?? theme.cardBackground,
+                  borderColor: theme.cardBorder ?? theme.border,
+                },
+              ]}
+            >
+              <Male width={22} height={22} color={theme.primary} />
+            </View>
+          </TouchableOpacity>
+        }
+      >
         <View style={styles.pageHeaderTitleGroup}>
           <ThemedText
             size={10}

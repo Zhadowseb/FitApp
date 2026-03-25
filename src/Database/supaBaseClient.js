@@ -1,3 +1,4 @@
+import "expo-sqlite/localStorage/install";
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://tgfeedchhogerswntuvy.supabase.co';
@@ -5,8 +6,9 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    autoRefreshToken: false,
-    persistSession: false,
+    storage: globalThis.localStorage,
+    autoRefreshToken: true,
+    persistSession: true,
     detectSessionInUrl: false,
   },
 });
@@ -39,4 +41,12 @@ export async function loginWithEmail({ email, password }) {
   }
 
   return data;
+}
+
+export async function logout() {
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    throw error;
+  }
 }

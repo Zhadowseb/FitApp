@@ -7,6 +7,7 @@ function Male({width, height, color}) {
 
   const colorScheme = useColorScheme()
   const theme = Colors[colorScheme] ?? Colors.light
+  const iconColor = color ? color : theme.primary
 
   return (
     <Svg
@@ -14,9 +15,9 @@ function Male({width, height, color}) {
       viewBox="0 0 24 24"
       width={width}
       height={height}
-      color={color ? color : theme.primary}
+      color={iconColor}
       fill="none"
-      stroke={color ? color : theme.primary}
+      stroke={iconColor}
       strokeWidth={1.5}
       strokeLinejoin="round"
     >

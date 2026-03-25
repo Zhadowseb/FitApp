@@ -7,6 +7,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as TaskManager from 'expo-task-manager';
 
 
+import LoginPage from './src/Pages/LoginPage/LoginPage';
 import HomePage from './src/Pages/HomePage/HomePage';
 import ProgramPage from './src/Pages/ProgramPage/ProgramPage';
 import ProgramOverviewPage from './src/Pages/ProgramOverviewPage/ProgramOverviewPage';
@@ -67,7 +68,7 @@ export default function App() {
         options={{ useNewConnection: false }}>
 
         <NavigationContainer theme={navTheme}>
-          <Stack.Navigator initialRouteName='HomePage'
+          <Stack.Navigator initialRouteName='LoginPage'
             screenOptions={{ 
               headerShown: true,
               headerStyle: {
@@ -78,6 +79,7 @@ export default function App() {
               }
             }}> 
 
+            <Stack.Screen name="LoginPage" component={LoginPage} options={{ headerShown: false }} />
             <Stack.Screen name="HomePage" component={HomePage} />
             <Stack.Screen name="ProgramPage" component={ProgramPage} options={{headerShown: false}} />
             <Stack.Screen name="ProgramOverviewPage" component={ProgramOverviewPage} options={{headerShown: false}} />

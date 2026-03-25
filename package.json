@@ -20,6 +20,7 @@
     "@react-native-picker/picker": "^2.11.4",
     "@react-navigation/native": "^7.1.21",
     "@react-navigation/native-stack": "^7.8.0",
+    "@supabase/supabase-js": "^2.100.0",
     "eas-cli": "^18.3.0",
     "expo": "~54.0.25",
     "expo-checkbox": "~5.0.8",

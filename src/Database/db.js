@@ -57,6 +57,66 @@ async function repairWorkoutTrackingState(db) {
   }
 }
 
+async function repairStrengthTrainingState(db) {
+  await db.execAsync(`
+    UPDATE Exercise
+    SET visible_columns = NULL
+    WHERE TRIM(COALESCE(visible_columns, '')) IN ('', 'undefined', 'null', '[object Object]');
+
+    UPDATE Exercise
+    SET done = (
+      NOT EXISTS (
+        SELECT 1
+        FROM Sets
+        WHERE Sets.exercise_id = Exercise.exercise_id
+          AND Sets.done = 0
+      )
+    );
+
+    UPDATE Workout
+    SET done = (
+      CASE
+        WHEN EXISTS (
+          SELECT 1
+          FROM Run
+          WHERE Run.workout_id = Workout.workout_id
+        ) THEN Workout.done
+        ELSE NOT EXISTS (
+          SELECT 1
+          FROM Exercise
+          WHERE Exercise.workout_id = Workout.workout_id
+            AND Exercise.done = 0
+        )
+      END
+    )
+    WHERE EXISTS (
+      SELECT 1
+      FROM Exercise
+      WHERE Exercise.workout_id = Workout.workout_id
+    );
+  `);
+}
+
+async function repairRunSetState(db) {
+  await db.execAsync(`
+    UPDATE Run
+    SET type = CASE
+      WHEN type IS NULL THEN 'WORKING_SET'
+      WHEN UPPER(REPLACE(REPLACE(TRIM(type), '-', '_'), ' ', '_')) IN ('WARMUP', 'WARM_UP')
+        THEN 'WARMUP'
+      WHEN UPPER(REPLACE(REPLACE(TRIM(type), '-', '_'), ' ', '_')) IN ('COOLDOWN', 'COOL_DOWN')
+        THEN 'COOLDOWN'
+      ELSE 'WORKING_SET'
+    END;
+
+    UPDATE Run
+    SET done = COALESCE(done, 0),
+        is_pause = COALESCE(is_pause, 0)
+    WHERE done IS NULL
+       OR is_pause IS NULL;
+  `);
+}
+
 export async function initializeDatabase(db) {
   await db.execAsync(`
     ${programSchemaSql}
@@ -135,6 +195,8 @@ export async function initializeDatabase(db) {
   `);
 
   await repairWorkoutTrackingState(db);
+  await repairStrengthTrainingState(db);
+  await repairRunSetState(db);
 
   await initializeWeightliftingData(db);
 

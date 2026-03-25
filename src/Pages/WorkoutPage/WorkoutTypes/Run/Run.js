@@ -88,6 +88,7 @@ const Run = ({ workout_id }) => {
   const [isDone, set_isDone] = useState(false);
   const [isRunning, set_isRunning] = useState(false);
   const [totalDistance, set_totalDistance] = useState(0);
+  const [timerTick, set_timerTick] = useState(() => Date.now());
 
   const [activeSet, set_activeSet] = useState(null);
   const [activeSet_remainingTime, set_activeSet_remainingTime] = useState(0);
@@ -96,6 +97,8 @@ const Run = ({ workout_id }) => {
   const previousActiveSetRef = useRef(null);
   const timerStartRef = useRef(null);
   const elapsedTimeRef = useRef(0);
+  const activeSetCalculationInFlightRef = useRef(false);
+  const trackedSummaryLoadingRef = useRef(false);
 
   useEffect(() => {
     timerStartRef.current = timer_start;
@@ -128,108 +131,134 @@ const Run = ({ workout_id }) => {
     set_activeSetDetails(null);
   };
 
+  const getCurrentElapsedSeconds = useCallback(() => {
+    if (!timerStartRef.current) {
+      return 0;
+    }
+
+    return Math.floor((Date.now() - timerStartRef.current) / 1000);
+  }, []);
+
   const loadTrackedRunSummary = useCallback(async () => {
+    if (trackedSummaryLoadingRef.current) {
+      return;
+    }
+
+    trackedSummaryLoadingRef.current = true;
+
     try {
       const summary = await locationService.getTrackedRunSummary(db, workout_id);
       set_totalDistance(summary.totalDistanceKm);
     } catch (error) {
       console.error("Failed to load tracked run summary:", error);
+    } finally {
+      trackedSummaryLoadingRef.current = false;
     }
   }, [db, workout_id]);
 
-  const computeCurrentElapsed = () => {
-    if (!timer_start) return 0;
-
-    return Math.floor((Date.now() - timer_start) / 1000);
-  };
-
-  const calculateActiveSet = async (currentElapsed) => {
-    const sets = await runningRepository.getOrderedRunSetsForWorkout(db, workout_id);
-
-    if (!sets.length) {
-      clearActiveSegment();
+  const calculateActiveSet = useCallback(async (currentElapsed) => {
+    if (activeSetCalculationInFlightRef.current) {
       return;
     }
 
-    let remainingElapsed = currentElapsed;
+    activeSetCalculationInFlightRef.current = true;
 
-    for (let i = 0; i < sets.length; i++) {
-      const setDuration = (sets[i].time ?? 0) * 60;
+    try {
+      const sets = await runningRepository.getOrderedRunSetsForWorkout(
+        db,
+        workout_id
+      );
 
-      if (remainingElapsed >= setDuration) {
-        if (!sets[i].done) {
-          await runningRepository.updateRunSetDone(db, {
-            runId: sets[i].Run_id,
-            done: true,
-          });
-        }
-        remainingElapsed -= setDuration;
-        continue;
+      if (!sets.length) {
+        clearActiveSegment();
+        return;
       }
 
-      const newActiveSet = sets[i].Run_id;
+      let remainingElapsed = currentElapsed;
 
-      if (previousActiveSetRef.current !== newActiveSet) {
-        previousActiveSetRef.current = newActiveSet;
+      for (let i = 0; i < sets.length; i++) {
+        const setDuration = (sets[i].time ?? 0) * 60;
 
-        if (sets[i].is_pause) {
-          Vibration.vibrate([0, 100, 100, 100]);
-        } else {
-          Vibration.vibrate(500);
-        }
-      }
-
-      set_activeSet(newActiveSet);
-      set_activeSetDetails(sets[i]);
-      set_activeSet_remainingTime(Math.max(0, setDuration - remainingElapsed));
-      return;
-    }
-
-    clearActiveSegment();
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      const reload = async () => {
-        try {
-          await locationService.syncRunTrackingState(db);
-        } catch (error) {
-          console.warn("Unable to sync run tracking state:", error);
+        if (remainingElapsed >= setDuration) {
+          if (!sets[i].done) {
+            await runningRepository.updateRunSetDone(db, {
+              runId: sets[i].Run_id,
+              done: true,
+            });
+          }
+          remainingElapsed -= setDuration;
+          continue;
         }
 
-        const row = await workoutRepository.getWorkoutTimerState(db, workout_id);
-        const nextIsDone = Number(row.done) === 1;
-        const currentElapsed =
-          row.elapsed_time +
-          (row.timer_start
-            ? Math.floor((Date.now() - row.timer_start) / 1000)
-            : 0);
+        const newActiveSet = sets[i].Run_id;
 
-        set_isRunning(row.timer_start !== null && !nextIsDone);
-        set_isDone(nextIsDone);
-        set_original_start_time(row.original_start_time);
-        set_timer_start(row.timer_start);
-        set_elapsed_time(row.elapsed_time);
+        if (previousActiveSetRef.current !== newActiveSet) {
+          previousActiveSetRef.current = newActiveSet;
 
-        if (row.original_start_time !== null && !nextIsDone) {
-          await calculateActiveSet(currentElapsed);
-        } else {
-          clearActiveSegment();
-        }
-
-        if (row.timer_start !== null && !nextIsDone) {
-          try {
-            await locationService.ensureRunTracking(db, workout_id);
-          } catch (error) {
-            console.warn("Unable to ensure location tracking:", error);
+          if (sets[i].is_pause) {
+            Vibration.vibrate([0, 100, 100, 100]);
+          } else {
+            Vibration.vibrate(500);
           }
         }
 
-        await loadTrackedRunSummary();
-      };
+        set_activeSet(newActiveSet);
+        set_activeSetDetails(sets[i]);
+        set_activeSet_remainingTime(Math.max(0, setDuration - remainingElapsed));
+        return;
+      }
 
-      reload();
-    }, [db, workout_id, loadTrackedRunSummary])
+      clearActiveSegment();
+    } finally {
+      activeSetCalculationInFlightRef.current = false;
+    }
+  }, [db, workout_id]);
+
+  const loadWorkoutState = useCallback(async () => {
+    try {
+      await locationService.syncRunTrackingState(db);
+    } catch (error) {
+      console.warn("Unable to sync run tracking state:", error);
+    }
+
+    const row = await workoutRepository.getWorkoutTimerState(db, workout_id);
+    const nextIsDone = Number(row.done) === 1;
+    const currentElapsed =
+      row.elapsed_time +
+      (row.timer_start
+        ? Math.floor((Date.now() - row.timer_start) / 1000)
+        : 0);
+
+    timerStartRef.current = row.timer_start;
+    elapsedTimeRef.current = row.elapsed_time;
+    set_timerTick(Date.now());
+    set_isRunning(row.timer_start !== null && !nextIsDone);
+    set_isDone(nextIsDone);
+    set_original_start_time(row.original_start_time);
+    set_timer_start(row.timer_start);
+    set_elapsed_time(row.elapsed_time);
+
+    if (row.original_start_time !== null && !nextIsDone) {
+      await calculateActiveSet(currentElapsed);
+    } else {
+      clearActiveSegment();
+    }
+
+    if (row.timer_start !== null && !nextIsDone) {
+      try {
+        await locationService.ensureRunTracking(db, workout_id);
+      } catch (error) {
+        console.warn("Unable to ensure location tracking:", error);
+      }
+    }
+
+    await loadTrackedRunSummary();
+  }, [db, workout_id, calculateActiveSet, loadTrackedRunSummary]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadWorkoutState();
+    }, [loadWorkoutState])
   );
 
   useEffect(() => {
@@ -237,12 +266,17 @@ const Run = ({ workout_id }) => {
       if (nextAppState === "inactive" || nextAppState === "background") {
         persistCurrentTimerState();
       }
+
+      if (nextAppState === "active") {
+        set_timerTick(Date.now());
+        loadWorkoutState();
+      }
     });
 
     return () => {
       subscription.remove();
     };
-  }, [persistCurrentTimerState]);
+  }, [persistCurrentTimerState, loadWorkoutState]);
 
   useEffect(() => {
     return () => {
@@ -251,28 +285,30 @@ const Run = ({ workout_id }) => {
   }, [persistCurrentTimerState]);
 
   useEffect(() => {
+    if (!isRunning) {
+      set_timerTick(Date.now());
+      return;
+    }
+
+    const interval = setInterval(() => {
+      set_timerTick(Date.now());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isRunning, timer_start]);
+
+  useEffect(() => {
     if (original_start_time === null || isDone) {
       clearActiveSegment();
       return;
     }
 
-    calculateActiveSet(isRunning ? elapsed_time + computeCurrentElapsed() : elapsed_time);
-  }, [updateCount, original_start_time, isDone]);
+    calculateActiveSet(currentElapsed);
+  }, [updateCount, original_start_time, isDone, currentElapsed, calculateActiveSet]);
 
   useEffect(() => {
     loadTrackedRunSummary();
   }, [loadTrackedRunSummary, updateCount]);
-
-  useEffect(() => {
-    if (!isRunning) return;
-
-    const interval = setInterval(() => {
-      const currentTime = computeCurrentElapsed();
-      calculateActiveSet(elapsed_time + currentTime);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [timer_start, isRunning, workout_id, elapsed_time]);
 
   useEffect(() => {
     if (!isRunning) {
@@ -287,7 +323,9 @@ const Run = ({ workout_id }) => {
   }, [isRunning, loadTrackedRunSummary]);
 
   const updateElapsed = async () => {
-    const newElapsed = Math.floor(elapsed_time + computeCurrentElapsed());
+    const newElapsed = Math.floor(
+      (elapsedTimeRef.current ?? 0) + getCurrentElapsedSeconds()
+    );
 
     await workoutRepository.persistWorkoutTimerState(db, {
       workoutId: workout_id,
@@ -317,7 +355,7 @@ const Run = ({ workout_id }) => {
       await workoutRepository.persistWorkoutTimerState(db, {
         workoutId: workout_id,
         timerStart: start_time,
-        elapsedTime: elapsed_time,
+        elapsedTime: elapsedTimeRef.current ?? elapsed_time,
       });
 
       try {
@@ -328,7 +366,7 @@ const Run = ({ workout_id }) => {
         await workoutRepository.persistWorkoutTimerState(db, {
           workoutId: workout_id,
           timerStart: null,
-          elapsedTime: elapsed_time,
+          elapsedTime: elapsedTimeRef.current ?? elapsed_time,
         });
 
         if (isFreshStart) {
@@ -346,6 +384,7 @@ const Run = ({ workout_id }) => {
         set_original_start_time(start_time);
       }
       timerStartRef.current = start_time;
+      set_timerTick(start_time);
       set_isRunning(true);
       set_timer_start(start_time);
       await loadTrackedRunSummary();
@@ -371,7 +410,7 @@ const Run = ({ workout_id }) => {
   };
 
   const endWorkout = async () => {
-    const finalElapsed = timer_start ? await updateElapsed() : elapsed_time;
+    const finalElapsed = timerStartRef.current ? await updateElapsed() : elapsed_time;
     await stopRunTrackingSafely();
 
     set_isRunning(false);
@@ -423,7 +462,9 @@ const Run = ({ workout_id }) => {
   const quietText = theme.quietText ?? theme.iconColor ?? theme.text;
   const invertedText = theme.textInverted ?? theme.background ?? "#0E0F12";
 
-  const currentElapsed = elapsed_time + computeCurrentElapsed();
+  const currentElapsed =
+    elapsed_time +
+    (timer_start ? Math.floor((timerTick - timer_start) / 1000) : 0);
   const avgPaceMinutes =
     totalDistance > 0 ? currentElapsed / 60 / totalDistance : null;
   const startedDisplay =

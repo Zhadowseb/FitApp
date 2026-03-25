@@ -1,9 +1,20 @@
+const NORMALIZED_RUN_TYPE_SQL = `
+  CASE
+    WHEN type IS NULL THEN 'WORKING_SET'
+    WHEN UPPER(REPLACE(REPLACE(TRIM(type), '-', '_'), ' ', '_')) IN ('WARMUP', 'WARM_UP')
+      THEN 'WARMUP'
+    WHEN UPPER(REPLACE(REPLACE(TRIM(type), '-', '_'), ' ', '_')) IN ('COOLDOWN', 'COOL_DOWN')
+      THEN 'COOLDOWN'
+    ELSE 'WORKING_SET'
+  END
+`;
+
 export async function getRunSets(db, { workoutId, type }) {
   return db.getAllAsync(
     `SELECT *
      FROM Run
      WHERE workout_id = ?
-       AND type = ?
+       AND ${NORMALIZED_RUN_TYPE_SQL} = ?
      ORDER BY set_number ASC;`,
     [workoutId, type]
   );
@@ -15,7 +26,7 @@ export async function getOrderedRunSetsForWorkout(db, workoutId) {
      FROM Run
      WHERE workout_id = ?
      ORDER BY
-       CASE type
+       CASE ${NORMALIZED_RUN_TYPE_SQL}
          WHEN 'WARMUP' THEN 1
          WHEN 'WORKING_SET' THEN 2
          WHEN 'COOLDOWN' THEN 3
@@ -30,7 +41,7 @@ export async function countActiveRunSets(db, { workoutId, type }) {
     `SELECT COUNT(*) AS count
      FROM Run
      WHERE workout_id = ?
-       AND type = ?
+       AND ${NORMALIZED_RUN_TYPE_SQL} = ?
        AND is_pause = 0;`,
     [workoutId, type]
   );

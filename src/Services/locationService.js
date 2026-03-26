@@ -114,6 +114,25 @@ async function ensureForegroundLocationPermission() {
   }
 }
 
+async function ensureBackgroundLocationPermission({ requestIfMissing = true } = {}) {
+  const backgroundLocationAvailable =
+    await Location.isBackgroundLocationAvailableAsync();
+
+  if (!backgroundLocationAvailable) {
+    throw new Error("Background location is not available on this device.");
+  }
+
+  let backgroundPermission = await Location.getBackgroundPermissionsAsync();
+
+  if (!backgroundPermission.granted && requestIfMissing) {
+    backgroundPermission = await Location.requestBackgroundPermissionsAsync();
+  }
+
+  if (!backgroundPermission.granted) {
+    throw new Error("Background location permission was not granted.");
+  }
+}
+
 async function ensureLocationServicesEnabled() {
   let servicesEnabled = await Location.hasServicesEnabledAsync();
 
@@ -230,6 +249,7 @@ export async function recordTrackedLocations(db, locations) {
 export async function startRunTracking(db, workoutId, { resetLogs = false } = {}) {
   await ensureLocationServicesEnabled();
   await ensureForegroundLocationPermission();
+  await ensureBackgroundLocationPermission();
 
   if (resetLogs) {
     await clearTrackedRunData(db, workoutId);
@@ -250,6 +270,7 @@ export async function startRunTracking(db, workoutId, { resetLogs = false } = {}
 export async function ensureRunTracking(db, workoutId) {
   await ensureLocationServicesEnabled();
   await ensureForegroundLocationPermission();
+  await ensureBackgroundLocationPermission({ requestIfMissing: false });
   await setActiveWorkout(db, workoutId);
 
   const hasStarted = await Location.hasStartedLocationUpdatesAsync(RUN_LOCATION_TASK);

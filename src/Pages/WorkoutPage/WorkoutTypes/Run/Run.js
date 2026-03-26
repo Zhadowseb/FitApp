@@ -87,6 +87,7 @@ const Run = ({ workout_id, restartRequestKey }) => {
   const [elapsed_time, set_elapsed_time] = useState(0);
   const [isDone, set_isDone] = useState(false);
   const [isRunning, set_isRunning] = useState(false);
+  const [isControlBusy, set_isControlBusy] = useState(false);
   const [totalDistance, set_totalDistance] = useState(0);
   const [timerTick, set_timerTick] = useState(() => Date.now());
 
@@ -97,6 +98,7 @@ const Run = ({ workout_id, restartRequestKey }) => {
   const previousActiveSetRef = useRef(null);
   const timerStartRef = useRef(null);
   const elapsedTimeRef = useRef(0);
+  const workoutStateLoadRequestRef = useRef(0);
   const activeSetCalculationInFlightRef = useRef(false);
   const trackedSummaryLoadingRef = useRef(false);
 
@@ -123,6 +125,10 @@ const Run = ({ workout_id, restartRequestKey }) => {
       console.error("Failed to stop run tracking cleanly:", error);
     }
   }, [db]);
+
+  const invalidatePendingWorkoutStateLoads = useCallback(() => {
+    workoutStateLoadRequestRef.current += 1;
+  }, []);
 
   const clearActiveSegment = () => {
     previousActiveSetRef.current = null;
@@ -215,13 +221,26 @@ const Run = ({ workout_id, restartRequestKey }) => {
   }, [db, workout_id]);
 
   const loadWorkoutState = useCallback(async () => {
+    // Ignore older resume/focus reloads so they cannot overwrite a newer pause/finish action.
+    const requestId = workoutStateLoadRequestRef.current + 1;
+    workoutStateLoadRequestRef.current = requestId;
+
     try {
       await locationService.syncRunTrackingState(db);
     } catch (error) {
       console.warn("Unable to sync run tracking state:", error);
     }
 
+    if (requestId !== workoutStateLoadRequestRef.current) {
+      return;
+    }
+
     const row = await workoutRepository.getWorkoutTimerState(db, workout_id);
+
+    if (!row || requestId !== workoutStateLoadRequestRef.current) {
+      return;
+    }
+
     const nextIsDone = Number(row.done) === 1;
     const currentElapsed =
       row.elapsed_time +
@@ -238,10 +257,18 @@ const Run = ({ workout_id, restartRequestKey }) => {
     set_timer_start(row.timer_start);
     set_elapsed_time(row.elapsed_time);
 
+    if (requestId !== workoutStateLoadRequestRef.current) {
+      return;
+    }
+
     if (row.original_start_time !== null && !nextIsDone) {
       await calculateActiveSet(currentElapsed);
     } else {
       clearActiveSegment();
+    }
+
+    if (requestId !== workoutStateLoadRequestRef.current) {
+      return;
     }
 
     if (row.timer_start !== null && !nextIsDone) {
@@ -252,24 +279,28 @@ const Run = ({ workout_id, restartRequestKey }) => {
       }
     }
 
+    if (requestId !== workoutStateLoadRequestRef.current) {
+      return;
+    }
+
     await loadTrackedRunSummary();
   }, [db, workout_id, calculateActiveSet, loadTrackedRunSummary]);
 
   useFocusEffect(
     useCallback(() => {
-      loadWorkoutState();
+      void loadWorkoutState();
     }, [loadWorkoutState])
   );
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextAppState) => {
       if (nextAppState === "inactive" || nextAppState === "background") {
-        persistCurrentTimerState();
+        void persistCurrentTimerState();
       }
 
       if (nextAppState === "active") {
         set_timerTick(Date.now());
-        loadWorkoutState();
+        void loadWorkoutState();
       }
     });
 
@@ -280,7 +311,7 @@ const Run = ({ workout_id, restartRequestKey }) => {
 
   useEffect(() => {
     return () => {
-      persistCurrentTimerState();
+      void persistCurrentTimerState();
     };
   }, [persistCurrentTimerState]);
 
@@ -340,6 +371,13 @@ const Run = ({ workout_id, restartRequestKey }) => {
   };
 
   const startWorkout = async () => {
+    if (isControlBusy) {
+      return;
+    }
+
+    set_isControlBusy(true);
+    invalidatePendingWorkoutStateLoads();
+
     try {
       const row = await workoutRepository.getWorkoutOriginalStartTime(db, workout_id);
       const start_time = Date.now();
@@ -394,51 +432,107 @@ const Run = ({ workout_id, restartRequestKey }) => {
         "Location tracking could not start",
         "Check that location is allowed and turned on, then try again."
       );
+    } finally {
+      set_isControlBusy(false);
     }
   };
 
   const pauseWorkout = async () => {
-    const newElapsed = await updateElapsed();
-    await stopRunTrackingSafely();
+    if (isControlBusy) {
+      return;
+    }
 
-    Vibration.vibrate([0, 100, 100, 100]);
-    set_isRunning(false);
-    set_timer_start(null);
-    set_elapsed_time(newElapsed);
-    await calculateActiveSet(newElapsed);
-    await loadTrackedRunSummary();
+    set_isControlBusy(true);
+    invalidatePendingWorkoutStateLoads();
+
+    try {
+      const newElapsed = await updateElapsed();
+      await stopRunTrackingSafely();
+
+      Vibration.vibrate([0, 100, 100, 100]);
+      set_isRunning(false);
+      set_timer_start(null);
+      set_elapsed_time(newElapsed);
+      await calculateActiveSet(newElapsed);
+      await loadTrackedRunSummary();
+    } catch (error) {
+      console.error("Failed to pause run:", error);
+      Alert.alert(
+        "Run could not be paused",
+        "The timer state will be refreshed so you can try again."
+      );
+      await loadWorkoutState();
+    } finally {
+      set_isControlBusy(false);
+    }
   };
 
   const endWorkout = async () => {
-    const finalElapsed = timerStartRef.current ? await updateElapsed() : elapsed_time;
-    await stopRunTrackingSafely();
+    if (isControlBusy) {
+      return;
+    }
 
-    set_isRunning(false);
-    set_isDone(true);
-    set_timer_start(null);
-    set_elapsed_time(finalElapsed);
-    clearActiveSegment();
+    set_isControlBusy(true);
+    invalidatePendingWorkoutStateLoads();
 
-    await workoutRepository.setWorkoutDone(db, {
-      workoutId: workout_id,
-      done: true,
-    });
+    try {
+      const finalElapsed = timerStartRef.current ? await updateElapsed() : elapsed_time;
+      await stopRunTrackingSafely();
 
-    await loadTrackedRunSummary();
+      set_isRunning(false);
+      set_isDone(true);
+      set_timer_start(null);
+      set_elapsed_time(finalElapsed);
+      clearActiveSegment();
+
+      await workoutRepository.setWorkoutDone(db, {
+        workoutId: workout_id,
+        done: true,
+      });
+
+      await loadTrackedRunSummary();
+    } catch (error) {
+      console.error("Failed to finish run:", error);
+      Alert.alert(
+        "Run could not be finished",
+        "The timer state will be refreshed so you can try again."
+      );
+      await loadWorkoutState();
+    } finally {
+      set_isControlBusy(false);
+    }
   };
 
   const restartWorkout = async () => {
-    await stopRunTrackingSafely();
-    await locationService.clearTrackedRunData(db, workout_id);
-    await workoutRepository.resetWorkoutState(db, workout_id);
-    set_original_start_time(null);
-    set_timer_start(null);
-    set_elapsed_time(0);
-    set_isRunning(false);
-    set_isDone(false);
-    set_totalDistance(0);
-    clearActiveSegment();
-    triggerReload();
+    if (isControlBusy) {
+      return;
+    }
+
+    set_isControlBusy(true);
+    invalidatePendingWorkoutStateLoads();
+
+    try {
+      await stopRunTrackingSafely();
+      await locationService.clearTrackedRunData(db, workout_id);
+      await workoutRepository.resetWorkoutState(db, workout_id);
+      set_original_start_time(null);
+      set_timer_start(null);
+      set_elapsed_time(0);
+      set_isRunning(false);
+      set_isDone(false);
+      set_totalDistance(0);
+      clearActiveSegment();
+      triggerReload();
+    } catch (error) {
+      console.error("Failed to restart run:", error);
+      Alert.alert(
+        "Run could not be restarted",
+        "The timer state will be refreshed so you can try again."
+      );
+      await loadWorkoutState();
+    } finally {
+      set_isControlBusy(false);
+    }
   };
 
   useEffect(() => {
@@ -647,7 +741,7 @@ const Run = ({ workout_id, restartRequestKey }) => {
                       title={original_start_time !== null ? "Continue" : "Start"}
                       onPress={startWorkout}
                       variant="primary"
-                      disabled={isDone || isRunning}
+                      disabled={isDone || isRunning || isControlBusy}
                       style={styles.heroActionButton}
                     />
                   </View>
@@ -659,7 +753,7 @@ const Run = ({ workout_id, restartRequestKey }) => {
                       title="Finish Run"
                       onPress={endWorkout}
                       variant="secondary"
-                      disabled={original_start_time === null || isDone}
+                      disabled={original_start_time === null || isDone || isControlBusy}
                       style={styles.heroActionButton}
                     />
                   </View>
@@ -671,7 +765,7 @@ const Run = ({ workout_id, restartRequestKey }) => {
                       title="Pause"
                       onPress={pauseWorkout}
                       variant="primary"
-                      disabled={!isRunning || isDone}
+                      disabled={!isRunning || isDone || isControlBusy}
                       style={styles.heroActionButton}
                     />
                   </View>

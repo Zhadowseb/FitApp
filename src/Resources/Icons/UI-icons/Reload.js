@@ -14,9 +14,9 @@ function Reload({width, height, color}) {
       viewBox="0 0 24 24"
       width={width || 24}
       height={height || 24}
-      color={color ? color : theme.primary}
+      color={color ? color : theme.iconColor}
       fill="none"
-      stroke={color ? color : theme.primary}
+      stroke={color ? color : theme.iconColor}
       strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"

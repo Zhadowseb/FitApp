@@ -17,6 +17,29 @@ export const DEFAULT_VISIBLE_COLUMNS = {
   done: true,
 };
 
+function parseVisibleColumns(value) {
+  if (!value) {
+    return DEFAULT_VISIBLE_COLUMNS;
+  }
+
+  try {
+    const parsedValue =
+      typeof value === "string" ? JSON.parse(value) : value;
+
+    if (!parsedValue || typeof parsedValue !== "object") {
+      return DEFAULT_VISIBLE_COLUMNS;
+    }
+
+    return {
+      ...DEFAULT_VISIBLE_COLUMNS,
+      ...parsedValue,
+    };
+  } catch (error) {
+    console.warn("Failed to parse exercise visible columns:", error);
+    return DEFAULT_VISIBLE_COLUMNS;
+  }
+}
+
 function normalizeOptionalNumber(value) {
   if (value === "" || value === null || value === undefined) {
     return null;
@@ -452,12 +475,7 @@ export async function getWorkoutExercises(db, workoutId) {
       ...exercise,
       sets: exerciseSets,
       setCount: exerciseSets.length,
-      visibleColumns: exercise.visible_columns
-        ? {
-            ...DEFAULT_VISIBLE_COLUMNS,
-            ...JSON.parse(exercise.visible_columns),
-          }
-        : DEFAULT_VISIBLE_COLUMNS,
+      visibleColumns: parseVisibleColumns(exercise.visible_columns),
     };
   });
 }

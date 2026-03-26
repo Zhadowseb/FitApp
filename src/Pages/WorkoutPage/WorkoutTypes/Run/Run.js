@@ -68,7 +68,7 @@ const formatPaceDisplay = (paceMinutes) => {
   return `${minutes}'${String(seconds).padStart(2, "0")}`;
 };
 
-const Run = ({ workout_id }) => {
+const Run = ({ workout_id, restartRequestKey }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
   const db = useSQLiteContext();
@@ -441,6 +441,14 @@ const Run = ({ workout_id }) => {
     triggerReload();
   };
 
+  useEffect(() => {
+    if (!restartRequestKey) {
+      return;
+    }
+
+    restartWorkout();
+  }, [restartRequestKey]);
+
   const addSet = async (setVariety) => {
     try {
       await runningRepository.addRunSet(db, {
@@ -626,60 +634,50 @@ const Run = ({ workout_id }) => {
               </View>
             </View>
 
-            <View style={styles.heroActionsRow}>
-              {!isRunning && !isDone && (
-                <View
-                  style={[
-                    styles.heroActionSlot,
-                    original_start_time !== null && styles.heroActionSlotSpaced,
-                  ]}
-                >
-                  <ThemedButton
-                    title={original_start_time !== null ? "Continue" : "Start"}
-                    onPress={startWorkout}
-                    variant="primary"
-                    disabled={isDone || isRunning}
-                    style={styles.heroActionButton}
-                  />
-                </View>
-              )}
+            {!isDone && (
+              <View style={styles.heroActionsRow}>
+                {!isRunning && (
+                  <View
+                    style={[
+                      styles.heroActionSlot,
+                      original_start_time !== null && styles.heroActionSlotSpaced,
+                    ]}
+                  >
+                    <ThemedButton
+                      title={original_start_time !== null ? "Continue" : "Start"}
+                      onPress={startWorkout}
+                      variant="primary"
+                      disabled={isDone || isRunning}
+                      style={styles.heroActionButton}
+                    />
+                  </View>
+                )}
 
-              {!isRunning && !isDone && original_start_time !== null && (
-                <View style={styles.heroActionSlot}>
-                  <ThemedButton
-                    title="Finish Run"
-                    onPress={endWorkout}
-                    variant="secondary"
-                    disabled={original_start_time === null || isDone}
-                    style={styles.heroActionButton}
-                  />
-                </View>
-              )}
+                {!isRunning && original_start_time !== null && (
+                  <View style={styles.heroActionSlot}>
+                    <ThemedButton
+                      title="Finish Run"
+                      onPress={endWorkout}
+                      variant="secondary"
+                      disabled={original_start_time === null || isDone}
+                      style={styles.heroActionButton}
+                    />
+                  </View>
+                )}
 
-              {isRunning && (
-                <View style={styles.heroActionSlot}>
-                  <ThemedButton
-                    title="Pause"
-                    onPress={pauseWorkout}
-                    variant="primary"
-                    disabled={!isRunning || isDone}
-                    style={styles.heroActionButton}
-                  />
-                </View>
-              )}
-
-              {isDone && (
-                <View style={styles.heroActionSlot}>
-                  <ThemedButton
-                    title="Restart"
-                    onPress={restartWorkout}
-                    variant="danger"
-                    disabled={original_start_time === null || !isDone}
-                    style={styles.heroActionButton}
-                  />
-                </View>
-              )}
-            </View>
+                {isRunning && (
+                  <View style={styles.heroActionSlot}>
+                    <ThemedButton
+                      title="Pause"
+                      onPress={pauseWorkout}
+                      variant="primary"
+                      disabled={!isRunning || isDone}
+                      style={styles.heroActionButton}
+                    />
+                  </View>
+                )}
+              </View>
+            )}
           </ThemedCard>
         </View>
 

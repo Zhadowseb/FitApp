@@ -24,7 +24,63 @@ async function ensureTableColumns(db, tableName, columns) {
   }
 }
 
+async function getTableColumns(db, tableName) {
+  return db.getAllAsync(`PRAGMA table_info(${tableName});`);
+}
+
+function isExerciseCatalogTable(columns) {
+  return (
+    columns.some((column) => column.name === "exercise_name") &&
+    !columns.some((column) => column.name === "workout_id")
+  );
+}
+
+function isExerciseInstanceTable(columns) {
+  return columns.some((column) => column.name === "workout_id");
+}
+
+async function migrateWeightliftingTableNames(db) {
+  await db.execAsync("BEGIN IMMEDIATE;");
+
+  try {
+    const legacyExerciseColumns = await getTableColumns(db, "Exercise");
+    const legacyExerciseStorageColumns = await getTableColumns(db, "Exercise_storage");
+    const exerciseInstanceColumns = await getTableColumns(db, "Exercise_Instance");
+
+    if (
+      legacyExerciseColumns.length &&
+      isExerciseInstanceTable(legacyExerciseColumns) &&
+      !exerciseInstanceColumns.length
+    ) {
+      await db.execAsync(`
+        ALTER TABLE Exercise RENAME TO Exercise_Instance;
+      `);
+    }
+
+    const exerciseColumns = await getTableColumns(db, "Exercise");
+
+    if (legacyExerciseStorageColumns.length) {
+      if (!exerciseColumns.length) {
+        await db.execAsync(`
+          ALTER TABLE Exercise_storage RENAME TO Exercise;
+        `);
+      } else if (!isExerciseCatalogTable(exerciseColumns)) {
+        throw new Error(
+          "Could not rename Exercise_storage to Exercise because the Exercise table name is already occupied."
+        );
+      }
+    }
+
+    await db.execAsync("COMMIT;");
+  } catch (error) {
+    await db.execAsync("ROLLBACK;");
+    throw error;
+  }
+}
+
 export async function initializeDatabase(db) {
+  await migrateWeightliftingTableNames(db);
+
   await db.execAsync(`
     ${programSchemaSql}
     ${weightliftingSchemaSql}
@@ -62,7 +118,7 @@ export async function initializeDatabase(db) {
     ["elapsed_time", "INTEGER DEFAULT 0"],
   ]);
 
-  await ensureTableColumns(db, "Exercise", [
+  await ensureTableColumns(db, "Exercise_Instance", [
     ["visible_columns", "TEXT"],
     ["note", "TEXT"],
     ["done", "INTEGER NOT NULL DEFAULT 0"],
@@ -93,11 +149,11 @@ export async function initializeDatabase(db) {
   ]);
 
   await db.execAsync(`
-    UPDATE Exercise
+    UPDATE Exercise_Instance
     SET sets = (
       SELECT COUNT(*)
       FROM Sets
-      WHERE Sets.exercise_id = Exercise.exercise_id
+      WHERE Sets.exercise_id = Exercise_Instance.exercise_id
     );
   `);
 
@@ -111,7 +167,7 @@ export async function initializeDatabase(db) {
 
   /*
   await db.execAsync(`
-    ALTER TABLE Exercise ADD COLUMN visible_columns TEXT;
+    ALTER TABLE Exercise_Instance ADD COLUMN visible_columns TEXT;
 
   `);
   */
@@ -128,8 +184,8 @@ export async function initializeDatabase(db) {
   await db.execAsync(`
     DROP TABLE IF EXISTS Program;
     DROP TABLE IF EXISTS Sets;
-    DROP TABLE IF EXISTS Exercise_storage;
     DROP TABLE IF EXISTS Exercise;
+    DROP TABLE IF EXISTS Exercise_Instance;
     DROP TABLE IF EXISTS Workout;
     DROP TABLE IF EXISTS Day;
     DROP TABLE IF EXISTS Microcycle;

@@ -3,8 +3,8 @@ import { ScrollView, View, useColorScheme } from "react-native";
 import { useState, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 
-import styles from "./ExerciseStoragePageStyle";
-import ExerciseStorageList from "./Components/ExerciseStorageList/ExerciseStorageList";
+import styles from "./ExerciseLibraryPageStyle";
+import ExerciseLibraryList from "./Components/ExerciseLibraryList/ExerciseLibraryList";
 import { Colors } from "../../Resources/GlobalStyling/colors";
 import {
   ThemedHeader,
@@ -13,7 +13,7 @@ import {
   ThemedView,
 } from "../../Resources/ThemedComponents";
 
-const ExerciseStoragePage = () => {
+const ExerciseLibraryPage = () => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
   const [refreshKey, set_refreshKey] = useState(0);
@@ -58,7 +58,7 @@ const ExerciseStoragePage = () => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <ExerciseStorageList refreshKey={refreshKey} />
+        <ExerciseLibraryList refreshKey={refreshKey} />
       </ScrollView>
 
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
@@ -66,4 +66,4 @@ const ExerciseStoragePage = () => {
   );
 };
 
-export default ExerciseStoragePage;
+export default ExerciseLibraryPage;

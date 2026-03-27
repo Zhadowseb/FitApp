@@ -1,5 +1,12 @@
 import { StyleSheet } from "react-native";
 
+const EXERCISE_ROW_HEIGHT = 58;
+const EXERCISE_ROW_GAP = 10;
+const VISIBLE_EXERCISE_COUNT = 10;
+const LIST_VIEWPORT_HEIGHT =
+  EXERCISE_ROW_HEIGHT * VISIBLE_EXERCISE_COUNT +
+  EXERCISE_ROW_GAP * (VISIBLE_EXERCISE_COUNT - 1);
+
 export default StyleSheet.create({
   card: {
     marginHorizontal: 0,
@@ -51,7 +58,11 @@ export default StyleSheet.create({
     marginTop: 16,
     marginBottom: 16,
   },
-  list: {
+  listScroll: {
+    height: LIST_VIEWPORT_HEIGHT,
+    flexGrow: 0,
+  },
+  listContent: {
     paddingBottom: 8,
   },
   exerciseRow: {
@@ -59,9 +70,13 @@ export default StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 14,
     paddingVertical: 14,
+    minHeight: EXERCISE_ROW_HEIGHT,
     borderWidth: 1,
     borderRadius: 18,
-    marginBottom: 10,
+    marginBottom: EXERCISE_ROW_GAP,
+  },
+  exerciseRowLast: {
+    marginBottom: 0,
   },
   exerciseIndex: {
     width: 34,
@@ -86,6 +101,7 @@ export default StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 40,
     paddingHorizontal: 12,
+    minHeight: LIST_VIEWPORT_HEIGHT,
   },
   emptyTitle: {
     textAlign: "center",

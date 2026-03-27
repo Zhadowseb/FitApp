@@ -17,7 +17,7 @@ import MicrocyclePage from './src/Pages/MicrocyclePage/MicrocyclePage';
 import WeekPage from './src/Pages/WeekPage/WeekPage';
 import WorkoutPage from './src/Pages/WorkoutPage/WorkoutPage';
 import SetPage from './src/Pages/SetPage/SetPage';
-import ExerciseStoragePage from "./src/Pages/ExerciseStoragePage/ExerciseStoragePage";
+import ExerciseLibraryPage from "./src/Pages/ExerciseLibraryPage/ExerciseLibraryPage";
 
 import { Colors } from './src/Resources/GlobalStyling/colors';
 import { ThemedText, ThemedView } from './src/Resources/ThemedComponents';
@@ -98,7 +98,7 @@ function RootNavigator() {
             <Stack.Screen name="WeekPage" component={WeekPage} options={{headerShown: false}} />
             <Stack.Screen name="WorkoutPage" component={WorkoutPage} options={{headerShown: false}} />
             <Stack.Screen name="SetPage" component={SetPage} />
-            <Stack.Screen name="ExerciseStoragePage" component={ExerciseStoragePage} options={{ headerShown: false }} />
+            <Stack.Screen name="ExerciseLibraryPage" component={ExerciseLibraryPage} options={{ headerShown: false }} />
           </>
         ) : (
           <>

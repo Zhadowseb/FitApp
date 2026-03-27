@@ -1,8 +1,8 @@
-import { View, useColorScheme } from "react-native";
+import { ScrollView, View, useColorScheme } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useState, useEffect } from "react";
 
-import styles from "./ExerciseStorageListStyle";
+import styles from "./ExerciseLibraryListStyle";
 import { weightliftingService as weightliftingRepository } from "../../../../Services";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 import {
@@ -11,7 +11,7 @@ import {
   ThemedTitle,
 } from "../../../../Resources/ThemedComponents";
 
-const ExerciseStorageList = ({ refreshKey }) => {
+const ExerciseLibraryList = ({ refreshKey }) => {
   const db = useSQLiteContext();
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
@@ -100,12 +100,18 @@ const ExerciseStorageList = ({ refreshKey }) => {
           </ThemedText>
         </View>
       ) : (
-        <View style={styles.list}>
+        <ScrollView
+          style={styles.listScroll}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          nestedScrollEnabled
+        >
           {exercises.map((exercise, index) => (
             <View
               key={exercise.exercise_name}
               style={[
                 styles.exerciseRow,
+                index === exercises.length - 1 && styles.exerciseRowLast,
                 {
                   backgroundColor: rowSurface,
                   borderColor: rowBorder,
@@ -128,10 +134,10 @@ const ExerciseStorageList = ({ refreshKey }) => {
               </ThemedText>
             </View>
           ))}
-        </View>
+        </ScrollView>
       )}
     </ThemedCard>
   );
 };
 
-export default ExerciseStorageList;
+export default ExerciseLibraryList;

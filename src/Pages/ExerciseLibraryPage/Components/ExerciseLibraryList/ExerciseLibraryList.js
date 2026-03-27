@@ -1,9 +1,10 @@
-import { ScrollView, View, useColorScheme } from "react-native";
+import { Pressable, ScrollView, View, useColorScheme } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useState, useEffect } from "react";
 
 import styles from "./ExerciseLibraryListStyle";
 import { weightliftingService as weightliftingRepository } from "../../../../Services";
+import ExerciseMuscleModal from "../ExerciseMuscleModal/ExerciseMuscleModal";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 import {
   ThemedCard,
@@ -16,6 +17,8 @@ const ExerciseLibraryList = ({ refreshKey }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
   const [exercises, set_exercises] = useState([]);
+  const [selectedExerciseName, set_selectedExerciseName] = useState("");
+  const [detailsVisible, set_detailsVisible] = useState(false);
   const quietText = theme.quietText ?? theme.iconColor ?? theme.text;
   const cardSurface =
     theme.cardBackground ?? theme.navBackground ?? theme.background;
@@ -27,6 +30,22 @@ const ExerciseLibraryList = ({ refreshKey }) => {
     (colorScheme === "dark"
       ? "rgba(247, 116, 46, 0.18)"
       : "rgba(247, 116, 46, 0.12)");
+  const indexSurface = theme.primary ?? badgeSurface;
+  const indexTextColor =
+    theme.cardBackground ?? theme.background ?? theme.text;
+  const primaryBadgeSurface =
+    theme.secondaryLight ??
+    (colorScheme === "dark"
+      ? "rgba(96, 218, 172, 0.18)"
+      : "rgba(96, 218, 172, 0.14)");
+  const secondaryBadgeSurface =
+    theme.primaryLight ??
+    (colorScheme === "dark"
+      ? "rgba(247, 116, 46, 0.16)"
+      : "rgba(247, 116, 46, 0.12)");
+  const primaryBadgeText =
+    theme.secondaryDark ?? theme.secondary ?? theme.text;
+  const secondaryBadgeText = theme.primaryDark ?? theme.primary ?? theme.text;
   const countLabel =
     exercises.length === 1 ? "1 exercise" : `${exercises.length} exercises`;
 
@@ -42,6 +61,11 @@ const ExerciseLibraryList = ({ refreshKey }) => {
   useEffect(() => {
     loadExerciseStorage();
   }, [refreshKey]);
+
+  const handleOpenExerciseDetails = (exerciseName) => {
+    set_selectedExerciseName(exerciseName);
+    set_detailsVisible(true);
+  };
 
   return (
     <ThemedCard
@@ -107,8 +131,9 @@ const ExerciseLibraryList = ({ refreshKey }) => {
           nestedScrollEnabled
         >
           {exercises.map((exercise, index) => (
-            <View
+            <Pressable
               key={exercise.exercise_name}
+              onPress={() => handleOpenExerciseDetails(exercise.exercise_name)}
               style={[
                 styles.exerciseRow,
                 index === exercises.length - 1 && styles.exerciseRowLast,
@@ -117,25 +142,70 @@ const ExerciseLibraryList = ({ refreshKey }) => {
                   borderColor: rowBorder,
                 },
               ]}
+              android_ripple={{ color: badgeSurface }}
             >
               <View
                 style={[
                   styles.exerciseIndex,
-                  { backgroundColor: badgeSurface },
+                  { backgroundColor: indexSurface },
                 ]}
               >
-                <ThemedText style={styles.exerciseIndexText}>
+                <ThemedText
+                  style={styles.exerciseIndexText}
+                  setColor={indexTextColor}
+                >
                   {index + 1}
                 </ThemedText>
               </View>
 
-              <ThemedText style={styles.exerciseName}>
-                {exercise.exercise_name}
-              </ThemedText>
-            </View>
+              <View style={styles.exerciseBody}>
+                <ThemedText style={styles.exerciseName}>
+                  {exercise.exercise_name}
+                </ThemedText>
+
+                <View style={styles.exerciseMetaRow}>
+                  <View
+                    style={[
+                      styles.exerciseMetaBadge,
+                      { backgroundColor: primaryBadgeSurface },
+                    ]}
+                  >
+                    <ThemedText
+                      style={styles.exerciseMetaBadgeText}
+                      setColor={primaryBadgeText}
+                    >
+                      {exercise.primary_muscle_group_count ?? 0} primary
+                    </ThemedText>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.exerciseMetaBadge,
+                      { backgroundColor: secondaryBadgeSurface },
+                    ]}
+                  >
+                    <ThemedText
+                      style={styles.exerciseMetaBadgeText}
+                      setColor={secondaryBadgeText}
+                    >
+                      {exercise.secondary_muscle_group_count ?? 0} secondary
+                    </ThemedText>
+                  </View>
+                </View>
+              </View>
+            </Pressable>
           ))}
         </ScrollView>
       )}
+
+      <ExerciseMuscleModal
+        visible={detailsVisible}
+        exerciseName={selectedExerciseName}
+        onClose={() => {
+          set_detailsVisible(false);
+          set_selectedExerciseName("");
+        }}
+      />
     </ThemedCard>
   );
 };

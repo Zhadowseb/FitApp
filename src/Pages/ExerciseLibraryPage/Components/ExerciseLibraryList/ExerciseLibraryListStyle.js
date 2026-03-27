@@ -1,6 +1,6 @@
 import { StyleSheet } from "react-native";
 
-const EXERCISE_ROW_HEIGHT = 58;
+const EXERCISE_ROW_HEIGHT = 64;
 const EXERCISE_ROW_GAP = 10;
 const VISIBLE_EXERCISE_COUNT = 10;
 const LIST_VIEWPORT_HEIGHT =
@@ -69,7 +69,7 @@ export default StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingVertical: 10,
     minHeight: EXERCISE_ROW_HEIGHT,
     borderWidth: 1,
     borderRadius: 18,
@@ -79,9 +79,9 @@ export default StyleSheet.create({
     marginBottom: 0,
   },
   exerciseIndex: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -90,9 +90,28 @@ export default StyleSheet.create({
     fontSize: 12,
     fontWeight: "800",
   },
-  exerciseName: {
+  exerciseBody: {
     flex: 1,
+    justifyContent: "center",
+  },
+  exerciseName: {
     fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 6,
+  },
+  exerciseMetaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  exerciseMetaBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    marginRight: 8,
+    marginBottom: 4,
+  },
+  exerciseMetaBadgeText: {
+    fontSize: 11,
     fontWeight: "700",
   },
   emptyState: {

@@ -118,6 +118,11 @@ export async function initializeDatabase(db) {
     ["elapsed_time", "INTEGER DEFAULT 0"],
   ]);
 
+  await ensureTableColumns(db, "Exercise", [
+    ["primary_muscle_group_count", "INTEGER NOT NULL DEFAULT 0"],
+    ["secondary_muscle_group_count", "INTEGER NOT NULL DEFAULT 0"],
+  ]);
+
   await ensureTableColumns(db, "Exercise_Instance", [
     ["visible_columns", "TEXT"],
     ["note", "TEXT"],

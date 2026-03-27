@@ -3,6 +3,7 @@ import {
   weightliftingRepository,
   workoutRepository,
 } from "../Repository";
+import { supabase } from "../Database/supaBaseClient";
 import * as workoutService from "./workoutService";
 import { withTransaction } from "./shared";
 
@@ -16,6 +17,9 @@ export const DEFAULT_VISIBLE_COLUMNS = {
   weight: true,
   done: true,
 };
+
+const EXERCISE_LIBRARY_TABLE = "Exercise";
+const EXERCISE_LIBRARY_NAME_COLUMN = "name";
 
 function normalizeOptionalNumber(value) {
   if (value === "" || value === null || value === undefined) {
@@ -45,6 +49,42 @@ function formatSignedWeightDisplay(value) {
   const sign = parsedValue >= 0 ? "+" : "-";
 
   return `${sign}${formatWeightDisplay(Math.abs(parsedValue))} kg`;
+}
+
+function normalizeExerciseCatalogNames(names) {
+  const uniqueNames = new Set();
+
+  for (const name of names) {
+    if (typeof name !== "string") {
+      continue;
+    }
+
+    const normalizedName = name.trim();
+
+    if (!normalizedName) {
+      continue;
+    }
+
+    uniqueNames.add(normalizedName);
+  }
+
+  return [...uniqueNames].sort((left, right) =>
+    left.localeCompare(right, undefined, { sensitivity: "base" })
+  );
+}
+
+function areStringArraysEqual(left, right) {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index] !== right[index]) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 async function getDefaultMesocycleProgressionWeight(
@@ -252,6 +292,39 @@ export async function getExerciseStorage(db) {
 
 export async function createExerciseStorage(db, exerciseName) {
   await weightliftingRepository.createExerciseStorage(db, exerciseName);
+}
+
+export async function syncExerciseLibraryFromCloud(db) {
+  const { data, error } = await supabase
+    .from(EXERCISE_LIBRARY_TABLE)
+    .select(EXERCISE_LIBRARY_NAME_COLUMN)
+    .order(EXERCISE_LIBRARY_NAME_COLUMN, { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  const cloudExerciseNames = normalizeExerciseCatalogNames(
+    (data ?? []).map((row) => row?.[EXERCISE_LIBRARY_NAME_COLUMN])
+  );
+  const localExerciseRows = await weightliftingRepository.getExerciseStorage(db);
+  const localExerciseNames = normalizeExerciseCatalogNames(
+    localExerciseRows.map((row) => row.exercise_name)
+  );
+
+  if (areStringArraysEqual(localExerciseNames, cloudExerciseNames)) {
+    return {
+      changed: false,
+      exerciseCount: localExerciseNames.length,
+    };
+  }
+
+  await weightliftingRepository.replaceExerciseCatalog(db, cloudExerciseNames);
+
+  return {
+    changed: true,
+    exerciseCount: cloudExerciseNames.length,
+  };
 }
 
 export async function getEstimatedSets(db, programId) {

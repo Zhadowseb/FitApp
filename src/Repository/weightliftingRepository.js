@@ -14,6 +14,29 @@ export async function createExerciseStorage(db, exerciseName) {
   );
 }
 
+export async function replaceExerciseCatalog(db, exerciseNames) {
+  await db.execAsync("BEGIN TRANSACTION;");
+
+  try {
+    await db.runAsync(`DELETE FROM Exercise;`);
+
+    if (exerciseNames.length > 0) {
+      const placeholders = exerciseNames.map(() => "(?)").join(", ");
+
+      await db.runAsync(
+        `INSERT INTO Exercise (exercise_name)
+         VALUES ${placeholders};`,
+        exerciseNames
+      );
+    }
+
+    await db.execAsync("COMMIT;");
+  } catch (error) {
+    await db.execAsync("ROLLBACK;");
+    throw error;
+  }
+}
+
 export async function getEstimatedSets(db, programId) {
   return db.getAllAsync(
     `SELECT estimated_set_id, estimated_weight, exercise_name

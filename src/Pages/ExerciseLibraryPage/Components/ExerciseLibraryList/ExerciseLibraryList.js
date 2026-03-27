@@ -79,8 +79,8 @@ const ExerciseLibraryList = ({ refreshKey }) => {
       </View>
 
       <ThemedText style={styles.description} setColor={quietText}>
-        Exercise creation is disabled here while this page is being moved over
-        to the shared cloud library.
+        This library is synced from the shared cloud database whenever the app
+        opens.
       </ThemedText>
 
       <View
@@ -96,7 +96,7 @@ const ExerciseLibraryList = ({ refreshKey }) => {
             No exercises yet
           </ThemedTitle>
           <ThemedText style={styles.emptyBody} setColor={quietText}>
-            Once the exercise library is connected, names will appear here.
+            No exercise names were found in the shared cloud library yet.
           </ThemedText>
         </View>
       ) : (

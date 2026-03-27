@@ -23,6 +23,7 @@ import { Colors } from './src/Resources/GlobalStyling/colors';
 import { ThemedText, ThemedView } from './src/Resources/ThemedComponents';
 import { locationService } from "./src/Services";
 import { AuthProvider, useAuth } from './src/Contexts/AuthContext';
+import ExerciseLibrarySync from "./src/Sync/ExerciseLibrarySync";
 
 import * as SQLite from 'expo-sqlite';
 
@@ -119,6 +120,7 @@ export default function App() {
         onInit={initializeDatabase}
         options={{ useNewConnection: false }}>
         <AuthProvider>
+          <ExerciseLibrarySync />
           <RootNavigator />
         </AuthProvider>
       </SQLiteProvider>

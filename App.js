@@ -98,7 +98,7 @@ function RootNavigator() {
             <Stack.Screen name="WeekPage" component={WeekPage} options={{headerShown: false}} />
             <Stack.Screen name="WorkoutPage" component={WorkoutPage} options={{headerShown: false}} />
             <Stack.Screen name="SetPage" component={SetPage} />
-            <Stack.Screen name="ExerciseStoragePage" component={ExerciseStoragePage} />
+            <Stack.Screen name="ExerciseStoragePage" component={ExerciseStoragePage} options={{ headerShown: false }} />
           </>
         ) : (
           <>

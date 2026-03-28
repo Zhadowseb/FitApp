@@ -1,8 +1,11 @@
 export async function getExerciseStorage(db) {
   return db.getAllAsync(
-    `SELECT exercise_name
+    `SELECT
+        exercise_name,
+        COALESCE(primary_muscle_group_count, 0) AS primary_muscle_group_count,
+        COALESCE(secondary_muscle_group_count, 0) AS secondary_muscle_group_count
      FROM Exercise
-     ORDER BY exercise_name;`
+     ORDER BY exercise_name COLLATE NOCASE ASC;`
   );
 }
 
@@ -12,6 +15,37 @@ export async function createExerciseStorage(db, exerciseName) {
      VALUES (?);`,
     [exerciseName]
   );
+}
+
+export async function replaceExerciseCatalog(db, exercises) {
+  await db.execAsync("BEGIN TRANSACTION;");
+
+  try {
+    await db.runAsync(`DELETE FROM Exercise;`);
+
+    if (exercises.length > 0) {
+      const placeholders = exercises.map(() => "(?, ?, ?)").join(", ");
+      const values = exercises.flatMap((exercise) => [
+        exercise.exercise_name,
+        exercise.primary_muscle_group_count ?? 0,
+        exercise.secondary_muscle_group_count ?? 0,
+      ]);
+
+      await db.runAsync(
+        `INSERT INTO Exercise (
+          exercise_name,
+          primary_muscle_group_count,
+          secondary_muscle_group_count
+        ) VALUES ${placeholders};`,
+        values
+      );
+    }
+
+    await db.execAsync("COMMIT;");
+  } catch (error) {
+    await db.execAsync("ROLLBACK;");
+    throw error;
+  }
 }
 
 export async function getEstimatedSets(db, programId) {

@@ -74,8 +74,8 @@ export default function App() {
 
       <View style={styles.button_spacing}>
         <ThemedButton
-          title="Edit Exercise Choices" 
-          onPress={() => navigation.navigate("ExerciseStoragePage")}
+          title="Exercise Library"
+          onPress={() => navigation.navigate("ExerciseLibraryPage")}
         />
       </View>
 

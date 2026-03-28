@@ -3,6 +3,7 @@ import {
   weightliftingRepository,
   workoutRepository,
 } from "../Repository";
+import { supabase } from "../Database/supaBaseClient";
 import * as workoutService from "./workoutService";
 import { withTransaction } from "./shared";
 
@@ -17,28 +18,13 @@ export const DEFAULT_VISIBLE_COLUMNS = {
   done: true,
 };
 
-function parseVisibleColumns(value) {
-  if (!value) {
-    return DEFAULT_VISIBLE_COLUMNS;
-  }
-
-  try {
-    const parsedValue =
-      typeof value === "string" ? JSON.parse(value) : value;
-
-    if (!parsedValue || typeof parsedValue !== "object") {
-      return DEFAULT_VISIBLE_COLUMNS;
-    }
-
-    return {
-      ...DEFAULT_VISIBLE_COLUMNS,
-      ...parsedValue,
-    };
-  } catch (error) {
-    console.warn("Failed to parse exercise visible columns:", error);
-    return DEFAULT_VISIBLE_COLUMNS;
-  }
-}
+const EXERCISE_LIBRARY_TABLE = "Exercise";
+const EXERCISE_LIBRARY_NAME_COLUMN = "name";
+const EXERCISE_LIBRARY_ID_COLUMN = "id";
+const MUSCLE_ACTIVATION_TABLE = "Muscle_Activation";
+const MUSCLE_TABLE = "Muscle";
+const PRIMARY_ACTIVATION_LEVEL = "primary";
+const SECONDARY_ACTIVATION_LEVEL = "secondary";
 
 function normalizeOptionalNumber(value) {
   if (value === "" || value === null || value === undefined) {
@@ -68,6 +54,105 @@ function formatSignedWeightDisplay(value) {
   const sign = parsedValue >= 0 ? "+" : "-";
 
   return `${sign}${formatWeightDisplay(Math.abs(parsedValue))} kg`;
+}
+
+function normalizeExerciseCatalogEntries(entries) {
+  const exerciseMap = new Map();
+
+  for (const entry of entries) {
+    const normalizedName =
+      typeof entry?.exercise_name === "string" ? entry.exercise_name.trim() : "";
+
+    if (!normalizedName) {
+      continue;
+    }
+
+    exerciseMap.set(normalizedName.toLocaleLowerCase(), {
+      exercise_name: normalizedName,
+      primary_muscle_group_count:
+        Number(entry?.primary_muscle_group_count) || 0,
+      secondary_muscle_group_count:
+        Number(entry?.secondary_muscle_group_count) || 0,
+    });
+  }
+
+  return [...exerciseMap.values()].sort((left, right) =>
+    left.exercise_name.localeCompare(right.exercise_name, undefined, {
+      sensitivity: "base",
+    })
+  );
+}
+
+function areExerciseCatalogEntriesEqual(left, right) {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  for (let index = 0; index < left.length; index += 1) {
+    if (
+      left[index].exercise_name !== right[index].exercise_name ||
+      left[index].primary_muscle_group_count !==
+        right[index].primary_muscle_group_count ||
+      left[index].secondary_muscle_group_count !==
+        right[index].secondary_muscle_group_count
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function buildExerciseActivationCounts(exercises, activations) {
+  const activationMap = new Map(
+    exercises.map((exercise) => [
+      exercise.id,
+      {
+        primary: new Set(),
+        secondary: new Set(),
+      },
+    ])
+  );
+
+  for (const activation of activations) {
+    const activationBucket = activationMap.get(activation.exercise_id);
+
+    if (!activationBucket) {
+      continue;
+    }
+
+    const activationLevel =
+      typeof activation.activation_level === "string"
+        ? activation.activation_level.trim().toLocaleLowerCase()
+        : "";
+
+    if (activationLevel === PRIMARY_ACTIVATION_LEVEL) {
+      activationBucket.primary.add(activation.muscle_id);
+      continue;
+    }
+
+    if (activationLevel === SECONDARY_ACTIVATION_LEVEL) {
+      activationBucket.secondary.add(activation.muscle_id);
+    }
+  }
+
+  return normalizeExerciseCatalogEntries(
+    exercises.map((exercise) => {
+      const counts = activationMap.get(exercise.id);
+
+      return {
+        exercise_name: exercise.name,
+        primary_muscle_group_count: counts?.primary.size ?? 0,
+        secondary_muscle_group_count: counts?.secondary.size ?? 0,
+      };
+    })
+  );
+}
+
+function normalizeActivationLevel(activationLevel) {
+  return typeof activationLevel === "string"
+    ? activationLevel.trim().toLocaleLowerCase()
+    : "";
 }
 
 async function getDefaultMesocycleProgressionWeight(
@@ -275,6 +360,136 @@ export async function getExerciseStorage(db) {
 
 export async function createExerciseStorage(db, exerciseName) {
   await weightliftingRepository.createExerciseStorage(db, exerciseName);
+}
+
+export async function syncExerciseLibraryFromCloud(db) {
+  const { data: exerciseRows, error: exerciseError } = await supabase
+    .from(EXERCISE_LIBRARY_TABLE)
+    .select(`${EXERCISE_LIBRARY_ID_COLUMN}, ${EXERCISE_LIBRARY_NAME_COLUMN}`)
+    .order(EXERCISE_LIBRARY_NAME_COLUMN, { ascending: true });
+
+  if (exerciseError) {
+    throw exerciseError;
+  }
+
+  const exerciseIds = (exerciseRows ?? [])
+    .map((row) => row?.[EXERCISE_LIBRARY_ID_COLUMN])
+    .filter((id) => id !== null && id !== undefined);
+  let activationRows = [];
+
+  if (exerciseIds.length > 0) {
+    const { data, error } = await supabase
+      .from(MUSCLE_ACTIVATION_TABLE)
+      .select("exercise_id, muscle_id, activation_level")
+      .in("exercise_id", exerciseIds);
+
+    if (error) {
+      throw error;
+    }
+
+    activationRows = data ?? [];
+  }
+
+  const cloudExercises = buildExerciseActivationCounts(
+    exerciseRows ?? [],
+    activationRows
+  );
+  const localExerciseRows = await weightliftingRepository.getExerciseStorage(db);
+  const localExercises = normalizeExerciseCatalogEntries(localExerciseRows);
+
+  if (areExerciseCatalogEntriesEqual(localExercises, cloudExercises)) {
+    return {
+      changed: false,
+      exerciseCount: localExercises.length,
+    };
+  }
+
+  await weightliftingRepository.replaceExerciseCatalog(db, cloudExercises);
+
+  return {
+    changed: true,
+    exerciseCount: cloudExercises.length,
+  };
+}
+
+export async function getExerciseLibraryMuscleDetails(exerciseName) {
+  const normalizedExerciseName =
+    typeof exerciseName === "string" ? exerciseName.trim() : "";
+
+  if (!normalizedExerciseName) {
+    return [];
+  }
+
+  const { data: exerciseRow, error: exerciseError } = await supabase
+    .from(EXERCISE_LIBRARY_TABLE)
+    .select(`${EXERCISE_LIBRARY_ID_COLUMN}, ${EXERCISE_LIBRARY_NAME_COLUMN}`)
+    .eq(EXERCISE_LIBRARY_NAME_COLUMN, normalizedExerciseName)
+    .maybeSingle();
+
+  if (exerciseError) {
+    throw exerciseError;
+  }
+
+  if (!exerciseRow?.[EXERCISE_LIBRARY_ID_COLUMN]) {
+    return [];
+  }
+
+  const { data: activationRows, error: activationError } = await supabase
+    .from(MUSCLE_ACTIVATION_TABLE)
+    .select("muscle_id, activation_percent, activation_level")
+    .eq("exercise_id", exerciseRow[EXERCISE_LIBRARY_ID_COLUMN])
+    .order("activation_percent", { ascending: false });
+
+  if (activationError) {
+    throw activationError;
+  }
+
+  const muscleIds = [...new Set((activationRows ?? []).map((row) => row.muscle_id))];
+
+  if (muscleIds.length === 0) {
+    return [];
+  }
+
+  const { data: muscleRows, error: muscleError } = await supabase
+    .from(MUSCLE_TABLE)
+    .select("id, name, nickname")
+    .in("id", muscleIds);
+
+  if (muscleError) {
+    throw muscleError;
+  }
+
+  const muscleMap = new Map((muscleRows ?? []).map((row) => [row.id, row]));
+
+  return (activationRows ?? [])
+    .map((row) => {
+      const muscle = muscleMap.get(row.muscle_id);
+
+      if (!muscle) {
+        return null;
+      }
+
+      const fullName = muscle.name?.trim() || "Unknown muscle";
+      const nickname = muscle.nickname?.trim() || fullName;
+
+      return {
+        muscle_id: row.muscle_id,
+        nickname,
+        muscle_name: fullName,
+        activation_percent: Number(row.activation_percent) || 0,
+        activation_level: normalizeActivationLevel(row.activation_level),
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => {
+      if (right.activation_percent !== left.activation_percent) {
+        return right.activation_percent - left.activation_percent;
+      }
+
+      return left.nickname.localeCompare(right.nickname, undefined, {
+        sensitivity: "base",
+      });
+    });
 }
 
 export async function getEstimatedSets(db, programId) {

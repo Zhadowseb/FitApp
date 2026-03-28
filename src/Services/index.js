@@ -1,4 +1,5 @@
 export * as locationService from "./locationService";
+export * as feedbackService from "./feedbackService";
 export * as programService from "./programService";
 export * as runningService from "./runningService";
 export * as weightliftingService from "./weightliftingService";

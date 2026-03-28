@@ -5,6 +5,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useColorScheme } from "react-native";
 
 import RunSetList from "./RunSetList";
+import RunLocationDebugModal from "./RunLocationDebugModal";
 import Plus from "../../../../Resources/Icons/UI-icons/Plus";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 import {
@@ -68,6 +69,19 @@ const formatPaceDisplay = (paceMinutes) => {
   return `${minutes}'${String(seconds).padStart(2, "0")}`;
 };
 
+const createEmptyTrackedDebugReport = () => ({
+  summary: {
+    totalCallbacks: 0,
+    acceptedCount: 0,
+    rejectedCount: 0,
+    accuracyRejections: 0,
+    shortDistanceRejections: 0,
+    tooFastRejections: 0,
+    invalidTimeRejections: 0,
+  },
+  rows: [],
+});
+
 const Run = ({ workout_id, restartRequestKey }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
@@ -90,6 +104,10 @@ const Run = ({ workout_id, restartRequestKey }) => {
   const [isControlBusy, set_isControlBusy] = useState(false);
   const [totalDistance, set_totalDistance] = useState(0);
   const [timerTick, set_timerTick] = useState(() => Date.now());
+  const [trackedDebugReport, set_trackedDebugReport] = useState(() =>
+    createEmptyTrackedDebugReport()
+  );
+  const [debugModalVisible, set_debugModalVisible] = useState(false);
 
   const [activeSet, set_activeSet] = useState(null);
   const [activeSet_remainingTime, set_activeSet_remainingTime] = useState(0);
@@ -101,6 +119,11 @@ const Run = ({ workout_id, restartRequestKey }) => {
   const workoutStateLoadRequestRef = useRef(0);
   const activeSetCalculationInFlightRef = useRef(false);
   const trackedSummaryLoadingRef = useRef(false);
+  const trackedDebugLoadingRef = useRef(false);
+
+  const currentElapsed =
+    elapsed_time +
+    (timer_start ? Math.floor((timerTick - timer_start) / 1000) : 0);
 
   useEffect(() => {
     timerStartRef.current = timer_start;
@@ -159,6 +182,24 @@ const Run = ({ workout_id, restartRequestKey }) => {
       console.error("Failed to load tracked run summary:", error);
     } finally {
       trackedSummaryLoadingRef.current = false;
+    }
+  }, [db, workout_id]);
+
+  const loadTrackedRunDebugReport = useCallback(async () => {
+    if (trackedDebugLoadingRef.current) {
+      return;
+    }
+
+    trackedDebugLoadingRef.current = true;
+
+    try {
+      const report = await locationService.getTrackedRunDebugReport(db, workout_id);
+      set_trackedDebugReport(report ?? createEmptyTrackedDebugReport());
+    } catch (error) {
+      console.error("Failed to load tracked run debug report:", error);
+      set_trackedDebugReport(createEmptyTrackedDebugReport());
+    } finally {
+      trackedDebugLoadingRef.current = false;
     }
   }, [db, workout_id]);
 
@@ -284,7 +325,8 @@ const Run = ({ workout_id, restartRequestKey }) => {
     }
 
     await loadTrackedRunSummary();
-  }, [db, workout_id, calculateActiveSet, loadTrackedRunSummary]);
+    await loadTrackedRunDebugReport();
+  }, [db, workout_id, calculateActiveSet, loadTrackedRunSummary, loadTrackedRunDebugReport]);
 
   useFocusEffect(
     useCallback(() => {
@@ -342,16 +384,21 @@ const Run = ({ workout_id, restartRequestKey }) => {
   }, [loadTrackedRunSummary, updateCount]);
 
   useEffect(() => {
+    loadTrackedRunDebugReport();
+  }, [loadTrackedRunDebugReport, updateCount]);
+
+  useEffect(() => {
     if (!isRunning) {
       return;
     }
 
     const interval = setInterval(() => {
       loadTrackedRunSummary();
+      loadTrackedRunDebugReport();
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [isRunning, loadTrackedRunSummary]);
+  }, [isRunning, loadTrackedRunSummary, loadTrackedRunDebugReport]);
 
   const updateElapsed = async () => {
     const newElapsed = Math.floor(
@@ -426,6 +473,7 @@ const Run = ({ workout_id, restartRequestKey }) => {
       set_isRunning(true);
       set_timer_start(start_time);
       await loadTrackedRunSummary();
+      await loadTrackedRunDebugReport();
     } catch (error) {
       console.error("Failed to start run tracking:", error);
       Alert.alert(
@@ -455,6 +503,7 @@ const Run = ({ workout_id, restartRequestKey }) => {
       set_elapsed_time(newElapsed);
       await calculateActiveSet(newElapsed);
       await loadTrackedRunSummary();
+      await loadTrackedRunDebugReport();
     } catch (error) {
       console.error("Failed to pause run:", error);
       Alert.alert(
@@ -491,6 +540,7 @@ const Run = ({ workout_id, restartRequestKey }) => {
       });
 
       await loadTrackedRunSummary();
+      await loadTrackedRunDebugReport();
     } catch (error) {
       console.error("Failed to finish run:", error);
       Alert.alert(
@@ -521,6 +571,8 @@ const Run = ({ workout_id, restartRequestKey }) => {
       set_isRunning(false);
       set_isDone(false);
       set_totalDistance(0);
+      set_trackedDebugReport(createEmptyTrackedDebugReport());
+      set_debugModalVisible(false);
       clearActiveSegment();
       triggerReload();
     } catch (error) {
@@ -563,10 +615,6 @@ const Run = ({ workout_id, restartRequestKey }) => {
   const titleColor = theme.title ?? theme.text;
   const quietText = theme.quietText ?? theme.iconColor ?? theme.text;
   const invertedText = theme.textInverted ?? theme.background ?? "#0E0F12";
-
-  const currentElapsed =
-    elapsed_time +
-    (timer_start ? Math.floor((timerTick - timer_start) / 1000) : 0);
   const avgPaceMinutes =
     totalDistance > 0 ? currentElapsed / 60 / totalDistance : null;
   const startedDisplay =
@@ -576,6 +624,36 @@ const Run = ({ workout_id, restartRequestKey }) => {
 
   const formattedTotalDistance = `${Number(totalDistance.toFixed(2)).toString()} km`;
   const avgPaceDisplay = formatPaceDisplay(avgPaceMinutes);
+  const debugSummary =
+    trackedDebugReport?.summary ?? createEmptyTrackedDebugReport().summary;
+  const shouldShowDebugCard =
+    original_start_time !== null || debugSummary.totalCallbacks > 0;
+  const debugReasonBadges = [
+    {
+      label: "Accuracy",
+      value: debugSummary.accuracyRejections,
+      backgroundColor: theme.primaryLight ?? "rgba(247, 116, 46, 0.12)",
+      textColor: theme.primaryDark ?? theme.primary ?? titleColor,
+    },
+    {
+      label: "Too short",
+      value: debugSummary.shortDistanceRejections,
+      backgroundColor: theme.uiBackground ?? innerSurface,
+      textColor: titleColor,
+    },
+    {
+      label: "Too fast",
+      value: debugSummary.tooFastRejections,
+      backgroundColor: theme.uiBackground ?? innerSurface,
+      textColor: titleColor,
+    },
+    {
+      label: "Bad time",
+      value: debugSummary.invalidTimeRejections,
+      backgroundColor: theme.uiBackground ?? innerSurface,
+      textColor: titleColor,
+    },
+  ];
 
   const activeSegmentMeta = activeSetDetails
     ? [
@@ -586,7 +664,7 @@ const Run = ({ workout_id, restartRequestKey }) => {
         activeSetDetails.time ? `${activeSetDetails.time} min` : null,
       ]
         .filter(Boolean)
-        .join(" • ")
+        .join(" | ")
     : isDone
       ? "All planned run blocks finished"
       : original_start_time === null
@@ -775,6 +853,154 @@ const Run = ({ workout_id, restartRequestKey }) => {
           </ThemedCard>
         </View>
 
+        {shouldShowDebugCard && (
+          <View style={styles.debugShell}>
+            <ThemedCard
+              style={[
+                styles.debugCard,
+                {
+                  backgroundColor: cardSurface,
+                  borderColor:
+                    debugSummary.rejectedCount > 0 ? primaryColor : cardBorder,
+                },
+              ]}
+            >
+              <View style={styles.debugHeaderRow}>
+                <View style={styles.debugHeaderCopy}>
+                  <ThemedText style={styles.debugEyebrow} setColor={quietText}>
+                    GPS Debug
+                  </ThemedText>
+                  <ThemedText style={styles.debugTitle} setColor={titleColor}>
+                    Location callbacks
+                  </ThemedText>
+                </View>
+
+                <View
+                  style={[
+                    styles.debugStatusBadge,
+                    {
+                      backgroundColor: isRunning
+                        ? theme.secondaryLight ?? "rgba(96, 218, 172, 0.16)"
+                        : innerSurface,
+                      borderColor: isRunning ? secondaryColor : cardBorder,
+                    },
+                  ]}
+                >
+                  <ThemedText
+                    style={styles.debugStatusText}
+                    setColor={
+                      isRunning
+                        ? theme.secondaryDark ?? secondaryColor
+                        : quietText
+                    }
+                  >
+                    {isRunning ? "Live" : "Stored"}
+                  </ThemedText>
+                </View>
+              </View>
+
+              <ThemedText style={styles.debugSubtitle} setColor={quietText}>
+                {debugSummary.totalCallbacks > 0
+                  ? "Every GPS callback is logged here, even when distance is rejected."
+                  : "Start the run and this panel will show whether GPS callbacks arrive at all."}
+              </ThemedText>
+
+              <View style={styles.debugStatsRow}>
+                <View
+                  style={[
+                    styles.debugStatCard,
+                    {
+                      backgroundColor: innerSurface,
+                      borderColor: cardBorder,
+                    },
+                  ]}
+                >
+                  <ThemedText style={styles.debugStatLabel} setColor={quietText}>
+                    Raw callbacks
+                  </ThemedText>
+                  <ThemedText style={styles.debugStatValue} setColor={titleColor}>
+                    {debugSummary.totalCallbacks}
+                  </ThemedText>
+                </View>
+
+                <View
+                  style={[
+                    styles.debugStatCard,
+                    {
+                      backgroundColor: innerSurface,
+                      borderColor: secondaryColor,
+                    },
+                  ]}
+                >
+                  <ThemedText style={styles.debugStatLabel} setColor={quietText}>
+                    Accepted
+                  </ThemedText>
+                  <ThemedText
+                    style={styles.debugStatValue}
+                    setColor={theme.secondaryDark ?? secondaryColor}
+                  >
+                    {debugSummary.acceptedCount}
+                  </ThemedText>
+                </View>
+
+                <View
+                  style={[
+                    styles.debugStatCard,
+                    {
+                      backgroundColor: innerSurface,
+                      borderColor:
+                        debugSummary.rejectedCount > 0 ? primaryColor : cardBorder,
+                    },
+                  ]}
+                >
+                  <ThemedText style={styles.debugStatLabel} setColor={quietText}>
+                    Rejected
+                  </ThemedText>
+                  <ThemedText
+                    style={styles.debugStatValue}
+                    setColor={
+                      debugSummary.rejectedCount > 0 ? primaryColor : titleColor
+                    }
+                  >
+                    {debugSummary.rejectedCount}
+                  </ThemedText>
+                </View>
+              </View>
+
+              <View style={styles.debugReasonRow}>
+                {debugReasonBadges.map((item) => (
+                  <View
+                    key={item.label}
+                    style={[
+                      styles.debugReasonBadge,
+                      {
+                        backgroundColor: item.backgroundColor,
+                        borderColor: cardBorder,
+                      },
+                    ]}
+                  >
+                    <ThemedText
+                      style={styles.debugReasonText}
+                      setColor={item.textColor}
+                    >
+                      {item.label}: {item.value}
+                    </ThemedText>
+                  </View>
+                ))}
+              </View>
+
+              <View style={styles.debugButtonRow}>
+                <ThemedButton
+                  title="Open GPS Debug"
+                  variant="secondary"
+                  onPress={() => set_debugModalVisible(true)}
+                  style={styles.debugButton}
+                />
+              </View>
+            </ThemedCard>
+          </View>
+        )}
+
         {sectionConfigs.map((section) => (
           <View key={section.type} style={styles.sectionShell}>
             <ThemedCard
@@ -853,6 +1079,13 @@ const Run = ({ workout_id, restartRequestKey }) => {
           </View>
         ))}
       </ThemedKeyboardProtection>
+
+      <RunLocationDebugModal
+        visible={debugModalVisible}
+        onClose={() => set_debugModalVisible(false)}
+        report={trackedDebugReport}
+        hasWorkoutStarted={original_start_time !== null}
+      />
     </ThemedView>
   );
 };

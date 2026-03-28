@@ -84,6 +84,89 @@ function shouldIncludeSegment(previousPoint, nextPoint) {
   return true;
 }
 
+function evaluateLocationDecision(previousPoint, nextPoint) {
+  const distanceMeters =
+    previousPoint && nextPoint
+      ? calculateDistance(
+          previousPoint.latitude,
+          previousPoint.longitude,
+          nextPoint.latitude,
+          nextPoint.longitude
+        )
+      : null;
+  const timeDiffSeconds =
+    previousPoint && nextPoint
+      ? (nextPoint.timestamp - previousPoint.timestamp) / 1000
+      : null;
+  const speedMetersPerSecond =
+    Number.isFinite(distanceMeters) &&
+    Number.isFinite(timeDiffSeconds) &&
+    timeDiffSeconds > 0
+      ? distanceMeters / timeDiffSeconds
+      : null;
+
+  if (!isAcceptedAccuracy(nextPoint)) {
+    return {
+      accepted: false,
+      rejectionReason: "accuracy",
+      distanceMeters,
+      timeDiffSeconds,
+      speedMetersPerSecond,
+    };
+  }
+
+  if (!previousPoint) {
+    return {
+      accepted: true,
+      rejectionReason: null,
+      distanceMeters,
+      timeDiffSeconds,
+      speedMetersPerSecond,
+    };
+  }
+
+  if (!Number.isFinite(timeDiffSeconds) || timeDiffSeconds <= 0) {
+    return {
+      accepted: false,
+      rejectionReason: "invalid_time",
+      distanceMeters,
+      timeDiffSeconds,
+      speedMetersPerSecond,
+    };
+  }
+
+  if (!Number.isFinite(distanceMeters) || distanceMeters < MIN_SEGMENT_DISTANCE_METERS) {
+    return {
+      accepted: false,
+      rejectionReason: "too_short",
+      distanceMeters,
+      timeDiffSeconds,
+      speedMetersPerSecond,
+    };
+  }
+
+  if (
+    Number.isFinite(speedMetersPerSecond) &&
+    speedMetersPerSecond > MAX_SEGMENT_SPEED_METERS_PER_SECOND
+  ) {
+    return {
+      accepted: false,
+      rejectionReason: "too_fast",
+      distanceMeters,
+      timeDiffSeconds,
+      speedMetersPerSecond,
+    };
+  }
+
+  return {
+    accepted: true,
+    rejectionReason: null,
+    distanceMeters,
+    timeDiffSeconds,
+    speedMetersPerSecond,
+  };
+}
+
 function getLocationTrackingOptions() {
   return {
     accuracy: Location.Accuracy.BestForNavigation,
@@ -163,6 +246,7 @@ async function setActiveWorkout(db, workoutId) {
 
 export async function clearTrackedRunData(db, workoutId) {
   await locationRepository.deleteLocationLogsByWorkout(db, workoutId);
+  await locationRepository.deleteLocationDebugLogsByWorkout(db, workoutId);
 }
 
 export async function getLocationLogsByWorkout(db, workoutId) {
@@ -226,11 +310,22 @@ export async function recordTrackedLocations(db, locations) {
   );
 
   for (const location of normalizedLocations) {
-    if (!isAcceptedAccuracy(location)) {
-      continue;
-    }
+    const decision = evaluateLocationDecision(previousAcceptedPoint, location);
 
-    if (previousAcceptedPoint && !shouldIncludeSegment(previousAcceptedPoint, location)) {
+    await locationRepository.createLocationDebugLog(db, {
+      workoutId: workout.workout_id,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      accuracy: location.accuracy,
+      timestamp: location.timestamp,
+      accepted: decision.accepted,
+      rejectionReason: decision.rejectionReason,
+      distanceMeters: decision.distanceMeters,
+      timeDiffSeconds: decision.timeDiffSeconds,
+      speedMetersPerSecond: decision.speedMetersPerSecond,
+    });
+
+    if (!decision.accepted) {
       continue;
     }
 
@@ -244,6 +339,38 @@ export async function recordTrackedLocations(db, locations) {
 
     previousAcceptedPoint = location;
   }
+}
+
+export async function getTrackedRunDebugReport(db, workoutId) {
+  const summary =
+    await locationRepository.getLocationDebugSummaryByWorkout(db, workoutId);
+  const recentRows =
+    await locationRepository.getRecentLocationDebugLogsByWorkout(db, workoutId);
+
+  return {
+    summary: {
+      totalCallbacks: Number(summary?.total_callbacks) || 0,
+      acceptedCount: Number(summary?.accepted_count) || 0,
+      rejectedCount: Number(summary?.rejected_count) || 0,
+      accuracyRejections: Number(summary?.accuracy_rejections) || 0,
+      shortDistanceRejections: Number(summary?.short_distance_rejections) || 0,
+      tooFastRejections: Number(summary?.too_fast_rejections) || 0,
+      invalidTimeRejections: Number(summary?.invalid_time_rejections) || 0,
+    },
+    rows: recentRows.map((row) => ({
+      id: row.id,
+      workout_id: row.workout_id,
+      latitude: row.latitude,
+      longitude: row.longitude,
+      accuracy: row.accuracy,
+      timestamp: row.timestamp,
+      accepted: Number(row.accepted) === 1,
+      rejection_reason: row.rejection_reason,
+      distance_meters: row.distance_meters,
+      time_diff_seconds: row.time_diff_seconds,
+      speed_meters_per_second: row.speed_meters_per_second,
+    })),
+  };
 }
 
 export async function startRunTracking(db, workoutId, { resetLogs = false } = {}) {

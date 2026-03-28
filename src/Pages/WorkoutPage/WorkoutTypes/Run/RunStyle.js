@@ -206,6 +206,128 @@ export default StyleSheet.create({
     borderRadius: 18,
   },
 
+  debugShell: {
+    width: "95%",
+    alignSelf: "center",
+    marginBottom: 12,
+  },
+
+  debugCard: {
+    width: "100%",
+    marginHorizontal: 0,
+    marginVertical: 0,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderRadius: 24,
+    borderWidth: 1,
+  },
+
+  debugHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+
+  debugHeaderCopy: {
+    flex: 1,
+    paddingRight: 10,
+  },
+
+  debugEyebrow: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+
+  debugTitle: {
+    fontSize: 22,
+    lineHeight: 26,
+    fontWeight: "800",
+  },
+
+  debugStatusBadge: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+
+  debugStatusText: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.7,
+    textTransform: "uppercase",
+  },
+
+  debugSubtitle: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+
+  debugStatsRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+
+  debugStatCard: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  debugStatLabel: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.7,
+    textTransform: "uppercase",
+    textAlign: "center",
+  },
+
+  debugStatValue: {
+    marginTop: 6,
+    fontSize: 24,
+    lineHeight: 28,
+    fontWeight: "800",
+    textAlign: "center",
+    fontVariant: ["tabular-nums"],
+  },
+
+  debugReasonRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 12,
+  },
+
+  debugReasonBadge: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+
+  debugReasonText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+
+  debugButtonRow: {
+    marginTop: 14,
+    alignItems: "center",
+  },
+
+  debugButton: {
+    minWidth: 180,
+    borderRadius: 16,
+  },
+
   sectionShell: {
     width: "95%",
     alignSelf: "center",

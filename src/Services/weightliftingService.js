@@ -56,6 +56,36 @@ function formatSignedWeightDisplay(value) {
   return `${sign}${formatWeightDisplay(Math.abs(parsedValue))} kg`;
 }
 
+function parseVisibleColumns(value) {
+  if (value === null || value === undefined || value === "") {
+    return { ...DEFAULT_VISIBLE_COLUMNS };
+  }
+
+  let parsedValue = value;
+
+  if (typeof value === "string") {
+    try {
+      parsedValue = JSON.parse(value);
+    } catch {
+      return { ...DEFAULT_VISIBLE_COLUMNS };
+    }
+  }
+
+  if (!parsedValue || typeof parsedValue !== "object" || Array.isArray(parsedValue)) {
+    return { ...DEFAULT_VISIBLE_COLUMNS };
+  }
+
+  const normalizedColumns = { ...DEFAULT_VISIBLE_COLUMNS };
+
+  for (const key of Object.keys(DEFAULT_VISIBLE_COLUMNS)) {
+    if (Object.prototype.hasOwnProperty.call(parsedValue, key)) {
+      normalizedColumns[key] = Boolean(parsedValue[key]);
+    }
+  }
+
+  return normalizedColumns;
+}
+
 function normalizeExerciseCatalogEntries(entries) {
   const exerciseMap = new Map();
 

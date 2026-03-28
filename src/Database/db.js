@@ -78,6 +78,99 @@ async function migrateWeightliftingTableNames(db) {
   }
 }
 
+async function repairWorkoutTrackingState(db) {
+  await db.execAsync(`
+    UPDATE Workout
+    SET is_active = 0
+    WHERE is_active = 1
+      AND (timer_start IS NULL OR done = 1);
+  `);
+
+  const activeWorkouts = await db.getAllAsync(`
+    SELECT workout_id
+    FROM Workout
+    WHERE is_active = 1
+      AND timer_start IS NOT NULL
+      AND done = 0
+    ORDER BY timer_start DESC, workout_id DESC;
+  `);
+
+  if (activeWorkouts.length <= 1) {
+    return;
+  }
+
+  const [, ...staleWorkouts] = activeWorkouts;
+
+  for (const staleWorkout of staleWorkouts) {
+    await db.runAsync(
+      `UPDATE Workout
+       SET is_active = 0
+       WHERE workout_id = ?;`,
+      [staleWorkout.workout_id]
+    );
+  }
+}
+
+async function repairStrengthTrainingState(db) {
+  await db.execAsync(`
+    UPDATE Exercise_Instance
+    SET visible_columns = NULL
+    WHERE TRIM(COALESCE(visible_columns, '')) IN ('', 'undefined', 'null', '[object Object]');
+
+    UPDATE Exercise_Instance
+    SET done = (
+      NOT EXISTS (
+        SELECT 1
+        FROM Sets
+        WHERE Sets.exercise_id = Exercise_Instance.exercise_id
+          AND Sets.done = 0
+      )
+    );
+
+    UPDATE Workout
+    SET done = (
+      CASE
+        WHEN EXISTS (
+          SELECT 1
+          FROM Run
+          WHERE Run.workout_id = Workout.workout_id
+        ) THEN Workout.done
+        ELSE NOT EXISTS (
+          SELECT 1
+          FROM Exercise_Instance
+          WHERE Exercise_Instance.workout_id = Workout.workout_id
+            AND Exercise_Instance.done = 0
+        )
+      END
+    )
+    WHERE EXISTS (
+      SELECT 1
+      FROM Exercise_Instance
+      WHERE Exercise_Instance.workout_id = Workout.workout_id
+    );
+  `);
+}
+
+async function repairRunSetState(db) {
+  await db.execAsync(`
+    UPDATE Run
+    SET type = CASE
+      WHEN type IS NULL THEN 'WORKING_SET'
+      WHEN UPPER(REPLACE(REPLACE(TRIM(type), '-', '_'), ' ', '_')) IN ('WARMUP', 'WARM_UP')
+        THEN 'WARMUP'
+      WHEN UPPER(REPLACE(REPLACE(TRIM(type), '-', '_'), ' ', '_')) IN ('COOLDOWN', 'COOL_DOWN')
+        THEN 'COOLDOWN'
+      ELSE 'WORKING_SET'
+    END;
+
+    UPDATE Run
+    SET done = COALESCE(done, 0),
+        is_pause = COALESCE(is_pause, 0)
+    WHERE done IS NULL
+       OR is_pause IS NULL;
+  `);
+}
+
 export async function initializeDatabase(db) {
   await migrateWeightliftingTableNames(db);
 

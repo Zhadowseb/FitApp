@@ -3,6 +3,12 @@
 All changes to the project, are logged here.
 
 
+
+## [0.3.0] - 2026-03-25
+### Added
+- Login page
+
+
 ## [0.2.2.2] - 2026-03-25
 ### Fix
 - Potential fix for location tracking again.

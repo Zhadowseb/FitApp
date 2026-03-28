@@ -8,7 +8,10 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as TaskManager from 'expo-task-manager';
 
 
+import LoginPage from './src/Pages/LoginPage/LoginPage';
+import RegisterPage from './src/Pages/RegisterPage/RegisterPage';
 import HomePage from './src/Pages/HomePage/HomePage';
+import ProfilePage from './src/Pages/ProfilePage/ProfilePage';
 import ProgramPage from './src/Pages/ProgramPage/ProgramPage';
 import ProgramOverviewPage from './src/Pages/ProgramOverviewPage/ProgramOverviewPage';
 import MicrocyclePage from './src/Pages/MicrocyclePage/MicrocyclePage';
@@ -18,7 +21,9 @@ import SetPage from './src/Pages/SetPage/SetPage';
 import ExerciseStoragePage from "./src/Pages/ExerciseStoragePage/ExerciseStoragePage";
 
 import { Colors } from './src/Resources/GlobalStyling/colors';
+import { ThemedText, ThemedView } from './src/Resources/ThemedComponents';
 import { locationService } from "./src/Services";
+import { AuthProvider, useAuth } from './src/Contexts/AuthContext';
 
 import * as SQLite from 'expo-sqlite';
 
@@ -44,29 +49,10 @@ TaskManager.defineTask(locationService.RUN_LOCATION_TASK, async ({ data, error }
 
 
 const Stack = createNativeStackNavigator();
-
-function AppTrackingRecovery() {
-  const db = useSQLiteContext();
-
-  useEffect(() => {
-    const recoverTrackingState = async () => {
-      try {
-        await locationService.syncRunTrackingState(db);
-      } catch (error) {
-        console.warn("Failed to recover run tracking state:", error);
-      }
-    };
-
-    recoverTrackingState();
-  }, [db]);
-
-  return null;
-}
-
-export default function App() {
-
+function RootNavigator() {
   const colorScheme = useColorScheme()
   const theme = Colors[colorScheme] ?? Colors.light
+  const { isAuthenticated, isAuthLoading } = useAuth();
 
   const navTheme =
     colorScheme === "dark"
@@ -90,17 +76,22 @@ export default function App() {
             border: theme.border,
           },
         };
+
+  if (isAuthLoading) {
+    return (
+      <ThemedView style={{ alignItems: "center", justifyContent: "center" }}>
+        <ThemedText setColor={theme.quietText ?? theme.iconColor}>
+          Restoring session...
+        </ThemedText>
+      </ThemedView>
+    );
+  }
   
   return (
-    <SafeAreaProvider>
-      <SQLiteProvider
-        databaseName="datab.db"
-        onInit={initializeDatabase}
-        options={{ useNewConnection: false }}>
-        <AppTrackingRecovery />
-
-        <NavigationContainer theme={navTheme}>
-          <Stack.Navigator initialRouteName='HomePage'
+    <NavigationContainer theme={navTheme}>
+      <Stack.Navigator
+            key={isAuthenticated ? "app" : "auth"}
+            initialRouteName={isAuthenticated ? 'HomePage' : 'LoginPage'}
             screenOptions={{ 
               headerShown: true,
               headerStyle: {
@@ -109,9 +100,11 @@ export default function App() {
               contentStyle: {
                 backgroundColor: theme.background
               }
-            }}> 
-
-            <Stack.Screen name="HomePage" component={HomePage} />
+            }}>
+        {isAuthenticated ? (
+          <>
+            <Stack.Screen name="HomePage" component={HomePage} options={{ headerShown: false }} />
+            <Stack.Screen name="ProfilePage" component={ProfilePage} options={{ headerShown: false }} />
             <Stack.Screen name="ProgramPage" component={ProgramPage} options={{headerShown: false}} />
             <Stack.Screen name="ProgramOverviewPage" component={ProgramOverviewPage} options={{headerShown: false}} />
             <Stack.Screen name="MicrocyclePage" component={MicrocyclePage} options={{headerShown: false}} />
@@ -119,10 +112,28 @@ export default function App() {
             <Stack.Screen name="WorkoutPage" component={WorkoutPage} options={{headerShown: false}} />
             <Stack.Screen name="SetPage" component={SetPage} />
             <Stack.Screen name="ExerciseStoragePage" component={ExerciseStoragePage} />
+          </>
+        ) : (
+          <>
+            <Stack.Screen name="LoginPage" component={LoginPage} options={{ headerShown: false }} />
+            <Stack.Screen name="RegisterPage" component={RegisterPage} options={{ headerShown: false }} />
+          </>
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
 
-          </Stack.Navigator>
-            
-        </NavigationContainer>
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <SQLiteProvider
+        databaseName="datab.db"
+        onInit={initializeDatabase}
+        options={{ useNewConnection: false }}>
+        <AuthProvider>
+          <RootNavigator />
+        </AuthProvider>
       </SQLiteProvider>
     </SafeAreaProvider>
   );

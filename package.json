@@ -1,6 +1,6 @@
 {
   "name": "programapp",
-  "version": "0.2.2.2",
+  "version": "0.3.0",
   "main": "index.js",
   "scripts": {
     "start": "expo start --dev-client --scheme exp+programapp-dev",
@@ -9,7 +9,9 @@
     "android": "expo run:android",
     "android:dev": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
+    "build-aab:android": "npx eas build -p android --profile production"
   },
   "dependencies": {
     "@expo/ui": "~0.2.0-beta.9",
@@ -18,6 +20,7 @@
     "@react-native-picker/picker": "^2.11.4",
     "@react-navigation/native": "^7.1.21",
     "@react-navigation/native-stack": "^7.8.0",
+    "@supabase/supabase-js": "^2.100.0",
     "eas-cli": "^18.3.0",
     "expo": "~54.0.25",
     "expo-checkbox": "~5.0.8",
@@ -33,5 +36,8 @@
     "react-native-screens": "~4.16.0",
     "react-native-svg": "15.12.1"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "conventional-changelog-cli": "^5.0.0"
+  }
 }

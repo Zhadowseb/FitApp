@@ -1,6 +1,7 @@
+import { useEffect } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { SQLiteProvider } from 'expo-sqlite';
+import { SQLiteProvider, useSQLiteContext } from 'expo-sqlite';
 import { initializeDatabase } from './src/Database/db';
 import { useColorScheme, StatusBar } from "react-native"
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -26,12 +27,24 @@ import { AuthProvider, useAuth } from './src/Contexts/AuthContext';
 
 import * as SQLite from 'expo-sqlite';
 
+let hasInitializedTaskDatabase = false;
+
 TaskManager.defineTask(locationService.RUN_LOCATION_TASK, async ({ data, error }) => {
   if (error) return;
   if (!data?.locations?.length) return;
 
-  const db = await SQLite.openDatabaseAsync('datab.db');
-  await locationService.recordTrackedLocations(db, data.locations);
+  try {
+    const db = await SQLite.openDatabaseAsync('datab.db');
+
+    if (!hasInitializedTaskDatabase) {
+      await initializeDatabase(db);
+      hasInitializedTaskDatabase = true;
+    }
+
+    await locationService.recordTrackedLocations(db, data.locations);
+  } catch (taskError) {
+    console.error("Failed to persist tracked run locations:", taskError);
+  }
 });
 
 

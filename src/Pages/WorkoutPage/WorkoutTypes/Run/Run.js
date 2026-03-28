@@ -68,7 +68,7 @@ const formatPaceDisplay = (paceMinutes) => {
   return `${minutes}'${String(seconds).padStart(2, "0")}`;
 };
 
-const Run = ({ workout_id }) => {
+const Run = ({ workout_id, restartRequestKey }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
   const db = useSQLiteContext();
@@ -87,7 +87,9 @@ const Run = ({ workout_id }) => {
   const [elapsed_time, set_elapsed_time] = useState(0);
   const [isDone, set_isDone] = useState(false);
   const [isRunning, set_isRunning] = useState(false);
+  const [isControlBusy, set_isControlBusy] = useState(false);
   const [totalDistance, set_totalDistance] = useState(0);
+  const [timerTick, set_timerTick] = useState(() => Date.now());
 
   const [activeSet, set_activeSet] = useState(null);
   const [activeSet_remainingTime, set_activeSet_remainingTime] = useState(0);
@@ -96,6 +98,9 @@ const Run = ({ workout_id }) => {
   const previousActiveSetRef = useRef(null);
   const timerStartRef = useRef(null);
   const elapsedTimeRef = useRef(0);
+  const workoutStateLoadRequestRef = useRef(0);
+  const activeSetCalculationInFlightRef = useRef(false);
+  const trackedSummaryLoadingRef = useRef(false);
 
   useEffect(() => {
     timerStartRef.current = timer_start;
@@ -113,6 +118,18 @@ const Run = ({ workout_id }) => {
     });
   }, [db, workout_id]);
 
+  const stopRunTrackingSafely = useCallback(async () => {
+    try {
+      await locationService.stopRunTracking(db);
+    } catch (error) {
+      console.error("Failed to stop run tracking cleanly:", error);
+    }
+  }, [db]);
+
+  const invalidatePendingWorkoutStateLoads = useCallback(() => {
+    workoutStateLoadRequestRef.current += 1;
+  }, []);
+
   const clearActiveSegment = () => {
     previousActiveSetRef.current = null;
     set_activeSet(null);
@@ -120,121 +137,196 @@ const Run = ({ workout_id }) => {
     set_activeSetDetails(null);
   };
 
+  const getCurrentElapsedSeconds = useCallback(() => {
+    if (!timerStartRef.current) {
+      return 0;
+    }
+
+    return Math.floor((Date.now() - timerStartRef.current) / 1000);
+  }, []);
+
   const loadTrackedRunSummary = useCallback(async () => {
+    if (trackedSummaryLoadingRef.current) {
+      return;
+    }
+
+    trackedSummaryLoadingRef.current = true;
+
     try {
       const summary = await locationService.getTrackedRunSummary(db, workout_id);
       set_totalDistance(summary.totalDistanceKm);
     } catch (error) {
       console.error("Failed to load tracked run summary:", error);
+    } finally {
+      trackedSummaryLoadingRef.current = false;
     }
   }, [db, workout_id]);
 
-  const computeCurrentElapsed = () => {
-    if (!timer_start) return 0;
-
-    return Math.floor((Date.now() - timer_start) / 1000);
-  };
-
-  const calculateActiveSet = async (currentElapsed) => {
-    const sets = await runningRepository.getOrderedRunSetsForWorkout(db, workout_id);
-
-    if (!sets.length) {
-      clearActiveSegment();
+  const calculateActiveSet = useCallback(async (currentElapsed) => {
+    if (activeSetCalculationInFlightRef.current) {
       return;
     }
 
-    let remainingElapsed = currentElapsed;
+    activeSetCalculationInFlightRef.current = true;
 
-    for (let i = 0; i < sets.length; i++) {
-      const setDuration = (sets[i].time ?? 0) * 60;
+    try {
+      const sets = await runningRepository.getOrderedRunSetsForWorkout(
+        db,
+        workout_id
+      );
 
-      if (remainingElapsed >= setDuration) {
-        if (!sets[i].done) {
-          await runningRepository.updateRunSetDone(db, {
-            runId: sets[i].Run_id,
-            done: true,
-          });
-        }
-        remainingElapsed -= setDuration;
-        continue;
+      if (!sets.length) {
+        clearActiveSegment();
+        return;
       }
 
-      const newActiveSet = sets[i].Run_id;
+      let remainingElapsed = currentElapsed;
 
-      if (previousActiveSetRef.current !== newActiveSet) {
-        previousActiveSetRef.current = newActiveSet;
+      for (let i = 0; i < sets.length; i++) {
+        const setDuration = (sets[i].time ?? 0) * 60;
 
-        if (sets[i].is_pause) {
-          Vibration.vibrate([0, 100, 100, 100]);
-        } else {
-          Vibration.vibrate(500);
-        }
-      }
-
-      set_activeSet(newActiveSet);
-      set_activeSetDetails(sets[i]);
-      set_activeSet_remainingTime(Math.max(0, setDuration - remainingElapsed));
-      return;
-    }
-
-    clearActiveSegment();
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      const reload = async () => {
-        const row = await workoutRepository.getWorkoutTimerState(db, workout_id);
-        const nextIsDone = Number(row.done) === 1;
-        const currentElapsed =
-          row.elapsed_time +
-          (row.timer_start
-            ? Math.floor((Date.now() - row.timer_start) / 1000)
-            : 0);
-
-        set_isRunning(row.timer_start !== null && !nextIsDone);
-        set_isDone(nextIsDone);
-        set_original_start_time(row.original_start_time);
-        set_timer_start(row.timer_start);
-        set_elapsed_time(row.elapsed_time);
-
-        if (row.original_start_time !== null && !nextIsDone) {
-          await calculateActiveSet(currentElapsed);
-        } else {
-          clearActiveSegment();
+        if (remainingElapsed >= setDuration) {
+          if (!sets[i].done) {
+            await runningRepository.updateRunSetDone(db, {
+              runId: sets[i].Run_id,
+              done: true,
+            });
+          }
+          remainingElapsed -= setDuration;
+          continue;
         }
 
-        if (row.timer_start !== null && !nextIsDone) {
-          try {
-            await locationService.ensureRunTracking(db, workout_id);
-          } catch (error) {
-            console.warn("Unable to ensure location tracking:", error);
+        const newActiveSet = sets[i].Run_id;
+
+        if (previousActiveSetRef.current !== newActiveSet) {
+          previousActiveSetRef.current = newActiveSet;
+
+          if (sets[i].is_pause) {
+            Vibration.vibrate([0, 100, 100, 100]);
+          } else {
+            Vibration.vibrate(500);
           }
         }
 
-        await loadTrackedRunSummary();
-      };
+        set_activeSet(newActiveSet);
+        set_activeSetDetails(sets[i]);
+        set_activeSet_remainingTime(Math.max(0, setDuration - remainingElapsed));
+        return;
+      }
 
-      reload();
-    }, [db, workout_id, loadTrackedRunSummary])
+      clearActiveSegment();
+    } finally {
+      activeSetCalculationInFlightRef.current = false;
+    }
+  }, [db, workout_id]);
+
+  const loadWorkoutState = useCallback(async () => {
+    // Ignore older resume/focus reloads so they cannot overwrite a newer pause/finish action.
+    const requestId = workoutStateLoadRequestRef.current + 1;
+    workoutStateLoadRequestRef.current = requestId;
+
+    try {
+      await locationService.syncRunTrackingState(db);
+    } catch (error) {
+      console.warn("Unable to sync run tracking state:", error);
+    }
+
+    if (requestId !== workoutStateLoadRequestRef.current) {
+      return;
+    }
+
+    const row = await workoutRepository.getWorkoutTimerState(db, workout_id);
+
+    if (!row || requestId !== workoutStateLoadRequestRef.current) {
+      return;
+    }
+
+    const nextIsDone = Number(row.done) === 1;
+    const currentElapsed =
+      row.elapsed_time +
+      (row.timer_start
+        ? Math.floor((Date.now() - row.timer_start) / 1000)
+        : 0);
+
+    timerStartRef.current = row.timer_start;
+    elapsedTimeRef.current = row.elapsed_time;
+    set_timerTick(Date.now());
+    set_isRunning(row.timer_start !== null && !nextIsDone);
+    set_isDone(nextIsDone);
+    set_original_start_time(row.original_start_time);
+    set_timer_start(row.timer_start);
+    set_elapsed_time(row.elapsed_time);
+
+    if (requestId !== workoutStateLoadRequestRef.current) {
+      return;
+    }
+
+    if (row.original_start_time !== null && !nextIsDone) {
+      await calculateActiveSet(currentElapsed);
+    } else {
+      clearActiveSegment();
+    }
+
+    if (requestId !== workoutStateLoadRequestRef.current) {
+      return;
+    }
+
+    if (row.timer_start !== null && !nextIsDone) {
+      try {
+        await locationService.ensureRunTracking(db, workout_id);
+      } catch (error) {
+        console.warn("Unable to ensure location tracking:", error);
+      }
+    }
+
+    if (requestId !== workoutStateLoadRequestRef.current) {
+      return;
+    }
+
+    await loadTrackedRunSummary();
+  }, [db, workout_id, calculateActiveSet, loadTrackedRunSummary]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadWorkoutState();
+    }, [loadWorkoutState])
   );
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextAppState) => {
       if (nextAppState === "inactive" || nextAppState === "background") {
-        persistCurrentTimerState();
+        void persistCurrentTimerState();
+      }
+
+      if (nextAppState === "active") {
+        set_timerTick(Date.now());
+        void loadWorkoutState();
       }
     });
 
     return () => {
       subscription.remove();
     };
-  }, [persistCurrentTimerState]);
+  }, [persistCurrentTimerState, loadWorkoutState]);
 
   useEffect(() => {
     return () => {
-      persistCurrentTimerState();
+      void persistCurrentTimerState();
     };
   }, [persistCurrentTimerState]);
+
+  useEffect(() => {
+    if (!isRunning) {
+      set_timerTick(Date.now());
+      return;
+    }
+
+    const interval = setInterval(() => {
+      set_timerTick(Date.now());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isRunning, timer_start]);
 
   useEffect(() => {
     if (original_start_time === null || isDone) {
@@ -242,23 +334,12 @@ const Run = ({ workout_id }) => {
       return;
     }
 
-    calculateActiveSet(isRunning ? elapsed_time + computeCurrentElapsed() : elapsed_time);
-  }, [updateCount, original_start_time, isDone]);
+    calculateActiveSet(currentElapsed);
+  }, [updateCount, original_start_time, isDone, currentElapsed, calculateActiveSet]);
 
   useEffect(() => {
     loadTrackedRunSummary();
   }, [loadTrackedRunSummary, updateCount]);
-
-  useEffect(() => {
-    if (!isRunning) return;
-
-    const interval = setInterval(() => {
-      const currentTime = computeCurrentElapsed();
-      calculateActiveSet(elapsed_time + currentTime);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [timer_start, isRunning, workout_id, elapsed_time]);
 
   useEffect(() => {
     if (!isRunning) {
@@ -273,7 +354,9 @@ const Run = ({ workout_id }) => {
   }, [isRunning, loadTrackedRunSummary]);
 
   const updateElapsed = async () => {
-    const newElapsed = Math.floor(elapsed_time + computeCurrentElapsed());
+    const newElapsed = Math.floor(
+      (elapsedTimeRef.current ?? 0) + getCurrentElapsedSeconds()
+    );
 
     await workoutRepository.persistWorkoutTimerState(db, {
       workoutId: workout_id,
@@ -288,6 +371,13 @@ const Run = ({ workout_id }) => {
   };
 
   const startWorkout = async () => {
+    if (isControlBusy) {
+      return;
+    }
+
+    set_isControlBusy(true);
+    invalidatePendingWorkoutStateLoads();
+
     try {
       const row = await workoutRepository.getWorkoutOriginalStartTime(db, workout_id);
       const start_time = Date.now();
@@ -303,7 +393,7 @@ const Run = ({ workout_id }) => {
       await workoutRepository.persistWorkoutTimerState(db, {
         workoutId: workout_id,
         timerStart: start_time,
-        elapsedTime: elapsed_time,
+        elapsedTime: elapsedTimeRef.current ?? elapsed_time,
       });
 
       try {
@@ -314,7 +404,7 @@ const Run = ({ workout_id }) => {
         await workoutRepository.persistWorkoutTimerState(db, {
           workoutId: workout_id,
           timerStart: null,
-          elapsedTime: elapsed_time,
+          elapsedTime: elapsedTimeRef.current ?? elapsed_time,
         });
 
         if (isFreshStart) {
@@ -332,6 +422,7 @@ const Run = ({ workout_id }) => {
         set_original_start_time(start_time);
       }
       timerStartRef.current = start_time;
+      set_timerTick(start_time);
       set_isRunning(true);
       set_timer_start(start_time);
       await loadTrackedRunSummary();
@@ -341,52 +432,116 @@ const Run = ({ workout_id }) => {
         "Location tracking could not start",
         "Check that location is allowed and turned on, then try again."
       );
+    } finally {
+      set_isControlBusy(false);
     }
   };
 
   const pauseWorkout = async () => {
-    const newElapsed = await updateElapsed();
-    await locationService.stopRunTracking(db);
+    if (isControlBusy) {
+      return;
+    }
 
-    Vibration.vibrate([0, 100, 100, 100]);
-    set_isRunning(false);
-    set_timer_start(null);
-    set_elapsed_time(newElapsed);
-    await calculateActiveSet(newElapsed);
-    await loadTrackedRunSummary();
+    set_isControlBusy(true);
+    invalidatePendingWorkoutStateLoads();
+
+    try {
+      const newElapsed = await updateElapsed();
+      await stopRunTrackingSafely();
+
+      Vibration.vibrate([0, 100, 100, 100]);
+      set_isRunning(false);
+      set_timer_start(null);
+      set_elapsed_time(newElapsed);
+      await calculateActiveSet(newElapsed);
+      await loadTrackedRunSummary();
+    } catch (error) {
+      console.error("Failed to pause run:", error);
+      Alert.alert(
+        "Run could not be paused",
+        "The timer state will be refreshed so you can try again."
+      );
+      await loadWorkoutState();
+    } finally {
+      set_isControlBusy(false);
+    }
   };
 
   const endWorkout = async () => {
-    const finalElapsed = timer_start ? await updateElapsed() : elapsed_time;
-    await locationService.stopRunTracking(db);
+    if (isControlBusy) {
+      return;
+    }
 
-    set_isRunning(false);
-    set_isDone(true);
-    set_timer_start(null);
-    set_elapsed_time(finalElapsed);
-    clearActiveSegment();
+    set_isControlBusy(true);
+    invalidatePendingWorkoutStateLoads();
 
-    await workoutRepository.setWorkoutDone(db, {
-      workoutId: workout_id,
-      done: true,
-    });
+    try {
+      const finalElapsed = timerStartRef.current ? await updateElapsed() : elapsed_time;
+      await stopRunTrackingSafely();
 
-    await loadTrackedRunSummary();
+      set_isRunning(false);
+      set_isDone(true);
+      set_timer_start(null);
+      set_elapsed_time(finalElapsed);
+      clearActiveSegment();
+
+      await workoutRepository.setWorkoutDone(db, {
+        workoutId: workout_id,
+        done: true,
+      });
+
+      await loadTrackedRunSummary();
+    } catch (error) {
+      console.error("Failed to finish run:", error);
+      Alert.alert(
+        "Run could not be finished",
+        "The timer state will be refreshed so you can try again."
+      );
+      await loadWorkoutState();
+    } finally {
+      set_isControlBusy(false);
+    }
   };
 
   const restartWorkout = async () => {
-    await locationService.stopRunTracking(db);
-    await locationService.clearTrackedRunData(db, workout_id);
-    await workoutRepository.resetWorkoutState(db, workout_id);
-    set_original_start_time(null);
-    set_timer_start(null);
-    set_elapsed_time(0);
-    set_isRunning(false);
-    set_isDone(false);
-    set_totalDistance(0);
-    clearActiveSegment();
-    triggerReload();
+    if (isControlBusy) {
+      return;
+    }
+
+    set_isControlBusy(true);
+    invalidatePendingWorkoutStateLoads();
+
+    try {
+      await stopRunTrackingSafely();
+      await locationService.clearTrackedRunData(db, workout_id);
+      await workoutRepository.resetWorkoutState(db, workout_id);
+      set_original_start_time(null);
+      set_timer_start(null);
+      set_elapsed_time(0);
+      set_isRunning(false);
+      set_isDone(false);
+      set_totalDistance(0);
+      clearActiveSegment();
+      triggerReload();
+    } catch (error) {
+      console.error("Failed to restart run:", error);
+      Alert.alert(
+        "Run could not be restarted",
+        "The timer state will be refreshed so you can try again."
+      );
+      await loadWorkoutState();
+    } finally {
+      set_isControlBusy(false);
+    }
   };
+
+  useEffect(() => {
+    if (!restartRequestKey) {
+      return;
+    }
+
+    restartWorkout();
+  }, [restartRequestKey]);
 
   const addSet = async (setVariety) => {
     try {
@@ -409,7 +564,9 @@ const Run = ({ workout_id }) => {
   const quietText = theme.quietText ?? theme.iconColor ?? theme.text;
   const invertedText = theme.textInverted ?? theme.background ?? "#0E0F12";
 
-  const currentElapsed = elapsed_time + computeCurrentElapsed();
+  const currentElapsed =
+    elapsed_time +
+    (timer_start ? Math.floor((timerTick - timer_start) / 1000) : 0);
   const avgPaceMinutes =
     totalDistance > 0 ? currentElapsed / 60 / totalDistance : null;
   const startedDisplay =
@@ -571,60 +728,50 @@ const Run = ({ workout_id }) => {
               </View>
             </View>
 
-            <View style={styles.heroActionsRow}>
-              {!isRunning && !isDone && (
-                <View
-                  style={[
-                    styles.heroActionSlot,
-                    original_start_time !== null && styles.heroActionSlotSpaced,
-                  ]}
-                >
-                  <ThemedButton
-                    title={original_start_time !== null ? "Continue" : "Start"}
-                    onPress={startWorkout}
-                    variant="primary"
-                    disabled={isDone || isRunning}
-                    style={styles.heroActionButton}
-                  />
-                </View>
-              )}
+            {!isDone && (
+              <View style={styles.heroActionsRow}>
+                {!isRunning && (
+                  <View
+                    style={[
+                      styles.heroActionSlot,
+                      original_start_time !== null && styles.heroActionSlotSpaced,
+                    ]}
+                  >
+                    <ThemedButton
+                      title={original_start_time !== null ? "Continue" : "Start"}
+                      onPress={startWorkout}
+                      variant="primary"
+                      disabled={isDone || isRunning || isControlBusy}
+                      style={styles.heroActionButton}
+                    />
+                  </View>
+                )}
 
-              {!isRunning && !isDone && original_start_time !== null && (
-                <View style={styles.heroActionSlot}>
-                  <ThemedButton
-                    title="Finish Run"
-                    onPress={endWorkout}
-                    variant="secondary"
-                    disabled={original_start_time === null || isDone}
-                    style={styles.heroActionButton}
-                  />
-                </View>
-              )}
+                {!isRunning && original_start_time !== null && (
+                  <View style={styles.heroActionSlot}>
+                    <ThemedButton
+                      title="Finish Run"
+                      onPress={endWorkout}
+                      variant="secondary"
+                      disabled={original_start_time === null || isDone || isControlBusy}
+                      style={styles.heroActionButton}
+                    />
+                  </View>
+                )}
 
-              {isRunning && (
-                <View style={styles.heroActionSlot}>
-                  <ThemedButton
-                    title="Pause"
-                    onPress={pauseWorkout}
-                    variant="primary"
-                    disabled={!isRunning || isDone}
-                    style={styles.heroActionButton}
-                  />
-                </View>
-              )}
-
-              {isDone && (
-                <View style={styles.heroActionSlot}>
-                  <ThemedButton
-                    title="Restart"
-                    onPress={restartWorkout}
-                    variant="danger"
-                    disabled={original_start_time === null || !isDone}
-                    style={styles.heroActionButton}
-                  />
-                </View>
-              )}
-            </View>
+                {isRunning && (
+                  <View style={styles.heroActionSlot}>
+                    <ThemedButton
+                      title="Pause"
+                      onPress={pauseWorkout}
+                      variant="primary"
+                      disabled={!isRunning || isDone || isControlBusy}
+                      style={styles.heroActionButton}
+                    />
+                  </View>
+                )}
+              </View>
+            )}
           </ThemedCard>
         </View>
 

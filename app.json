@@ -2,7 +2,7 @@
   "expo": {
     "name": "FitVen",
     "slug": "programapp",
-    "version": "0.2.1",
+    "version": "0.2.2.3",
     "orientation": "portrait",
     "icon": "./assets/icon_v1.0.png",
     "userInterfaceStyle": "dark",
@@ -21,7 +21,7 @@
       }
     },
     "android": {
-      "versionCode": 4,
+      "versionCode": 7,
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon_v1.0.png",
         "backgroundColor": "#ffffff"

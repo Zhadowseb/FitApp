@@ -16,6 +16,7 @@ import {
 import ThreeDots from "../../Resources/Icons/UI-icons/ThreeDots";
 import Delete from "../../Resources/Icons/UI-icons/Delete";
 import Copy from "../../Resources/Icons/UI-icons/Copy";
+import Reload from "../../Resources/Icons/UI-icons/Reload";
 import { programService, workoutService } from "../../Services";
 
 import Run from "./WorkoutTypes/Run/Run";
@@ -39,6 +40,7 @@ const WorkoutPage = ({ route }) => {
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [newDate, setNewDate] = useState(new Date());
   const [metadata, setMetadata] = useState(null);
+  const [restartRequestKey, setRestartRequestKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,6 +70,13 @@ const WorkoutPage = ({ route }) => {
   const programId = metadata?.program_id ?? initialProgramId;
   const workoutSubtitle = [workoutDay, workoutDate].filter(Boolean).join(" - ");
   const headerEyebrowColor = theme.quietText ?? theme.iconColor;
+  const isRunWorkout = workoutLabel === "Run";
+  const isStrengthWorkout =
+    workoutLabel === "Resistance" ||
+    workoutLabel === "Upperbody" ||
+    workoutLabel === "Legs" ||
+    workoutLabel === "StrengthTraining";
+  const supportsTimerRestart = isRunWorkout || isStrengthWorkout;
 
   const deleteWorkout = async () => {
     try {
@@ -143,15 +152,16 @@ const WorkoutPage = ({ route }) => {
         </View>
       </ThemedHeader>
 
-      {workoutLabel === "Run" && <Run workout_id={workout_id} />}
+      {isRunWorkout && (
+        <Run workout_id={workout_id} restartRequestKey={restartRequestKey} />
+      )}
 
-      {(
-        workoutLabel === "Resistance" ||
-        workoutLabel === "Upperbody" ||
-        workoutLabel === "Legs" ||
-        workoutLabel === "StrengthTraining"
-      ) && (
-        <StrengthTraining workout_id={workout_id} date={workoutDate} />
+      {isStrengthWorkout && (
+        <StrengthTraining
+          workout_id={workout_id}
+          date={workoutDate}
+          restartRequestKey={restartRequestKey}
+        />
       )}
 
       <ThemedBottomSheet
@@ -164,8 +174,24 @@ const WorkoutPage = ({ route }) => {
         </View>
 
         <View style={styles.bottomsheetBody}>
+          {supportsTimerRestart && (
+            <TouchableOpacity
+              style={[styles.option, { paddingTop: 0 }]}
+              onPress={() => {
+                setOptionsBottomsheetVisible(false);
+                setRestartRequestKey(Date.now());
+              }}
+            >
+              <Reload width={24} height={24} />
+              <ThemedText style={styles.optionText}>Restart Workout</ThemedText>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity
-            style={[styles.option, { paddingTop: 0 }]}
+            style={[
+              styles.option,
+              { paddingTop: supportsTimerRestart ? 20 : 0 },
+            ]}
             onPress={() => {
               setOptionsBottomsheetVisible(false);
               setDatePickerVisible(true);

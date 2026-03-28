@@ -59,6 +59,39 @@ export async function clearActiveWorkoutFlags(db) {
   );
 }
 
+export async function normalizeActiveWorkoutFlags(db) {
+  await db.runAsync(
+    `UPDATE Workout
+     SET is_active = 0
+     WHERE is_active = 1
+       AND (timer_start IS NULL OR done = 1);`
+  );
+
+  const activeWorkouts = await db.getAllAsync(
+    `SELECT workout_id
+     FROM Workout
+     WHERE is_active = 1
+       AND timer_start IS NOT NULL
+       AND done = 0
+     ORDER BY timer_start DESC, workout_id DESC;`
+  );
+
+  if (activeWorkouts.length <= 1) {
+    return;
+  }
+
+  const [workoutToKeep, ...staleWorkouts] = activeWorkouts;
+
+  for (const staleWorkout of staleWorkouts) {
+    await db.runAsync(
+      `UPDATE Workout
+       SET is_active = 0
+       WHERE workout_id = ?;`,
+      [staleWorkout.workout_id]
+    );
+  }
+}
+
 export async function setWorkoutActiveFlag(db, { workoutId, isActive }) {
   await db.runAsync(
     `UPDATE Workout

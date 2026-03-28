@@ -690,12 +690,7 @@ export async function getWorkoutExercises(db, workoutId) {
       ...exercise,
       sets: exerciseSets,
       setCount: exerciseSets.length,
-      visibleColumns: exercise.visible_columns
-        ? {
-            ...DEFAULT_VISIBLE_COLUMNS,
-            ...JSON.parse(exercise.visible_columns),
-          }
-        : DEFAULT_VISIBLE_COLUMNS,
+      visibleColumns: parseVisibleColumns(exercise.visible_columns),
     };
   });
 }

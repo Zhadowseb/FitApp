@@ -162,6 +162,10 @@ export async function initializeDatabase(db) {
     );
   `);
 
+  await repairWorkoutTrackingState(db);
+  await repairStrengthTrainingState(db);
+  await repairRunSetState(db);
+
   await initializeWeightliftingData(db);
 
   /*

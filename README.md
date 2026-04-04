@@ -15,6 +15,7 @@ The app started as a replacement for spreadsheet-based training programs and is 
 - [Architecture](#architecture)
 - [Project Structure](#project-structure)
 - [Data Model](#data-model)
+- [ER diagram](#ER-diagram)
 - [Getting Started](#getting-started)
 - [Scripts](#scripts)
 - [Notes](#notes)
@@ -93,7 +94,7 @@ FitApp/
 
 The schema is initialized in `src/Database/db.js`.
 
-ER diagram beneath:
+## ER Diagram
 
 <p align="center">
   <img src="detailed new FitVen ER diagram.drawio.png" width="800"/>

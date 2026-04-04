@@ -93,6 +93,12 @@ FitApp/
 
 The schema is initialized in `src/Database/db.js`.
 
+ER diagram beneath:
+
+<p align="center">
+  <img src="deatiled new FitVen ER diagram.drawio.png" width="800"/>
+</p>
+
 ### Program hierarchy
 - `Program`
 - `Mesocycle`

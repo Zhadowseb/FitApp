@@ -18,6 +18,8 @@ The app started as a replacement for spreadsheet-based training programs and is 
 - [ER diagram](#ER-diagram)
 - [Getting Started](#getting-started)
 - [Scripts](#scripts)
+- [Development Workflow](#development-workflow)
+- [Versioning](#versioning)
 - [Notes](#notes)
 
 ---
@@ -189,7 +191,82 @@ npm run start
 npm run android
 npm run ios
 npm run web
+npm run version:status
+npm run version:auto
+npm run release:prepare -- 0.4.0
 ```
+
+---
+
+## Development Workflow
+
+### Branch safety
+
+- No code changes should be made directly on `master` or `main`.
+- If a new code task starts while the repo is on `master` or `main`, the next step is to create a work branch first.
+- Recommended branch prefixes:
+  - `feat/...` for new features
+  - `fix/...` for bug fixes
+  - `release/x.y.z` for stable release preparation
+
+### Commit checkpoints
+
+- When one task is done and a new unrelated task starts, commit the finished work before mixing in the next change.
+- If Codex proposes a new branch or a commit checkpoint, it is to keep versioning and history clean.
+- The intended behavior is:
+  - propose branch name first when on `master`
+  - run versioning on the work branch
+  - suggest a commit before moving to the next unit of work
+
+---
+
+## Versioning
+
+Versioning is branch-driven so you do not have to manage it manually for normal development work.
+
+### Quick checks
+
+- `npm run version:status`
+  Shows current branch, current app versions, whether `package.json` and `app.json` match, and what to run next.
+
+### Normal work branches
+
+- `npm run version:auto`
+  Reads the current branch name and updates versioning automatically.
+
+Branch behavior:
+
+- `feat/...` or `feature/...` -> next `minor` prerelease
+- `fix/...`, `bugfix/...`, `hotfix/...`, `quickfix/...` -> next `patch` prerelease
+- `major/...` or `breaking/...` -> next `major` prerelease
+- `release/x.y.z` -> exact stable release version
+
+Examples:
+
+- `feat/program-calendar` from `0.3.1` becomes `0.4.0-feat-program-calendar.1`
+- `fix/set-counter` from `0.3.1` becomes `0.3.2-fix-set-counter.1`
+- `release/0.4.0` becomes `0.4.0`
+
+### Stable releases
+
+- `npm run release:prepare -- 0.4.0`
+  Updates:
+  - `package.json > version`
+  - `app.json > expo.version`
+  - `app.json > expo.android.versionCode`
+  - `app.json > expo.ios.buildNumber`
+  - the release section in `CHANGELOG.md`
+
+### Recommended routine
+
+1. Create or switch to a work branch.
+2. Run `npm run version:auto`.
+3. Use `npm run version:status` if you want to verify the current state.
+4. Do the work.
+5. Replace placeholder text in `CHANGELOG.md` before shipping.
+6. Commit before moving on to a new unrelated task.
+
+For the detailed rules, see `docs/VERSIONING.md`.
 
 ---
 

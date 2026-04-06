@@ -1,8 +1,16 @@
 # Changelog
 
-All changes to the project, are logged here.
+All changes to the project are logged here.
 
 
+
+All changes to the project are logged here.
+
+## [Unreleased]
+### Changed
+- Describe upcoming changes here.
+
+---
 
 ## [0.3.0] - 2026-03-25
 ### Added

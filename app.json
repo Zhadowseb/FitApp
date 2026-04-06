@@ -2,7 +2,7 @@
   "expo": {
     "name": "FitVen",
     "slug": "programapp",
-    "version": "0.3.1",
+    "version": "0.4.0-feat-versioning-workflow.1",
     "orientation": "portrait",
     "icon": "./assets/icon_v1.0.png",
     "userInterfaceStyle": "dark",
@@ -15,7 +15,9 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": ["location"],
+        "UIBackgroundModes": [
+          "location"
+        ],
         "NSLocationWhenInUseUsageDescription": "We use your location to track workout distance.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "We use your location to track workout distance even when the app is in background."
       }

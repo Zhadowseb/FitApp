@@ -1,58 +1,43 @@
 # AGENTS.md
 
-## Project Overview
+## Scope
 
-This repository contains `programapp`, an Expo / React Native application.
-The codebase includes UI screens, workout/program logic, and local database schema definitions under `src`.
+This file applies to the whole repository.
+Keep the root guide short and place domain-specific rules in closer `AGENTS.md` files.
 
-## Main Technologies
+## Project Snapshot
 
-- Expo
-- React Native
-- React
-- Expo SQLite
-- Supabase
+- `programapp` is an Expo / React Native application.
+- Main application code lives in `src/`.
+- Use `package.json` scripts as the source of truth for local commands.
 
-## Repository Structure
-
-- `App.js`: app entry setup
-- `index.js`: runtime entry point
-- `src/`: main application code
-- `src/Database/`: schema and database-related logic
-- `assets/`: static assets
-- `android/`: native Android project files
-
-## Common Commands
-
-- `npm run start`: start Expo dev client
-- `npm run start:go`: start Expo Go
-- `npm run android`: run Android build locally
-- `npm run ios`: run iOS build locally
-- `npm run web`: run the web target
-- `npm run changelog`: update `CHANGELOG.md`
-
-## Working Agreements
+## Global Working Rules
 
 - Prefer small, focused changes over large refactors.
-- Preserve existing project structure unless a task explicitly requires restructuring.
+- Follow nearby patterns before introducing new abstractions.
 - Avoid changing unrelated files in the same task.
-- When editing database schema or app flows, check for dependent code in `src` before changing names or behavior.
+- Never edit code directly on `master` or `main`.
+- If the user asks for code changes while on `master` or `main`, stop first and propose a branch name before making changes.
+- Review local changes before switching branches or rewriting Git history.
 
-## Code Style Notes
+## Branch And Commit Discipline
 
-- Follow the existing style in nearby files before introducing new patterns.
-- Keep components and helpers easy to scan and consistent with the surrounding code.
-- Add comments only when a block is not self-explanatory.
-- Reuse existing utilities and patterns where possible.
+- Treat a new feature, fix, refactor, or unrelated request as a new unit of work.
+- Before starting a new unit of work, check whether the current branch and uncommitted changes belong to the previous task.
+- If the user appears satisfied with the current work and then asks for something new, suggest committing the finished work before starting the next change.
+- If the current branch name no longer matches the requested work, suggest creating a new branch before editing files.
+- When suggesting a branch, propose a concrete branch name instead of asking an open-ended question.
 
-## Git Guidance
+## Versioning And Changelog
 
-- Work from the branch that matches the task when possible.
-- Do not delete or rewrite existing branches unless explicitly requested.
-- Review local changes before switching branches to avoid conflicts.
+- After creating or switching to a work branch, use `npm run version:auto`.
+- Use `npm run version:status` whenever you need to verify the current branch/version state.
+- Prefer branch names like `feat/...`, `fix/...`, or `release/x.y.z`.
+- Use `npm run release:prepare -- <version>` for stable releases.
+- See `docs/VERSIONING.md` for the full workflow and branch rules.
 
-## Notes For Future Agents
+## Local Guides
 
-- Start by checking `package.json` scripts and the relevant feature folder inside `src`.
-- For UI changes, inspect the screen/component tree before editing.
-- For database-related changes, verify schema usage across inserts, reads, and update flows.
+- `src/AGENTS.md`: source structure and layering
+- `src/Pages/AGENTS.md`: UI and screen work
+- `src/Database/AGENTS.md`: schema and data safety

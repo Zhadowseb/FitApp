@@ -1,6 +1,6 @@
 {
   "name": "programapp",
-  "version": "0.3.1",
+  "version": "0.4.0-feat-versioning-workflow.1",
   "main": "index.js",
   "scripts": {
     "start": "expo start --dev-client --scheme exp+programapp-dev",
@@ -10,6 +10,11 @@
     "android:dev": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
+    "version:auto": "node scripts/version.js auto",
+    "version:branch": "node scripts/version.js branch",
+    "version:status": "node scripts/version.js status",
+    "version:sync": "node scripts/version.js sync",
+    "release:prepare": "node scripts/version.js release",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
     "build-aab:android": "npx eas build -p android --profile production"
   },

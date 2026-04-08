@@ -28,10 +28,11 @@ export async function getProgramsOverview(db) {
        ON mesocycles.program_id = p.program_id
      LEFT JOIN (
         SELECT
-          program_id,
+          m.program_id,
           COUNT(*) AS week_count
-        FROM Microcycle
-        GROUP BY program_id
+        FROM Microcycle mc
+        JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
+        GROUP BY m.program_id
      ) microcycles
        ON microcycles.program_id = p.program_id
      LEFT JOIN (
@@ -330,8 +331,9 @@ export async function countMesocyclesByProgram(db, programId) {
 export async function countMicrocyclesByProgram(db, programId) {
   return db.getFirstAsync(
     `SELECT COUNT(*) AS count
-     FROM Microcycle
-     WHERE program_id = ?;`,
+     FROM Microcycle mc
+     JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
+     WHERE m.program_id = ?;`,
     [programId]
   );
 }
@@ -349,12 +351,12 @@ export async function insertMesocycle(
 
 export async function insertMicrocycle(
   db,
-  { mesocycleId, programId, microcycleNumber }
+  { mesocycleId, microcycleNumber }
 ) {
   return db.runAsync(
-    `INSERT INTO Microcycle (mesocycle_id, program_id, microcycle_number)
-     VALUES (?, ?, ?);`,
-    [mesocycleId, programId, microcycleNumber]
+    `INSERT INTO Microcycle (mesocycle_id, microcycle_number)
+     VALUES (?, ?);`,
+    [mesocycleId, microcycleNumber]
   );
 }
 
@@ -402,9 +404,15 @@ export async function updateMesocycleFocus(db, { mesocycleId, focus }) {
 
 export async function getMicrocyclesByMesocycle(db, mesocycleId) {
   return db.getAllAsync(
-    `SELECT microcycle_id, microcycle_number, program_id, focus, done
-     FROM Microcycle
-     WHERE mesocycle_id = ?;`,
+    `SELECT
+        mc.microcycle_id,
+        mc.microcycle_number,
+        m.program_id,
+        mc.focus,
+        mc.done
+     FROM Microcycle mc
+     JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
+     WHERE mc.mesocycle_id = ?;`,
     [mesocycleId]
   );
 }
@@ -555,7 +563,7 @@ export async function getMicrocycleNumberAndMesocycleNumber(
      FROM Microcycle mc
      JOIN Mesocycle m ON mc.mesocycle_id = m.mesocycle_id
      WHERE mc.microcycle_id = ?
-       AND mc.program_id = ?;`,
+       AND m.program_id = ?;`,
     [microcycleId, programId]
   );
 }
@@ -614,10 +622,14 @@ export async function getWorkoutLabelsByDay(db, dayId) {
 
 export async function getAllMicrocyclesByProgram(db, programId) {
   return db.getAllAsync(
-    `SELECT microcycle_id, microcycle_number, mesocycle_id
-     FROM Microcycle
-     WHERE program_id = ?
-     ORDER BY microcycle_number;`,
+    `SELECT
+        mc.microcycle_id,
+        mc.microcycle_number,
+        mc.mesocycle_id
+     FROM Microcycle mc
+     JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
+     WHERE m.program_id = ?
+     ORDER BY mc.microcycle_number;`,
     [programId]
   );
 }

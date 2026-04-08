@@ -31,7 +31,6 @@ export const programSchemaSql = `
   CREATE TABLE IF NOT EXISTS Microcycle(
       microcycle_id INTEGER PRIMARY KEY AUTOINCREMENT,
       mesocycle_id INTEGER NOT NULL,
-      program_id INTEGER NOT NULL,
       microcycle_number INTEGER NOT NULL,
       focus TEXT DEFAULT "No focus",
       done INTEGER NOT NULL DEFAULT 0

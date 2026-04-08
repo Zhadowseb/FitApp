@@ -78,6 +78,56 @@ async function migrateWeightliftingTableNames(db) {
   }
 }
 
+async function migrateMicrocycleProgramIdRemoval(db) {
+  const microcycleColumns = await getTableColumns(db, "Microcycle");
+
+  if (
+    !microcycleColumns.length ||
+    !microcycleColumns.some((column) => column.name === "program_id")
+  ) {
+    return;
+  }
+
+  await db.execAsync("BEGIN IMMEDIATE;");
+
+  try {
+    await db.execAsync(`
+      DROP TABLE IF EXISTS Microcycle_next;
+
+      CREATE TABLE Microcycle_next (
+        microcycle_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        mesocycle_id INTEGER NOT NULL,
+        microcycle_number INTEGER NOT NULL,
+        focus TEXT DEFAULT "No focus",
+        done INTEGER NOT NULL DEFAULT 0
+      );
+
+      INSERT INTO Microcycle_next (
+        microcycle_id,
+        mesocycle_id,
+        microcycle_number,
+        focus,
+        done
+      )
+      SELECT
+        microcycle_id,
+        mesocycle_id,
+        microcycle_number,
+        focus,
+        done
+      FROM Microcycle;
+
+      DROP TABLE Microcycle;
+      ALTER TABLE Microcycle_next RENAME TO Microcycle;
+    `);
+
+    await db.execAsync("COMMIT;");
+  } catch (error) {
+    await db.execAsync("ROLLBACK;");
+    throw error;
+  }
+}
+
 async function repairWorkoutTrackingState(db) {
   await db.execAsync(`
     UPDATE Workout
@@ -193,6 +243,11 @@ export async function initializeDatabase(db) {
     ["done", "INTEGER NOT NULL DEFAULT 0"],
   ]);
 
+  await ensureTableColumns(db, "Microcycle", [
+    ["focus", 'TEXT DEFAULT "No focus"'],
+    ["done", "INTEGER NOT NULL DEFAULT 0"],
+  ]);
+  await migrateMicrocycleProgramIdRemoval(db);
   await ensureTableColumns(db, "Microcycle", [
     ["focus", 'TEXT DEFAULT "No focus"'],
     ["done", "INTEGER NOT NULL DEFAULT 0"],

@@ -464,7 +464,6 @@ export async function createMesocycle(
     for (let week = 1; week <= weeks; week += 1) {
       const microcycleResult = await programRepository.insertMicrocycle(db, {
         mesocycleId: mesocycleResult.lastInsertRowId,
-        programId,
         microcycleNumber: week,
       });
 
@@ -516,7 +515,6 @@ export async function addWeekToMesocycle(db, { mesocycleId, programId }) {
 
     const microcycleResult = await programRepository.insertMicrocycle(db, {
       mesocycleId,
-      programId,
       microcycleNumber: weeks.length + 1,
     });
 

@@ -6,9 +6,13 @@ All changes to the project are logged here.
 
 All changes to the project are logged here.
 
+
+
+All changes to the project are logged here.
+
 ## [Unreleased]
 ### Changed
-- Describe upcoming changes here.
+- Removed `program_id` from the local `Microcycle` table and added a safe migration that rebuilds the table without changing existing `microcycle_id` relationships.
 
 ---
 

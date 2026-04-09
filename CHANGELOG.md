@@ -1,39 +1,52 @@
 # Changelog
 
-All changes to the project are logged here.
+## [0.5.5] - Unreleased
+### Changed
+- Switched the changelog workflow from a single global `Unreleased` bucket to versioned sections like `## [0.5.x] - Unreleased`, so pending releases are visible per version and `release:prepare` can convert the same section into a dated release entry.
+### Added
+- Added `npm run release:android -- <version>`, which prepares a stable release version and starts an Android EAS production build using the current EAS login or `EXPO_TOKEN`, with optional `--prebuild` support.
 
+---
 
+## [0.5.4] - Unreleased
+### Changed
+- Hardened program cloud deletes so a local program deletion only clears the local delete queue after the remote row is actually gone, and explicit program deletes now attempt cloud sync immediately while keeping failed deletes queued for retry.
 
-All changes to the project are logged here.
+---
 
+## [0.5.3] - Unreleased
+### Changed
+- Scoped local SQLite storage to one database file per authenticated user, so logging into another profile no longer exposes the previous user's local programs on the device.
 
+---
 
-All changes to the project are logged here.
+## [0.5.2] - Unreleased
+### Added
+- Added the first `Mesocycle` cloud sync flow with local cloud-id tracking, dirty-state sync flags, remote delete queueing, and app-level sync triggers that depend on `Program` sync.
+### Changed
+- Fixed `Mesocycle` cloud sync parent mapping so cloud writes use the canonical remote `Program.local_program_id` instead of the device-local SQLite `program_id`, which avoids Supabase RLS insert failures across devices.
 
+---
 
-
-All changes to the project are logged here.
-
-
-
-All changes to the project are logged here.
-
-
-
-All changes to the project are logged here.
-
-## [Unreleased]
+## [0.5.1] - Unreleased
 ### Changed
 - Updated branch-driven versioning to support `major/...` and `minor/...` feature prefixes, where `minor/...` and `fix/...` both produce patch-level prerelease bumps.
+
+---
+
+## [0.5.0] - Unreleased
+### Added
+- Added the first `Program` cloud sync flow with local cloud-id tracking, dirty-state sync flags, remote delete queueing, and an app-level sync runner that uploads local program changes and pulls remote-only programs.
+### Changed
+- Normalized `Program.start_date` between local SQLite `dd.MM.yyyy` strings and cloud PostgreSQL `date` values to avoid sync failures and mixed local date formats.
+
+---
+
+## [0.4.2] - 2026-04-09
+### Changed
 - Renamed the local `Workout` table to `Workout_Type_Instance`, added a local `Workout_Type` table, and introduced a safe migration that preserves existing workout rows while backfilling `workout_type`.
 - Aligned the local `Exercise` catalog with the cloud naming model, moved muscle-group counts to runtime calculation, and safely migrated `Exercise_Instance` to `exercise_instance_id` and `workout_type_instance_id` without breaking existing set relationships.
 - Renamed the local `Sets` table to `Set` and safely migrated its `exercise_id` relation to `exercise_instance_id` without breaking existing set rows.
-- Added the first `Program` cloud sync flow with local cloud-id tracking, dirty-state sync flags, remote delete queueing, and an app-level sync runner that uploads local program changes and pulls remote-only programs.
-- Added the first `Mesocycle` cloud sync flow with local cloud-id tracking, dirty-state sync flags, remote delete queueing, and app-level sync triggers that depend on `Program` sync.
-- Normalized `Program.start_date` between local SQLite `dd.MM.yyyy` strings and cloud PostgreSQL `date` values to avoid sync failures and mixed local date formats.
-- Fixed `Mesocycle` cloud sync parent mapping so cloud writes use the canonical remote `Program.local_program_id` instead of the device-local SQLite `program_id`, which avoids Supabase RLS insert failures across devices.
-- Scoped local SQLite storage to one database file per authenticated user, so logging into another profile no longer exposes the previous user's local programs on the device.
-- Hardened program cloud deletes so a local program deletion only clears the local delete queue after the remote row is actually gone, and explicit program deletes now attempt cloud sync immediately while keeping failed deletes queued for retry.
 
 ---
 
@@ -47,7 +60,7 @@ All changes to the project are logged here.
 ### Added
 - Branch-based versioning scripts for branch, sync, status, and release workflows.
 ### Changed
-- `CHANGELOG.md` now keeps an `Unreleased` section ahead of versioned release entries.
+- `CHANGELOG.md` now keeps versioned release entries in git history.
 
 ---
 

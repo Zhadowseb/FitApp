@@ -1,6 +1,6 @@
 {
   "name": "programapp",
-  "version": "0.5.4-fix-program-cloud-delete-sync.1",
+  "version": "0.5.5-fix-changelog-release-workflow.1",
   "main": "index.js",
   "scripts": {
     "start": "expo start --dev-client --scheme exp+programapp-dev",
@@ -15,6 +15,7 @@
     "version:status": "node scripts/version.js status",
     "version:sync": "node scripts/version.js sync",
     "release:prepare": "node scripts/version.js release",
+    "release:android": "node scripts/release-android.js",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
     "build-aab:android": "npx eas build -p android --profile production"
   },

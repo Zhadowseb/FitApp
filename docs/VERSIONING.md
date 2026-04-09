@@ -5,7 +5,7 @@
 - Keep app versioning predictable across branches.
 - Keep `package.json` and `app.json` aligned.
 - Reserve build number increments for real releases.
-- Keep `CHANGELOG.md` stable with an `Unreleased` section plus release entries.
+- Keep `CHANGELOG.md` stable with versioned sections, where pending versions use an `Unreleased` tag until they ship.
 - Make versioning mostly automatic from the active branch.
 - Derive prerelease bumps from the committed base version of the current work branch.
 
@@ -45,6 +45,7 @@ npm run version:branch -- patch
 npm run version:branch -- --base-ref master
 npm run version:branch -- minor/example dry-run
 npm run release:prepare -- 0.4.0 dry-run
+npm run release:android -- 0.4.0
 npm run version:sync -- 0.4.0 skip-changelog
 ```
 
@@ -70,7 +71,7 @@ npm run version:sync -- 0.4.0 skip-changelog
 
 - Updates `package.json > version`
 - Updates `app.json > expo.version`
-- Ensures `CHANGELOG.md` contains `## [Unreleased]`
+- Ensures `CHANGELOG.md` contains a section like `## [x.y.z] - Unreleased` for the branch's stable target version
 - Uses committed `HEAD` as the default base ref unless `--base-ref <ref>` is supplied
 - Does not increment `android.versionCode`
 - Does not increment `ios.buildNumber`
@@ -81,7 +82,14 @@ npm run version:sync -- 0.4.0 skip-changelog
 - Updates `app.json > expo.version`
 - Increments `app.json > expo.android.versionCode`
 - Sets `app.json > expo.ios.buildNumber` to the same incremented build number
-- Creates or refreshes the release entry in `CHANGELOG.md`
+- Converts `## [x.y.z] - Unreleased` into a dated release entry in `CHANGELOG.md`
+
+`npm run release:android -- <version>`
+
+- Runs `npm run release:prepare -- <version>`
+- Verifies EAS authentication using the current login session or `EXPO_TOKEN`
+- Starts `eas build -p android --profile production`
+- Optionally runs `expo prebuild` first when called with `--prebuild`
 
 ## Recommended Workflow
 
@@ -90,7 +98,7 @@ npm run version:sync -- 0.4.0 skip-changelog
 3. Use `npm run version:status` whenever you want to verify the current state.
 4. Do the work.
 5. Replace the placeholder text in `CHANGELOG.md` before shipping.
-6. For a stable release branch, run `npm run release:prepare -- x.y.z`.
+6. For a stable release branch, run `npm run release:prepare -- x.y.z` or `npm run release:android -- x.y.z`.
 
 ## Codex Workflow
 

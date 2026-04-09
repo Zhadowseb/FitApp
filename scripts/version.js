@@ -299,7 +299,7 @@ function buildVersioningSummary({ mode, branchName, targetVersion, changelogMode
 
   const changelogContent = fs.existsSync(changelogPath)
     ? fs.readFileSync(changelogPath, "utf8")
-    : "# Changelog\n\nAll changes to the project are logged here.\n";
+    : "# Changelog\n";
   const nextChangelogContent = updateChangelog({
     content: changelogContent,
     changelogMode,
@@ -351,7 +351,11 @@ function printSummary(summary, dryRun) {
   }
 
   if (summary.changelogMode === "unreleased") {
-    console.log(`${prefix}CHANGELOG.md: ensured an [Unreleased] section`);
+    console.log(
+      `${prefix}CHANGELOG.md: ensured version section ${getChangelogSectionVersion(
+        summary.targetVersion
+      )} - Unreleased`
+    );
   } else if (summary.changelogMode === "release") {
     console.log(`${prefix}CHANGELOG.md: prepared release entry ${summary.targetVersion}`);
   } else {
@@ -369,13 +373,24 @@ function printStatus(currentOptions) {
   const changelogContent = fs.existsSync(changelogPath)
     ? fs.readFileSync(changelogPath, "utf8")
     : "";
-  const hasUnreleasedSection = /^## \[Unreleased\]$/m.test(changelogContent);
+  const changelogVersion = branchName
+    ? getChangelogSectionVersion(
+        /^release[/-](\d+\.\d+\.\d+)$/i.test(branchName)
+          ? branchName.match(/^release[/-](\d+\.\d+\.\d+)$/i)[1]
+          : packageVersion
+      )
+    : null;
+  const hasCurrentVersionSection = changelogVersion
+    ? hasVersionSection(changelogContent, changelogVersion)
+    : false;
 
   console.log(`Branch: ${branchName || "(unknown)"}`);
   console.log(`package.json version: ${packageVersion}`);
   console.log(`app.json version: ${appVersion}`);
   console.log(`Versions aligned: ${versionsAligned ? "yes" : "no"}`);
-  console.log(`CHANGELOG.md has [Unreleased]: ${hasUnreleasedSection ? "yes" : "no"}`);
+  console.log(
+    `CHANGELOG.md has current version section: ${hasCurrentVersionSection ? "yes" : "no"}`
+  );
 
   if (!branchName) {
     console.log("Recommended action: create or switch to a work branch, then run npm run version:auto");
@@ -557,60 +572,138 @@ function updateChangelog({ content, changelogMode, targetVersion }) {
   const eol = detectEol(content);
   let nextContent = content.trim().length
     ? content
-    : "# Changelog\n\nAll changes to the project are logged here.\n";
+    : "# Changelog\n";
 
-  nextContent = ensureIntro(nextContent, eol);
-  nextContent = ensureUnreleasedSection(nextContent, eol);
+  nextContent = normalizeChangelogTitle(nextContent, eol);
+  nextContent = removeLegacyIntroParagraph(nextContent, eol);
+  nextContent = removeGlobalUnreleasedSection(nextContent, eol);
 
   if (changelogMode === "release") {
     nextContent = upsertReleaseSection(nextContent, targetVersion, eol);
+  } else if (changelogMode === "unreleased") {
+    nextContent = upsertUnreleasedVersionSection(nextContent, targetVersion, eol);
   }
 
   return ensureTrailingEol(nextContent, eol);
 }
 
-function ensureIntro(content, eol) {
-  if (/^# Changelog/m.test(content)) {
-    return content.replace(
-      /^# Changelog[\s\S]*?(?=^## \[|$)/m,
-      `# Changelog${eol}${eol}All changes to the project are logged here.${eol}${eol}`
-    );
+function normalizeChangelogTitle(content, eol) {
+  if (/^# Changelog$/m.test(content)) {
+    return content.replace(/^# Changelog[\s\r\n]*/m, `# Changelog${eol}${eol}`);
   }
 
-  return `# Changelog${eol}${eol}All changes to the project are logged here.${eol}${eol}${content.trim()}${eol}`;
+  return `# Changelog${eol}${eol}${content.trim()}${eol}`;
 }
 
-function ensureUnreleasedSection(content, eol) {
-  if (/^## \[Unreleased\]$/m.test(content)) {
-    return content;
+function removeLegacyIntroParagraph(content, eol) {
+  const normalized = content.replace(
+    /(?:^|\r?\n)All changes to the project are logged here\.(?=\r?\n|$)/g,
+    ""
+  );
+
+  return normalized.replace(
+    /^# Changelog(?:\r?\n){2,}/,
+    `# Changelog${eol}${eol}`
+  );
+}
+
+function removeGlobalUnreleasedSection(content, eol) {
+  const lines = content.split(/\r?\n/);
+  const nextLines = [];
+  let index = 0;
+
+  while (index < lines.length) {
+    const line = lines[index];
+
+    if (line === "## [Unreleased]") {
+      index += 1;
+
+      while (index < lines.length) {
+        const currentLine = lines[index];
+
+        if (/^## \[/.test(currentLine) || currentLine === "---") {
+          break;
+        }
+
+        index += 1;
+      }
+
+      while (index < lines.length && lines[index] === "---") {
+        index += 1;
+      }
+
+      while (index < lines.length && lines[index].trim() === "") {
+        index += 1;
+      }
+
+      continue;
+    }
+
+    nextLines.push(line);
+    index += 1;
   }
 
-  const unreleasedSection = [
-    "## [Unreleased]",
+  return nextLines.join(eol).trimEnd();
+}
+
+function getChangelogSectionVersion(targetVersion) {
+  const [stablePart] = String(targetVersion).split("-");
+  return normalizeStableVersion(stablePart);
+}
+
+function buildVersionSectionHeader(version, suffix) {
+  return `## [${version}] - ${suffix}`;
+}
+
+function buildVersionSectionRegex(version) {
+  return new RegExp(
+    `^## \\[${escapeRegExp(version)}\\] - .*$`,
+    "m"
+  );
+}
+
+function hasVersionSection(content, version) {
+  return buildVersionSectionRegex(version).test(content);
+}
+
+function upsertUnreleasedVersionSection(content, targetVersion, eol) {
+  const changelogVersion = getChangelogSectionVersion(targetVersion);
+  const sectionHeader = buildVersionSectionHeader(changelogVersion, "Unreleased");
+  const sectionContent = [
+    sectionHeader,
     "### Changed",
-    "- Describe upcoming changes here.",
+    "- Describe pending changes here.",
     "",
     "---",
     "",
   ].join(eol);
+  const existingHeaderPattern = buildVersionSectionRegex(changelogVersion);
 
-  const firstReleaseIndex = content.search(/^## \[(?!Unreleased\]).+\]$/m);
+  if (existingHeaderPattern.test(content)) {
+    return content.replace(existingHeaderPattern, sectionHeader);
+  }
 
-  if (firstReleaseIndex >= 0) {
+  const firstVersionIndex = content.search(/^## \[.+\] - .+$/m);
+
+  if (firstVersionIndex >= 0) {
     return (
-      content.slice(0, firstReleaseIndex).trimEnd() +
+      content.slice(0, firstVersionIndex).trimEnd() +
       eol +
       eol +
-      unreleasedSection +
-      content.slice(firstReleaseIndex).trimStart()
+      sectionContent +
+      content.slice(firstVersionIndex).trimStart()
     );
   }
 
-  return `${content.trimEnd()}${eol}${eol}${unreleasedSection}`;
+  return `${content.trimEnd()}${eol}${eol}${sectionContent}`;
 }
 
 function upsertReleaseSection(content, targetVersion, eol) {
-  const releaseHeader = `## [${targetVersion}] - ${formatLocalDate(new Date())}`;
+  const changelogVersion = getChangelogSectionVersion(targetVersion);
+  const releaseHeader = buildVersionSectionHeader(
+    changelogVersion,
+    formatLocalDate(new Date())
+  );
   const releaseSection = [
     releaseHeader,
     "### Changed",
@@ -619,16 +712,13 @@ function upsertReleaseSection(content, targetVersion, eol) {
     "---",
     "",
   ].join(eol);
-  const existingHeaderPattern = new RegExp(
-    `^## \\[${escapeRegExp(targetVersion)}\\] - .*$`,
-    "m"
-  );
+  const existingHeaderPattern = buildVersionSectionRegex(changelogVersion);
 
   if (existingHeaderPattern.test(content)) {
     return content.replace(existingHeaderPattern, releaseHeader);
   }
 
-  const firstReleaseIndex = content.search(/^## \[(?!Unreleased\]).+\]$/m);
+  const firstReleaseIndex = content.search(/^## \[.+\] - .+$/m);
 
   if (firstReleaseIndex >= 0) {
     return (

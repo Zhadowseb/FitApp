@@ -194,6 +194,7 @@ npm run web
 npm run version:status
 npm run version:auto
 npm run release:prepare -- 0.4.0
+npm run release:android -- 0.4.0
 ```
 
 ---
@@ -260,6 +261,10 @@ Examples:
   - `app.json > expo.android.versionCode`
   - `app.json > expo.ios.buildNumber`
   - the release section in `CHANGELOG.md`
+
+- `npm run release:android -- 0.4.0`
+  Runs release preparation and starts an Android EAS production build using the current EAS login or `EXPO_TOKEN`.
+  Add `--prebuild` if you explicitly want to run `expo prebuild` before the EAS build.
 
 ### Recommended routine
 

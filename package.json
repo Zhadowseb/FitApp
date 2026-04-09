@@ -1,6 +1,6 @@
 {
   "name": "programapp",
-  "version": "0.5.3-fix-per-user-local-database.1",
+  "version": "0.5.4-fix-program-cloud-delete-sync.1",
   "main": "index.js",
   "scripts": {
     "start": "expo start --dev-client --scheme exp+programapp-dev",

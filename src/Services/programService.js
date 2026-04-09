@@ -197,26 +197,65 @@ async function getAuthenticatedUserId() {
   return data.session?.user?.id ?? null;
 }
 
+async function deleteCloudRowForUserOrThrow({
+  tableName,
+  rowId,
+  userId,
+  entityLabel,
+}) {
+  const { data: deletedRow, error: deleteError } = await supabase
+    .from(tableName)
+    .delete()
+    .eq("id", rowId)
+    .eq("user_id", userId)
+    .select("id")
+    .maybeSingle();
+
+  if (deleteError) {
+    throw deleteError;
+  }
+
+  if (deletedRow?.id !== null && deletedRow?.id !== undefined) {
+    return true;
+  }
+
+  const { data: existingRow, error: selectError } = await supabase
+    .from(tableName)
+    .select("id")
+    .eq("id", rowId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (selectError) {
+    throw selectError;
+  }
+
+  if (existingRow?.id !== null && existingRow?.id !== undefined) {
+    throw new Error(
+      `${entityLabel} cloud delete did not remove the remote row. The delete will stay queued and retry on the next sync.`
+    );
+  }
+
+  return false;
+}
+
 async function processQueuedProgramDeletes(db, userId) {
   const queuedDeletes = await programRepository.getQueuedProgramDeletes(db);
   let deletedCount = 0;
 
   for (const queuedDelete of queuedDeletes) {
-    const { error } = await supabase
-      .from(PROGRAM_CLOUD_TABLE)
-      .delete()
-      .eq("id", queuedDelete.cloud_program_id)
-      .eq("user_id", userId);
-
-    if (error) {
-      throw error;
-    }
+    const wasDeletedNow = await deleteCloudRowForUserOrThrow({
+      tableName: PROGRAM_CLOUD_TABLE,
+      rowId: queuedDelete.cloud_program_id,
+      userId,
+      entityLabel: "Program",
+    });
 
     await programRepository.deleteQueuedProgramDelete(
       db,
       queuedDelete.program_sync_delete_id
     );
-    deletedCount += 1;
+    deletedCount += wasDeletedNow ? 1 : 0;
   }
 
   return deletedCount;
@@ -447,21 +486,18 @@ async function processQueuedMesocycleDeletes(db, userId) {
   let deletedCount = 0;
 
   for (const queuedDelete of queuedDeletes) {
-    const { error } = await supabase
-      .from(MESOCYCLE_CLOUD_TABLE)
-      .delete()
-      .eq("id", queuedDelete.cloud_mesocycle_id)
-      .eq("user_id", userId);
-
-    if (error) {
-      throw error;
-    }
+    const wasDeletedNow = await deleteCloudRowForUserOrThrow({
+      tableName: MESOCYCLE_CLOUD_TABLE,
+      rowId: queuedDelete.cloud_mesocycle_id,
+      userId,
+      entityLabel: "Mesocycle",
+    });
 
     await programRepository.deleteQueuedMesocycleDelete(
       db,
       queuedDelete.mesocycle_sync_delete_id
     );
-    deletedCount += 1;
+    deletedCount += wasDeletedNow ? 1 : 0;
   }
 
   return deletedCount;
@@ -1192,7 +1228,14 @@ export async function deleteProgram(db, programId) {
     await programRepository.deleteProgramById(db, programId);
   });
 
-  syncProgramsInBackground(db);
+  try {
+    await syncProgramsWithCloud(db);
+  } catch (error) {
+    console.error(
+      "Program cloud delete sync failed after local delete; the delete remains queued for retry:",
+      error
+    );
+  }
 }
 
 export async function createMesocycle(

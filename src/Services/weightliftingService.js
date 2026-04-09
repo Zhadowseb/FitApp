@@ -90,24 +90,26 @@ function normalizeExerciseCatalogEntries(entries) {
   const exerciseMap = new Map();
 
   for (const entry of entries) {
+    const rawName = entry?.name ?? entry?.exercise_name;
     const normalizedName =
-      typeof entry?.exercise_name === "string" ? entry.exercise_name.trim() : "";
+      typeof rawName === "string" ? rawName.trim() : "";
+    const normalizedNickname =
+      typeof entry?.nickname === "string" && entry.nickname.trim() !== ""
+        ? entry.nickname.trim()
+        : null;
 
     if (!normalizedName) {
       continue;
     }
 
     exerciseMap.set(normalizedName.toLocaleLowerCase(), {
-      exercise_name: normalizedName,
-      primary_muscle_group_count:
-        Number(entry?.primary_muscle_group_count) || 0,
-      secondary_muscle_group_count:
-        Number(entry?.secondary_muscle_group_count) || 0,
+      name: normalizedName,
+      nickname: normalizedNickname,
     });
   }
 
   return [...exerciseMap.values()].sort((left, right) =>
-    left.exercise_name.localeCompare(right.exercise_name, undefined, {
+    left.name.localeCompare(right.name, undefined, {
       sensitivity: "base",
     })
   );
@@ -120,11 +122,8 @@ function areExerciseCatalogEntriesEqual(left, right) {
 
   for (let index = 0; index < left.length; index += 1) {
     if (
-      left[index].exercise_name !== right[index].exercise_name ||
-      left[index].primary_muscle_group_count !==
-        right[index].primary_muscle_group_count ||
-      left[index].secondary_muscle_group_count !==
-        right[index].secondary_muscle_group_count
+      left[index].name !== right[index].name ||
+      left[index].nickname !== right[index].nickname
     ) {
       return false;
     }
@@ -171,7 +170,11 @@ function buildExerciseActivationCounts(exercises, activations) {
       const counts = activationMap.get(exercise.id);
 
       return {
-        exercise_name: exercise.name,
+        name: exercise.name,
+        nickname:
+          typeof exercise.nickname === "string" && exercise.nickname.trim() !== ""
+            ? exercise.nickname.trim()
+            : null,
         primary_muscle_group_count: counts?.primary.size ?? 0,
         secondary_muscle_group_count: counts?.secondary.size ?? 0,
       };
@@ -384,6 +387,15 @@ async function getSelectedProgramBestExerciseNames(db, programId) {
   );
 }
 
+function mapExerciseCatalogForDisplay(entries) {
+  return entries.map((entry) => ({
+    exercise_name: entry.name,
+    nickname: entry.nickname,
+    primary_muscle_group_count: Number(entry.primary_muscle_group_count) || 0,
+    secondary_muscle_group_count: Number(entry.secondary_muscle_group_count) || 0,
+  }));
+}
+
 export async function getExerciseStorage(db) {
   return weightliftingRepository.getExerciseStorage(db);
 }
@@ -392,38 +404,88 @@ export async function createExerciseStorage(db, exerciseName) {
   await weightliftingRepository.createExerciseStorage(db, exerciseName);
 }
 
+export async function getExerciseLibraryEntries(db) {
+  const localExerciseRows = await weightliftingRepository.getExerciseStorage(db);
+  const localExercises = normalizeExerciseCatalogEntries(localExerciseRows);
+
+  if (localExercises.length === 0) {
+    return [];
+  }
+
+  try {
+    const { data: exerciseRows, error: exerciseError } = await supabase
+      .from(EXERCISE_LIBRARY_TABLE)
+      .select(
+        `${EXERCISE_LIBRARY_ID_COLUMN}, ${EXERCISE_LIBRARY_NAME_COLUMN}, nickname`
+      )
+      .in(
+        EXERCISE_LIBRARY_NAME_COLUMN,
+        localExercises.map((exercise) => exercise.name)
+      )
+      .order(EXERCISE_LIBRARY_NAME_COLUMN, { ascending: true });
+
+    if (exerciseError) {
+      throw exerciseError;
+    }
+
+    const exerciseIds = (exerciseRows ?? [])
+      .map((row) => row?.[EXERCISE_LIBRARY_ID_COLUMN])
+      .filter((id) => id !== null && id !== undefined);
+    let activationRows = [];
+
+    if (exerciseIds.length > 0) {
+      const { data, error } = await supabase
+        .from(MUSCLE_ACTIVATION_TABLE)
+        .select("exercise_id, muscle_id, activation_level")
+        .in("exercise_id", exerciseIds);
+
+      if (error) {
+        throw error;
+      }
+
+      activationRows = data ?? [];
+    }
+
+    const cloudExercisesWithCounts = buildExerciseActivationCounts(
+      exerciseRows ?? [],
+      activationRows
+    );
+    const cloudExerciseMap = new Map(
+      cloudExercisesWithCounts.map((exercise) => [
+        exercise.name.toLocaleLowerCase(),
+        exercise,
+      ])
+    );
+
+    return mapExerciseCatalogForDisplay(
+      localExercises.map((exercise) => ({
+        ...exercise,
+        primary_muscle_group_count:
+          cloudExerciseMap.get(exercise.name.toLocaleLowerCase())
+            ?.primary_muscle_group_count ?? 0,
+        secondary_muscle_group_count:
+          cloudExerciseMap.get(exercise.name.toLocaleLowerCase())
+            ?.secondary_muscle_group_count ?? 0,
+      }))
+    );
+  } catch (_error) {
+    return mapExerciseCatalogForDisplay(localExercises);
+  }
+}
+
 export async function syncExerciseLibraryFromCloud(db) {
   const { data: exerciseRows, error: exerciseError } = await supabase
     .from(EXERCISE_LIBRARY_TABLE)
-    .select(`${EXERCISE_LIBRARY_ID_COLUMN}, ${EXERCISE_LIBRARY_NAME_COLUMN}`)
+    .select(
+      `${EXERCISE_LIBRARY_ID_COLUMN}, ${EXERCISE_LIBRARY_NAME_COLUMN}, nickname`
+    )
     .order(EXERCISE_LIBRARY_NAME_COLUMN, { ascending: true });
 
   if (exerciseError) {
     throw exerciseError;
   }
 
-  const exerciseIds = (exerciseRows ?? [])
-    .map((row) => row?.[EXERCISE_LIBRARY_ID_COLUMN])
-    .filter((id) => id !== null && id !== undefined);
-  let activationRows = [];
-
-  if (exerciseIds.length > 0) {
-    const { data, error } = await supabase
-      .from(MUSCLE_ACTIVATION_TABLE)
-      .select("exercise_id, muscle_id, activation_level")
-      .in("exercise_id", exerciseIds);
-
-    if (error) {
-      throw error;
-    }
-
-    activationRows = data ?? [];
-  }
-
-  const cloudExercises = buildExerciseActivationCounts(
-    exerciseRows ?? [],
-    activationRows
-  );
+  const cloudExercises = normalizeExerciseCatalogEntries(exerciseRows ?? []);
   const localExerciseRows = await weightliftingRepository.getExerciseStorage(db);
   const localExercises = normalizeExerciseCatalogEntries(localExerciseRows);
 

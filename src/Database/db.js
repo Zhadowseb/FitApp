@@ -36,15 +36,20 @@ async function getTableColumns(db, tableName) {
   return db.getAllAsync(`PRAGMA table_info(${tableName});`);
 }
 
+function hasColumn(columns, columnName) {
+  return columns.some((column) => column.name === columnName);
+}
+
 function isExerciseCatalogTable(columns) {
   return (
-    columns.some((column) => column.name === "exercise_name") &&
-    !columns.some((column) => column.name === "workout_id")
+    (hasColumn(columns, "exercise_name") || hasColumn(columns, "name")) &&
+    !hasColumn(columns, "workout_id") &&
+    !hasColumn(columns, "workout_type_instance_id")
   );
 }
 
 function isExerciseInstanceTable(columns) {
-  return columns.some((column) => column.name === "workout_id");
+  return hasColumn(columns, "workout_id") || hasColumn(columns, "workout_type_instance_id");
 }
 
 async function migrateWeightliftingTableNames(db) {
@@ -101,6 +106,160 @@ async function migrateWorkoutTableName(db) {
         ALTER TABLE Workout RENAME TO Workout_Type_Instance;
       `);
     }
+
+    await db.execAsync("COMMIT;");
+  } catch (error) {
+    await db.execAsync("ROLLBACK;");
+    throw error;
+  }
+}
+
+async function migrateExerciseCatalogSchema(db) {
+  const exerciseColumns = await getTableColumns(db, "Exercise");
+
+  if (!exerciseColumns.length) {
+    return;
+  }
+
+  const hasLegacyNameColumn = hasColumn(exerciseColumns, "exercise_name");
+  const hasNameColumn = hasColumn(exerciseColumns, "name");
+  const hasNicknameColumn = hasColumn(exerciseColumns, "nickname");
+
+  if (
+    !hasLegacyNameColumn &&
+    hasNameColumn &&
+    hasNicknameColumn &&
+    !hasColumn(exerciseColumns, "primary_muscle_group_count") &&
+    !hasColumn(exerciseColumns, "secondary_muscle_group_count")
+  ) {
+    return;
+  }
+
+  const nameColumn = hasNameColumn ? "name" : hasLegacyNameColumn ? "exercise_name" : null;
+
+  if (!nameColumn) {
+    return;
+  }
+
+  await db.execAsync("BEGIN IMMEDIATE;");
+
+  try {
+    await db.execAsync(`
+      DROP TABLE IF EXISTS Exercise_next;
+
+      CREATE TABLE Exercise_next (
+        exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        nickname TEXT
+      );
+
+      INSERT OR IGNORE INTO Exercise_next (
+        exercise_id,
+        name,
+        nickname
+      )
+      SELECT
+        exercise_id,
+        ${nameColumn},
+        ${hasNicknameColumn ? "nickname" : "NULL"}
+      FROM Exercise
+      WHERE TRIM(COALESCE(${nameColumn}, '')) <> ''
+      ORDER BY exercise_id ASC;
+
+      DROP TABLE Exercise;
+      ALTER TABLE Exercise_next RENAME TO Exercise;
+    `);
+
+    await db.execAsync("COMMIT;");
+  } catch (error) {
+    await db.execAsync("ROLLBACK;");
+    throw error;
+  }
+}
+
+async function migrateExerciseInstanceSchema(db) {
+  const exerciseInstanceColumns = await getTableColumns(db, "Exercise_Instance");
+
+  if (!exerciseInstanceColumns.length) {
+    return;
+  }
+
+  const hasLegacyIdColumn = hasColumn(exerciseInstanceColumns, "exercise_id");
+  const hasNewIdColumn = hasColumn(
+    exerciseInstanceColumns,
+    "exercise_instance_id"
+  );
+  const hasLegacyWorkoutColumn = hasColumn(
+    exerciseInstanceColumns,
+    "workout_id"
+  );
+  const hasNewWorkoutColumn = hasColumn(
+    exerciseInstanceColumns,
+    "workout_type_instance_id"
+  );
+
+  if (
+    !hasLegacyIdColumn &&
+    hasNewIdColumn &&
+    !hasLegacyWorkoutColumn &&
+    hasNewWorkoutColumn
+  ) {
+    return;
+  }
+
+  const idColumn = hasNewIdColumn
+    ? "exercise_instance_id"
+    : hasLegacyIdColumn
+      ? "exercise_id"
+      : null;
+  const workoutColumn = hasNewWorkoutColumn
+    ? "workout_type_instance_id"
+    : hasLegacyWorkoutColumn
+      ? "workout_id"
+      : null;
+
+  if (!idColumn || !workoutColumn) {
+    return;
+  }
+
+  await db.execAsync("BEGIN IMMEDIATE;");
+
+  try {
+    await db.execAsync(`
+      DROP TABLE IF EXISTS Exercise_Instance_next;
+
+      CREATE TABLE Exercise_Instance_next (
+        exercise_instance_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        workout_type_instance_id INTEGER NOT NULL,
+        exercise_name TEXT NOT NULL,
+        sets INTEGER NOT NULL DEFAULT 0,
+        visible_columns TEXT,
+        note TEXT,
+        done INTEGER NOT NULL DEFAULT 0
+      );
+
+      INSERT INTO Exercise_Instance_next (
+        exercise_instance_id,
+        workout_type_instance_id,
+        exercise_name,
+        sets,
+        visible_columns,
+        note,
+        done
+      )
+      SELECT
+        ${idColumn},
+        ${workoutColumn},
+        exercise_name,
+        COALESCE(sets, 0),
+        ${hasColumn(exerciseInstanceColumns, "visible_columns") ? "visible_columns" : "NULL"},
+        ${hasColumn(exerciseInstanceColumns, "note") ? "note" : "NULL"},
+        ${hasColumn(exerciseInstanceColumns, "done") ? "COALESCE(done, 0)" : "0"}
+      FROM Exercise_Instance;
+
+      DROP TABLE Exercise_Instance;
+      ALTER TABLE Exercise_Instance_next RENAME TO Exercise_Instance;
+    `);
 
     await db.execAsync("COMMIT;");
   } catch (error) {
@@ -234,7 +393,7 @@ async function repairStrengthTrainingState(db) {
       NOT EXISTS (
         SELECT 1
         FROM Sets
-        WHERE Sets.exercise_id = Exercise_Instance.exercise_id
+        WHERE Sets.exercise_id = Exercise_Instance.exercise_instance_id
           AND Sets.done = 0
       )
     );
@@ -250,7 +409,7 @@ async function repairStrengthTrainingState(db) {
         ELSE NOT EXISTS (
           SELECT 1
           FROM Exercise_Instance
-          WHERE Exercise_Instance.workout_id = Workout_Type_Instance.workout_id
+          WHERE Exercise_Instance.workout_type_instance_id = Workout_Type_Instance.workout_id
             AND Exercise_Instance.done = 0
         )
       END
@@ -258,7 +417,7 @@ async function repairStrengthTrainingState(db) {
     WHERE EXISTS (
       SELECT 1
       FROM Exercise_Instance
-      WHERE Exercise_Instance.workout_id = Workout_Type_Instance.workout_id
+      WHERE Exercise_Instance.workout_type_instance_id = Workout_Type_Instance.workout_id
     );
   `);
 }
@@ -286,6 +445,8 @@ async function repairRunSetState(db) {
 export async function initializeDatabase(db) {
   await migrateWeightliftingTableNames(db);
   await migrateWorkoutTableName(db);
+  await migrateExerciseCatalogSchema(db);
+  await migrateExerciseInstanceSchema(db);
 
   await db.execAsync(`
     ${programSchemaSql}
@@ -335,12 +496,11 @@ export async function initializeDatabase(db) {
   await backfillWorkoutTypeInstances(db);
   await initializeWorkoutTypes(db);
 
-  await ensureTableColumns(db, "Exercise", [
-    ["primary_muscle_group_count", "INTEGER NOT NULL DEFAULT 0"],
-    ["secondary_muscle_group_count", "INTEGER NOT NULL DEFAULT 0"],
-  ]);
+  await ensureTableColumns(db, "Exercise", [["nickname", "TEXT"]]);
 
   await ensureTableColumns(db, "Exercise_Instance", [
+    ["exercise_name", "TEXT NOT NULL DEFAULT ''"],
+    ["sets", "INTEGER NOT NULL DEFAULT 0"],
     ["visible_columns", "TEXT"],
     ["note", "TEXT"],
     ["done", "INTEGER NOT NULL DEFAULT 0"],
@@ -375,7 +535,7 @@ export async function initializeDatabase(db) {
     SET sets = (
       SELECT COUNT(*)
       FROM Sets
-      WHERE Sets.exercise_id = Exercise_Instance.exercise_id
+      WHERE Sets.exercise_id = Exercise_Instance.exercise_instance_id
     );
   `);
 

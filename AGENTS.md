@@ -32,7 +32,7 @@ Keep the root guide short and place domain-specific rules in closer `AGENTS.md` 
 
 - After creating or switching to a work branch, use `npm run version:auto` before making further version edits so the branch version is derived from its base commit.
 - Use `npm run version:status` whenever you need to verify the current branch/version state.
-- Prefer branch names like `feat/...`, `fix/...`, or `release/x.y.z`.
+- Prefer branch names like `major/...`, `minor/...`, `fix/...`, or `release/x.y.z`.
 - Use `npm run release:prepare -- <version>` for stable releases.
 - See `docs/VERSIONING.md` for the full workflow and branch rules.
 

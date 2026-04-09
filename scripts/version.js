@@ -18,8 +18,8 @@ if (!command || !["auto", "branch", "release", "status", "sync"].includes(comman
       "  node scripts/version.js auto\n" +
       "  node scripts/version.js auto --dry-run\n" +
       "  node scripts/version.js branch\n" +
-      "  node scripts/version.js branch --branch feat/new-ui\n" +
-      "  node scripts/version.js branch feat/new-ui dry-run\n" +
+      "  node scripts/version.js branch --branch major/new-ui\n" +
+      "  node scripts/version.js branch minor/new-ui dry-run\n" +
       "  node scripts/version.js branch --bump minor\n" +
       "  node scripts/version.js status\n" +
       "  node scripts/version.js release 0.4.0\n" +
@@ -242,7 +242,7 @@ function prepareBranchVersioning(currentOptions) {
 
   if (!inferredBump) {
     console.error(
-      `Could not infer a version bump from "${branchName}". Use --bump major|minor|patch or rename the branch to feat/*, fix/*, or release/x.y.z`
+      `Could not infer a version bump from "${branchName}". Use --bump major|minor|patch or rename the branch to major/*, minor/*, fix/*, breaking/*, or release/x.y.z`
     );
     process.exit(1);
   }
@@ -407,7 +407,7 @@ function printStatus(currentOptions) {
 
   if (!inferredBump) {
     console.log(
-      "Recommended action: rename the branch to feat/*, fix/*, or release/x.y.z, or run npm run version:branch -- <branch-name> <major|minor|patch>"
+      "Recommended action: rename the branch to major/*, minor/*, fix/*, breaking/*, or release/x.y.z, or run npm run version:branch -- <branch-name> <major|minor|patch>"
     );
     return;
   }
@@ -458,15 +458,15 @@ function resolveGitDir() {
 }
 
 function inferBumpFromBranch(branchName) {
-  if (/^(feat|feature)([/-]|$)/i.test(branchName)) {
-    return "minor";
-  }
-
-  if (/^(fix|bugfix|hotfix|quickfix)([/-]|$)/i.test(branchName)) {
+  if (/^(fix|bugfix|hotfix|quickfix|minor|minor-feature|minorfeature)([/-]|$)/i.test(branchName)) {
     return "patch";
   }
 
-  if (/^(major|breaking)([/-]|$)/i.test(branchName)) {
+  if (/^(feat|feature|major|major-feature|majorfeature)([/-]|$)/i.test(branchName)) {
+    return "minor";
+  }
+
+  if (/^(breaking)([/-]|$)/i.test(branchName)) {
     return "major";
   }
 

@@ -205,7 +205,8 @@ npm run release:prepare -- 0.4.0
 - No code changes should be made directly on `master` or `main`.
 - If a new code task starts while the repo is on `master` or `main`, the next step is to create a work branch first.
 - Recommended branch prefixes:
-  - `feat/...` for new features
+  - `major/...` for larger features
+  - `minor/...` for smaller features
   - `fix/...` for bug fixes
   - `release/x.y.z` for stable release preparation
 
@@ -236,15 +237,18 @@ Versioning is branch-driven so you do not have to manage it manually for normal 
 
 Branch behavior:
 
-- `feat/...` or `feature/...` -> next `minor` prerelease
+- `minor/...` or `minor-feature/...` -> next `patch` prerelease
 - `fix/...`, `bugfix/...`, `hotfix/...`, `quickfix/...` -> next `patch` prerelease
-- `major/...` or `breaking/...` -> next `major` prerelease
+- `major/...` or `major-feature/...` -> next `minor` prerelease
+- `feat/...` or `feature/...` -> next `minor` prerelease as a supported alias for `major/...`
+- `breaking/...` -> next `major` prerelease
 - `release/x.y.z` -> exact stable release version
 
 Examples:
 
-- `feat/program-calendar` from `0.3.1` becomes `0.4.0-feat-program-calendar.1`
-- `fix/set-counter` from `0.3.1` becomes `0.3.2-fix-set-counter.1`
+- `major/program-calendar` from `0.3.1` becomes `0.4.0-major-program-calendar.1`
+- `minor/program-sync` from `0.5.0` becomes `0.5.1-minor-program-sync.1`
+- `fix/set-counter` from `0.5.1` becomes `0.5.2-fix-set-counter.1`
 - `release/0.4.0` becomes `0.4.0`
 
 ### Stable releases

@@ -17,10 +17,10 @@ export const weightliftingSchemaSql = `
       done INTEGER NOT NULL DEFAULT 0
   );
 
-  CREATE TABLE IF NOT EXISTS Sets (
+  CREATE TABLE IF NOT EXISTS "Set" (
       sets_id INTEGER PRIMARY KEY AUTOINCREMENT,
       set_number INTEGER NOT NULL,
-      exercise_id INTEGER NOT NULL,
+      exercise_instance_id INTEGER NOT NULL,
       date TEXT,
 
       personal_record INTEGER NOT NULL DEFAULT 0,

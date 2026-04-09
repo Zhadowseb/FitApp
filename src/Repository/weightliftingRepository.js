@@ -265,8 +265,8 @@ export async function getEstimatedWeightBySetId(db, setId) {
             ELSE 0
           END
         ) AS adjusted_estimated_weight
-     FROM Sets s
-     JOIN Exercise_Instance e ON e.exercise_instance_id = s.exercise_id
+     FROM "Set" s
+     JOIN Exercise_Instance e ON e.exercise_instance_id = s.exercise_instance_id
      JOIN Workout_Type_Instance w ON w.workout_id = e.workout_type_instance_id
      JOIN Day d ON d.day_id = w.day_id
      JOIN Microcycle mc ON mc.microcycle_id = d.microcycle_id
@@ -285,8 +285,8 @@ export async function getEstimatedWeightBySetId(db, setId) {
 export async function getTotalPlannedSetsByWorkout(db, workoutId) {
   return db.getFirstAsync(
     `SELECT COUNT(*) AS count
-     FROM Sets s
-     JOIN Exercise_Instance e ON e.exercise_instance_id = s.exercise_id
+     FROM "Set" s
+     JOIN Exercise_Instance e ON e.exercise_instance_id = s.exercise_instance_id
      WHERE e.workout_type_instance_id = ?;`,
     [workoutId]
   );
@@ -295,8 +295,8 @@ export async function getTotalPlannedSetsByWorkout(db, workoutId) {
 export async function getDoneSetCountByWorkout(db, workoutId) {
   return db.getFirstAsync(
     `SELECT COUNT(*) AS done_sets
-     FROM Sets s
-     JOIN Exercise_Instance e ON e.exercise_instance_id = s.exercise_id
+     FROM "Set" s
+     JOIN Exercise_Instance e ON e.exercise_instance_id = s.exercise_instance_id
      WHERE e.workout_type_instance_id = ?
        AND s.done = 1;`,
     [workoutId]
@@ -343,8 +343,8 @@ export async function getExerciseSummariesByWorkout(db, workoutId) {
 export async function getSetsByWorkout(db, workoutId) {
   return db.getAllAsync(
     `SELECT s.*
-     FROM Sets s
-     JOIN Exercise_Instance e ON e.exercise_instance_id = s.exercise_id
+     FROM "Set" s
+     JOIN Exercise_Instance e ON e.exercise_instance_id = s.exercise_instance_id
      WHERE e.workout_type_instance_id = ?;`,
     [workoutId]
   );
@@ -401,8 +401,8 @@ export async function getWorkoutIdByExercise(db, exerciseId) {
 
 export async function deleteSetsByExercise(db, exerciseId) {
   await db.runAsync(
-    `DELETE FROM Sets
-     WHERE exercise_id = ?;`,
+    `DELETE FROM "Set"
+     WHERE exercise_instance_id = ?;`,
     [exerciseId]
   );
 }
@@ -418,8 +418,8 @@ export async function deleteExerciseById(db, exerciseId) {
 export async function countSetsByExercise(db, exerciseId) {
   return db.getFirstAsync(
     `SELECT COUNT(*) AS count
-     FROM Sets
-     WHERE exercise_id = ?;`,
+     FROM "Set"
+     WHERE exercise_instance_id = ?;`,
     [exerciseId]
   );
 }
@@ -443,9 +443,9 @@ export async function createSet(
   }
 ) {
   return db.runAsync(
-    `INSERT INTO Sets (
+    `INSERT INTO "Set" (
       set_number,
-      exercise_id,
+      exercise_instance_id,
       date,
       personal_record,
       pause,
@@ -481,8 +481,8 @@ export async function updateExerciseSetCount(db, exerciseId) {
     `UPDATE Exercise_Instance
      SET sets = (
        SELECT COUNT(*)
-       FROM Sets
-       WHERE Sets.exercise_id = Exercise_Instance.exercise_instance_id
+       FROM "Set"
+       WHERE "Set".exercise_instance_id = Exercise_Instance.exercise_instance_id
      )
      WHERE exercise_instance_id = ?;`,
     [exerciseId]
@@ -495,9 +495,9 @@ export async function updateExerciseDoneFromSets(db, exerciseId) {
      SET done = (
        NOT EXISTS (
          SELECT 1
-         FROM Sets
-         WHERE Sets.exercise_id = Exercise_Instance.exercise_instance_id
-           AND Sets.done = 0
+         FROM "Set"
+         WHERE "Set".exercise_instance_id = Exercise_Instance.exercise_instance_id
+           AND "Set".done = 0
        )
      )
      WHERE exercise_instance_id = ?;`,
@@ -528,7 +528,7 @@ export async function updateExerciseNote(db, { exerciseId, note }) {
 
 export async function updateSetDone(db, { setId, done }) {
   await db.runAsync(
-    `UPDATE Sets
+    `UPDATE "Set"
      SET done = ?
      WHERE sets_id = ?;`,
     [done ? 1 : 0, setId]
@@ -541,14 +541,14 @@ export async function updateExerciseDoneBySet(db, setId) {
      SET done = (
        NOT EXISTS (
          SELECT 1
-         FROM Sets
-         WHERE Sets.exercise_id = Exercise_Instance.exercise_instance_id
-           AND Sets.done = 0
+         FROM "Set"
+         WHERE "Set".exercise_instance_id = Exercise_Instance.exercise_instance_id
+           AND "Set".done = 0
        )
      )
      WHERE exercise_instance_id = (
-       SELECT exercise_id
-       FROM Sets
+       SELECT exercise_instance_id
+       FROM "Set"
        WHERE sets_id = ?
      );`,
     [setId]
@@ -573,9 +573,9 @@ export async function updateWorkoutDoneFromExercises(db, workoutId) {
 
 export async function getExerciseAndWorkoutBySetId(db, setId) {
   return db.getFirstAsync(
-    `SELECT s.exercise_id, e.workout_type_instance_id AS workout_id
-     FROM Sets s
-     JOIN Exercise_Instance e ON e.exercise_instance_id = s.exercise_id
+    `SELECT s.exercise_instance_id, e.workout_type_instance_id AS workout_id
+     FROM "Set" s
+     JOIN Exercise_Instance e ON e.exercise_instance_id = s.exercise_instance_id
      WHERE s.sets_id = ?;`,
     [setId]
   );
@@ -583,7 +583,7 @@ export async function getExerciseAndWorkoutBySetId(db, setId) {
 
 export async function deleteSetById(db, setId) {
   await db.runAsync(
-    `DELETE FROM Sets
+    `DELETE FROM "Set"
      WHERE sets_id = ?;`,
     [setId]
   );
@@ -592,8 +592,8 @@ export async function deleteSetById(db, setId) {
 export async function getSetIdsByExercise(db, exerciseId) {
   return db.getAllAsync(
     `SELECT sets_id
-     FROM Sets
-     WHERE exercise_id = ?
+     FROM "Set"
+     WHERE exercise_instance_id = ?
      ORDER BY set_number ASC, sets_id ASC;`,
     [exerciseId]
   );
@@ -601,7 +601,7 @@ export async function getSetIdsByExercise(db, exerciseId) {
 
 export async function updateSetNumber(db, { setId, setNumber }) {
   await db.runAsync(
-    `UPDATE Sets
+    `UPDATE "Set"
      SET set_number = ?
      WHERE sets_id = ?;`,
     [setNumber, setId]
@@ -610,7 +610,7 @@ export async function updateSetNumber(db, { setId, setNumber }) {
 
 export async function updateSetField(db, { field, value, setId }) {
   await db.runAsync(
-    `UPDATE Sets
+    `UPDATE "Set"
      SET ${field} = ?
      WHERE sets_id = ?;`,
     [value, setId]
@@ -619,9 +619,9 @@ export async function updateSetField(db, { field, value, setId }) {
 
 export async function getExerciseSets(db, exerciseId) {
   return db.getAllAsync(
-    `SELECT set_number, pause, rpe, weight, rm_percentage, reps, done, failed, amrap, note
-     FROM Sets
-     WHERE exercise_id = ?;`,
+    `SELECT set_number, exercise_instance_id, pause, rpe, weight, rm_percentage, reps, done, failed, amrap, note
+     FROM "Set"
+     WHERE exercise_instance_id = ?;`,
     [exerciseId]
   );
 }
@@ -629,8 +629,8 @@ export async function getExerciseSets(db, exerciseId) {
 export async function getExerciseSetCount(db, exerciseId) {
   return db.getFirstAsync(
     `SELECT COUNT(*) AS count
-     FROM Sets
-     WHERE exercise_id = ?;`,
+     FROM "Set"
+     WHERE exercise_instance_id = ?;`,
     [exerciseId]
   );
 }
@@ -652,7 +652,7 @@ export async function updateSetByExerciseAndNumber(
   }
 ) {
   await db.runAsync(
-    `UPDATE Sets
+    `UPDATE "Set"
      SET pause = ?,
          rpe = ?,
          weight = ?,
@@ -662,7 +662,7 @@ export async function updateSetByExerciseAndNumber(
          failed = ?,
          amrap = ?,
          note = ?
-     WHERE exercise_id = ?
+     WHERE exercise_instance_id = ?
        AND set_number = ?;`,
     [
       pause,
@@ -691,8 +691,8 @@ export async function updateExerciseDone(db, { exerciseId, done }) {
 
 export async function deleteSetsByWorkout(db, workoutId) {
   await db.runAsync(
-    `DELETE FROM Sets
-     WHERE exercise_id IN (
+    `DELETE FROM "Set"
+     WHERE exercise_instance_id IN (
        SELECT exercise_instance_id
        FROM Exercise_Instance
        WHERE workout_type_instance_id = ?
@@ -712,8 +712,8 @@ export async function deleteExercisesByWorkout(db, workoutId) {
 export async function getSetsByExercise(db, exerciseId) {
   return db.getAllAsync(
     `SELECT *
-     FROM Sets
-     WHERE exercise_id = ?;`,
+     FROM "Set"
+     WHERE exercise_instance_id = ?;`,
     [exerciseId]
   );
 }

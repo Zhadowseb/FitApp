@@ -14,15 +14,21 @@ const DEFAULT_WORKOUT_TYPES = [
   ["Run", "Run"],
 ];
 
+function quoteIdentifier(identifier) {
+  return `"${String(identifier).replace(/"/g, '""')}"`;
+}
+
 async function ensureColumnExists(db, tableName, columnName, columnDefinition) {
-  const columns = await db.getAllAsync(`PRAGMA table_info(${tableName});`);
+  const columns = await db.getAllAsync(
+    `PRAGMA table_info(${quoteIdentifier(tableName)});`
+  );
 
   if (columns.some((column) => column.name === columnName)) {
     return;
   }
 
   await db.execAsync(
-    `ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDefinition};`
+    `ALTER TABLE ${quoteIdentifier(tableName)} ADD COLUMN ${columnName} ${columnDefinition};`
   );
 }
 
@@ -33,7 +39,7 @@ async function ensureTableColumns(db, tableName, columns) {
 }
 
 async function getTableColumns(db, tableName) {
-  return db.getAllAsync(`PRAGMA table_info(${tableName});`);
+  return db.getAllAsync(`PRAGMA table_info(${quoteIdentifier(tableName)});`);
 }
 
 function hasColumn(columns, columnName) {
@@ -268,6 +274,100 @@ async function migrateExerciseInstanceSchema(db) {
   }
 }
 
+async function migrateSetSchema(db) {
+  const legacySetColumns = await getTableColumns(db, "Sets");
+  const setColumns = await getTableColumns(db, "Set");
+  const sourceTable = setColumns.length ? "Set" : legacySetColumns.length ? "Sets" : null;
+  const sourceColumns = setColumns.length ? setColumns : legacySetColumns;
+
+  if (!sourceTable || !sourceColumns.length) {
+    return;
+  }
+
+  const hasLegacyExerciseColumn = hasColumn(sourceColumns, "exercise_id");
+  const hasNewExerciseColumn = hasColumn(sourceColumns, "exercise_instance_id");
+
+  if (sourceTable === "Set" && !hasLegacyExerciseColumn && hasNewExerciseColumn) {
+    return;
+  }
+
+  const exerciseColumn = hasNewExerciseColumn
+    ? "exercise_instance_id"
+    : hasLegacyExerciseColumn
+      ? "exercise_id"
+      : null;
+
+  if (!exerciseColumn) {
+    return;
+  }
+
+  await db.execAsync("BEGIN IMMEDIATE;");
+
+  try {
+    await db.execAsync(`
+      DROP TABLE IF EXISTS "Set_next";
+
+      CREATE TABLE "Set_next" (
+        sets_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        set_number INTEGER NOT NULL,
+        exercise_instance_id INTEGER NOT NULL,
+        date TEXT,
+        personal_record INTEGER NOT NULL DEFAULT 0,
+        pause INTEGER,
+        rpe INTEGER,
+        weight INTEGER,
+        rm_percentage INTEGER,
+        reps INTEGER,
+        done INTEGER NOT NULL DEFAULT 0,
+        failed INTEGER NOT NULL DEFAULT 0,
+        amrap INTEGER NOT NULL DEFAULT 0,
+        note TEXT
+      );
+
+      INSERT INTO "Set_next" (
+        sets_id,
+        set_number,
+        exercise_instance_id,
+        date,
+        personal_record,
+        pause,
+        rpe,
+        weight,
+        rm_percentage,
+        reps,
+        done,
+        failed,
+        amrap,
+        note
+      )
+      SELECT
+        sets_id,
+        set_number,
+        ${exerciseColumn},
+        ${hasColumn(sourceColumns, "date") ? "date" : "NULL"},
+        ${hasColumn(sourceColumns, "personal_record") ? "COALESCE(personal_record, 0)" : "0"},
+        ${hasColumn(sourceColumns, "pause") ? "pause" : "NULL"},
+        ${hasColumn(sourceColumns, "rpe") ? "rpe" : "NULL"},
+        ${hasColumn(sourceColumns, "weight") ? "weight" : "NULL"},
+        ${hasColumn(sourceColumns, "rm_percentage") ? "rm_percentage" : "NULL"},
+        ${hasColumn(sourceColumns, "reps") ? "reps" : "NULL"},
+        ${hasColumn(sourceColumns, "done") ? "COALESCE(done, 0)" : "0"},
+        ${hasColumn(sourceColumns, "failed") ? "COALESCE(failed, 0)" : "0"},
+        ${hasColumn(sourceColumns, "amrap") ? "COALESCE(amrap, 0)" : "0"},
+        ${hasColumn(sourceColumns, "note") ? "note" : "NULL"}
+      FROM ${quoteIdentifier(sourceTable)};
+
+      DROP TABLE ${quoteIdentifier(sourceTable)};
+      ALTER TABLE "Set_next" RENAME TO "Set";
+    `);
+
+    await db.execAsync("COMMIT;");
+  } catch (error) {
+    await db.execAsync("ROLLBACK;");
+    throw error;
+  }
+}
+
 async function migrateMicrocycleProgramIdRemoval(db) {
   const microcycleColumns = await getTableColumns(db, "Microcycle");
 
@@ -392,9 +492,9 @@ async function repairStrengthTrainingState(db) {
     SET done = (
       NOT EXISTS (
         SELECT 1
-        FROM Sets
-        WHERE Sets.exercise_id = Exercise_Instance.exercise_instance_id
-          AND Sets.done = 0
+        FROM "Set"
+        WHERE "Set".exercise_instance_id = Exercise_Instance.exercise_instance_id
+          AND "Set".done = 0
       )
     );
 
@@ -447,6 +547,7 @@ export async function initializeDatabase(db) {
   await migrateWorkoutTableName(db);
   await migrateExerciseCatalogSchema(db);
   await migrateExerciseInstanceSchema(db);
+  await migrateSetSchema(db);
 
   await db.execAsync(`
     ${programSchemaSql}
@@ -506,7 +607,7 @@ export async function initializeDatabase(db) {
     ["done", "INTEGER NOT NULL DEFAULT 0"],
   ]);
 
-  await ensureTableColumns(db, "Sets", [
+  await ensureTableColumns(db, "Set", [
     ["date", "TEXT"],
     ["personal_record", "INTEGER NOT NULL DEFAULT 0"],
     ["pause", "INTEGER"],
@@ -534,8 +635,8 @@ export async function initializeDatabase(db) {
     UPDATE Exercise_Instance
     SET sets = (
       SELECT COUNT(*)
-      FROM Sets
-      WHERE Sets.exercise_id = Exercise_Instance.exercise_instance_id
+      FROM "Set"
+      WHERE "Set".exercise_instance_id = Exercise_Instance.exercise_instance_id
     );
   `);
 
@@ -569,7 +670,7 @@ export async function initializeDatabase(db) {
   /*
   await db.execAsync(`
     DROP TABLE IF EXISTS Program;
-    DROP TABLE IF EXISTS Sets;
+    DROP TABLE IF EXISTS "Set";
     DROP TABLE IF EXISTS Exercise;
     DROP TABLE IF EXISTS Exercise_Instance;
     DROP TABLE IF EXISTS Workout_Type_Instance;

@@ -220,11 +220,11 @@ async function buildWorkoutPreview(db, workout) {
     const setsByExerciseId = {};
 
     for (const set of sets) {
-      if (!setsByExerciseId[set.exercise_id]) {
-        setsByExerciseId[set.exercise_id] = [];
+      if (!setsByExerciseId[set.exercise_instance_id]) {
+        setsByExerciseId[set.exercise_instance_id] = [];
       }
 
-      setsByExerciseId[set.exercise_id].push(set);
+      setsByExerciseId[set.exercise_instance_id].push(set);
     }
 
     return {

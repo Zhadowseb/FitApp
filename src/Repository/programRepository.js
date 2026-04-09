@@ -183,8 +183,8 @@ export async function getWorkoutOptions(db, programId) {
 export async function getSetDoneStatesByDayId(db, dayId) {
   return db.getAllAsync(
     `SELECT s.done
-     FROM Sets s
-     JOIN Exercise_Instance e ON e.exercise_instance_id = s.exercise_id
+     FROM "Set" s
+     JOIN Exercise_Instance e ON e.exercise_instance_id = s.exercise_instance_id
      JOIN Workout_Type_Instance w ON w.workout_id = e.workout_type_instance_id
      WHERE w.day_id = ?;`,
     [dayId]
@@ -198,8 +198,8 @@ export async function getCompletedStrengthSetsByProgram(db, programId) {
         s.weight,
         s.reps,
         COALESCE(s.date, d.date) AS performed_date
-     FROM Sets s
-     JOIN Exercise_Instance e ON e.exercise_instance_id = s.exercise_id
+     FROM "Set" s
+     JOIN Exercise_Instance e ON e.exercise_instance_id = s.exercise_instance_id
      JOIN Workout_Type_Instance w ON w.workout_id = e.workout_type_instance_id
      JOIN Day d ON d.day_id = w.day_id
      WHERE d.program_id = ?
@@ -213,8 +213,8 @@ export async function getCompletedStrengthSetsByProgram(db, programId) {
 
 export async function deleteSetsByProgram(db, programId) {
   await db.runAsync(
-    `DELETE FROM Sets
-     WHERE exercise_id IN (
+    `DELETE FROM "Set"
+     WHERE exercise_instance_id IN (
        SELECT e.exercise_instance_id
        FROM Exercise_Instance e
        JOIN Workout_Type_Instance w ON w.workout_id = e.workout_type_instance_id
@@ -456,8 +456,8 @@ export async function incrementMesocycleWeeks(db, mesocycleId) {
 
 export async function deleteSetsByMesocycle(db, mesocycleId) {
   await db.runAsync(
-    `DELETE FROM Sets
-     WHERE exercise_id IN (
+    `DELETE FROM "Set"
+     WHERE exercise_instance_id IN (
        SELECT e.exercise_instance_id
        FROM Exercise_Instance e
        JOIN Workout_Type_Instance w ON w.workout_id = e.workout_type_instance_id
@@ -673,8 +673,8 @@ export async function getWorkoutsByDay(db, dayId) {
 
 export async function deleteSetsByMicrocycle(db, microcycleId) {
   await db.runAsync(
-    `DELETE FROM Sets
-     WHERE exercise_id IN (
+    `DELETE FROM "Set"
+     WHERE exercise_instance_id IN (
        SELECT e.exercise_instance_id
        FROM Exercise_Instance e
        JOIN Workout_Type_Instance w ON w.workout_id = e.workout_type_instance_id

@@ -769,10 +769,10 @@ export async function getWorkoutExercises(db, workoutId) {
 
   const setsByExercise = {};
   for (const set of sets) {
-    if (!setsByExercise[set.exercise_id]) {
-      setsByExercise[set.exercise_id] = [];
+    if (!setsByExercise[set.exercise_instance_id]) {
+      setsByExercise[set.exercise_instance_id] = [];
     }
-    setsByExercise[set.exercise_id].push(set);
+    setsByExercise[set.exercise_instance_id].push(set);
   }
 
   return exercises.map((exercise) => {
@@ -897,7 +897,7 @@ export async function deleteSet(db, setId) {
 
     const sets = await weightliftingRepository.getSetIdsByExercise(
       db,
-      set.exercise_id
+      set.exercise_instance_id
     );
     let setNumber = 1;
     for (const row of sets) {
@@ -908,8 +908,8 @@ export async function deleteSet(db, setId) {
       setNumber += 1;
     }
 
-    await weightliftingRepository.updateExerciseSetCount(db, set.exercise_id);
-    await weightliftingRepository.updateExerciseDoneFromSets(db, set.exercise_id);
+    await weightliftingRepository.updateExerciseSetCount(db, set.exercise_instance_id);
+    await weightliftingRepository.updateExerciseDoneFromSets(db, set.exercise_instance_id);
     await weightliftingRepository.updateWorkoutDoneFromExercises(
       db,
       set.workout_id

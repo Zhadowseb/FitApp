@@ -6,6 +6,100 @@ export async function createProgram(db, { programName, startDate, status }) {
   );
 }
 
+export async function getProgramsForCloudSync(db) {
+  return db.getAllAsync(
+    `SELECT
+        program_id,
+        cloud_program_id,
+        program_name,
+        start_date,
+        status,
+        needs_sync
+     FROM Program
+     ORDER BY program_id ASC;`
+  );
+}
+
+export async function createProgramFromCloud(
+  db,
+  { cloudProgramId, programName, startDate, status }
+) {
+  return db.runAsync(
+    `INSERT INTO Program (
+      cloud_program_id,
+      program_name,
+      start_date,
+      status,
+      needs_sync
+    ) VALUES (?, ?, ?, ?, 0);`,
+    [cloudProgramId, programName, startDate, status]
+  );
+}
+
+export async function updateProgramFromCloud(
+  db,
+  { programId, cloudProgramId, programName, startDate, status }
+) {
+  await db.runAsync(
+    `UPDATE Program
+     SET cloud_program_id = ?,
+         program_name = ?,
+         start_date = ?,
+         status = ?,
+         needs_sync = 0
+     WHERE program_id = ?;`,
+    [cloudProgramId, programName, startDate, status, programId]
+  );
+}
+
+export async function markProgramSynced(db, { programId, cloudProgramId }) {
+  await db.runAsync(
+    `UPDATE Program
+     SET cloud_program_id = ?,
+         needs_sync = 0
+     WHERE program_id = ?;`,
+    [cloudProgramId, programId]
+  );
+}
+
+export async function getProgramSyncMetadata(db, programId) {
+  return db.getFirstAsync(
+    `SELECT program_id, cloud_program_id, needs_sync
+     FROM Program
+     WHERE program_id = ?;`,
+    [programId]
+  );
+}
+
+export async function getQueuedProgramDeletes(db) {
+  return db.getAllAsync(
+    `SELECT
+        program_sync_delete_id,
+        cloud_program_id,
+        deleted_at
+     FROM Program_Sync_Delete
+     ORDER BY program_sync_delete_id ASC;`
+  );
+}
+
+export async function queueProgramDeleteSync(db, { cloudProgramId, deletedAt }) {
+  await db.runAsync(
+    `INSERT OR IGNORE INTO Program_Sync_Delete (
+      cloud_program_id,
+      deleted_at
+    ) VALUES (?, ?);`,
+    [cloudProgramId, deletedAt]
+  );
+}
+
+export async function deleteQueuedProgramDelete(db, queueId) {
+  await db.runAsync(
+    `DELETE FROM Program_Sync_Delete
+     WHERE program_sync_delete_id = ?;`,
+    [queueId]
+  );
+}
+
 export async function getProgramsOverview(db) {
   return db.getAllAsync(
     `SELECT
@@ -28,10 +122,11 @@ export async function getProgramsOverview(db) {
        ON mesocycles.program_id = p.program_id
      LEFT JOIN (
         SELECT
-          program_id,
+          m.program_id,
           COUNT(*) AS week_count
-        FROM Microcycle
-        GROUP BY program_id
+        FROM Microcycle mc
+        JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
+        GROUP BY m.program_id
      ) microcycles
        ON microcycles.program_id = p.program_id
      LEFT JOIN (
@@ -47,7 +142,7 @@ export async function getProgramsOverview(db) {
           d.program_id,
           COUNT(w.workout_id) AS workout_count
         FROM Day d
-        LEFT JOIN Workout w
+        LEFT JOIN Workout_Type_Instance w
           ON w.day_id = d.day_id
         GROUP BY d.program_id
      ) workouts
@@ -116,7 +211,8 @@ export async function upsertProgramBestExerciseSelection(
 export async function updateProgramStatus(db, { programId, status }) {
   await db.runAsync(
     `UPDATE Program
-     SET status = ?
+     SET status = ?,
+         needs_sync = 1
      WHERE program_id = ?;`,
     [status, programId]
   );
@@ -125,7 +221,8 @@ export async function updateProgramStatus(db, { programId, status }) {
 export async function updateProgramName(db, { programId, programName }) {
   await db.runAsync(
     `UPDATE Program
-     SET program_name = ?
+     SET program_name = ?,
+         needs_sync = 1
      WHERE program_id = ?;`,
     [programName, programId]
   );
@@ -152,8 +249,13 @@ export async function getDayByProgramAndDate(db, { programId, date }) {
 
 export async function getWorkoutsByDayId(db, dayId) {
   return db.getAllAsync(
-    `SELECT workout_id, label, done, day_id
-     FROM Workout
+    `SELECT
+        workout_id,
+        workout_type,
+        COALESCE(label, workout_type) AS label,
+        done,
+        day_id
+     FROM Workout_Type_Instance
      WHERE day_id = ?;`,
     [dayId]
   );
@@ -161,8 +263,12 @@ export async function getWorkoutsByDayId(db, dayId) {
 
 export async function getWorkoutOptions(db, programId) {
   return db.getAllAsync(
-    `SELECT w.workout_id, w.date
-     FROM Workout w
+    `SELECT
+        w.workout_id,
+        w.workout_type,
+        COALESCE(w.label, w.workout_type) AS label,
+        w.date
+     FROM Workout_Type_Instance w
      JOIN Day d ON d.day_id = w.day_id
      WHERE d.program_id = ?
      ORDER BY w.date;`,
@@ -173,9 +279,9 @@ export async function getWorkoutOptions(db, programId) {
 export async function getSetDoneStatesByDayId(db, dayId) {
   return db.getAllAsync(
     `SELECT s.done
-     FROM Sets s
-     JOIN Exercise_Instance e ON e.exercise_id = s.exercise_id
-     JOIN Workout w ON w.workout_id = e.workout_id
+     FROM "Set" s
+     JOIN Exercise_Instance e ON e.exercise_instance_id = s.exercise_instance_id
+     JOIN Workout_Type_Instance w ON w.workout_id = e.workout_type_instance_id
      WHERE w.day_id = ?;`,
     [dayId]
   );
@@ -188,9 +294,9 @@ export async function getCompletedStrengthSetsByProgram(db, programId) {
         s.weight,
         s.reps,
         COALESCE(s.date, d.date) AS performed_date
-     FROM Sets s
-     JOIN Exercise_Instance e ON e.exercise_id = s.exercise_id
-     JOIN Workout w ON w.workout_id = e.workout_id
+     FROM "Set" s
+     JOIN Exercise_Instance e ON e.exercise_instance_id = s.exercise_instance_id
+     JOIN Workout_Type_Instance w ON w.workout_id = e.workout_type_instance_id
      JOIN Day d ON d.day_id = w.day_id
      WHERE d.program_id = ?
        AND s.done = 1
@@ -203,11 +309,11 @@ export async function getCompletedStrengthSetsByProgram(db, programId) {
 
 export async function deleteSetsByProgram(db, programId) {
   await db.runAsync(
-    `DELETE FROM Sets
-     WHERE exercise_id IN (
-       SELECT e.exercise_id
+    `DELETE FROM "Set"
+     WHERE exercise_instance_id IN (
+       SELECT e.exercise_instance_id
        FROM Exercise_Instance e
-       JOIN Workout w ON w.workout_id = e.workout_id
+       JOIN Workout_Type_Instance w ON w.workout_id = e.workout_type_instance_id
        JOIN Day d ON d.day_id = w.day_id
        JOIN Microcycle mc ON mc.microcycle_id = d.microcycle_id
        JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
@@ -220,9 +326,9 @@ export async function deleteSetsByProgram(db, programId) {
 export async function deleteExercisesByProgram(db, programId) {
   await db.runAsync(
     `DELETE FROM Exercise_Instance
-     WHERE workout_id IN (
+     WHERE workout_type_instance_id IN (
        SELECT w.workout_id
-       FROM Workout w
+       FROM Workout_Type_Instance w
        JOIN Day d ON d.day_id = w.day_id
        JOIN Microcycle mc ON mc.microcycle_id = d.microcycle_id
        JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
@@ -237,7 +343,7 @@ export async function deleteRunsByProgram(db, programId) {
     `DELETE FROM Run
      WHERE workout_id IN (
        SELECT w.workout_id
-       FROM Workout w
+       FROM Workout_Type_Instance w
        JOIN Day d ON d.day_id = w.day_id
        JOIN Microcycle mc ON mc.microcycle_id = d.microcycle_id
        JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
@@ -249,7 +355,7 @@ export async function deleteRunsByProgram(db, programId) {
 
 export async function deleteWorkoutsByProgram(db, programId) {
   await db.runAsync(
-    `DELETE FROM Workout
+    `DELETE FROM Workout_Type_Instance
      WHERE day_id IN (
        SELECT d.day_id
        FROM Day d
@@ -330,8 +436,9 @@ export async function countMesocyclesByProgram(db, programId) {
 export async function countMicrocyclesByProgram(db, programId) {
   return db.getFirstAsync(
     `SELECT COUNT(*) AS count
-     FROM Microcycle
-     WHERE program_id = ?;`,
+     FROM Microcycle mc
+     JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
+     WHERE m.program_id = ?;`,
     [programId]
   );
 }
@@ -349,12 +456,12 @@ export async function insertMesocycle(
 
 export async function insertMicrocycle(
   db,
-  { mesocycleId, programId, microcycleNumber }
+  { mesocycleId, microcycleNumber }
 ) {
   return db.runAsync(
-    `INSERT INTO Microcycle (mesocycle_id, program_id, microcycle_number)
-     VALUES (?, ?, ?);`,
-    [mesocycleId, programId, microcycleNumber]
+    `INSERT INTO Microcycle (mesocycle_id, microcycle_number)
+     VALUES (?, ?);`,
+    [mesocycleId, microcycleNumber]
   );
 }
 
@@ -384,7 +491,7 @@ export async function getMesocycleWorkoutCountsByProgram(db, programId) {
      FROM Mesocycle m
      LEFT JOIN Microcycle mc ON mc.mesocycle_id = m.mesocycle_id
      LEFT JOIN Day d ON d.microcycle_id = mc.microcycle_id
-     LEFT JOIN Workout w ON w.day_id = d.day_id
+     LEFT JOIN Workout_Type_Instance w ON w.day_id = d.day_id
      WHERE m.program_id = ?
      GROUP BY m.mesocycle_id;`,
     [programId]
@@ -402,9 +509,15 @@ export async function updateMesocycleFocus(db, { mesocycleId, focus }) {
 
 export async function getMicrocyclesByMesocycle(db, mesocycleId) {
   return db.getAllAsync(
-    `SELECT microcycle_id, microcycle_number, program_id, focus, done
-     FROM Microcycle
-     WHERE mesocycle_id = ?;`,
+    `SELECT
+        mc.microcycle_id,
+        mc.microcycle_number,
+        m.program_id,
+        mc.focus,
+        mc.done
+     FROM Microcycle mc
+     JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
+     WHERE mc.mesocycle_id = ?;`,
     [mesocycleId]
   );
 }
@@ -439,11 +552,11 @@ export async function incrementMesocycleWeeks(db, mesocycleId) {
 
 export async function deleteSetsByMesocycle(db, mesocycleId) {
   await db.runAsync(
-    `DELETE FROM Sets
-     WHERE exercise_id IN (
-       SELECT e.exercise_id
+    `DELETE FROM "Set"
+     WHERE exercise_instance_id IN (
+       SELECT e.exercise_instance_id
        FROM Exercise_Instance e
-       JOIN Workout w ON w.workout_id = e.workout_id
+       JOIN Workout_Type_Instance w ON w.workout_id = e.workout_type_instance_id
        JOIN Day d ON d.day_id = w.day_id
        JOIN Microcycle mc ON mc.microcycle_id = d.microcycle_id
        WHERE mc.mesocycle_id = ?
@@ -455,9 +568,9 @@ export async function deleteSetsByMesocycle(db, mesocycleId) {
 export async function deleteExercisesByMesocycle(db, mesocycleId) {
   await db.runAsync(
     `DELETE FROM Exercise_Instance
-     WHERE workout_id IN (
+     WHERE workout_type_instance_id IN (
        SELECT w.workout_id
-       FROM Workout w
+       FROM Workout_Type_Instance w
        JOIN Day d ON d.day_id = w.day_id
        JOIN Microcycle mc ON mc.microcycle_id = d.microcycle_id
        WHERE mc.mesocycle_id = ?
@@ -471,7 +584,7 @@ export async function deleteRunsByMesocycle(db, mesocycleId) {
     `DELETE FROM Run
      WHERE workout_id IN (
        SELECT w.workout_id
-       FROM Workout w
+       FROM Workout_Type_Instance w
        JOIN Day d ON d.day_id = w.day_id
        JOIN Microcycle mc ON mc.microcycle_id = d.microcycle_id
        WHERE mc.mesocycle_id = ?
@@ -482,7 +595,7 @@ export async function deleteRunsByMesocycle(db, mesocycleId) {
 
 export async function deleteWorkoutsByMesocycle(db, mesocycleId) {
   await db.runAsync(
-    `DELETE FROM Workout
+    `DELETE FROM Workout_Type_Instance
      WHERE day_id IN (
        SELECT d.day_id
        FROM Day d
@@ -555,7 +668,7 @@ export async function getMicrocycleNumberAndMesocycleNumber(
      FROM Microcycle mc
      JOIN Mesocycle m ON mc.mesocycle_id = m.mesocycle_id
      WHERE mc.microcycle_id = ?
-       AND mc.program_id = ?;`,
+       AND m.program_id = ?;`,
     [microcycleId, programId]
   );
 }
@@ -572,7 +685,7 @@ export async function updateMicrocycleFocus(db, { microcycleId, focus }) {
 export async function getTotalWorkoutCountByMicrocycle(db, microcycleId) {
   return db.getFirstAsync(
     `SELECT COUNT(*) AS count
-     FROM Workout w
+     FROM Workout_Type_Instance w
      JOIN Day d ON w.day_id = d.day_id
      WHERE d.microcycle_id = ?;`,
     [microcycleId]
@@ -582,7 +695,7 @@ export async function getTotalWorkoutCountByMicrocycle(db, microcycleId) {
 export async function getDoneWorkoutCountByMicrocycle(db, microcycleId) {
   return db.getFirstAsync(
     `SELECT COUNT(*) AS count
-     FROM Workout w
+     FROM Workout_Type_Instance w
      JOIN Day d ON w.day_id = d.day_id
      WHERE d.microcycle_id = ?
        AND w.done = 1;`,
@@ -605,8 +718,8 @@ export async function getDayByMicrocycleAndDate(
 
 export async function getWorkoutLabelsByDay(db, dayId) {
   return db.getAllAsync(
-    `SELECT label
-     FROM Workout
+    `SELECT COALESCE(label, workout_type) AS label
+     FROM Workout_Type_Instance
      WHERE day_id = ?;`,
     [dayId]
   );
@@ -614,10 +727,14 @@ export async function getWorkoutLabelsByDay(db, dayId) {
 
 export async function getAllMicrocyclesByProgram(db, programId) {
   return db.getAllAsync(
-    `SELECT microcycle_id, microcycle_number, mesocycle_id
-     FROM Microcycle
-     WHERE program_id = ?
-     ORDER BY microcycle_number;`,
+    `SELECT
+        mc.microcycle_id,
+        mc.microcycle_number,
+        mc.mesocycle_id
+     FROM Microcycle mc
+     JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
+     WHERE m.program_id = ?
+     ORDER BY mc.microcycle_number;`,
     [programId]
   );
 }
@@ -633,8 +750,18 @@ export async function getDaysByMicrocycle(db, microcycleId) {
 
 export async function getWorkoutsByDay(db, dayId) {
   return db.getAllAsync(
-    `SELECT *
-     FROM Workout
+    `SELECT
+        workout_id,
+        day_id,
+        workout_type,
+        date,
+        COALESCE(label, workout_type) AS label,
+        done,
+        is_active,
+        original_start_time,
+        timer_start,
+        elapsed_time
+     FROM Workout_Type_Instance
      WHERE day_id = ?;`,
     [dayId]
   );
@@ -642,11 +769,11 @@ export async function getWorkoutsByDay(db, dayId) {
 
 export async function deleteSetsByMicrocycle(db, microcycleId) {
   await db.runAsync(
-    `DELETE FROM Sets
-     WHERE exercise_id IN (
-       SELECT e.exercise_id
+    `DELETE FROM "Set"
+     WHERE exercise_instance_id IN (
+       SELECT e.exercise_instance_id
        FROM Exercise_Instance e
-       JOIN Workout w ON w.workout_id = e.workout_id
+       JOIN Workout_Type_Instance w ON w.workout_id = e.workout_type_instance_id
        JOIN Day d ON d.day_id = w.day_id
        WHERE d.microcycle_id = ?
      );`,
@@ -657,9 +784,9 @@ export async function deleteSetsByMicrocycle(db, microcycleId) {
 export async function deleteExercisesByMicrocycle(db, microcycleId) {
   await db.runAsync(
     `DELETE FROM Exercise_Instance
-     WHERE workout_id IN (
+     WHERE workout_type_instance_id IN (
        SELECT w.workout_id
-       FROM Workout w
+       FROM Workout_Type_Instance w
        JOIN Day d ON d.day_id = w.day_id
        WHERE d.microcycle_id = ?
      );`,
@@ -672,7 +799,7 @@ export async function deleteRunsByMicrocycle(db, microcycleId) {
     `DELETE FROM Run
      WHERE workout_id IN (
        SELECT w.workout_id
-       FROM Workout w
+       FROM Workout_Type_Instance w
        JOIN Day d ON d.day_id = w.day_id
        WHERE d.microcycle_id = ?
      );`,
@@ -682,7 +809,7 @@ export async function deleteRunsByMicrocycle(db, microcycleId) {
 
 export async function deleteWorkoutsByMicrocycle(db, microcycleId) {
   await db.runAsync(
-    `DELETE FROM Workout
+    `DELETE FROM Workout_Type_Instance
      WHERE day_id IN (
        SELECT day_id
        FROM Day
@@ -721,11 +848,14 @@ export async function getDayByWeekdayAndMicrocycle(
   );
 }
 
-export async function createWorkout(db, { date, dayId, label }) {
+export async function createWorkout(
+  db,
+  { date, dayId, workoutType = null, label = workoutType }
+) {
   return db.runAsync(
-    `INSERT INTO Workout (date, day_id, label)
-     VALUES (?, ?, ?);`,
-    [date, dayId, label]
+    `INSERT INTO Workout_Type_Instance (date, day_id, workout_type, label)
+     VALUES (?, ?, ?, ?);`,
+    [date, dayId, workoutType ?? label, label ?? workoutType]
   );
 }
 
@@ -734,9 +864,13 @@ export async function copyWorkoutIntoDay(
   { date, dayId, workoutId }
 ) {
   return db.runAsync(
-    `INSERT INTO Workout (date, day_id, label)
-     SELECT ?, ?, label
-     FROM Workout
+    `INSERT INTO Workout_Type_Instance (date, day_id, workout_type, label)
+     SELECT
+       ?,
+       ?,
+       COALESCE(workout_type, label),
+       COALESCE(label, workout_type)
+     FROM Workout_Type_Instance
      WHERE workout_id = ?;`,
     [date, dayId, workoutId]
   );
@@ -754,7 +888,7 @@ export async function getDayByDate(db, { programId, date }) {
 
 export async function deleteWorkoutById(db, workoutId) {
   await db.runAsync(
-    `DELETE FROM Workout
+    `DELETE FROM Workout_Type_Instance
      WHERE workout_id = ?;`,
     [workoutId]
   );

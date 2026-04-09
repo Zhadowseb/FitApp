@@ -2,24 +2,25 @@ export const weightliftingSchemaSql = `
 
   CREATE TABLE IF NOT EXISTS Exercise (
       exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
-      exercise_name TEXT NOT NULL
+      name TEXT NOT NULL UNIQUE,
+      nickname TEXT
   );
 
   CREATE TABLE IF NOT EXISTS Exercise_Instance (
-      exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
-      workout_id INTEGER NOT NULL,
+      exercise_instance_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      workout_type_instance_id INTEGER NOT NULL,
       exercise_name TEXT NOT NULL,
-      sets INTEGER NOT NULL,
+      sets INTEGER NOT NULL DEFAULT 0,
       visible_columns TEXT,
       note TEXT,
 
       done INTEGER NOT NULL DEFAULT 0
   );
 
-  CREATE TABLE IF NOT EXISTS Sets (
+  CREATE TABLE IF NOT EXISTS "Set" (
       sets_id INTEGER PRIMARY KEY AUTOINCREMENT,
       set_number INTEGER NOT NULL,
-      exercise_id TEXT NOT NULL,
+      exercise_instance_id INTEGER NOT NULL,
       date TEXT,
 
       personal_record INTEGER NOT NULL DEFAULT 0,
@@ -71,7 +72,7 @@ export async function initializeWeightliftingData(db) {
   if (checkExercisesInit.count === 0) {
     const placeholders = standardExercises.map(() => '(?)').join(', ');
     await db.runAsync(
-      `INSERT INTO Exercise (exercise_name) VALUES ${placeholders};`,
+      `INSERT INTO Exercise (name) VALUES ${placeholders};`,
       standardExercises
     );
   }

@@ -22,6 +22,13 @@ This file applies to everything inside `src/`.
 - When moving or renaming files, update imports in the same change.
 - Reuse `Resources` and existing services/repositories before creating parallel patterns.
 
+## Sync Rules
+
+- Treat `Workout_Type_Instance` as the lowest-level cloud sync boundary for workout data.
+- Changes to `Set`, `Exercise_Instance`, or other workout-child rows should update local state immediately, but should not trigger direct cloud writes on their own.
+- Child-row changes should instead mark the owning `Workout_Type_Instance` as dirty so the full workout payload can be synced together later.
+- Prefer syncing workout-child data when the owning `Workout_Type_Instance` is completed or when an explicit higher-level workout sync runs.
+
 ## Related Guides
 
 - See `src/Pages/AGENTS.md` for UI-specific guidance.

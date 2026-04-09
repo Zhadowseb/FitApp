@@ -51,7 +51,7 @@ const ExerciseLibraryList = ({ refreshKey }) => {
 
   const loadExerciseStorage = async () => {
     try {
-      const rows = await weightliftingRepository.getExerciseStorage(db);
+      const rows = await weightliftingRepository.getExerciseLibraryEntries(db);
       set_exercises(rows);
     } catch (error) {
       console.error("Error loading exercise storage", error);

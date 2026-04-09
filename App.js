@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { SQLiteProvider, useSQLiteContext } from 'expo-sqlite';
+import { SQLiteProvider } from 'expo-sqlite';
 import { initializeDatabase } from './src/Database/db';
-import { useColorScheme, StatusBar } from "react-native"
+import { useColorScheme } from "react-native"
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as TaskManager from 'expo-task-manager';
 
@@ -22,6 +22,12 @@ import ExerciseLibraryPage from "./src/Pages/ExerciseLibraryPage/ExerciseLibrary
 
 import { Colors } from './src/Resources/GlobalStyling/colors';
 import { ThemedText, ThemedView } from './src/Resources/ThemedComponents';
+import {
+  getActiveDatabaseName,
+  getDatabaseNameForUserId,
+  migrateLegacySharedDatabaseToUserDatabase,
+  setActiveDatabaseName,
+} from "./src/Database/localDatabase";
 import { locationService } from "./src/Services";
 import { AuthProvider, useAuth } from './src/Contexts/AuthContext';
 import ExerciseLibrarySync from "./src/Sync/ExerciseLibrarySync";
@@ -30,23 +36,32 @@ import ProgramSync from "./src/Sync/ProgramSync";
 
 import * as SQLite from 'expo-sqlite';
 
-let hasInitializedTaskDatabase = false;
+const initializedTaskDatabaseNames = new Set();
 
 TaskManager.defineTask(locationService.RUN_LOCATION_TASK, async ({ data, error }) => {
   if (error) return;
   if (!data?.locations?.length) return;
 
-  try {
-    const db = await SQLite.openDatabaseAsync('datab.db');
+  let db = null;
 
-    if (!hasInitializedTaskDatabase) {
+  try {
+    const databaseName = getActiveDatabaseName();
+    db = await SQLite.openDatabaseAsync(databaseName);
+
+    if (!initializedTaskDatabaseNames.has(databaseName)) {
       await initializeDatabase(db);
-      hasInitializedTaskDatabase = true;
+      initializedTaskDatabaseNames.add(databaseName);
     }
 
     await locationService.recordTrackedLocations(db, data.locations);
   } catch (taskError) {
     console.error("Failed to persist tracked run locations:", taskError);
+  } finally {
+    try {
+      await db.closeAsync();
+    } catch {
+      // Ignore cleanup failures in the background task.
+    }
   }
 });
 
@@ -127,20 +142,62 @@ function RootNavigator() {
   );
 }
 
+function UserScopedDatabaseApp() {
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme] ?? Colors.light;
+  const { user, isAuthLoading } = useAuth();
+  const databaseName = getDatabaseNameForUserId(user?.id ?? null);
+
+  useEffect(() => {
+    if (isAuthLoading) {
+      return;
+    }
+
+    setActiveDatabaseName(databaseName);
+  }, [databaseName, isAuthLoading]);
+
+  if (isAuthLoading) {
+    return (
+      <ThemedView style={{ alignItems: "center", justifyContent: "center" }}>
+        <ThemedText setColor={theme.quietText ?? theme.iconColor}>
+          Restoring session...
+        </ThemedText>
+      </ThemedView>
+    );
+  }
+
+  const handleInitializeDatabase = async (db) => {
+    await initializeDatabase(db);
+
+    if (user?.id) {
+      await migrateLegacySharedDatabaseToUserDatabase({
+        userId: user.id,
+        targetDatabaseName: databaseName,
+        targetDb: db,
+      });
+    }
+  };
+
+  return (
+    <SQLiteProvider
+      key={databaseName}
+      databaseName={databaseName}
+      onInit={handleInitializeDatabase}
+      options={{ useNewConnection: false }}>
+      <ProgramSync />
+      <MesocycleSync />
+      <ExerciseLibrarySync />
+      <RootNavigator />
+    </SQLiteProvider>
+  );
+}
+
 export default function App() {
   return (
     <SafeAreaProvider>
-      <SQLiteProvider
-        databaseName="datab.db"
-        onInit={initializeDatabase}
-        options={{ useNewConnection: false }}>
-        <AuthProvider>
-          <ProgramSync />
-          <MesocycleSync />
-          <ExerciseLibrarySync />
-          <RootNavigator />
-        </AuthProvider>
-      </SQLiteProvider>
+      <AuthProvider>
+        <UserScopedDatabaseApp />
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

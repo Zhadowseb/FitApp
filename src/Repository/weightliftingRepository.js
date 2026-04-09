@@ -270,7 +270,7 @@ export async function getEstimatedWeightBySetId(db, setId) {
         ) AS adjusted_estimated_weight
      FROM Sets s
      JOIN Exercise_Instance e ON e.exercise_id = s.exercise_id
-     JOIN Workout w ON w.workout_id = e.workout_id
+     JOIN Workout_Type_Instance w ON w.workout_id = e.workout_id
      JOIN Day d ON d.day_id = w.day_id
      JOIN Microcycle mc ON mc.microcycle_id = d.microcycle_id
      JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
@@ -325,7 +325,7 @@ export async function getProgramExerciseNames(db, programId) {
   return db.getAllAsync(
     `SELECT DISTINCT e.exercise_name
      FROM Exercise_Instance e
-     JOIN Workout w ON w.workout_id = e.workout_id
+     JOIN Workout_Type_Instance w ON w.workout_id = e.workout_id
      JOIN Day d ON d.day_id = w.day_id
      WHERE d.program_id = ?
      ORDER BY e.exercise_name COLLATE NOCASE ASC;`,
@@ -552,12 +552,12 @@ export async function updateExerciseDoneBySet(db, setId) {
 
 export async function updateWorkoutDoneFromExercises(db, workoutId) {
   await db.runAsync(
-    `UPDATE Workout
+    `UPDATE Workout_Type_Instance
      SET done = (
        NOT EXISTS (
          SELECT 1
          FROM Exercise_Instance
-         WHERE Exercise_Instance.workout_id = Workout.workout_id
+         WHERE Exercise_Instance.workout_id = Workout_Type_Instance.workout_id
            AND Exercise_Instance.done = 0
        )
      )

@@ -58,7 +58,9 @@ const Day = ( {day, program_id, microcycle_id} ) => {
     const [pickMode, set_pickMode] = useState(null);
 
     //Helps show the correct icon.
-    const SelectedIcon = getWorkoutIconConfig(focusText)?.Icon;
+    const singleWorkoutType =
+        workouts.length === 1 ? (workouts[0]?.workout_type ?? workouts[0]?.label) : null;
+    const SelectedIcon = getWorkoutIconConfig(singleWorkoutType ?? focusText)?.Icon;
     
     //Visibility variabels for modals.
     const [pickWorkoutModal_visible, set_pickWorkoutModal_visible] = useState(false);
@@ -160,7 +162,9 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                             workout_id: workouts[0].workout_id,
                             day: day,
                             date: date,
-                            workout_label: workouts[0].label,})   
+                            workout_label: workouts[0].label,
+                            workout_type: workouts[0].workout_type,
+                        })
                     } else if (workouts.length > 1){
 
                         set_pickMode(PICK_MODE.NAVIGATE);
@@ -358,6 +362,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                 const workout_id = await programRepository.createWorkoutForDay(db, {
                     date,
                     dayId: day_id,
+                    workoutType: labelId.id,
                     label: labelId.id,
                 });
 
@@ -366,6 +371,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                     date,
                     workout_id: workout_id.lastInsertRowId,
                     workout_label: labelId.id,
+                    workout_type: labelId.id,
                 });
             }}
         />
@@ -382,6 +388,8 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                         program_id: program_id,
                         date: date,
                         workout_id: workout.workout_id,
+                        workout_label: workout.label,
+                        workout_type: workout.workout_type,
                     });
                 }
 

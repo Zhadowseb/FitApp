@@ -45,9 +45,16 @@ export const programSchemaSql = `
       done INTEGER NOT NULL DEFAULT 0
   );
 
-  CREATE TABLE IF NOT EXISTS Workout (
+  CREATE TABLE IF NOT EXISTS Workout_Type (
+      workout_type_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      display_name TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS Workout_Type_Instance (
       workout_id INTEGER PRIMARY KEY AUTOINCREMENT,
       day_id INTEGER NOT NULL,
+      workout_type TEXT,
       date TEXT NOT NULL,
       label TEXT,
       done INTEGER NOT NULL DEFAULT 0,

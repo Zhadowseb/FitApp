@@ -125,7 +125,8 @@ function parseOptions(tokens) {
   const parsed = {
     branchName: null,
     bump: null,
-    baseRef: "master",
+    baseRef: "HEAD",
+    baseRefProvided: false,
     dryRun: false,
     skipChangelog: false,
     positionals: [],
@@ -156,6 +157,7 @@ function parseOptions(tokens) {
 
     if (token.startsWith("base-ref=")) {
       parsed.baseRef = token.slice("base-ref=".length);
+      parsed.baseRefProvided = true;
       continue;
     }
 
@@ -173,6 +175,7 @@ function parseOptions(tokens) {
 
     if (token === "--base-ref") {
       parsed.baseRef = tokens[index + 1];
+      parsed.baseRefProvided = true;
       index += 1;
       continue;
     }
@@ -246,9 +249,14 @@ function prepareBranchVersioning(currentOptions) {
 
   const prereleaseSuffix = `${sanitizeBranchName(branchName)}.1`;
   const currentPackageVersion = readJson(packageJsonPath).version;
-  const targetVersion = String(currentPackageVersion).endsWith(`-${prereleaseSuffix}`)
-    ? String(currentPackageVersion)
-    : `${bumpStableVersion(readStableVersionFromRef(currentOptions.baseRef), inferredBump)}-${prereleaseSuffix}`;
+  const computedTargetVersion = `${bumpStableVersion(
+    readStableVersionFromRef(currentOptions.baseRef),
+    inferredBump
+  )}-${prereleaseSuffix}`;
+  const targetVersion =
+    String(currentPackageVersion).endsWith(`-${prereleaseSuffix}`) && !currentOptions.baseRefProvided
+      ? String(currentPackageVersion)
+      : computedTargetVersion;
 
   return buildVersioningSummary({
     mode: "branch",
@@ -405,9 +413,14 @@ function printStatus(currentOptions) {
   }
 
   const prereleaseSuffix = `${sanitizeBranchName(branchName)}.1`;
-  const expectedVersion = String(packageVersion).endsWith(`-${prereleaseSuffix}`)
-    ? packageVersion
-    : `${bumpStableVersion(readStableVersionFromRef(currentOptions.baseRef), inferredBump)}-${prereleaseSuffix}`;
+  const computedExpectedVersion = `${bumpStableVersion(
+    readStableVersionFromRef(currentOptions.baseRef),
+    inferredBump
+  )}-${prereleaseSuffix}`;
+  const expectedVersion =
+    String(packageVersion).endsWith(`-${prereleaseSuffix}`) && !currentOptions.baseRefProvided
+      ? packageVersion
+      : computedExpectedVersion;
   console.log(`Expected version from branch: ${expectedVersion}`);
   console.log(
     `Recommended action: ${

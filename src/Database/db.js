@@ -6,6 +6,14 @@ import {
 import { runningSchemaSql } from './schema/running';
 import { locationSchemaSql } from './schema/location';
 
+const DEFAULT_WORKOUT_TYPES = [
+  ["Resistance", "Resistance"],
+  ["Upperbody", "Upperbody"],
+  ["Legs", "Legs"],
+  ["StrengthTraining", "StrengthTraining"],
+  ["Run", "Run"],
+];
+
 async function ensureColumnExists(db, tableName, columnName, columnDefinition) {
   const columns = await db.getAllAsync(`PRAGMA table_info(${tableName});`);
 
@@ -78,6 +86,29 @@ async function migrateWeightliftingTableNames(db) {
   }
 }
 
+async function migrateWorkoutTableName(db) {
+  await db.execAsync("BEGIN IMMEDIATE;");
+
+  try {
+    const legacyWorkoutColumns = await getTableColumns(db, "Workout");
+    const workoutTypeInstanceColumns = await getTableColumns(
+      db,
+      "Workout_Type_Instance"
+    );
+
+    if (legacyWorkoutColumns.length && !workoutTypeInstanceColumns.length) {
+      await db.execAsync(`
+        ALTER TABLE Workout RENAME TO Workout_Type_Instance;
+      `);
+    }
+
+    await db.execAsync("COMMIT;");
+  } catch (error) {
+    await db.execAsync("ROLLBACK;");
+    throw error;
+  }
+}
+
 async function migrateMicrocycleProgramIdRemoval(db) {
   const microcycleColumns = await getTableColumns(db, "Microcycle");
 
@@ -128,9 +159,40 @@ async function migrateMicrocycleProgramIdRemoval(db) {
   }
 }
 
+async function backfillWorkoutTypeInstances(db) {
+  await db.execAsync(`
+    UPDATE Workout_Type_Instance
+    SET workout_type = label
+    WHERE TRIM(COALESCE(workout_type, '')) = ''
+      AND TRIM(COALESCE(label, '')) <> '';
+
+    UPDATE Workout_Type_Instance
+    SET label = workout_type
+    WHERE TRIM(COALESCE(label, '')) = ''
+      AND TRIM(COALESCE(workout_type, '')) <> '';
+  `);
+}
+
+async function initializeWorkoutTypes(db) {
+  for (const [name, displayName] of DEFAULT_WORKOUT_TYPES) {
+    await db.runAsync(
+      `INSERT OR IGNORE INTO Workout_Type (name, display_name)
+       VALUES (?, ?);`,
+      [name, displayName]
+    );
+  }
+
+  await db.execAsync(`
+    INSERT OR IGNORE INTO Workout_Type (name, display_name)
+    SELECT DISTINCT workout_type, workout_type
+    FROM Workout_Type_Instance
+    WHERE TRIM(COALESCE(workout_type, '')) <> '';
+  `);
+}
+
 async function repairWorkoutTrackingState(db) {
   await db.execAsync(`
-    UPDATE Workout
+    UPDATE Workout_Type_Instance
     SET is_active = 0
     WHERE is_active = 1
       AND (timer_start IS NULL OR done = 1);
@@ -138,7 +200,7 @@ async function repairWorkoutTrackingState(db) {
 
   const activeWorkouts = await db.getAllAsync(`
     SELECT workout_id
-    FROM Workout
+    FROM Workout_Type_Instance
     WHERE is_active = 1
       AND timer_start IS NOT NULL
       AND done = 0
@@ -153,7 +215,7 @@ async function repairWorkoutTrackingState(db) {
 
   for (const staleWorkout of staleWorkouts) {
     await db.runAsync(
-      `UPDATE Workout
+      `UPDATE Workout_Type_Instance
        SET is_active = 0
        WHERE workout_id = ?;`,
       [staleWorkout.workout_id]
@@ -177,18 +239,18 @@ async function repairStrengthTrainingState(db) {
       )
     );
 
-    UPDATE Workout
+    UPDATE Workout_Type_Instance
     SET done = (
       CASE
         WHEN EXISTS (
           SELECT 1
           FROM Run
-          WHERE Run.workout_id = Workout.workout_id
-        ) THEN Workout.done
+          WHERE Run.workout_id = Workout_Type_Instance.workout_id
+        ) THEN Workout_Type_Instance.done
         ELSE NOT EXISTS (
           SELECT 1
           FROM Exercise_Instance
-          WHERE Exercise_Instance.workout_id = Workout.workout_id
+          WHERE Exercise_Instance.workout_id = Workout_Type_Instance.workout_id
             AND Exercise_Instance.done = 0
         )
       END
@@ -196,7 +258,7 @@ async function repairStrengthTrainingState(db) {
     WHERE EXISTS (
       SELECT 1
       FROM Exercise_Instance
-      WHERE Exercise_Instance.workout_id = Workout.workout_id
+      WHERE Exercise_Instance.workout_id = Workout_Type_Instance.workout_id
     );
   `);
 }
@@ -223,6 +285,7 @@ async function repairRunSetState(db) {
 
 export async function initializeDatabase(db) {
   await migrateWeightliftingTableNames(db);
+  await migrateWorkoutTableName(db);
 
   await db.execAsync(`
     ${programSchemaSql}
@@ -257,7 +320,8 @@ export async function initializeDatabase(db) {
     ["done", "INTEGER NOT NULL DEFAULT 0"],
   ]);
 
-  await ensureTableColumns(db, "Workout", [
+  await ensureTableColumns(db, "Workout_Type_Instance", [
+    ["workout_type", "TEXT"],
     ["label", "TEXT"],
     ["done", "INTEGER NOT NULL DEFAULT 0"],
     ["is_active", "INTEGER DEFAULT 0"],
@@ -265,6 +329,11 @@ export async function initializeDatabase(db) {
     ["timer_start", "INTEGER"],
     ["elapsed_time", "INTEGER DEFAULT 0"],
   ]);
+  await ensureTableColumns(db, "Workout_Type", [
+    ["display_name", "TEXT"],
+  ]);
+  await backfillWorkoutTypeInstances(db);
+  await initializeWorkoutTypes(db);
 
   await ensureTableColumns(db, "Exercise", [
     ["primary_muscle_group_count", "INTEGER NOT NULL DEFAULT 0"],
@@ -318,7 +387,7 @@ export async function initializeDatabase(db) {
 
   /*
   await db.execAsync(`
-    ALTER TABLE Workout ADD COLUMN is_active INTEGER DEFAULT 0;
+    ALTER TABLE Workout_Type_Instance ADD COLUMN is_active INTEGER DEFAULT 0;
   `);
   */
 
@@ -343,7 +412,7 @@ export async function initializeDatabase(db) {
     DROP TABLE IF EXISTS Sets;
     DROP TABLE IF EXISTS Exercise;
     DROP TABLE IF EXISTS Exercise_Instance;
-    DROP TABLE IF EXISTS Workout;
+    DROP TABLE IF EXISTS Workout_Type_Instance;
     DROP TABLE IF EXISTS Day;
     DROP TABLE IF EXISTS Microcycle;
     DROP TABLE IF EXISTS Mesocycle;

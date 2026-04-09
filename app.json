@@ -2,7 +2,7 @@
   "expo": {
     "name": "FitVen",
     "slug": "programapp",
-    "version": "0.4.1-fix-remove-microcycle-program-id.1",
+    "version": "0.4.2-fix-workout-type-instance-local-schema.1",
     "orientation": "portrait",
     "icon": "./assets/icon_v1.0.png",
     "userInterfaceStyle": "dark",

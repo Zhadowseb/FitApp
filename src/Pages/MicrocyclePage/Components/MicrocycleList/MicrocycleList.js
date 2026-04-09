@@ -109,12 +109,13 @@ const MicrocycleList = ({
           workouts.every((workout) => workout.done === 1);
 
         const workoutCards = workouts.map((workout) => {
-          const found = getWorkoutIconConfig(workout.label);
+          const workoutType = workout.workout_type ?? workout.label;
+          const found = getWorkoutIconConfig(workoutType);
 
           return {
             key: workout.workout_id,
             icon: found?.Icon ?? null,
-            iconLabel: found?.short ?? workout.label,
+            iconLabel: found?.short ?? workout.label ?? workoutType,
             completed: workout.done === 1,
             workout,
           };
@@ -299,6 +300,7 @@ const MicrocycleList = ({
     navigation.navigate("WorkoutPage", {
       workout_id: workout.workout_id,
       workout_label: workout.label,
+      workout_type: workout.workout_type,
       day: day.day,
       date: day.date,
     });
@@ -330,6 +332,7 @@ const MicrocycleList = ({
       const workoutResult = await programRepository.createWorkoutForDay(db, {
         date: selectedDay.date,
         dayId: dayRow.day_id,
+        workoutType: labelId.id,
         label: labelId.id,
       });
 
@@ -343,6 +346,7 @@ const MicrocycleList = ({
         date: selectedDay.date,
         workout_id: workoutResult.lastInsertRowId,
         workout_label: labelId.id,
+        workout_type: labelId.id,
       });
     } catch (error) {
       console.error("Failed to create workout:", error);

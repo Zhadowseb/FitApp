@@ -31,6 +31,7 @@ const WorkoutPage = ({ route }) => {
   const {
     workout_id,
     workout_label: initialWorkoutLabel,
+    workout_type: initialWorkoutType,
     day: initialDay,
     date: initialDate,
     program_id: initialProgramId,
@@ -64,18 +65,21 @@ const WorkoutPage = ({ route }) => {
     };
   }, [db, workout_id]);
 
-  const workoutLabel = metadata?.workout_label ?? initialWorkoutLabel ?? "Workout";
+  const workoutType =
+    metadata?.workout_type ?? initialWorkoutType ?? initialWorkoutLabel ?? null;
+  const workoutLabel =
+    metadata?.workout_label ?? initialWorkoutLabel ?? workoutType ?? "Workout";
   const workoutDay = metadata?.day ?? initialDay ?? "";
   const workoutDate = metadata?.date ?? initialDate ?? "";
   const programId = metadata?.program_id ?? initialProgramId;
   const workoutSubtitle = [workoutDay, workoutDate].filter(Boolean).join(" - ");
   const headerEyebrowColor = theme.quietText ?? theme.iconColor;
-  const isRunWorkout = workoutLabel === "Run";
+  const isRunWorkout = workoutType === "Run";
   const isStrengthWorkout =
-    workoutLabel === "Resistance" ||
-    workoutLabel === "Upperbody" ||
-    workoutLabel === "Legs" ||
-    workoutLabel === "StrengthTraining";
+    workoutType === "Resistance" ||
+    workoutType === "Upperbody" ||
+    workoutType === "Legs" ||
+    workoutType === "StrengthTraining";
   const supportsTimerRestart = isRunWorkout || isStrengthWorkout;
 
   const deleteWorkout = async () => {

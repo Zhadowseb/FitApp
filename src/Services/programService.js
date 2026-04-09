@@ -674,6 +674,7 @@ export async function copyMicrocycleWorkouts(
         const workoutResult = await programRepository.createWorkout(db, {
           date: targetDay.date,
           dayId: targetDay.day_id,
+          workoutType: workout.workout_type,
           label: workout.label,
         });
 
@@ -745,11 +746,15 @@ export async function getDayByDate(db, { programId, date }) {
   return programRepository.getDayByDate(db, { programId, date });
 }
 
-export async function createWorkoutForDay(db, { date, dayId, label }) {
+export async function createWorkoutForDay(
+  db,
+  { date, dayId, workoutType, label }
+) {
   return withTransaction(db, async () => {
     const workout = await programRepository.createWorkout(db, {
       date,
       dayId,
+      workoutType,
       label,
     });
 

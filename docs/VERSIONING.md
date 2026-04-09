@@ -7,6 +7,7 @@
 - Reserve build number increments for real releases.
 - Keep `CHANGELOG.md` stable with an `Unreleased` section plus release entries.
 - Make versioning mostly automatic from the active branch.
+- Derive prerelease bumps from the committed base version of the current work branch.
 
 ## Branch Rules
 
@@ -18,7 +19,8 @@
 Examples:
 
 - `feat/program-calendar` from stable `0.3.1` becomes `0.4.0-feat-program-calendar.1`
-- `fix/set-counter` from stable `0.3.1` becomes `0.3.2-fix-set-counter.1`
+- `fix/set-counter` from committed `0.3.1` becomes `0.3.2-fix-set-counter.1`
+- `fix/workout-type-instance` from committed `0.4.1` becomes `0.4.2-fix-workout-type-instance.1`
 - `release/0.4.0` becomes `0.4.0`
 
 If a branch name does not match the convention, use:
@@ -27,13 +29,17 @@ If a branch name does not match the convention, use:
 npm run version:branch -- minor
 ```
 
+If you rename a work branch after it has already been versioned, or you want to recalculate from a specific committed base, rerun the command with `--base-ref <ref>`.
+
 ## Commands
 
 ```bash
 npm run version:status
 npm run version:auto
+npm run version:auto -- --base-ref master
 npm run version:branch
 npm run version:branch -- patch
+npm run version:branch -- --base-ref master
 npm run version:branch -- feat/example dry-run
 npm run release:prepare -- 0.4.0 dry-run
 npm run version:sync -- 0.4.0 skip-changelog
@@ -52,6 +58,7 @@ npm run version:sync -- 0.4.0 skip-changelog
 
 - Reads the current branch name
 - Uses branch rules automatically
+- Uses committed `HEAD` as the default base ref, so running it right after branching derives the next prerelease from the branch base commit
 - Runs branch prerelease logic on `feat/...`, `fix/...`, and similar work branches
 - Runs release logic on `release/x.y.z`
 - Refuses to work on `master` and `main`
@@ -61,6 +68,7 @@ npm run version:sync -- 0.4.0 skip-changelog
 - Updates `package.json > version`
 - Updates `app.json > expo.version`
 - Ensures `CHANGELOG.md` contains `## [Unreleased]`
+- Uses committed `HEAD` as the default base ref unless `--base-ref <ref>` is supplied
 - Does not increment `android.versionCode`
 - Does not increment `ios.buildNumber`
 
@@ -75,7 +83,7 @@ npm run version:sync -- 0.4.0 skip-changelog
 ## Recommended Workflow
 
 1. Create a branch with a meaningful prefix like `feat/...`, `fix/...`, or `release/x.y.z`.
-2. Run `npm run version:auto`.
+2. Run `npm run version:auto` immediately after branching.
 3. Use `npm run version:status` whenever you want to verify the current state.
 4. Do the work.
 5. Replace the placeholder text in `CHANGELOG.md` before shipping.

@@ -56,6 +56,9 @@ const TodayShortcut = ({ program_id }) => {
     return unsubscribe;
   }, [navigation, db, program_id, date]);
 
+  const getWorkoutType = (workout) =>
+    workout?.workout_type ?? workout?.label ?? null;
+
   const openWorkout = (workout) => {
     if (!workout) {
       return;
@@ -64,6 +67,7 @@ const TodayShortcut = ({ program_id }) => {
     navigation.navigate("WorkoutPage", {
       workout_id: workout.workout_id,
       workout_label: workout.label,
+      workout_type: getWorkoutType(workout),
       day: day?.Weekday,
       date,
       program_id,
@@ -179,7 +183,7 @@ const TodayShortcut = ({ program_id }) => {
         : "EXERCISES TODAY";
   const singleWorkout = workoutCount === 1 ? workouts[0] : null;
   const workoutIconConfig = singleWorkout
-    ? getWorkoutIconConfig(singleWorkout.label)
+    ? getWorkoutIconConfig(getWorkoutType(singleWorkout))
     : null;
   const HeroWorkoutIcon = workoutIconConfig?.Icon ?? null;
   const useCompactSingleWorkoutHeader =
@@ -411,7 +415,9 @@ const TodayShortcut = ({ program_id }) => {
               )}
 
               {visibleWorkoutPreviews.map((workout) => {
-                const workoutHeaderIconConfig = getWorkoutIconConfig(workout.label);
+                const workoutHeaderIconConfig = getWorkoutIconConfig(
+                  getWorkoutType(workout)
+                );
                 const WorkoutHeaderIcon = workoutHeaderIconConfig?.Icon ?? null;
 
                 return (

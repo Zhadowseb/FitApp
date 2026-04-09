@@ -2,12 +2,20 @@ export const programSchemaSql = `
 
   CREATE TABLE IF NOT EXISTS Program (
     program_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cloud_program_id INTEGER,
     program_name TEXT,
     start_date TEXT NOT NULL,
     status TEXT
       DEFAULT 'NOT_STARTED'
       NOT NULL
-      CHECK (status IN ('COMPLETE', 'ACTIVE', 'NOT_STARTED'))
+      CHECK (status IN ('COMPLETE', 'ACTIVE', 'NOT_STARTED')),
+    needs_sync INTEGER NOT NULL DEFAULT 1
+  );
+
+  CREATE TABLE IF NOT EXISTS Program_Sync_Delete (
+    program_sync_delete_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cloud_program_id INTEGER NOT NULL UNIQUE,
+    deleted_at TEXT
   );
 
   CREATE TABLE IF NOT EXISTS Program_Best_Exercise (

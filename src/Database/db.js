@@ -542,6 +542,14 @@ async function repairRunSetState(db) {
   `);
 }
 
+async function repairProgramDateFormats(db) {
+  await db.execAsync(`
+    UPDATE Program
+    SET start_date = substr(start_date, 9, 2) || '.' || substr(start_date, 6, 2) || '.' || substr(start_date, 1, 4)
+    WHERE start_date LIKE '____-__-__';
+  `);
+}
+
 export async function initializeDatabase(db) {
   await migrateWeightliftingTableNames(db);
   await migrateWorkoutTableName(db);
@@ -559,7 +567,9 @@ export async function initializeDatabase(db) {
   `);
 
   await ensureTableColumns(db, "Program", [
+    ["cloud_program_id", "INTEGER"],
     ["status", "TEXT NOT NULL DEFAULT 'NOT_STARTED'"],
+    ["needs_sync", "INTEGER NOT NULL DEFAULT 1"],
   ]);
 
   await ensureTableColumns(db, "Mesocycle", [
@@ -643,6 +653,7 @@ export async function initializeDatabase(db) {
   await repairWorkoutTrackingState(db);
   await repairStrengthTrainingState(db);
   await repairRunSetState(db);
+  await repairProgramDateFormats(db);
 
   await initializeWeightliftingData(db);
 

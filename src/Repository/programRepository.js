@@ -6,6 +6,100 @@ export async function createProgram(db, { programName, startDate, status }) {
   );
 }
 
+export async function getProgramsForCloudSync(db) {
+  return db.getAllAsync(
+    `SELECT
+        program_id,
+        cloud_program_id,
+        program_name,
+        start_date,
+        status,
+        needs_sync
+     FROM Program
+     ORDER BY program_id ASC;`
+  );
+}
+
+export async function createProgramFromCloud(
+  db,
+  { cloudProgramId, programName, startDate, status }
+) {
+  return db.runAsync(
+    `INSERT INTO Program (
+      cloud_program_id,
+      program_name,
+      start_date,
+      status,
+      needs_sync
+    ) VALUES (?, ?, ?, ?, 0);`,
+    [cloudProgramId, programName, startDate, status]
+  );
+}
+
+export async function updateProgramFromCloud(
+  db,
+  { programId, cloudProgramId, programName, startDate, status }
+) {
+  await db.runAsync(
+    `UPDATE Program
+     SET cloud_program_id = ?,
+         program_name = ?,
+         start_date = ?,
+         status = ?,
+         needs_sync = 0
+     WHERE program_id = ?;`,
+    [cloudProgramId, programName, startDate, status, programId]
+  );
+}
+
+export async function markProgramSynced(db, { programId, cloudProgramId }) {
+  await db.runAsync(
+    `UPDATE Program
+     SET cloud_program_id = ?,
+         needs_sync = 0
+     WHERE program_id = ?;`,
+    [cloudProgramId, programId]
+  );
+}
+
+export async function getProgramSyncMetadata(db, programId) {
+  return db.getFirstAsync(
+    `SELECT program_id, cloud_program_id, needs_sync
+     FROM Program
+     WHERE program_id = ?;`,
+    [programId]
+  );
+}
+
+export async function getQueuedProgramDeletes(db) {
+  return db.getAllAsync(
+    `SELECT
+        program_sync_delete_id,
+        cloud_program_id,
+        deleted_at
+     FROM Program_Sync_Delete
+     ORDER BY program_sync_delete_id ASC;`
+  );
+}
+
+export async function queueProgramDeleteSync(db, { cloudProgramId, deletedAt }) {
+  await db.runAsync(
+    `INSERT OR IGNORE INTO Program_Sync_Delete (
+      cloud_program_id,
+      deleted_at
+    ) VALUES (?, ?);`,
+    [cloudProgramId, deletedAt]
+  );
+}
+
+export async function deleteQueuedProgramDelete(db, queueId) {
+  await db.runAsync(
+    `DELETE FROM Program_Sync_Delete
+     WHERE program_sync_delete_id = ?;`,
+    [queueId]
+  );
+}
+
 export async function getProgramsOverview(db) {
   return db.getAllAsync(
     `SELECT
@@ -117,7 +211,8 @@ export async function upsertProgramBestExerciseSelection(
 export async function updateProgramStatus(db, { programId, status }) {
   await db.runAsync(
     `UPDATE Program
-     SET status = ?
+     SET status = ?,
+         needs_sync = 1
      WHERE program_id = ?;`,
     [status, programId]
   );
@@ -126,7 +221,8 @@ export async function updateProgramStatus(db, { programId, status }) {
 export async function updateProgramName(db, { programId, programName }) {
   await db.runAsync(
     `UPDATE Program
-     SET program_name = ?
+     SET program_name = ?,
+         needs_sync = 1
      WHERE program_id = ?;`,
     [programName, programId]
   );

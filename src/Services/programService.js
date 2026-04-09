@@ -1,4 +1,10 @@
-import { formatDate, parseCustomDate } from "../Utils/dateUtils";
+import {
+  formatDate,
+  normalizeIsoDateString,
+  normalizeLocalDateString,
+  parseCustomDate,
+} from "../Utils/dateUtils";
+import { supabase } from "../Database/supaBaseClient";
 import {
   programRepository,
   runningRepository,
@@ -17,9 +23,311 @@ const WEEK_DAYS = [
   "Saturday",
   "Sunday",
 ];
+const PROGRAM_CLOUD_TABLE = "Program";
+const PROGRAM_STATUS_VALUES = new Set(["COMPLETE", "ACTIVE", "NOT_STARTED"]);
+const PROGRAM_CLOUD_SYNC_SELECT =
+  "id, user_id, local_program_id, program_name, start_date, status";
+
+let activeProgramSyncPromise = null;
 
 function formatDisplayNumber(value) {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1);
+}
+
+function normalizeProgramName(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmedValue = value.trim();
+  return trimmedValue.length > 0 ? trimmedValue : null;
+}
+
+function normalizeProgramStartDate(value) {
+  return normalizeLocalDateString(value);
+}
+
+function normalizeProgramStartDateForCloud(value) {
+  return normalizeIsoDateString(value);
+}
+
+function normalizeProgramStatus(value) {
+  const normalizedStatus =
+    typeof value === "string" ? value.trim().toUpperCase() : "";
+
+  return PROGRAM_STATUS_VALUES.has(normalizedStatus)
+    ? normalizedStatus
+    : "NOT_STARTED";
+}
+
+function getComparableProgramSnapshot(program) {
+  return {
+    program_name: normalizeProgramName(program?.program_name),
+    start_date: normalizeProgramStartDate(program?.start_date),
+    status: normalizeProgramStatus(program?.status),
+  };
+}
+
+function areComparableProgramsEqual(leftProgram, rightProgram) {
+  const leftSnapshot = getComparableProgramSnapshot(leftProgram);
+  const rightSnapshot = getComparableProgramSnapshot(rightProgram);
+
+  return (
+    leftSnapshot.program_name === rightSnapshot.program_name &&
+    leftSnapshot.start_date === rightSnapshot.start_date &&
+    leftSnapshot.status === rightSnapshot.status
+  );
+}
+
+function buildCloudProgramPayload(localProgram, userId) {
+  return {
+    user_id: userId,
+    local_program_id: localProgram.program_id,
+    program_name: normalizeProgramName(localProgram.program_name),
+    start_date: normalizeProgramStartDateForCloud(localProgram.start_date),
+    status: normalizeProgramStatus(localProgram.status),
+  };
+}
+
+function parseCloudProgramId(value) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+async function getAuthenticatedUserId() {
+  const { data, error } = await supabase.auth.getSession();
+
+  if (error) {
+    throw error;
+  }
+
+  return data.session?.user?.id ?? null;
+}
+
+async function processQueuedProgramDeletes(db, userId) {
+  const queuedDeletes = await programRepository.getQueuedProgramDeletes(db);
+  let deletedCount = 0;
+
+  for (const queuedDelete of queuedDeletes) {
+    const { error } = await supabase
+      .from(PROGRAM_CLOUD_TABLE)
+      .delete()
+      .eq("id", queuedDelete.cloud_program_id)
+      .eq("user_id", userId);
+
+    if (error) {
+      throw error;
+    }
+
+    await programRepository.deleteQueuedProgramDelete(
+      db,
+      queuedDelete.program_sync_delete_id
+    );
+    deletedCount += 1;
+  }
+
+  return deletedCount;
+}
+
+async function uploadDirtyPrograms(db, userId) {
+  const localPrograms = await programRepository.getProgramsForCloudSync(db);
+  let uploadedCount = 0;
+
+  for (const localProgram of localPrograms) {
+    if (Number(localProgram.needs_sync) !== 1) {
+      continue;
+    }
+
+    const payload = buildCloudProgramPayload(localProgram, userId);
+
+    if (!payload.start_date) {
+      continue;
+    }
+
+    if (localProgram.cloud_program_id) {
+      const { data: updatedProgram, error: updateError } = await supabase
+        .from(PROGRAM_CLOUD_TABLE)
+        .update({
+          program_name: payload.program_name,
+          start_date: payload.start_date,
+          status: payload.status,
+        })
+        .eq("id", localProgram.cloud_program_id)
+        .eq("user_id", userId)
+        .select("id")
+        .maybeSingle();
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      let cloudProgramId = parseCloudProgramId(updatedProgram?.id);
+
+      if (cloudProgramId === null) {
+        const { data: insertedProgram, error: insertError } = await supabase
+          .from(PROGRAM_CLOUD_TABLE)
+          .insert(payload)
+          .select("id")
+          .single();
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        cloudProgramId = parseCloudProgramId(insertedProgram?.id);
+      }
+
+      if (cloudProgramId === null) {
+        throw new Error("Could not resolve cloud program id after update.");
+      }
+
+      await programRepository.markProgramSynced(db, {
+        programId: localProgram.program_id,
+        cloudProgramId,
+      });
+      uploadedCount += 1;
+      continue;
+    }
+
+    const { data: syncedProgram, error: syncError } = await supabase
+      .from(PROGRAM_CLOUD_TABLE)
+      .upsert(payload, {
+        onConflict: "user_id,local_program_id",
+      })
+      .select("id")
+      .single();
+
+    if (syncError) {
+      throw syncError;
+    }
+
+    const cloudProgramId = parseCloudProgramId(syncedProgram?.id);
+
+    if (cloudProgramId === null) {
+      throw new Error("Could not resolve cloud program id after insert.");
+    }
+
+    await programRepository.markProgramSynced(db, {
+      programId: localProgram.program_id,
+      cloudProgramId,
+    });
+    uploadedCount += 1;
+  }
+
+  return uploadedCount;
+}
+
+async function reconcileProgramsFromCloud(db, userId) {
+  const { data: cloudPrograms, error } = await supabase
+    .from(PROGRAM_CLOUD_TABLE)
+    .select(PROGRAM_CLOUD_SYNC_SELECT)
+    .eq("user_id", userId)
+    .order("start_date", { ascending: false })
+    .order("id", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  const localPrograms = await programRepository.getProgramsForCloudSync(db);
+  const localProgramsByCloudId = new Map();
+
+  for (const localProgram of localPrograms) {
+    const cloudProgramId = parseCloudProgramId(localProgram.cloud_program_id);
+
+    if (cloudProgramId !== null) {
+      localProgramsByCloudId.set(cloudProgramId, localProgram);
+    }
+  }
+
+  let downloadedCount = 0;
+
+  await withTransaction(db, async () => {
+    for (const cloudProgram of cloudPrograms ?? []) {
+      const cloudProgramId = parseCloudProgramId(cloudProgram.id);
+      const comparableCloudProgram = getComparableProgramSnapshot(cloudProgram);
+
+      if (cloudProgramId === null || !comparableCloudProgram.start_date) {
+        continue;
+      }
+
+      const localProgram = localProgramsByCloudId.get(cloudProgramId);
+
+      if (!localProgram) {
+        const result = await programRepository.createProgramFromCloud(db, {
+          cloudProgramId,
+          programName: comparableCloudProgram.program_name,
+          startDate: comparableCloudProgram.start_date,
+          status: comparableCloudProgram.status,
+        });
+
+        localProgramsByCloudId.set(cloudProgramId, {
+          program_id: result.lastInsertRowId,
+          cloud_program_id: cloudProgramId,
+          ...comparableCloudProgram,
+          needs_sync: 0,
+        });
+        downloadedCount += 1;
+        continue;
+      }
+
+      if (Number(localProgram.needs_sync) === 1) {
+        continue;
+      }
+
+      if (areComparableProgramsEqual(localProgram, comparableCloudProgram)) {
+        continue;
+      }
+
+      await programRepository.updateProgramFromCloud(db, {
+        programId: localProgram.program_id,
+        cloudProgramId,
+        programName: comparableCloudProgram.program_name,
+        startDate: comparableCloudProgram.start_date,
+        status: comparableCloudProgram.status,
+      });
+
+      localProgramsByCloudId.set(cloudProgramId, {
+        ...localProgram,
+        cloud_program_id: cloudProgramId,
+        ...comparableCloudProgram,
+        needs_sync: 0,
+      });
+      downloadedCount += 1;
+    }
+  });
+
+  return downloadedCount;
+}
+
+async function syncProgramsWithCloudInternal(db) {
+  const userId = await getAuthenticatedUserId();
+
+  if (!userId) {
+    return {
+      changed: false,
+      deletedCount: 0,
+      downloadedCount: 0,
+      uploadedCount: 0,
+    };
+  }
+
+  const deletedCount = await processQueuedProgramDeletes(db, userId);
+  const uploadedCount = await uploadDirtyPrograms(db, userId);
+  const downloadedCount = await reconcileProgramsFromCloud(db, userId);
+
+  return {
+    changed: deletedCount > 0 || uploadedCount > 0 || downloadedCount > 0,
+    deletedCount,
+    downloadedCount,
+    uploadedCount,
+  };
+}
+
+function syncProgramsInBackground(db) {
+  void syncProgramsWithCloud(db).catch((error) => {
+    console.error("Program cloud sync failed:", error);
+  });
 }
 
 function calculateBrzyckiOneRepMax(weight, reps) {
@@ -251,8 +559,21 @@ async function buildWorkoutPreview(db, workout) {
   };
 }
 
+export async function syncProgramsWithCloud(db) {
+  if (activeProgramSyncPromise) {
+    return activeProgramSyncPromise;
+  }
+
+  activeProgramSyncPromise = syncProgramsWithCloudInternal(db).finally(() => {
+    activeProgramSyncPromise = null;
+  });
+
+  return activeProgramSyncPromise;
+}
+
 export async function createProgram(db, { programName, startDate, status }) {
   await programRepository.createProgram(db, { programName, startDate, status });
+  syncProgramsInBackground(db);
 }
 
 export async function getProgramsOverview(db) {
@@ -312,10 +633,12 @@ export async function setProgramBestExerciseSelection(
 
 export async function updateProgramStatus(db, { programId, status }) {
   await programRepository.updateProgramStatus(db, { programId, status });
+  syncProgramsInBackground(db);
 }
 
 export async function updateProgramName(db, { programId, programName }) {
   await programRepository.updateProgramName(db, { programId, programName });
+  syncProgramsInBackground(db);
 }
 
 export async function getProgramDayCount(db, programId) {
@@ -397,6 +720,18 @@ export async function getProgramExerciseBests(db, programId) {
 
 export async function deleteProgram(db, programId) {
   await withTransaction(db, async () => {
+    const syncMetadata = await programRepository.getProgramSyncMetadata(
+      db,
+      programId
+    );
+
+    if (syncMetadata?.cloud_program_id) {
+      await programRepository.queueProgramDeleteSync(db, {
+        cloudProgramId: syncMetadata.cloud_program_id,
+        deletedAt: new Date().toISOString(),
+      });
+    }
+
     await programRepository.deleteSetsByProgram(db, programId);
     await programRepository.deleteExercisesByProgram(db, programId);
     await programRepository.deleteRunsByProgram(db, programId);
@@ -412,6 +747,8 @@ export async function deleteProgram(db, programId) {
     await programRepository.deleteMesocyclesByProgram(db, programId);
     await programRepository.deleteProgramById(db, programId);
   });
+
+  syncProgramsInBackground(db);
 }
 
 export async function createMesocycle(

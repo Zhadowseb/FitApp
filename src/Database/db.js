@@ -568,14 +568,17 @@ export async function initializeDatabase(db) {
 
   await ensureTableColumns(db, "Program", [
     ["cloud_program_id", "INTEGER"],
+    ["remote_local_program_id", "INTEGER"],
     ["status", "TEXT NOT NULL DEFAULT 'NOT_STARTED'"],
     ["needs_sync", "INTEGER NOT NULL DEFAULT 1"],
   ]);
 
   await ensureTableColumns(db, "Mesocycle", [
+    ["cloud_mesocycle_id", "INTEGER"],
     ["weeks", "INTEGER NOT NULL DEFAULT 0"],
     ["focus", 'TEXT DEFAULT "No focus set"'],
     ["done", "INTEGER NOT NULL DEFAULT 0"],
+    ["needs_sync", "INTEGER NOT NULL DEFAULT 1"],
   ]);
 
   await ensureTableColumns(db, "Microcycle", [

@@ -11,6 +11,7 @@ export async function getProgramsForCloudSync(db) {
     `SELECT
         program_id,
         cloud_program_id,
+        remote_local_program_id,
         program_name,
         start_date,
         status,
@@ -22,52 +23,217 @@ export async function getProgramsForCloudSync(db) {
 
 export async function createProgramFromCloud(
   db,
-  { cloudProgramId, programName, startDate, status }
+  { cloudProgramId, remoteLocalProgramId, programName, startDate, status }
 ) {
   return db.runAsync(
     `INSERT INTO Program (
       cloud_program_id,
+      remote_local_program_id,
       program_name,
       start_date,
       status,
       needs_sync
-    ) VALUES (?, ?, ?, ?, 0);`,
-    [cloudProgramId, programName, startDate, status]
+    ) VALUES (?, ?, ?, ?, ?, 0);`,
+    [
+      cloudProgramId,
+      remoteLocalProgramId,
+      programName,
+      startDate,
+      status,
+    ]
   );
 }
 
 export async function updateProgramFromCloud(
   db,
-  { programId, cloudProgramId, programName, startDate, status }
+  {
+    programId,
+    cloudProgramId,
+    remoteLocalProgramId,
+    programName,
+    startDate,
+    status,
+  }
 ) {
   await db.runAsync(
     `UPDATE Program
      SET cloud_program_id = ?,
+         remote_local_program_id = ?,
          program_name = ?,
          start_date = ?,
          status = ?,
          needs_sync = 0
      WHERE program_id = ?;`,
-    [cloudProgramId, programName, startDate, status, programId]
+    [
+      cloudProgramId,
+      remoteLocalProgramId,
+      programName,
+      startDate,
+      status,
+      programId,
+    ]
   );
 }
 
-export async function markProgramSynced(db, { programId, cloudProgramId }) {
+export async function markProgramSynced(
+  db,
+  { programId, cloudProgramId, remoteLocalProgramId = null }
+) {
   await db.runAsync(
     `UPDATE Program
      SET cloud_program_id = ?,
+         remote_local_program_id = COALESCE(?, remote_local_program_id, program_id),
          needs_sync = 0
      WHERE program_id = ?;`,
-    [cloudProgramId, programId]
+    [cloudProgramId, remoteLocalProgramId, programId]
   );
 }
 
 export async function getProgramSyncMetadata(db, programId) {
   return db.getFirstAsync(
-    `SELECT program_id, cloud_program_id, needs_sync
+    `SELECT program_id, cloud_program_id, remote_local_program_id, needs_sync
      FROM Program
      WHERE program_id = ?;`,
     [programId]
+  );
+}
+
+export async function getMesocyclesForCloudSync(db) {
+  return db.getAllAsync(
+    `SELECT
+        mesocycle_id,
+        cloud_mesocycle_id,
+        program_id,
+        mesocycle_number,
+        weeks,
+        focus,
+        done,
+        needs_sync
+     FROM Mesocycle
+     ORDER BY mesocycle_id ASC;`
+  );
+}
+
+export async function createMesocycleFromCloud(
+  db,
+  {
+    localMesocycleId,
+    cloudMesocycleId,
+    programId,
+    mesocycleNumber,
+    weeks,
+    focus,
+    done,
+  }
+) {
+  return db.runAsync(
+    `INSERT INTO Mesocycle (
+      mesocycle_id,
+      cloud_mesocycle_id,
+      program_id,
+      mesocycle_number,
+      weeks,
+      focus,
+      done,
+      needs_sync
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, 0);`,
+    [
+      localMesocycleId,
+      cloudMesocycleId,
+      programId,
+      mesocycleNumber,
+      weeks,
+      focus,
+      done ? 1 : 0,
+    ]
+  );
+}
+
+export async function updateMesocycleFromCloud(
+  db,
+  {
+    mesocycleId,
+    cloudMesocycleId,
+    programId,
+    mesocycleNumber,
+    weeks,
+    focus,
+    done,
+  }
+) {
+  await db.runAsync(
+    `UPDATE Mesocycle
+     SET cloud_mesocycle_id = ?,
+         program_id = ?,
+         mesocycle_number = ?,
+         weeks = ?,
+         focus = ?,
+         done = ?,
+         needs_sync = 0
+     WHERE mesocycle_id = ?;`,
+    [
+      cloudMesocycleId,
+      programId,
+      mesocycleNumber,
+      weeks,
+      focus,
+      done ? 1 : 0,
+      mesocycleId,
+    ]
+  );
+}
+
+export async function markMesocycleSynced(
+  db,
+  { mesocycleId, cloudMesocycleId }
+) {
+  await db.runAsync(
+    `UPDATE Mesocycle
+     SET cloud_mesocycle_id = ?,
+         needs_sync = 0
+     WHERE mesocycle_id = ?;`,
+    [cloudMesocycleId, mesocycleId]
+  );
+}
+
+export async function getMesocycleSyncMetadata(db, mesocycleId) {
+  return db.getFirstAsync(
+    `SELECT mesocycle_id, cloud_mesocycle_id, needs_sync
+     FROM Mesocycle
+     WHERE mesocycle_id = ?;`,
+    [mesocycleId]
+  );
+}
+
+export async function getQueuedMesocycleDeletes(db) {
+  return db.getAllAsync(
+    `SELECT
+        mesocycle_sync_delete_id,
+        cloud_mesocycle_id,
+        deleted_at
+     FROM Mesocycle_Sync_Delete
+     ORDER BY mesocycle_sync_delete_id ASC;`
+  );
+}
+
+export async function queueMesocycleDeleteSync(
+  db,
+  { cloudMesocycleId, deletedAt }
+) {
+  await db.runAsync(
+    `INSERT OR IGNORE INTO Mesocycle_Sync_Delete (
+      cloud_mesocycle_id,
+      deleted_at
+    ) VALUES (?, ?);`,
+    [cloudMesocycleId, deletedAt]
+  );
+}
+
+export async function deleteQueuedMesocycleDelete(db, queueId) {
+  await db.runAsync(
+    `DELETE FROM Mesocycle_Sync_Delete
+     WHERE mesocycle_sync_delete_id = ?;`,
+    [queueId]
   );
 }
 
@@ -501,7 +667,8 @@ export async function getMesocycleWorkoutCountsByProgram(db, programId) {
 export async function updateMesocycleFocus(db, { mesocycleId, focus }) {
   await db.runAsync(
     `UPDATE Mesocycle
-     SET focus = ?
+     SET focus = ?,
+         needs_sync = 1
      WHERE mesocycle_id = ?;`,
     [focus, mesocycleId]
   );
@@ -544,7 +711,8 @@ export async function getLastSundayByMicrocycle(db, microcycleId) {
 export async function incrementMesocycleWeeks(db, mesocycleId) {
   await db.runAsync(
     `UPDATE Mesocycle
-     SET weeks = weeks + 1
+     SET weeks = weeks + 1,
+         needs_sync = 1
      WHERE mesocycle_id = ?;`,
     [mesocycleId]
   );

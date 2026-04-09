@@ -3,6 +3,7 @@ export const programSchemaSql = `
   CREATE TABLE IF NOT EXISTS Program (
     program_id INTEGER PRIMARY KEY AUTOINCREMENT,
     cloud_program_id INTEGER,
+    remote_local_program_id INTEGER,
     program_name TEXT,
     start_date TEXT NOT NULL,
     status TEXT
@@ -29,11 +30,19 @@ export const programSchemaSql = `
 
   CREATE TABLE IF NOT EXISTS Mesocycle(
       mesocycle_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cloud_mesocycle_id INTEGER,
       program_id INTEGER NOT NULL,
       mesocycle_number INTEGER NOT NULL,
       weeks INTEGER NOT NULL DEFAULT 0,
       focus TEXT DEFAULT "No focus set",
-      done INTEGER NOT NULL DEFAULT 0
+      done INTEGER NOT NULL DEFAULT 0,
+      needs_sync INTEGER NOT NULL DEFAULT 1
+  );
+
+  CREATE TABLE IF NOT EXISTS Mesocycle_Sync_Delete (
+    mesocycle_sync_delete_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cloud_mesocycle_id INTEGER NOT NULL UNIQUE,
+    deleted_at TEXT
   );
 
   CREATE TABLE IF NOT EXISTS Microcycle(

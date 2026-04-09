@@ -1,6 +1,6 @@
 {
   "name": "programapp",
-  "version": "0.5.1-fix-versioning-feature-levels.1",
+  "version": "0.5.2-minor-mesocycle-cloud-sync.1",
   "main": "index.js",
   "scripts": {
     "start": "expo start --dev-client --scheme exp+programapp-dev",

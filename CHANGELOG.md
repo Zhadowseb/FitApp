@@ -10,6 +10,10 @@ All changes to the project are logged here.
 
 All changes to the project are logged here.
 
+
+
+All changes to the project are logged here.
+
 ## [Unreleased]
 ### Changed
 - Updated branch-driven versioning to support `major/...` and `minor/...` feature prefixes, where `minor/...` and `fix/...` both produce patch-level prerelease bumps.
@@ -17,7 +21,9 @@ All changes to the project are logged here.
 - Aligned the local `Exercise` catalog with the cloud naming model, moved muscle-group counts to runtime calculation, and safely migrated `Exercise_Instance` to `exercise_instance_id` and `workout_type_instance_id` without breaking existing set relationships.
 - Renamed the local `Sets` table to `Set` and safely migrated its `exercise_id` relation to `exercise_instance_id` without breaking existing set rows.
 - Added the first `Program` cloud sync flow with local cloud-id tracking, dirty-state sync flags, remote delete queueing, and an app-level sync runner that uploads local program changes and pulls remote-only programs.
+- Added the first `Mesocycle` cloud sync flow with local cloud-id tracking, dirty-state sync flags, remote delete queueing, and app-level sync triggers that depend on `Program` sync.
 - Normalized `Program.start_date` between local SQLite `dd.MM.yyyy` strings and cloud PostgreSQL `date` values to avoid sync failures and mixed local date formats.
+- Fixed `Mesocycle` cloud sync parent mapping so cloud writes use the canonical remote `Program.local_program_id` instead of the device-local SQLite `program_id`, which avoids Supabase RLS insert failures across devices.
 
 ---
 

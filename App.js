@@ -25,6 +25,7 @@ import { ThemedText, ThemedView } from './src/Resources/ThemedComponents';
 import { locationService } from "./src/Services";
 import { AuthProvider, useAuth } from './src/Contexts/AuthContext';
 import ExerciseLibrarySync from "./src/Sync/ExerciseLibrarySync";
+import MesocycleSync from "./src/Sync/MesocycleSync";
 import ProgramSync from "./src/Sync/ProgramSync";
 
 import * as SQLite from 'expo-sqlite';
@@ -135,6 +136,7 @@ export default function App() {
         options={{ useNewConnection: false }}>
         <AuthProvider>
           <ProgramSync />
+          <MesocycleSync />
           <ExerciseLibrarySync />
           <RootNavigator />
         </AuthProvider>

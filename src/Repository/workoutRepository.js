@@ -249,7 +249,8 @@ export async function updateMesocycleDoneFromMicrocycles(db, mesocycleId) {
          WHERE Microcycle.mesocycle_id = Mesocycle.mesocycle_id
            AND Microcycle.done = 0
        )
-     )
+     ),
+         needs_sync = 1
      WHERE mesocycle_id = ?;`,
     [mesocycleId]
   );

@@ -233,7 +233,8 @@ export async function updateMicrocycleDoneFromWorkouts(db, microcycleId) {
          WHERE Day.microcycle_id = Microcycle.microcycle_id
            AND Workout_Type_Instance.done = 0
        )
-     )
+     ),
+         needs_sync = 1
      WHERE microcycle_id = ?;`,
     [microcycleId]
   );

@@ -1,6 +1,6 @@
 {
   "name": "programapp",
-  "version": "0.5.5-fix-changelog-release-workflow.1",
+  "version": "0.5.6-minor-microcycle-cloud-sync.1",
   "main": "index.js",
   "scripts": {
     "start": "expo start --dev-client --scheme exp+programapp-dev",

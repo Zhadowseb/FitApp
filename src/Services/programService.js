@@ -29,10 +29,14 @@ const PROGRAM_CLOUD_SYNC_SELECT =
   "id, user_id, local_program_id, program_name, start_date, status";
 const MESOCYCLE_CLOUD_TABLE = "Mesocycle";
 const MESOCYCLE_CLOUD_SYNC_SELECT =
-  "id, user_id, local_mesocycle_id, local_program_id, mesocycle_number, weeks, focus, done";
+  "id, user_id, local_mesocycle_id, cloud_program_id, mesocycle_number, weeks, focus, done";
+const MICROCYCLE_CLOUD_TABLE = "Microcycle";
+const MICROCYCLE_CLOUD_SYNC_SELECT =
+  "id, user_id, local_microcycle_id, cloud_mesocycle_id, microcycle_number, focus, done";
 
 let activeProgramSyncPromise = null;
 let activeMesocycleSyncPromise = null;
+let activeMicrocycleSyncPromise = null;
 
 function formatDisplayNumber(value) {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1);
@@ -75,7 +79,7 @@ function resolveProgramCloudLocalId(program) {
 
 function getComparableProgramSnapshot(program) {
   return {
-    local_program_id: resolveProgramCloudLocalId(program),
+    local_program_id: normalizeOptionalInteger(program?.local_program_id, null),
     program_name: normalizeProgramName(program?.program_name),
     start_date: normalizeProgramStartDate(program?.start_date),
     status: normalizeProgramStatus(program?.status),
@@ -87,7 +91,6 @@ function areComparableProgramsEqual(leftProgram, rightProgram) {
   const rightSnapshot = getComparableProgramSnapshot(rightProgram);
 
   return (
-    leftSnapshot.local_program_id === rightSnapshot.local_program_id &&
     leftSnapshot.program_name === rightSnapshot.program_name &&
     leftSnapshot.start_date === rightSnapshot.start_date &&
     leftSnapshot.status === rightSnapshot.status
@@ -149,10 +152,128 @@ function parseCloudMesocycleId(value) {
   return Number.isFinite(numericValue) ? numericValue : null;
 }
 
+function resolveMesocycleCloudLocalId(mesocycle) {
+  return normalizeOptionalInteger(
+    mesocycle?.remote_local_mesocycle_id ??
+      mesocycle?.local_mesocycle_id ??
+      mesocycle?.mesocycle_id,
+    null
+  );
+}
+
+function parseCloudMicrocycleId(value) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+async function ensureProgramCloudIdentity(db, userId, localProgram) {
+  const remoteLocalProgramId = resolveProgramCloudLocalId(localProgram);
+
+  if (!localProgram || remoteLocalProgramId === null) {
+    return null;
+  }
+
+  const { data: cloudProgram, error } = await supabase
+    .from(PROGRAM_CLOUD_TABLE)
+    .select("id, local_program_id")
+    .eq("user_id", userId)
+    .eq("local_program_id", remoteLocalProgramId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  const cloudProgramId = parseCloudProgramId(cloudProgram?.id);
+
+  if (cloudProgramId !== null) {
+    const syncedRemoteLocalProgramId =
+      normalizeOptionalInteger(cloudProgram?.local_program_id, null) ??
+      remoteLocalProgramId;
+
+    if (
+      parseCloudProgramId(localProgram.cloud_program_id) !== cloudProgramId ||
+      resolveProgramCloudLocalId(localProgram) !== syncedRemoteLocalProgramId
+    ) {
+      await programRepository.updateProgramCloudIdentity(db, {
+        programId: localProgram.program_id,
+        cloudProgramId,
+        remoteLocalProgramId: syncedRemoteLocalProgramId,
+      });
+    }
+
+    return cloudProgramId;
+  }
+
+  if (
+    parseCloudProgramId(localProgram.cloud_program_id) !== null ||
+    Number(localProgram.needs_sync) !== 1
+  ) {
+    await programRepository.markProgramForCloudResync(db, {
+      programId: localProgram.program_id,
+    });
+  }
+
+  return null;
+}
+
+async function ensureMesocycleCloudIdentity(db, userId, localMesocycle) {
+  const remoteLocalMesocycleId = resolveMesocycleCloudLocalId(localMesocycle);
+
+  if (!localMesocycle || remoteLocalMesocycleId === null) {
+    return null;
+  }
+
+  const { data: cloudMesocycle, error } = await supabase
+    .from(MESOCYCLE_CLOUD_TABLE)
+    .select("id, local_mesocycle_id")
+    .eq("user_id", userId)
+    .eq("local_mesocycle_id", remoteLocalMesocycleId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  const cloudMesocycleId = parseCloudMesocycleId(cloudMesocycle?.id);
+
+  if (cloudMesocycleId !== null) {
+    const syncedRemoteLocalMesocycleId =
+      normalizeOptionalInteger(cloudMesocycle?.local_mesocycle_id, null) ??
+      remoteLocalMesocycleId;
+
+    if (
+      parseCloudMesocycleId(localMesocycle.cloud_mesocycle_id) !==
+        cloudMesocycleId ||
+      resolveMesocycleCloudLocalId(localMesocycle) !==
+        syncedRemoteLocalMesocycleId
+    ) {
+      await programRepository.updateMesocycleCloudIdentity(db, {
+        mesocycleId: localMesocycle.mesocycle_id,
+        cloudMesocycleId,
+        remoteLocalMesocycleId: syncedRemoteLocalMesocycleId,
+      });
+    }
+
+    return cloudMesocycleId;
+  }
+
+  if (
+    parseCloudMesocycleId(localMesocycle.cloud_mesocycle_id) !== null ||
+    Number(localMesocycle.needs_sync) !== 1
+  ) {
+    await programRepository.markMesocycleForCloudResync(db, {
+      mesocycleId: localMesocycle.mesocycle_id,
+    });
+  }
+
+  return null;
+}
+
 function getComparableMesocycleSnapshot(mesocycle) {
   return {
-    local_program_id: normalizeOptionalInteger(
-      mesocycle?.local_program_id ?? mesocycle?.program_id,
+    cloud_program_id: normalizeOptionalInteger(
+      mesocycle?.cloud_program_id,
       null
     ),
     mesocycle_number: normalizeOptionalInteger(mesocycle?.mesocycle_number, 0),
@@ -167,7 +288,7 @@ function areComparableMesocyclesEqual(leftMesocycle, rightMesocycle) {
   const rightSnapshot = getComparableMesocycleSnapshot(rightMesocycle);
 
   return (
-    leftSnapshot.local_program_id === rightSnapshot.local_program_id &&
+    leftSnapshot.cloud_program_id === rightSnapshot.cloud_program_id &&
     leftSnapshot.mesocycle_number === rightSnapshot.mesocycle_number &&
     leftSnapshot.weeks === rightSnapshot.weeks &&
     leftSnapshot.focus === rightSnapshot.focus &&
@@ -175,15 +296,56 @@ function areComparableMesocyclesEqual(leftMesocycle, rightMesocycle) {
   );
 }
 
-function buildCloudMesocyclePayload(localMesocycle, userId, localProgramId) {
+function buildCloudMesocyclePayload(localMesocycle, userId, cloudProgramId) {
   return {
     user_id: userId,
-    local_mesocycle_id: localMesocycle.mesocycle_id,
-    local_program_id: localProgramId,
+    local_mesocycle_id: resolveMesocycleCloudLocalId(localMesocycle),
+    cloud_program_id: cloudProgramId,
     mesocycle_number: normalizeOptionalInteger(localMesocycle.mesocycle_number, 0),
     weeks: normalizeOptionalInteger(localMesocycle.weeks, 0),
     focus: normalizeOptionalText(localMesocycle.focus),
     done: normalizeBooleanFlag(localMesocycle.done),
+  };
+}
+
+function getComparableMicrocycleSnapshot(microcycle) {
+  return {
+    cloud_mesocycle_id: normalizeOptionalInteger(
+      microcycle?.cloud_mesocycle_id,
+      null
+    ),
+    microcycle_number: normalizeOptionalInteger(
+      microcycle?.microcycle_number,
+      0
+    ),
+    focus: normalizeOptionalText(microcycle?.focus),
+    done: normalizeBooleanFlag(microcycle?.done),
+  };
+}
+
+function areComparableMicrocyclesEqual(leftMicrocycle, rightMicrocycle) {
+  const leftSnapshot = getComparableMicrocycleSnapshot(leftMicrocycle);
+  const rightSnapshot = getComparableMicrocycleSnapshot(rightMicrocycle);
+
+  return (
+    leftSnapshot.cloud_mesocycle_id === rightSnapshot.cloud_mesocycle_id &&
+    leftSnapshot.microcycle_number === rightSnapshot.microcycle_number &&
+    leftSnapshot.focus === rightSnapshot.focus &&
+    leftSnapshot.done === rightSnapshot.done
+  );
+}
+
+function buildCloudMicrocyclePayload(localMicrocycle, userId, cloudMesocycleId) {
+  return {
+    user_id: userId,
+    local_microcycle_id: localMicrocycle.microcycle_id,
+    cloud_mesocycle_id: cloudMesocycleId,
+    microcycle_number: normalizeOptionalInteger(
+      localMicrocycle.microcycle_number,
+      0
+    ),
+    focus: normalizeOptionalText(localMicrocycle.focus),
+    done: normalizeBooleanFlag(localMicrocycle.done),
   };
 }
 
@@ -316,8 +478,7 @@ async function uploadDirtyPrograms(db, userId) {
       }
 
       const remoteLocalProgramId =
-        resolveProgramCloudLocalId(syncedProgramRecord) ??
-        payload.local_program_id;
+        resolveProgramCloudLocalId(syncedProgramRecord) ?? payload.local_program_id;
 
       await programRepository.markProgramSynced(db, {
         programId: localProgram.program_id,
@@ -374,12 +535,18 @@ async function reconcileProgramsFromCloud(db, userId) {
 
   const localPrograms = await programRepository.getProgramsForCloudSync(db);
   const localProgramsByCloudId = new Map();
+  const localProgramsByRemoteLocalId = new Map();
 
   for (const localProgram of localPrograms) {
     const cloudProgramId = parseCloudProgramId(localProgram.cloud_program_id);
+    const remoteLocalProgramId = resolveProgramCloudLocalId(localProgram);
 
     if (cloudProgramId !== null) {
       localProgramsByCloudId.set(cloudProgramId, localProgram);
+    }
+
+    if (remoteLocalProgramId !== null) {
+      localProgramsByRemoteLocalId.set(remoteLocalProgramId, localProgram);
     }
   }
 
@@ -398,7 +565,10 @@ async function reconcileProgramsFromCloud(db, userId) {
         continue;
       }
 
-      const localProgram = localProgramsByCloudId.get(cloudProgramId);
+      const localProgram =
+        localProgramsByCloudId.get(cloudProgramId) ??
+        localProgramsByRemoteLocalId.get(comparableCloudProgram.local_program_id) ??
+        null;
 
       if (!localProgram) {
         const result = await programRepository.createProgramFromCloud(db, {
@@ -416,6 +586,13 @@ async function reconcileProgramsFromCloud(db, userId) {
           ...comparableCloudProgram,
           needs_sync: 0,
         });
+        localProgramsByRemoteLocalId.set(comparableCloudProgram.local_program_id, {
+          program_id: result.lastInsertRowId,
+          cloud_program_id: cloudProgramId,
+          remote_local_program_id: comparableCloudProgram.local_program_id,
+          ...comparableCloudProgram,
+          needs_sync: 0,
+        });
         downloadedCount += 1;
         continue;
       }
@@ -425,6 +602,16 @@ async function reconcileProgramsFromCloud(db, userId) {
       }
 
       if (areComparableProgramsEqual(localProgram, comparableCloudProgram)) {
+        if (
+          !localProgram.cloud_program_id ||
+          resolveProgramCloudLocalId(localProgram) !== comparableCloudProgram.local_program_id
+        ) {
+          await programRepository.markProgramSynced(db, {
+            programId: localProgram.program_id,
+            cloudProgramId,
+            remoteLocalProgramId: comparableCloudProgram.local_program_id,
+          });
+        }
         continue;
       }
 
@@ -438,6 +625,13 @@ async function reconcileProgramsFromCloud(db, userId) {
       });
 
       localProgramsByCloudId.set(cloudProgramId, {
+        ...localProgram,
+        cloud_program_id: cloudProgramId,
+        remote_local_program_id: comparableCloudProgram.local_program_id,
+        ...comparableCloudProgram,
+        needs_sync: 0,
+      });
+      localProgramsByRemoteLocalId.set(comparableCloudProgram.local_program_id, {
         ...localProgram,
         cloud_program_id: cloudProgramId,
         remote_local_program_id: comparableCloudProgram.local_program_id,
@@ -503,7 +697,11 @@ async function processQueuedMesocycleDeletes(db, userId) {
   return deletedCount;
 }
 
-async function uploadDirtyMesocycles(db, userId) {
+async function uploadDirtyMesocycles(
+  db,
+  userId,
+  { allowParentRepair = true } = {}
+) {
   const [localMesocycles, localPrograms] = await Promise.all([
     programRepository.getMesocyclesForCloudSync(db),
     programRepository.getProgramsForCloudSync(db),
@@ -512,6 +710,7 @@ async function uploadDirtyMesocycles(db, userId) {
     localPrograms.map((program) => [program.program_id, program])
   );
   let uploadedCount = 0;
+  let requiresProgramRepair = false;
 
   for (const localMesocycle of localMesocycles) {
     if (Number(localMesocycle.needs_sync) !== 1) {
@@ -519,23 +718,32 @@ async function uploadDirtyMesocycles(db, userId) {
     }
 
     const parentProgram = localProgramsById.get(localMesocycle.program_id);
-    const parentProgramCloudLocalId = resolveProgramCloudLocalId(parentProgram);
+    const parentProgramCloudId = await ensureProgramCloudIdentity(
+      db,
+      userId,
+      parentProgram
+    );
 
-    if (!parentProgram?.cloud_program_id || parentProgramCloudLocalId === null) {
+    if (parentProgramCloudId === null) {
+      requiresProgramRepair = true;
       continue;
     }
 
     const payload = buildCloudMesocyclePayload(
       localMesocycle,
       userId,
-      parentProgramCloudLocalId
+      parentProgramCloudId
     );
+
+    if (payload.local_mesocycle_id === null) {
+      continue;
+    }
 
     if (localMesocycle.cloud_mesocycle_id) {
       const { data: updatedMesocycle, error: updateError } = await supabase
         .from(MESOCYCLE_CLOUD_TABLE)
         .update({
-          local_program_id: payload.local_program_id,
+          cloud_program_id: payload.cloud_program_id,
           mesocycle_number: payload.mesocycle_number,
           weeks: payload.weeks,
           focus: payload.focus,
@@ -543,26 +751,28 @@ async function uploadDirtyMesocycles(db, userId) {
         })
         .eq("id", localMesocycle.cloud_mesocycle_id)
         .eq("user_id", userId)
-        .select("id")
+        .select("id, local_mesocycle_id")
         .maybeSingle();
 
       if (updateError) {
         throw updateError;
       }
 
+      let syncedMesocycleRecord = updatedMesocycle;
       let cloudMesocycleId = parseCloudMesocycleId(updatedMesocycle?.id);
 
       if (cloudMesocycleId === null) {
         const { data: insertedMesocycle, error: insertError } = await supabase
           .from(MESOCYCLE_CLOUD_TABLE)
           .insert(payload)
-          .select("id")
+          .select("id, local_mesocycle_id")
           .single();
 
         if (insertError) {
           throw insertError;
         }
 
+        syncedMesocycleRecord = insertedMesocycle;
         cloudMesocycleId = parseCloudMesocycleId(insertedMesocycle?.id);
       }
 
@@ -570,9 +780,14 @@ async function uploadDirtyMesocycles(db, userId) {
         throw new Error("Could not resolve cloud mesocycle id after update.");
       }
 
+      const remoteLocalMesocycleId =
+        resolveMesocycleCloudLocalId(syncedMesocycleRecord) ??
+        payload.local_mesocycle_id;
+
       await programRepository.markMesocycleSynced(db, {
         mesocycleId: localMesocycle.mesocycle_id,
         cloudMesocycleId,
+        remoteLocalMesocycleId,
       });
       uploadedCount += 1;
       continue;
@@ -583,7 +798,7 @@ async function uploadDirtyMesocycles(db, userId) {
       .upsert(payload, {
         onConflict: "user_id,local_mesocycle_id",
       })
-      .select("id")
+      .select("id, local_mesocycle_id")
       .single();
 
     if (syncError) {
@@ -596,11 +811,22 @@ async function uploadDirtyMesocycles(db, userId) {
       throw new Error("Could not resolve cloud mesocycle id after insert.");
     }
 
+    const remoteLocalMesocycleId =
+      resolveMesocycleCloudLocalId(syncedMesocycle) ?? payload.local_mesocycle_id;
+
     await programRepository.markMesocycleSynced(db, {
       mesocycleId: localMesocycle.mesocycle_id,
       cloudMesocycleId,
+      remoteLocalMesocycleId,
     });
     uploadedCount += 1;
+  }
+
+  if (requiresProgramRepair && allowParentRepair) {
+    await syncProgramsWithCloud(db);
+    uploadedCount += await uploadDirtyMesocycles(db, userId, {
+      allowParentRepair: false,
+    });
   }
 
   return uploadedCount;
@@ -611,7 +837,7 @@ async function reconcileMesocyclesFromCloud(db, userId) {
     .from(MESOCYCLE_CLOUD_TABLE)
     .select(MESOCYCLE_CLOUD_SYNC_SELECT)
     .eq("user_id", userId)
-    .order("local_program_id", { ascending: true })
+    .order("cloud_program_id", { ascending: true })
     .order("mesocycle_number", { ascending: true })
     .order("id", { ascending: true });
 
@@ -624,17 +850,18 @@ async function reconcileMesocyclesFromCloud(db, userId) {
     programRepository.getProgramsForCloudSync(db),
   ]);
   const localMesocyclesByCloudId = new Map();
+  const localMesocyclesByRemoteLocalId = new Map();
   const localMesocyclesByLocalId = new Map();
   const localProgramsById = new Map(
     localPrograms.map((program) => [program.program_id, program])
   );
-  const localProgramsByCloudLocalId = new Map();
+  const localProgramsByCloudId = new Map();
 
   for (const localProgram of localPrograms) {
-    const cloudLocalProgramId = resolveProgramCloudLocalId(localProgram);
+    const cloudProgramId = parseCloudProgramId(localProgram.cloud_program_id);
 
-    if (cloudLocalProgramId !== null) {
-      localProgramsByCloudLocalId.set(cloudLocalProgramId, localProgram);
+    if (cloudProgramId !== null) {
+      localProgramsByCloudId.set(cloudProgramId, localProgram);
     }
   }
 
@@ -642,9 +869,14 @@ async function reconcileMesocyclesFromCloud(db, userId) {
     const cloudMesocycleId = parseCloudMesocycleId(
       localMesocycle.cloud_mesocycle_id
     );
+    const remoteLocalMesocycleId = resolveMesocycleCloudLocalId(localMesocycle);
 
     if (cloudMesocycleId !== null) {
       localMesocyclesByCloudId.set(cloudMesocycleId, localMesocycle);
+    }
+
+    if (remoteLocalMesocycleId !== null) {
+      localMesocyclesByRemoteLocalId.set(remoteLocalMesocycleId, localMesocycle);
     }
 
     localMesocyclesByLocalId.set(localMesocycle.mesocycle_id, localMesocycle);
@@ -659,11 +891,11 @@ async function reconcileMesocyclesFromCloud(db, userId) {
         cloudMesocycle.local_mesocycle_id,
         null
       );
-      const localProgramId = normalizeOptionalInteger(
-        cloudMesocycle.local_program_id,
+      const cloudProgramId = normalizeOptionalInteger(
+        cloudMesocycle.cloud_program_id,
         null
       );
-      const parentProgram = localProgramsByCloudLocalId.get(localProgramId);
+      const parentProgram = localProgramsByCloudId.get(cloudProgramId);
       const comparableCloudMesocycle = getComparableMesocycleSnapshot(
         cloudMesocycle
       );
@@ -671,7 +903,7 @@ async function reconcileMesocyclesFromCloud(db, userId) {
       if (
         cloudMesocycleId === null ||
         localMesocycleId === null ||
-        localProgramId === null ||
+        cloudProgramId === null ||
         !parentProgram
       ) {
         continue;
@@ -679,6 +911,7 @@ async function reconcileMesocyclesFromCloud(db, userId) {
 
       const localMesocycle =
         localMesocyclesByCloudId.get(cloudMesocycleId) ??
+        localMesocyclesByRemoteLocalId.get(localMesocycleId) ??
         localMesocyclesByLocalId.get(localMesocycleId) ??
         null;
 
@@ -686,6 +919,7 @@ async function reconcileMesocyclesFromCloud(db, userId) {
         await programRepository.createMesocycleFromCloud(db, {
           localMesocycleId,
           cloudMesocycleId,
+          remoteLocalMesocycleId: localMesocycleId,
           programId: parentProgram.program_id,
           mesocycleNumber: comparableCloudMesocycle.mesocycle_number,
           weeks: comparableCloudMesocycle.weeks,
@@ -696,6 +930,7 @@ async function reconcileMesocyclesFromCloud(db, userId) {
         const createdMesocycle = {
           mesocycle_id: localMesocycleId,
           cloud_mesocycle_id: cloudMesocycleId,
+          remote_local_mesocycle_id: localMesocycleId,
           program_id: parentProgram.program_id,
           mesocycle_number: comparableCloudMesocycle.mesocycle_number,
           weeks: comparableCloudMesocycle.weeks,
@@ -705,6 +940,7 @@ async function reconcileMesocyclesFromCloud(db, userId) {
         };
 
         localMesocyclesByCloudId.set(cloudMesocycleId, createdMesocycle);
+        localMesocyclesByRemoteLocalId.set(localMesocycleId, createdMesocycle);
         localMesocyclesByLocalId.set(localMesocycleId, createdMesocycle);
         downloadedCount += 1;
         continue;
@@ -716,8 +952,8 @@ async function reconcileMesocyclesFromCloud(db, userId) {
 
       const comparableLocalMesocycle = getComparableMesocycleSnapshot({
         ...localMesocycle,
-        local_program_id: resolveProgramCloudLocalId(
-          localProgramsById.get(localMesocycle.program_id)
+        cloud_program_id: parseCloudProgramId(
+          localProgramsById.get(localMesocycle.program_id)?.cloud_program_id
         ),
       });
 
@@ -727,10 +963,14 @@ async function reconcileMesocyclesFromCloud(db, userId) {
           comparableCloudMesocycle
         )
       ) {
-        if (!localMesocycle.cloud_mesocycle_id) {
+        if (
+          !localMesocycle.cloud_mesocycle_id ||
+          resolveMesocycleCloudLocalId(localMesocycle) !== localMesocycleId
+        ) {
           await programRepository.markMesocycleSynced(db, {
             mesocycleId: localMesocycle.mesocycle_id,
             cloudMesocycleId,
+            remoteLocalMesocycleId: localMesocycleId,
           });
         }
         continue;
@@ -739,6 +979,7 @@ async function reconcileMesocyclesFromCloud(db, userId) {
       await programRepository.updateMesocycleFromCloud(db, {
         mesocycleId: localMesocycle.mesocycle_id,
         cloudMesocycleId,
+        remoteLocalMesocycleId: localMesocycleId,
         programId: parentProgram.program_id,
         mesocycleNumber: comparableCloudMesocycle.mesocycle_number,
         weeks: comparableCloudMesocycle.weeks,
@@ -749,6 +990,7 @@ async function reconcileMesocyclesFromCloud(db, userId) {
       const updatedMesocycle = {
         ...localMesocycle,
         cloud_mesocycle_id: cloudMesocycleId,
+        remote_local_mesocycle_id: localMesocycleId,
         program_id: parentProgram.program_id,
         mesocycle_number: comparableCloudMesocycle.mesocycle_number,
         weeks: comparableCloudMesocycle.weeks,
@@ -758,6 +1000,7 @@ async function reconcileMesocyclesFromCloud(db, userId) {
       };
 
       localMesocyclesByCloudId.set(cloudMesocycleId, updatedMesocycle);
+      localMesocyclesByRemoteLocalId.set(localMesocycleId, updatedMesocycle);
       localMesocyclesByLocalId.set(localMesocycle.mesocycle_id, updatedMesocycle);
       downloadedCount += 1;
     }
@@ -792,10 +1035,398 @@ async function syncMesocyclesWithCloudInternal(db) {
   };
 }
 
+async function processQueuedMicrocycleDeletes(db, userId) {
+  const queuedDeletes = await programRepository.getQueuedMicrocycleDeletes(db);
+  let deletedCount = 0;
+
+  for (const queuedDelete of queuedDeletes) {
+    const wasDeletedNow = await deleteCloudRowForUserOrThrow({
+      tableName: MICROCYCLE_CLOUD_TABLE,
+      rowId: queuedDelete.cloud_microcycle_id,
+      userId,
+      entityLabel: "Microcycle",
+    });
+
+    await programRepository.deleteQueuedMicrocycleDelete(
+      db,
+      queuedDelete.microcycle_sync_delete_id
+    );
+    deletedCount += wasDeletedNow ? 1 : 0;
+  }
+
+  return deletedCount;
+}
+
+async function uploadDirtyMicrocycles(
+  db,
+  userId,
+  { allowParentRepair = true } = {}
+) {
+  const [localMicrocycles, localMesocycles] = await Promise.all([
+    programRepository.getMicrocyclesForCloudSync(db),
+    programRepository.getMesocyclesForCloudSync(db),
+  ]);
+  const localMesocyclesById = new Map(
+    localMesocycles.map((mesocycle) => [mesocycle.mesocycle_id, mesocycle])
+  );
+  let uploadedCount = 0;
+  let requiresMesocycleRepair = false;
+
+  for (const localMicrocycle of localMicrocycles) {
+    if (Number(localMicrocycle.needs_sync) !== 1) {
+      continue;
+    }
+
+    const parentMesocycle = localMesocyclesById.get(
+      localMicrocycle.mesocycle_id
+    );
+    const parentMesocycleCloudId = await ensureMesocycleCloudIdentity(
+      db,
+      userId,
+      parentMesocycle
+    );
+
+    if (parentMesocycleCloudId === null) {
+      requiresMesocycleRepair = true;
+      continue;
+    }
+
+    const payload = buildCloudMicrocyclePayload(
+      localMicrocycle,
+      userId,
+      parentMesocycleCloudId
+    );
+
+    if (localMicrocycle.cloud_microcycle_id) {
+      const { data: updatedMicrocycle, error: updateError } = await supabase
+        .from(MICROCYCLE_CLOUD_TABLE)
+        .update({
+          cloud_mesocycle_id: payload.cloud_mesocycle_id,
+          microcycle_number: payload.microcycle_number,
+          focus: payload.focus,
+          done: payload.done,
+        })
+        .eq("id", localMicrocycle.cloud_microcycle_id)
+        .eq("user_id", userId)
+        .select("id")
+        .maybeSingle();
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      let cloudMicrocycleId = parseCloudMicrocycleId(updatedMicrocycle?.id);
+
+      if (cloudMicrocycleId === null) {
+        const { data: insertedMicrocycle, error: insertError } = await supabase
+          .from(MICROCYCLE_CLOUD_TABLE)
+          .insert(payload)
+          .select("id")
+          .single();
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        cloudMicrocycleId = parseCloudMicrocycleId(insertedMicrocycle?.id);
+      }
+
+      if (cloudMicrocycleId === null) {
+        throw new Error("Could not resolve cloud microcycle id after update.");
+      }
+
+      await programRepository.markMicrocycleSynced(db, {
+        microcycleId: localMicrocycle.microcycle_id,
+        cloudMicrocycleId,
+      });
+      uploadedCount += 1;
+      continue;
+    }
+
+    const { data: syncedMicrocycle, error: syncError } = await supabase
+      .from(MICROCYCLE_CLOUD_TABLE)
+      .upsert(payload, {
+        onConflict: "user_id,local_microcycle_id",
+      })
+      .select("id")
+      .single();
+
+    if (syncError) {
+      throw syncError;
+    }
+
+    const cloudMicrocycleId = parseCloudMicrocycleId(syncedMicrocycle?.id);
+
+    if (cloudMicrocycleId === null) {
+      throw new Error("Could not resolve cloud microcycle id after insert.");
+    }
+
+    await programRepository.markMicrocycleSynced(db, {
+      microcycleId: localMicrocycle.microcycle_id,
+      cloudMicrocycleId,
+    });
+    uploadedCount += 1;
+  }
+
+  if (requiresMesocycleRepair && allowParentRepair) {
+    await syncMesocyclesWithCloud(db);
+    uploadedCount += await uploadDirtyMicrocycles(db, userId, {
+      allowParentRepair: false,
+    });
+  }
+
+  return uploadedCount;
+}
+
+async function reconcileMicrocyclesFromCloud(db, userId) {
+  const { data: cloudMicrocycles, error } = await supabase
+    .from(MICROCYCLE_CLOUD_TABLE)
+    .select(MICROCYCLE_CLOUD_SYNC_SELECT)
+    .eq("user_id", userId)
+    .order("cloud_mesocycle_id", { ascending: true })
+    .order("microcycle_number", { ascending: true })
+    .order("id", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  const [localMicrocycles, localMesocycles, localPrograms] = await Promise.all([
+    programRepository.getMicrocyclesForCloudSync(db),
+    programRepository.getMesocyclesForCloudSync(db),
+    programRepository.getProgramsForCloudSync(db),
+  ]);
+  const localMicrocyclesByCloudId = new Map();
+  const localMicrocyclesByLocalId = new Map();
+  const localMesocyclesById = new Map(
+    localMesocycles.map((mesocycle) => [mesocycle.mesocycle_id, mesocycle])
+  );
+  const localMesocyclesByCloudId = new Map();
+  const localProgramsById = new Map(
+    localPrograms.map((program) => [program.program_id, program])
+  );
+
+  for (const localMesocycle of localMesocycles) {
+    const cloudMesocycleId = parseCloudMesocycleId(
+      localMesocycle.cloud_mesocycle_id
+    );
+
+    if (cloudMesocycleId !== null) {
+      localMesocyclesByCloudId.set(cloudMesocycleId, localMesocycle);
+    }
+  }
+
+  for (const localMicrocycle of localMicrocycles) {
+    const cloudMicrocycleId = parseCloudMicrocycleId(
+      localMicrocycle.cloud_microcycle_id
+    );
+
+    if (cloudMicrocycleId !== null) {
+      localMicrocyclesByCloudId.set(cloudMicrocycleId, localMicrocycle);
+    }
+
+    localMicrocyclesByLocalId.set(localMicrocycle.microcycle_id, localMicrocycle);
+  }
+
+  let downloadedCount = 0;
+
+  await withTransaction(db, async () => {
+    for (const cloudMicrocycle of cloudMicrocycles ?? []) {
+      const cloudMicrocycleId = parseCloudMicrocycleId(cloudMicrocycle.id);
+      const localMicrocycleId = normalizeOptionalInteger(
+        cloudMicrocycle.local_microcycle_id,
+        null
+      );
+      const cloudMesocycleId = normalizeOptionalInteger(
+        cloudMicrocycle.cloud_mesocycle_id,
+        null
+      );
+      const parentMesocycle = localMesocyclesByCloudId.get(cloudMesocycleId);
+      const parentProgram = localProgramsById.get(parentMesocycle?.program_id);
+      const comparableCloudMicrocycle = getComparableMicrocycleSnapshot(
+        cloudMicrocycle
+      );
+
+      if (
+        cloudMicrocycleId === null ||
+        localMicrocycleId === null ||
+        cloudMesocycleId === null ||
+        !parentMesocycle ||
+        !parentProgram?.start_date
+      ) {
+        continue;
+      }
+
+      const localMicrocycle =
+        localMicrocyclesByCloudId.get(cloudMicrocycleId) ??
+        localMicrocyclesByLocalId.get(localMicrocycleId) ??
+        null;
+
+      if (!localMicrocycle) {
+        await programRepository.createMicrocycleFromCloud(db, {
+          localMicrocycleId,
+          cloudMicrocycleId,
+          mesocycleId: parentMesocycle.mesocycle_id,
+          microcycleNumber: comparableCloudMicrocycle.microcycle_number,
+          focus: comparableCloudMicrocycle.focus,
+          done: comparableCloudMicrocycle.done,
+        });
+
+        await ensureDefaultDaysForMicrocycle(db, {
+          microcycleId: localMicrocycleId,
+          programId: parentProgram.program_id,
+          mesocycleNumber: parentMesocycle.mesocycle_number,
+          microcycleNumber: comparableCloudMicrocycle.microcycle_number,
+          startDate: parentProgram.start_date,
+        });
+
+        const createdMicrocycle = {
+          microcycle_id: localMicrocycleId,
+          cloud_microcycle_id: cloudMicrocycleId,
+          mesocycle_id: parentMesocycle.mesocycle_id,
+          microcycle_number: comparableCloudMicrocycle.microcycle_number,
+          focus: comparableCloudMicrocycle.focus,
+          done: comparableCloudMicrocycle.done ? 1 : 0,
+          needs_sync: 0,
+        };
+
+        localMicrocyclesByCloudId.set(cloudMicrocycleId, createdMicrocycle);
+        localMicrocyclesByLocalId.set(localMicrocycleId, createdMicrocycle);
+        downloadedCount += 1;
+        continue;
+      }
+
+      if (Number(localMicrocycle.needs_sync) === 1) {
+        continue;
+      }
+
+      await ensureDefaultDaysForMicrocycle(db, {
+        microcycleId: localMicrocycle.microcycle_id,
+        programId: parentProgram.program_id,
+        mesocycleNumber: parentMesocycle.mesocycle_number,
+        microcycleNumber: comparableCloudMicrocycle.microcycle_number,
+        startDate: parentProgram.start_date,
+      });
+
+      const comparableLocalMicrocycle = getComparableMicrocycleSnapshot({
+        ...localMicrocycle,
+        cloud_mesocycle_id: parseCloudMesocycleId(
+          parentMesocycle.cloud_mesocycle_id
+        ),
+      });
+
+      if (
+        areComparableMicrocyclesEqual(
+          comparableLocalMicrocycle,
+          comparableCloudMicrocycle
+        )
+      ) {
+        if (!localMicrocycle.cloud_microcycle_id) {
+          await programRepository.markMicrocycleSynced(db, {
+            microcycleId: localMicrocycle.microcycle_id,
+            cloudMicrocycleId,
+          });
+        }
+        continue;
+      }
+
+      await programRepository.updateMicrocycleFromCloud(db, {
+        microcycleId: localMicrocycle.microcycle_id,
+        cloudMicrocycleId,
+        mesocycleId: parentMesocycle.mesocycle_id,
+        microcycleNumber: comparableCloudMicrocycle.microcycle_number,
+        focus: comparableCloudMicrocycle.focus,
+        done: comparableCloudMicrocycle.done,
+      });
+
+      const updatedMicrocycle = {
+        ...localMicrocycle,
+        cloud_microcycle_id: cloudMicrocycleId,
+        mesocycle_id: parentMesocycle.mesocycle_id,
+        microcycle_number: comparableCloudMicrocycle.microcycle_number,
+        focus: comparableCloudMicrocycle.focus,
+        done: comparableCloudMicrocycle.done ? 1 : 0,
+        needs_sync: 0,
+      };
+
+      localMicrocyclesByCloudId.set(cloudMicrocycleId, updatedMicrocycle);
+      localMicrocyclesByLocalId.set(
+        localMicrocycle.microcycle_id,
+        updatedMicrocycle
+      );
+      downloadedCount += 1;
+    }
+  });
+
+  return downloadedCount;
+}
+
+async function syncMicrocyclesWithCloudInternal(db) {
+  await syncMesocyclesWithCloud(db);
+
+  const userId = await getAuthenticatedUserId();
+
+  if (!userId) {
+    return {
+      changed: false,
+      deletedCount: 0,
+      downloadedCount: 0,
+      uploadedCount: 0,
+    };
+  }
+
+  const deletedCount = await processQueuedMicrocycleDeletes(db, userId);
+  const uploadedCount = await uploadDirtyMicrocycles(db, userId);
+  const downloadedCount = await reconcileMicrocyclesFromCloud(db, userId);
+
+  return {
+    changed: deletedCount > 0 || uploadedCount > 0 || downloadedCount > 0,
+    deletedCount,
+    downloadedCount,
+    uploadedCount,
+  };
+}
+
 function syncMesocyclesInBackground(db) {
   void syncMesocyclesWithCloud(db).catch((error) => {
     console.error("Mesocycle cloud sync failed:", error);
   });
+}
+
+function syncMicrocyclesInBackground(db) {
+  void syncMicrocyclesWithCloud(db).catch((error) => {
+    console.error("Microcycle cloud sync failed:", error);
+  });
+}
+
+async function ensureDefaultDaysForMicrocycle(
+  db,
+  { microcycleId, programId, mesocycleNumber, microcycleNumber, startDate }
+) {
+  const existingDays = await programRepository.getDaysByMicrocycle(db, microcycleId);
+
+  if (existingDays.length > 0) {
+    return;
+  }
+
+  const weeksBefore = await getWeeksBeforeMesocycle(db, {
+    programId,
+    mesocycleNumber,
+  });
+
+  for (let dayIndex = 0; dayIndex < WEEK_DAYS.length; dayIndex += 1) {
+    const currentDay = (weeksBefore + microcycleNumber - 1) * 7 + dayIndex;
+    const date = parseCustomDate(startDate);
+
+    date.setDate(date.getDate() + currentDay);
+
+    await programRepository.insertDay(db, {
+      microcycleId,
+      programId,
+      weekday: WEEK_DAYS[dayIndex],
+      date: formatDate(date),
+    });
+  }
 }
 
 function calculateBrzyckiOneRepMax(weight, reps) {
@@ -1049,6 +1680,18 @@ export async function syncMesocyclesWithCloud(db) {
   });
 
   return activeMesocycleSyncPromise;
+}
+
+export async function syncMicrocyclesWithCloud(db) {
+  if (activeMicrocycleSyncPromise) {
+    return activeMicrocycleSyncPromise;
+  }
+
+  activeMicrocycleSyncPromise = syncMicrocyclesWithCloudInternal(db).finally(() => {
+    activeMicrocycleSyncPromise = null;
+  });
+
+  return activeMicrocycleSyncPromise;
 }
 
 export async function createProgram(db, { programName, startDate, status }) {
@@ -1312,7 +1955,7 @@ export async function createMesocycle(
     return mesocycleResult.lastInsertRowId;
   });
 
-  syncMesocyclesInBackground(db);
+  syncMicrocyclesInBackground(db);
   return mesocycleId;
 }
 
@@ -1363,7 +2006,7 @@ export async function addWeekToMesocycle(db, { mesocycleId, programId }) {
     return microcycleResult.lastInsertRowId;
   });
 
-  syncMesocyclesInBackground(db);
+  syncMicrocyclesInBackground(db);
   return insertedMicrocycleId;
 }
 
@@ -1443,6 +2086,7 @@ export async function getMicrocyclesByMesocycle(db, mesocycleId) {
 
 export async function updateMicrocycleFocus(db, { microcycleId, focus }) {
   await programRepository.updateMicrocycleFocus(db, { microcycleId, focus });
+  syncMicrocyclesInBackground(db);
 }
 
 export async function getMicrocycleWorkoutCounts(db, microcycleId) {
@@ -1543,14 +2187,43 @@ export async function copyMicrocycleWorkouts(
 }
 
 export async function deleteMicrocycle(db, microcycleId) {
+  let mesocycleId = null;
+
   await withTransaction(db, async () => {
+    const syncMetadata = await programRepository.getMicrocycleSyncMetadata(
+      db,
+      microcycleId
+    );
+    const metadata = await programRepository.getMicrocycleMetadata(db, microcycleId);
+    mesocycleId = metadata?.mesocycle_id ?? null;
+
+    if (syncMetadata?.cloud_microcycle_id) {
+      await programRepository.queueMicrocycleDeleteSync(db, {
+        cloudMicrocycleId: syncMetadata.cloud_microcycle_id,
+        deletedAt: new Date().toISOString(),
+      });
+    }
+
     await programRepository.deleteSetsByMicrocycle(db, microcycleId);
     await programRepository.deleteExercisesByMicrocycle(db, microcycleId);
     await programRepository.deleteRunsByMicrocycle(db, microcycleId);
     await programRepository.deleteWorkoutsByMicrocycle(db, microcycleId);
     await programRepository.deleteDaysByMicrocycle(db, microcycleId);
     await programRepository.deleteMicrocycleById(db, microcycleId);
+
+    if (mesocycleId) {
+      await workoutRepository.updateMesocycleDoneFromMicrocycles(db, mesocycleId);
+    }
   });
+
+  try {
+    await syncMicrocyclesWithCloud(db);
+  } catch (error) {
+    console.error(
+      "Microcycle cloud delete sync failed after local delete; the delete remains queued for retry:",
+      error
+    );
+  }
 }
 
 export async function getDayDetails(db, { microcycleId, weekday }) {

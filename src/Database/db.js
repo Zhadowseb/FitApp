@@ -381,34 +381,174 @@ async function migrateMicrocycleProgramIdRemoval(db) {
   await db.execAsync("BEGIN IMMEDIATE;");
 
   try {
+    const hasCloudMicrocycleId = hasColumn(
+      microcycleColumns,
+      "cloud_microcycle_id"
+    );
+    const hasNeedsSync = hasColumn(microcycleColumns, "needs_sync");
+
     await db.execAsync(`
       DROP TABLE IF EXISTS Microcycle_next;
 
       CREATE TABLE Microcycle_next (
         microcycle_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cloud_microcycle_id INTEGER,
         mesocycle_id INTEGER NOT NULL,
         microcycle_number INTEGER NOT NULL,
         focus TEXT DEFAULT "No focus",
-        done INTEGER NOT NULL DEFAULT 0
+        done INTEGER NOT NULL DEFAULT 0,
+        needs_sync INTEGER NOT NULL DEFAULT 1
       );
 
       INSERT INTO Microcycle_next (
         microcycle_id,
+        cloud_microcycle_id,
         mesocycle_id,
         microcycle_number,
         focus,
-        done
+        done,
+        needs_sync
       )
       SELECT
         microcycle_id,
+        ${hasCloudMicrocycleId ? "cloud_microcycle_id" : "NULL"},
         mesocycle_id,
         microcycle_number,
         focus,
-        done
+        done,
+        ${hasNeedsSync ? "needs_sync" : "1"}
       FROM Microcycle;
 
       DROP TABLE Microcycle;
       ALTER TABLE Microcycle_next RENAME TO Microcycle;
+    `);
+
+    await db.execAsync("COMMIT;");
+  } catch (error) {
+    await db.execAsync("ROLLBACK;");
+    throw error;
+  }
+}
+
+async function migrateProgramRemoteLocalIdRemoval(db) {
+  const programColumns = await getTableColumns(db, "Program");
+
+  if (!programColumns.length || !hasColumn(programColumns, "remote_local_program_id")) {
+    return;
+  }
+
+  const hasCloudProgramId = hasColumn(programColumns, "cloud_program_id");
+  const hasProgramName = hasColumn(programColumns, "program_name");
+  const hasStartDate = hasColumn(programColumns, "start_date");
+  const hasStatus = hasColumn(programColumns, "status");
+  const hasNeedsSync = hasColumn(programColumns, "needs_sync");
+
+  await db.execAsync("BEGIN IMMEDIATE;");
+
+  try {
+    await db.execAsync(`
+      DROP TABLE IF EXISTS Program_next;
+
+      CREATE TABLE Program_next (
+        program_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cloud_program_id INTEGER,
+        program_name TEXT,
+        start_date TEXT NOT NULL,
+        status TEXT
+          DEFAULT 'NOT_STARTED'
+          NOT NULL
+          CHECK (status IN ('COMPLETE', 'ACTIVE', 'NOT_STARTED')),
+        needs_sync INTEGER NOT NULL DEFAULT 1
+      );
+
+      INSERT INTO Program_next (
+        program_id,
+        cloud_program_id,
+        program_name,
+        start_date,
+        status,
+        needs_sync
+      )
+      SELECT
+        program_id,
+        ${hasCloudProgramId ? "cloud_program_id" : "NULL"},
+        ${hasProgramName ? "program_name" : "NULL"},
+        ${hasStartDate ? "start_date" : "''"},
+        ${hasStatus ? "status" : "'NOT_STARTED'"},
+        ${hasNeedsSync ? "needs_sync" : "1"}
+      FROM Program;
+
+      DROP TABLE Program;
+      ALTER TABLE Program_next RENAME TO Program;
+    `);
+
+    await db.execAsync("COMMIT;");
+  } catch (error) {
+    await db.execAsync("ROLLBACK;");
+    throw error;
+  }
+}
+
+async function migrateMesocycleRemoteLocalIdRemoval(db) {
+  const mesocycleColumns = await getTableColumns(db, "Mesocycle");
+
+  if (
+    !mesocycleColumns.length ||
+    !hasColumn(mesocycleColumns, "remote_local_mesocycle_id")
+  ) {
+    return;
+  }
+
+  const hasCloudMesocycleId = hasColumn(mesocycleColumns, "cloud_mesocycle_id");
+  const hasProgramId = hasColumn(mesocycleColumns, "program_id");
+  const hasMesocycleNumber = hasColumn(mesocycleColumns, "mesocycle_number");
+  const hasWeeks = hasColumn(mesocycleColumns, "weeks");
+  const hasFocus = hasColumn(mesocycleColumns, "focus");
+  const hasDone = hasColumn(mesocycleColumns, "done");
+
+  await db.execAsync("BEGIN IMMEDIATE;");
+
+  try {
+    await db.execAsync(`
+      DROP TABLE IF EXISTS Mesocycle_next;
+
+      CREATE TABLE Mesocycle_next (
+        mesocycle_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cloud_mesocycle_id INTEGER,
+        program_id INTEGER NOT NULL,
+        mesocycle_number INTEGER NOT NULL,
+        weeks INTEGER NOT NULL DEFAULT 0,
+        focus TEXT DEFAULT "No focus set",
+        done INTEGER NOT NULL DEFAULT 0,
+        needs_sync INTEGER NOT NULL DEFAULT 1
+      );
+
+      INSERT INTO Mesocycle_next (
+        mesocycle_id,
+        cloud_mesocycle_id,
+        program_id,
+        mesocycle_number,
+        weeks,
+        focus,
+        done,
+        needs_sync
+      )
+      SELECT
+        mesocycle_id,
+        ${hasCloudMesocycleId ? "cloud_mesocycle_id" : "NULL"},
+        ${hasProgramId ? "program_id" : "0"},
+        ${hasMesocycleNumber ? "mesocycle_number" : "0"},
+        ${hasWeeks ? "weeks" : "0"},
+        ${hasFocus ? "focus" : "'No focus set'"},
+        ${hasDone ? "done" : "0"},
+        1
+      FROM Mesocycle;
+
+      DROP TABLE Mesocycle;
+      ALTER TABLE Mesocycle_next RENAME TO Mesocycle;
+
+      UPDATE Microcycle
+      SET needs_sync = 1;
     `);
 
     await db.execAsync("COMMIT;");
@@ -550,6 +690,63 @@ async function repairProgramDateFormats(db) {
   `);
 }
 
+async function getAppMetadataValue(db, metadataKey) {
+  const row = await db.getFirstAsync(
+    `SELECT metadata_value
+     FROM App_Metadata
+     WHERE metadata_key = ?;`,
+    [metadataKey]
+  );
+
+  return row?.metadata_value ?? null;
+}
+
+async function setAppMetadataValue(db, metadataKey, metadataValue) {
+  await db.runAsync(
+    `INSERT INTO App_Metadata (metadata_key, metadata_value)
+     VALUES (?, ?)
+     ON CONFLICT(metadata_key)
+     DO UPDATE SET metadata_value = excluded.metadata_value;`,
+    [metadataKey, metadataValue]
+  );
+}
+
+async function repairCloudParentForeignKeySyncState(db) {
+  const metadataKey = "cloud_parent_fk_resync_v1";
+  const alreadyApplied = await getAppMetadataValue(db, metadataKey);
+
+  if (alreadyApplied === "done") {
+    return;
+  }
+
+  await db.execAsync("BEGIN IMMEDIATE;");
+
+  try {
+    await db.execAsync(`
+      UPDATE Program
+      SET cloud_program_id = NULL,
+          needs_sync = 1
+      WHERE cloud_program_id IS NOT NULL;
+
+      UPDATE Mesocycle
+      SET cloud_mesocycle_id = NULL,
+          needs_sync = 1
+      WHERE cloud_mesocycle_id IS NOT NULL;
+
+      UPDATE Microcycle
+      SET cloud_microcycle_id = NULL,
+          needs_sync = 1
+      WHERE cloud_microcycle_id IS NOT NULL;
+    `);
+
+    await setAppMetadataValue(db, metadataKey, "done");
+    await db.execAsync("COMMIT;");
+  } catch (error) {
+    await db.execAsync("ROLLBACK;");
+    throw error;
+  }
+}
+
 export async function initializeDatabase(db) {
   await migrateWeightliftingTableNames(db);
   await migrateWorkoutTableName(db);
@@ -575,6 +772,7 @@ export async function initializeDatabase(db) {
 
   await ensureTableColumns(db, "Mesocycle", [
     ["cloud_mesocycle_id", "INTEGER"],
+    ["remote_local_mesocycle_id", "INTEGER"],
     ["weeks", "INTEGER NOT NULL DEFAULT 0"],
     ["focus", 'TEXT DEFAULT "No focus set"'],
     ["done", "INTEGER NOT NULL DEFAULT 0"],
@@ -587,9 +785,21 @@ export async function initializeDatabase(db) {
   ]);
   await migrateMicrocycleProgramIdRemoval(db);
   await ensureTableColumns(db, "Microcycle", [
+    ["cloud_microcycle_id", "INTEGER"],
     ["focus", 'TEXT DEFAULT "No focus"'],
     ["done", "INTEGER NOT NULL DEFAULT 0"],
+    ["needs_sync", "INTEGER NOT NULL DEFAULT 1"],
   ]);
+
+  await db.execAsync(`
+    UPDATE Program
+    SET remote_local_program_id = COALESCE(remote_local_program_id, program_id)
+    WHERE remote_local_program_id IS NULL;
+
+    UPDATE Mesocycle
+    SET remote_local_mesocycle_id = COALESCE(remote_local_mesocycle_id, mesocycle_id)
+    WHERE remote_local_mesocycle_id IS NULL;
+  `);
 
   await ensureTableColumns(db, "Day", [
     ["done", "INTEGER NOT NULL DEFAULT 0"],
@@ -657,6 +867,7 @@ export async function initializeDatabase(db) {
   await repairStrengthTrainingState(db);
   await repairRunSetState(db);
   await repairProgramDateFormats(db);
+  await repairCloudParentForeignKeySyncState(db);
 
   await initializeWeightliftingData(db);
 

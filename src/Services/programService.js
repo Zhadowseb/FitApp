@@ -33,10 +33,14 @@ const MESOCYCLE_CLOUD_SYNC_SELECT =
 const MICROCYCLE_CLOUD_TABLE = "Microcycle";
 const MICROCYCLE_CLOUD_SYNC_SELECT =
   "id, user_id, local_microcycle_id, cloud_mesocycle_id, microcycle_number, focus, done";
+const DAY_CLOUD_TABLE = "Day";
+const DAY_CLOUD_SYNC_SELECT =
+  "id, user_id, local_day_id, cloud_microcycle_id, weekday, date, done";
 
 let activeProgramSyncPromise = null;
 let activeMesocycleSyncPromise = null;
 let activeMicrocycleSyncPromise = null;
+let activeDaySyncPromise = null;
 
 function formatDisplayNumber(value) {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1);
@@ -166,6 +170,35 @@ function parseCloudMicrocycleId(value) {
   return Number.isFinite(numericValue) ? numericValue : null;
 }
 
+function normalizeWeekday(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmedValue = value.trim();
+  return trimmedValue.length > 0 ? trimmedValue : null;
+}
+
+function normalizeDayDate(value) {
+  return normalizeLocalDateString(value);
+}
+
+function normalizeDayDateForCloud(value) {
+  return normalizeIsoDateString(value);
+}
+
+function parseCloudDayId(value) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function resolveDayCloudLocalId(day) {
+  return normalizeOptionalInteger(
+    day?.remote_local_day_id ?? day?.local_day_id ?? day?.day_id,
+    null
+  );
+}
+
 async function ensureProgramCloudIdentity(db, userId, localProgram) {
   const remoteLocalProgramId = resolveProgramCloudLocalId(localProgram);
 
@@ -270,6 +303,55 @@ async function ensureMesocycleCloudIdentity(db, userId, localMesocycle) {
   return null;
 }
 
+async function ensureMicrocycleCloudIdentity(db, userId, localMicrocycle) {
+  const localMicrocycleId = normalizeOptionalInteger(
+    localMicrocycle?.microcycle_id,
+    null
+  );
+
+  if (!localMicrocycle || localMicrocycleId === null) {
+    return null;
+  }
+
+  const { data: cloudMicrocycle, error } = await supabase
+    .from(MICROCYCLE_CLOUD_TABLE)
+    .select("id")
+    .eq("user_id", userId)
+    .eq("local_microcycle_id", localMicrocycleId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  const cloudMicrocycleId = parseCloudMicrocycleId(cloudMicrocycle?.id);
+
+  if (cloudMicrocycleId !== null) {
+    if (
+      parseCloudMicrocycleId(localMicrocycle.cloud_microcycle_id) !==
+      cloudMicrocycleId
+    ) {
+      await programRepository.updateMicrocycleCloudIdentity(db, {
+        microcycleId: localMicrocycle.microcycle_id,
+        cloudMicrocycleId,
+      });
+    }
+
+    return cloudMicrocycleId;
+  }
+
+  if (
+    parseCloudMicrocycleId(localMicrocycle.cloud_microcycle_id) !== null ||
+    Number(localMicrocycle.needs_sync) !== 1
+  ) {
+    await programRepository.markMicrocycleForCloudResync(db, {
+      microcycleId: localMicrocycle.microcycle_id,
+    });
+  }
+
+  return null;
+}
+
 function getComparableMesocycleSnapshot(mesocycle) {
   return {
     cloud_program_id: normalizeOptionalInteger(
@@ -347,6 +429,53 @@ function buildCloudMicrocyclePayload(localMicrocycle, userId, cloudMesocycleId) 
     focus: normalizeOptionalText(localMicrocycle.focus),
     done: normalizeBooleanFlag(localMicrocycle.done),
   };
+}
+
+function getComparableDaySnapshot(day) {
+  return {
+    local_day_id: normalizeOptionalInteger(day?.local_day_id, null),
+    cloud_microcycle_id: normalizeOptionalInteger(
+      day?.cloud_microcycle_id,
+      null
+    ),
+    weekday: normalizeWeekday(day?.weekday ?? day?.Weekday),
+    date: normalizeDayDate(day?.date),
+    done: normalizeBooleanFlag(day?.done),
+  };
+}
+
+function areComparableDaysEqual(leftDay, rightDay) {
+  const leftSnapshot = getComparableDaySnapshot(leftDay);
+  const rightSnapshot = getComparableDaySnapshot(rightDay);
+
+  return (
+    leftSnapshot.cloud_microcycle_id === rightSnapshot.cloud_microcycle_id &&
+    leftSnapshot.weekday === rightSnapshot.weekday &&
+    leftSnapshot.date === rightSnapshot.date &&
+    leftSnapshot.done === rightSnapshot.done
+  );
+}
+
+function buildCloudDayPayload(localDay, userId, cloudMicrocycleId) {
+  return {
+    user_id: userId,
+    local_day_id: resolveDayCloudLocalId(localDay),
+    cloud_microcycle_id: cloudMicrocycleId,
+    weekday: normalizeWeekday(localDay.weekday ?? localDay.Weekday),
+    date: normalizeDayDateForCloud(localDay.date),
+    done: normalizeBooleanFlag(localDay.done),
+  };
+}
+
+function getDayIdentityKey(microcycleId, weekday) {
+  const normalizedMicrocycleId = normalizeOptionalInteger(microcycleId, null);
+  const normalizedWeekday = normalizeWeekday(weekday);
+
+  if (normalizedMicrocycleId === null || normalizedWeekday === null) {
+    return null;
+  }
+
+  return `${normalizedMicrocycleId}:${normalizedWeekday.toLowerCase()}`;
 }
 
 async function getAuthenticatedUserId() {
@@ -1399,6 +1528,377 @@ function syncMicrocyclesInBackground(db) {
   });
 }
 
+async function uploadDirtyDays(
+  db,
+  userId,
+  { allowParentRepair = true } = {}
+) {
+  const [localDays, localMicrocycles] = await Promise.all([
+    programRepository.getDaysForCloudSync(db),
+    programRepository.getMicrocyclesForCloudSync(db),
+  ]);
+  const localMicrocyclesById = new Map(
+    localMicrocycles.map((microcycle) => [microcycle.microcycle_id, microcycle])
+  );
+  let uploadedCount = 0;
+  let requiresMicrocycleRepair = false;
+
+  for (const localDay of localDays) {
+    if (Number(localDay.needs_sync) !== 1) {
+      continue;
+    }
+
+    const parentMicrocycle = localMicrocyclesById.get(localDay.microcycle_id);
+    const parentMicrocycleCloudId = await ensureMicrocycleCloudIdentity(
+      db,
+      userId,
+      parentMicrocycle
+    );
+
+    if (parentMicrocycleCloudId === null) {
+      requiresMicrocycleRepair = true;
+      continue;
+    }
+
+    const payload = buildCloudDayPayload(localDay, userId, parentMicrocycleCloudId);
+
+    if (
+      payload.local_day_id === null ||
+      !payload.weekday ||
+      !payload.date
+    ) {
+      continue;
+    }
+
+    if (localDay.cloud_day_id) {
+      const { data: updatedDay, error: updateError } = await supabase
+        .from(DAY_CLOUD_TABLE)
+        .update({
+          cloud_microcycle_id: payload.cloud_microcycle_id,
+          weekday: payload.weekday,
+          date: payload.date,
+          done: payload.done,
+        })
+        .eq("id", localDay.cloud_day_id)
+        .eq("user_id", userId)
+        .select("id, local_day_id")
+        .maybeSingle();
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      let syncedDayRecord = updatedDay;
+      let cloudDayId = parseCloudDayId(updatedDay?.id);
+
+      if (cloudDayId === null) {
+        const { data: insertedDay, error: insertError } = await supabase
+          .from(DAY_CLOUD_TABLE)
+          .insert(payload)
+          .select("id, local_day_id")
+          .single();
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        syncedDayRecord = insertedDay;
+        cloudDayId = parseCloudDayId(insertedDay?.id);
+      }
+
+      if (cloudDayId === null) {
+        throw new Error("Could not resolve cloud day id after update.");
+      }
+
+      const remoteLocalDayId =
+        resolveDayCloudLocalId(syncedDayRecord) ?? payload.local_day_id;
+
+      await programRepository.markDaySynced(db, {
+        dayId: localDay.day_id,
+        cloudDayId,
+        remoteLocalDayId,
+      });
+      uploadedCount += 1;
+      continue;
+    }
+
+    const { data: syncedDay, error: syncError } = await supabase
+      .from(DAY_CLOUD_TABLE)
+      .upsert(payload, {
+        onConflict: "user_id,local_day_id",
+      })
+      .select("id, local_day_id")
+      .single();
+
+    if (syncError) {
+      throw syncError;
+    }
+
+    const cloudDayId = parseCloudDayId(syncedDay?.id);
+
+    if (cloudDayId === null) {
+      throw new Error("Could not resolve cloud day id after insert.");
+    }
+
+    const remoteLocalDayId =
+      resolveDayCloudLocalId(syncedDay) ?? payload.local_day_id;
+
+    await programRepository.markDaySynced(db, {
+      dayId: localDay.day_id,
+      cloudDayId,
+      remoteLocalDayId,
+    });
+    uploadedCount += 1;
+  }
+
+  if (requiresMicrocycleRepair && allowParentRepair) {
+    await syncMicrocyclesWithCloud(db);
+    uploadedCount += await uploadDirtyDays(db, userId, {
+      allowParentRepair: false,
+    });
+  }
+
+  return uploadedCount;
+}
+
+async function reconcileDaysFromCloud(db, userId) {
+  const { data: cloudDays, error } = await supabase
+    .from(DAY_CLOUD_TABLE)
+    .select(DAY_CLOUD_SYNC_SELECT)
+    .eq("user_id", userId)
+    .order("cloud_microcycle_id", { ascending: true })
+    .order("weekday", { ascending: true })
+    .order("id", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  const [localDays, localMicrocycles, localMesocycles] = await Promise.all([
+    programRepository.getDaysForCloudSync(db),
+    programRepository.getMicrocyclesForCloudSync(db),
+    programRepository.getMesocyclesForCloudSync(db),
+  ]);
+  const localMicrocyclesByCloudId = new Map();
+  const localMesocyclesById = new Map(
+    localMesocycles.map((mesocycle) => [mesocycle.mesocycle_id, mesocycle])
+  );
+  const localDaysByCloudId = new Map();
+  const localDaysByRemoteLocalId = new Map();
+  const localDaysByLocalId = new Map();
+  const localDaysByIdentityKey = new Map();
+
+  for (const localMicrocycle of localMicrocycles) {
+    const cloudMicrocycleId = parseCloudMicrocycleId(
+      localMicrocycle.cloud_microcycle_id
+    );
+
+    if (cloudMicrocycleId !== null) {
+      localMicrocyclesByCloudId.set(cloudMicrocycleId, localMicrocycle);
+    }
+  }
+
+  for (const localDay of localDays) {
+    const cloudDayId = parseCloudDayId(localDay.cloud_day_id);
+    const remoteLocalDayId = resolveDayCloudLocalId(localDay);
+    const identityKey = getDayIdentityKey(
+      localDay.microcycle_id,
+      localDay.weekday ?? localDay.Weekday
+    );
+
+    if (cloudDayId !== null) {
+      localDaysByCloudId.set(cloudDayId, localDay);
+    }
+
+    if (remoteLocalDayId !== null) {
+      localDaysByRemoteLocalId.set(remoteLocalDayId, localDay);
+    }
+
+    localDaysByLocalId.set(localDay.day_id, localDay);
+
+    if (identityKey && !localDaysByIdentityKey.has(identityKey)) {
+      localDaysByIdentityKey.set(identityKey, localDay);
+    }
+  }
+
+  let downloadedCount = 0;
+
+  await withTransaction(db, async () => {
+    for (const cloudDay of cloudDays ?? []) {
+      const cloudDayId = parseCloudDayId(cloudDay.id);
+      const localDayId = normalizeOptionalInteger(cloudDay.local_day_id, null);
+      const cloudMicrocycleId = normalizeOptionalInteger(
+        cloudDay.cloud_microcycle_id,
+        null
+      );
+      const parentMicrocycle = localMicrocyclesByCloudId.get(cloudMicrocycleId);
+      const parentMesocycle = localMesocyclesById.get(parentMicrocycle?.mesocycle_id);
+      const comparableCloudDay = getComparableDaySnapshot(cloudDay);
+      const identityKey = getDayIdentityKey(
+        parentMicrocycle?.microcycle_id,
+        comparableCloudDay.weekday
+      );
+
+      if (
+        cloudDayId === null ||
+        localDayId === null ||
+        cloudMicrocycleId === null ||
+        !parentMicrocycle ||
+        !parentMesocycle ||
+        !comparableCloudDay.weekday ||
+        !comparableCloudDay.date
+      ) {
+        continue;
+      }
+
+      const localDay =
+        localDaysByCloudId.get(cloudDayId) ??
+        localDaysByRemoteLocalId.get(localDayId) ??
+        localDaysByLocalId.get(localDayId) ??
+        (identityKey ? localDaysByIdentityKey.get(identityKey) : null) ??
+        null;
+
+      if (!localDay) {
+        const result = await programRepository.createDayFromCloud(db, {
+          cloudDayId,
+          remoteLocalDayId: localDayId,
+          microcycleId: parentMicrocycle.microcycle_id,
+          programId: parentMesocycle.program_id,
+          weekday: comparableCloudDay.weekday,
+          date: comparableCloudDay.date,
+          done: comparableCloudDay.done,
+        });
+
+        const createdDay = {
+          day_id: result.lastInsertRowId,
+          cloud_day_id: cloudDayId,
+          remote_local_day_id: localDayId,
+          microcycle_id: parentMicrocycle.microcycle_id,
+          program_id: parentMesocycle.program_id,
+          weekday: comparableCloudDay.weekday,
+          date: comparableCloudDay.date,
+          done: comparableCloudDay.done ? 1 : 0,
+          needs_sync: 0,
+        };
+
+        localDaysByCloudId.set(cloudDayId, createdDay);
+        localDaysByRemoteLocalId.set(localDayId, createdDay);
+        localDaysByLocalId.set(createdDay.day_id, createdDay);
+        if (identityKey) {
+          localDaysByIdentityKey.set(identityKey, createdDay);
+        }
+        downloadedCount += 1;
+        continue;
+      }
+
+      const comparableLocalDay = getComparableDaySnapshot({
+        ...localDay,
+        cloud_microcycle_id: parseCloudMicrocycleId(
+          parentMicrocycle.cloud_microcycle_id
+        ),
+      });
+
+      if (Number(localDay.needs_sync) === 1) {
+        if (areComparableDaysEqual(comparableLocalDay, comparableCloudDay)) {
+          await programRepository.markDaySynced(db, {
+            dayId: localDay.day_id,
+            cloudDayId,
+            remoteLocalDayId: localDayId,
+          });
+        } else if (
+          !localDay.cloud_day_id ||
+          resolveDayCloudLocalId(localDay) !== localDayId
+        ) {
+          await programRepository.updateDayCloudIdentity(db, {
+            dayId: localDay.day_id,
+            cloudDayId,
+            remoteLocalDayId: localDayId,
+          });
+        }
+        continue;
+      }
+
+      if (areComparableDaysEqual(comparableLocalDay, comparableCloudDay)) {
+        if (
+          !localDay.cloud_day_id ||
+          resolveDayCloudLocalId(localDay) !== localDayId
+        ) {
+          await programRepository.markDaySynced(db, {
+            dayId: localDay.day_id,
+            cloudDayId,
+            remoteLocalDayId: localDayId,
+          });
+        }
+        continue;
+      }
+
+      await programRepository.updateDayFromCloud(db, {
+        dayId: localDay.day_id,
+        cloudDayId,
+        remoteLocalDayId: localDayId,
+        microcycleId: parentMicrocycle.microcycle_id,
+        programId: parentMesocycle.program_id,
+        weekday: comparableCloudDay.weekday,
+        date: comparableCloudDay.date,
+        done: comparableCloudDay.done,
+      });
+
+      const updatedDay = {
+        ...localDay,
+        cloud_day_id: cloudDayId,
+        remote_local_day_id: localDayId,
+        microcycle_id: parentMicrocycle.microcycle_id,
+        program_id: parentMesocycle.program_id,
+        weekday: comparableCloudDay.weekday,
+        date: comparableCloudDay.date,
+        done: comparableCloudDay.done ? 1 : 0,
+        needs_sync: 0,
+      };
+
+      localDaysByCloudId.set(cloudDayId, updatedDay);
+      localDaysByRemoteLocalId.set(localDayId, updatedDay);
+      localDaysByLocalId.set(localDay.day_id, updatedDay);
+      if (identityKey) {
+        localDaysByIdentityKey.set(identityKey, updatedDay);
+      }
+      downloadedCount += 1;
+    }
+  });
+
+  return downloadedCount;
+}
+
+async function syncDaysWithCloudInternal(db) {
+  await syncMicrocyclesWithCloud(db);
+
+  const userId = await getAuthenticatedUserId();
+
+  if (!userId) {
+    return {
+      changed: false,
+      downloadedCount: 0,
+      uploadedCount: 0,
+    };
+  }
+
+  const initialDownloadedCount = await reconcileDaysFromCloud(db, userId);
+  const uploadedCount = await uploadDirtyDays(db, userId);
+  const finalDownloadedCount = await reconcileDaysFromCloud(db, userId);
+  const downloadedCount = initialDownloadedCount + finalDownloadedCount;
+
+  return {
+    changed: uploadedCount > 0 || downloadedCount > 0,
+    downloadedCount,
+    uploadedCount,
+  };
+}
+
+function syncDaysInBackground(db) {
+  void syncDaysWithCloud(db).catch((error) => {
+    console.error("Day cloud sync failed:", error);
+  });
+}
+
 async function ensureDefaultDaysForMicrocycle(
   db,
   { microcycleId, programId, mesocycleNumber, microcycleNumber, startDate }
@@ -1694,6 +2194,18 @@ export async function syncMicrocyclesWithCloud(db) {
   return activeMicrocycleSyncPromise;
 }
 
+export async function syncDaysWithCloud(db) {
+  if (activeDaySyncPromise) {
+    return activeDaySyncPromise;
+  }
+
+  activeDaySyncPromise = syncDaysWithCloudInternal(db).finally(() => {
+    activeDaySyncPromise = null;
+  });
+
+  return activeDaySyncPromise;
+}
+
 export async function createProgram(db, { programName, startDate, status }) {
   await programRepository.createProgram(db, { programName, startDate, status });
   syncProgramsInBackground(db);
@@ -1956,6 +2468,7 @@ export async function createMesocycle(
   });
 
   syncMicrocyclesInBackground(db);
+  syncDaysInBackground(db);
   return mesocycleId;
 }
 
@@ -2007,6 +2520,7 @@ export async function addWeekToMesocycle(db, { mesocycleId, programId }) {
   });
 
   syncMicrocyclesInBackground(db);
+  syncDaysInBackground(db);
   return insertedMicrocycleId;
 }
 

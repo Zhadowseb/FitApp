@@ -69,11 +69,14 @@ export const programSchemaSql = `
 
   CREATE TABLE IF NOT EXISTS Day (
       day_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cloud_day_id INTEGER,
+      remote_local_day_id INTEGER,
       microcycle_id INTEGER NOT NULL,
       program_id INTEGER NOT NULL,
       Weekday TEXT NOT NULL,
       date TEXT NOT NULL,
-      done INTEGER NOT NULL DEFAULT 0
+      done INTEGER NOT NULL DEFAULT 0,
+      needs_sync INTEGER NOT NULL DEFAULT 1
   );
 
   CREATE TABLE IF NOT EXISTS Workout_Type (

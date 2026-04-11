@@ -356,6 +356,28 @@ export async function markMicrocycleSynced(
   );
 }
 
+export async function updateMicrocycleCloudIdentity(
+  db,
+  { microcycleId, cloudMicrocycleId }
+) {
+  await db.runAsync(
+    `UPDATE Microcycle
+     SET cloud_microcycle_id = ?
+     WHERE microcycle_id = ?;`,
+    [cloudMicrocycleId, microcycleId]
+  );
+}
+
+export async function markMicrocycleForCloudResync(db, { microcycleId }) {
+  await db.runAsync(
+    `UPDATE Microcycle
+     SET cloud_microcycle_id = NULL,
+         needs_sync = 1
+     WHERE microcycle_id = ?;`,
+    [microcycleId]
+  );
+}
+
 export async function getMicrocycleSyncMetadata(db, microcycleId) {
   return db.getFirstAsync(
     `SELECT microcycle_id, cloud_microcycle_id, needs_sync
@@ -1106,6 +1128,141 @@ export async function getDaysByMicrocycle(db, microcycleId) {
      FROM Day
      WHERE microcycle_id = ?;`,
     [microcycleId]
+  );
+}
+
+export async function getDaysForCloudSync(db) {
+  return db.getAllAsync(
+    `SELECT
+        day_id,
+        cloud_day_id,
+        remote_local_day_id,
+        microcycle_id,
+        program_id,
+        Weekday AS weekday,
+        date,
+        done,
+        needs_sync
+     FROM Day
+     ORDER BY day_id ASC;`
+  );
+}
+
+export async function createDayFromCloud(
+  db,
+  {
+    cloudDayId,
+    remoteLocalDayId,
+    microcycleId,
+    programId,
+    weekday,
+    date,
+    done,
+  }
+) {
+  return db.runAsync(
+    `INSERT INTO Day (
+      cloud_day_id,
+      remote_local_day_id,
+      microcycle_id,
+      program_id,
+      Weekday,
+      date,
+      done,
+      needs_sync
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, 0);`,
+    [
+      cloudDayId,
+      remoteLocalDayId,
+      microcycleId,
+      programId,
+      weekday,
+      date,
+      done ? 1 : 0,
+    ]
+  );
+}
+
+export async function updateDayFromCloud(
+  db,
+  {
+    dayId,
+    cloudDayId,
+    remoteLocalDayId,
+    microcycleId,
+    programId,
+    weekday,
+    date,
+    done,
+  }
+) {
+  await db.runAsync(
+    `UPDATE Day
+     SET cloud_day_id = ?,
+         remote_local_day_id = ?,
+         microcycle_id = ?,
+         program_id = ?,
+         Weekday = ?,
+         date = ?,
+         done = ?,
+         needs_sync = 0
+     WHERE day_id = ?;`,
+    [
+      cloudDayId,
+      remoteLocalDayId,
+      microcycleId,
+      programId,
+      weekday,
+      date,
+      done ? 1 : 0,
+      dayId,
+    ]
+  );
+}
+
+export async function markDaySynced(
+  db,
+  { dayId, cloudDayId, remoteLocalDayId = null }
+) {
+  await db.runAsync(
+    `UPDATE Day
+     SET cloud_day_id = ?,
+         remote_local_day_id = COALESCE(?, remote_local_day_id, day_id),
+         needs_sync = 0
+     WHERE day_id = ?;`,
+    [cloudDayId, remoteLocalDayId, dayId]
+  );
+}
+
+export async function updateDayCloudIdentity(
+  db,
+  { dayId, cloudDayId, remoteLocalDayId = null }
+) {
+  await db.runAsync(
+    `UPDATE Day
+     SET cloud_day_id = ?,
+         remote_local_day_id = COALESCE(?, remote_local_day_id, day_id)
+     WHERE day_id = ?;`,
+    [cloudDayId, remoteLocalDayId, dayId]
+  );
+}
+
+export async function markDayForCloudResync(db, { dayId }) {
+  await db.runAsync(
+    `UPDATE Day
+     SET cloud_day_id = NULL,
+         needs_sync = 1
+     WHERE day_id = ?;`,
+    [dayId]
+  );
+}
+
+export async function getDaySyncMetadata(db, dayId) {
+  return db.getFirstAsync(
+    `SELECT day_id, cloud_day_id, remote_local_day_id, needs_sync
+     FROM Day
+     WHERE day_id = ?;`,
+    [dayId]
   );
 }
 

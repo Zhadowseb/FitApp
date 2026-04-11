@@ -30,6 +30,7 @@ import {
 } from "./src/Database/localDatabase";
 import { locationService } from "./src/Services";
 import { AuthProvider, useAuth } from './src/Contexts/AuthContext';
+import DaySync from "./src/Sync/DaySync";
 import ExerciseLibrarySync from "./src/Sync/ExerciseLibrarySync";
 import MesocycleSync from "./src/Sync/MesocycleSync";
 import MicrocycleSync from "./src/Sync/MicrocycleSync";
@@ -188,6 +189,7 @@ function UserScopedDatabaseApp() {
       <ProgramSync />
       <MesocycleSync />
       <MicrocycleSync />
+      <DaySync />
       <ExerciseLibrarySync />
       <RootNavigator />
     </SQLiteProvider>

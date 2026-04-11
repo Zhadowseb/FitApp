@@ -216,7 +216,8 @@ export async function updateDayDoneFromWorkouts(db, dayId) {
          WHERE Workout_Type_Instance.day_id = Day.day_id
            AND Workout_Type_Instance.done = 0
        )
-     )
+     ),
+         needs_sync = 1
      WHERE day_id = ?;`,
     [dayId]
   );

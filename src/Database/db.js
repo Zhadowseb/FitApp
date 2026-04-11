@@ -802,8 +802,17 @@ export async function initializeDatabase(db) {
   `);
 
   await ensureTableColumns(db, "Day", [
+    ["cloud_day_id", "INTEGER"],
+    ["remote_local_day_id", "INTEGER"],
     ["done", "INTEGER NOT NULL DEFAULT 0"],
+    ["needs_sync", "INTEGER NOT NULL DEFAULT 1"],
   ]);
+
+  await db.execAsync(`
+    UPDATE Day
+    SET remote_local_day_id = COALESCE(remote_local_day_id, day_id)
+    WHERE remote_local_day_id IS NULL;
+  `);
 
   await ensureTableColumns(db, "Workout_Type_Instance", [
     ["workout_type", "TEXT"],

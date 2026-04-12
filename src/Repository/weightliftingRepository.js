@@ -565,7 +565,8 @@ export async function updateWorkoutDoneFromExercises(db, workoutId) {
          WHERE Exercise_Instance.workout_type_instance_id = Workout_Type_Instance.workout_id
            AND Exercise_Instance.done = 0
        )
-     )
+     ),
+         needs_sync = 1
      WHERE workout_id = ?;`,
     [workoutId]
   );

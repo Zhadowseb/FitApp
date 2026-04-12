@@ -1270,6 +1270,8 @@ export async function getWorkoutsByDay(db, dayId) {
   return db.getAllAsync(
     `SELECT
         workout_id,
+        cloud_workout_type_instance_id,
+        remote_local_workout_type_instance_id,
         day_id,
         workout_type,
         date,
@@ -1278,10 +1280,232 @@ export async function getWorkoutsByDay(db, dayId) {
         is_active,
         original_start_time,
         timer_start,
-        elapsed_time
+        elapsed_time,
+        needs_sync
      FROM Workout_Type_Instance
      WHERE day_id = ?;`,
     [dayId]
+  );
+}
+
+export async function getWorkoutsForCloudSync(db) {
+  return db.getAllAsync(
+    `SELECT
+        workout_id,
+        cloud_workout_type_instance_id,
+        remote_local_workout_type_instance_id,
+        day_id,
+        workout_type,
+        date,
+        label,
+        done,
+        is_active,
+        original_start_time,
+        timer_start,
+        elapsed_time,
+        needs_sync
+     FROM Workout_Type_Instance
+     ORDER BY workout_id ASC;`
+  );
+}
+
+export async function createWorkoutFromCloud(
+  db,
+  {
+    cloudWorkoutTypeInstanceId,
+    remoteLocalWorkoutTypeInstanceId,
+    dayId,
+    workoutType,
+    date,
+    label,
+    done,
+    isActive,
+    originalStartTime,
+    timerStart,
+    elapsedTime,
+  }
+) {
+  return db.runAsync(
+    `INSERT INTO Workout_Type_Instance (
+      cloud_workout_type_instance_id,
+      remote_local_workout_type_instance_id,
+      day_id,
+      workout_type,
+      date,
+      label,
+      done,
+      needs_sync,
+      is_active,
+      original_start_time,
+      timer_start,
+      elapsed_time
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?);`,
+    [
+      cloudWorkoutTypeInstanceId,
+      remoteLocalWorkoutTypeInstanceId,
+      dayId,
+      workoutType,
+      date,
+      label,
+      done ? 1 : 0,
+      isActive ? 1 : 0,
+      originalStartTime,
+      timerStart,
+      elapsedTime,
+    ]
+  );
+}
+
+export async function updateWorkoutFromCloud(
+  db,
+  {
+    workoutId,
+    cloudWorkoutTypeInstanceId,
+    remoteLocalWorkoutTypeInstanceId,
+    dayId,
+    workoutType,
+    date,
+    label,
+    done,
+    isActive,
+    originalStartTime,
+    timerStart,
+    elapsedTime,
+  }
+) {
+  await db.runAsync(
+    `UPDATE Workout_Type_Instance
+     SET cloud_workout_type_instance_id = ?,
+         remote_local_workout_type_instance_id = ?,
+         day_id = ?,
+         workout_type = ?,
+         date = ?,
+         label = ?,
+         done = ?,
+         is_active = ?,
+         original_start_time = ?,
+         timer_start = ?,
+         elapsed_time = ?,
+         needs_sync = 0
+     WHERE workout_id = ?;`,
+    [
+      cloudWorkoutTypeInstanceId,
+      remoteLocalWorkoutTypeInstanceId,
+      dayId,
+      workoutType,
+      date,
+      label,
+      done ? 1 : 0,
+      isActive ? 1 : 0,
+      originalStartTime,
+      timerStart,
+      elapsedTime,
+      workoutId,
+    ]
+  );
+}
+
+export async function markWorkoutSynced(
+  db,
+  {
+    workoutId,
+    cloudWorkoutTypeInstanceId,
+    remoteLocalWorkoutTypeInstanceId = null,
+  }
+) {
+  await db.runAsync(
+    `UPDATE Workout_Type_Instance
+     SET cloud_workout_type_instance_id = ?,
+         remote_local_workout_type_instance_id = COALESCE(
+           ?,
+           remote_local_workout_type_instance_id,
+           workout_id
+         ),
+         needs_sync = 0
+     WHERE workout_id = ?;`,
+    [cloudWorkoutTypeInstanceId, remoteLocalWorkoutTypeInstanceId, workoutId]
+  );
+}
+
+export async function updateWorkoutCloudIdentity(
+  db,
+  {
+    workoutId,
+    cloudWorkoutTypeInstanceId,
+    remoteLocalWorkoutTypeInstanceId = null,
+  }
+) {
+  await db.runAsync(
+    `UPDATE Workout_Type_Instance
+     SET cloud_workout_type_instance_id = ?,
+         remote_local_workout_type_instance_id = COALESCE(
+           ?,
+           remote_local_workout_type_instance_id,
+           workout_id
+         )
+     WHERE workout_id = ?;`,
+    [cloudWorkoutTypeInstanceId, remoteLocalWorkoutTypeInstanceId, workoutId]
+  );
+}
+
+export async function markWorkoutForCloudResync(db, { workoutId }) {
+  await db.runAsync(
+    `UPDATE Workout_Type_Instance
+     SET cloud_workout_type_instance_id = NULL,
+         needs_sync = 1
+     WHERE workout_id = ?;`,
+    [workoutId]
+  );
+}
+
+export async function getWorkoutSyncMetadata(db, workoutId) {
+  return db.getFirstAsync(
+    `SELECT
+        workout_id,
+        cloud_workout_type_instance_id,
+        remote_local_workout_type_instance_id,
+        needs_sync
+     FROM Workout_Type_Instance
+     WHERE workout_id = ?;`,
+    [workoutId]
+  );
+}
+
+export async function getQueuedWorkoutTypeInstanceDeletes(db) {
+  return db.getAllAsync(
+    `SELECT
+        workout_type_instance_sync_delete_id,
+        cloud_workout_type_instance_id,
+        remote_local_workout_type_instance_id,
+        deleted_at
+     FROM Workout_Type_Instance_Sync_Delete
+     ORDER BY workout_type_instance_sync_delete_id ASC;`
+  );
+}
+
+export async function queueWorkoutTypeInstanceDeleteSync(
+  db,
+  {
+    cloudWorkoutTypeInstanceId = null,
+    remoteLocalWorkoutTypeInstanceId = null,
+    deletedAt,
+  }
+) {
+  await db.runAsync(
+    `INSERT OR IGNORE INTO Workout_Type_Instance_Sync_Delete (
+      cloud_workout_type_instance_id,
+      remote_local_workout_type_instance_id,
+      deleted_at
+    ) VALUES (?, ?, ?);`,
+    [cloudWorkoutTypeInstanceId, remoteLocalWorkoutTypeInstanceId, deletedAt]
+  );
+}
+
+export async function deleteQueuedWorkoutTypeInstanceDelete(db, queueId) {
+  await db.runAsync(
+    `DELETE FROM Workout_Type_Instance_Sync_Delete
+     WHERE workout_type_instance_sync_delete_id = ?;`,
+    [queueId]
   );
 }
 
@@ -1371,8 +1595,14 @@ export async function createWorkout(
   { date, dayId, workoutType = null, label = workoutType }
 ) {
   return db.runAsync(
-    `INSERT INTO Workout_Type_Instance (date, day_id, workout_type, label)
-     VALUES (?, ?, ?, ?);`,
+    `INSERT INTO Workout_Type_Instance (
+      date,
+      day_id,
+      workout_type,
+      label,
+      needs_sync
+    )
+     VALUES (?, ?, ?, ?, 1);`,
     [date, dayId, workoutType ?? label, label ?? workoutType]
   );
 }
@@ -1382,12 +1612,19 @@ export async function copyWorkoutIntoDay(
   { date, dayId, workoutId }
 ) {
   return db.runAsync(
-    `INSERT INTO Workout_Type_Instance (date, day_id, workout_type, label)
+    `INSERT INTO Workout_Type_Instance (
+       date,
+       day_id,
+       workout_type,
+       label,
+       needs_sync
+     )
      SELECT
        ?,
        ?,
        COALESCE(workout_type, label),
-       COALESCE(label, workout_type)
+       COALESCE(label, workout_type),
+       1
      FROM Workout_Type_Instance
      WHERE workout_id = ?;`,
     [date, dayId, workoutId]

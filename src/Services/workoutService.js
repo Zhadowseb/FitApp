@@ -1,6 +1,19 @@
 import { workoutRepository } from "../Repository";
 import { withTransaction } from "./shared";
 
+async function syncWorkoutTypeInstancesInBackground(db) {
+  try {
+    const programServiceModule = await import("./programService");
+    void programServiceModule.syncWorkoutTypeInstancesWithCloud(db).catch(
+      (error) => {
+        console.error("Workout type instance cloud sync failed:", error);
+      }
+    );
+  } catch (error) {
+    console.error("Failed to start workout type instance cloud sync:", error);
+  }
+}
+
 export async function refreshWorkoutHierarchyCompletionByIds(
   db,
   { dayId, microcycleId, mesocycleId }
@@ -105,6 +118,8 @@ export async function setWorkoutDone(db, { workoutId, done }) {
 
     await refreshWorkoutHierarchyCompletion(db, workoutId);
   });
+
+  syncWorkoutTypeInstancesInBackground(db);
 }
 
 export async function resetWorkoutState(db, workoutId) {
@@ -112,4 +127,6 @@ export async function resetWorkoutState(db, workoutId) {
     await workoutRepository.resetWorkoutStateFields(db, workoutId);
     await refreshWorkoutHierarchyCompletion(db, workoutId);
   });
+
+  syncWorkoutTypeInstancesInBackground(db);
 }

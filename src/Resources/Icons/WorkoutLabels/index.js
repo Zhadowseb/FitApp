@@ -26,7 +26,6 @@ export const WORKOUT_ICONS = [
     Icon: StrengthTraining,
     selectable: false,
   },
-
   { id: "Run",
     short: "Run",
     Icon: Run,

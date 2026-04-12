@@ -56,14 +56,17 @@ export async function getWorkoutTimerState(db, workoutId) {
 export async function clearActiveWorkoutFlags(db) {
   await db.runAsync(
     `UPDATE Workout_Type_Instance
-     SET is_active = 0;`
+     SET is_active = 0,
+         needs_sync = 1
+     WHERE is_active != 0;`
   );
 }
 
 export async function normalizeActiveWorkoutFlags(db) {
   await db.runAsync(
     `UPDATE Workout_Type_Instance
-     SET is_active = 0
+     SET is_active = 0,
+         needs_sync = 1
      WHERE is_active = 1
        AND (timer_start IS NULL OR done = 1);`
   );
@@ -86,7 +89,8 @@ export async function normalizeActiveWorkoutFlags(db) {
   for (const staleWorkout of staleWorkouts) {
     await db.runAsync(
       `UPDATE Workout_Type_Instance
-       SET is_active = 0
+       SET is_active = 0,
+           needs_sync = 1
        WHERE workout_id = ?;`,
       [staleWorkout.workout_id]
     );
@@ -96,7 +100,8 @@ export async function normalizeActiveWorkoutFlags(db) {
 export async function setWorkoutActiveFlag(db, { workoutId, isActive }) {
   await db.runAsync(
     `UPDATE Workout_Type_Instance
-     SET is_active = ?
+     SET is_active = ?,
+         needs_sync = 1
      WHERE workout_id = ?;`,
     [isActive ? 1 : 0, workoutId]
   );
@@ -120,7 +125,8 @@ export async function persistWorkoutTimerState(
   await db.runAsync(
     `UPDATE Workout_Type_Instance
      SET timer_start = ?,
-         elapsed_time = ?
+         elapsed_time = ?,
+         needs_sync = 1
      WHERE workout_id = ?;`,
     [timerStart, elapsedTime, workoutId]
   );
@@ -129,7 +135,8 @@ export async function persistWorkoutTimerState(
 export async function updateWorkoutElapsedTime(db, { workoutId, elapsedTime }) {
   await db.runAsync(
     `UPDATE Workout_Type_Instance
-     SET elapsed_time = ?
+     SET elapsed_time = ?,
+         needs_sync = 1
      WHERE workout_id = ?;`,
     [elapsedTime, workoutId]
   );
@@ -147,7 +154,8 @@ export async function getWorkoutOriginalStartTime(db, workoutId) {
 export async function setWorkoutOriginalStartTime(db, { workoutId, startTime }) {
   await db.runAsync(
     `UPDATE Workout_Type_Instance
-     SET original_start_time = ?
+     SET original_start_time = ?,
+         needs_sync = 1
      WHERE workout_id = ?;`,
     [startTime, workoutId]
   );
@@ -187,7 +195,8 @@ export async function stopWorkoutStopwatch(
 export async function updateWorkoutDone(db, { workoutId, done }) {
   await db.runAsync(
     `UPDATE Workout_Type_Instance
-     SET done = ?
+     SET done = ?,
+         needs_sync = 1
      WHERE workout_id = ?;`,
     [done ? 1 : 0, workoutId]
   );
@@ -200,7 +209,8 @@ export async function resetWorkoutStateFields(db, workoutId) {
          is_active = 0,
          original_start_time = NULL,
          timer_start = NULL,
-         elapsed_time = 0
+         elapsed_time = 0,
+         needs_sync = 1
      WHERE workout_id = ?;`,
     [workoutId]
   );

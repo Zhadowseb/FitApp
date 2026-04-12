@@ -572,6 +572,65 @@ async function backfillWorkoutTypeInstances(db) {
   `);
 }
 
+async function restoreLocalWorkoutTypeCatalogSchema(db) {
+  const workoutTypeColumns = await getTableColumns(db, "Workout_Type");
+
+  if (!workoutTypeColumns.length) {
+    return;
+  }
+
+  const hasLegacyId = hasColumn(workoutTypeColumns, "workout_type_id");
+  const hasId = hasColumn(workoutTypeColumns, "id");
+  const hasName = hasColumn(workoutTypeColumns, "name");
+  const hasDisplayName = hasColumn(workoutTypeColumns, "display_name");
+
+  if (hasLegacyId && hasName && hasDisplayName) {
+    return;
+  }
+
+  await db.execAsync("BEGIN IMMEDIATE;");
+
+  try {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS Workout_Type_next (
+        workout_type_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        display_name TEXT
+      );
+
+      INSERT OR IGNORE INTO Workout_Type_next (
+        workout_type_id,
+        name,
+        display_name
+      )
+      SELECT
+        ${
+          hasLegacyId
+              ? "workout_type_id"
+            : hasId
+              ? "id"
+              : "NULL"
+        },
+        name,
+        ${
+          hasDisplayName
+            ? "COALESCE(display_name, name)"
+            : "name"
+        }
+      FROM Workout_Type
+      WHERE TRIM(COALESCE(name, '')) <> '';
+
+      DROP TABLE Workout_Type;
+      ALTER TABLE Workout_Type_next RENAME TO Workout_Type;
+    `);
+
+    await db.execAsync("COMMIT;");
+  } catch (error) {
+    await db.execAsync("ROLLBACK;");
+    throw error;
+  }
+}
+
 async function initializeWorkoutTypes(db) {
   for (const [name, displayName] of DEFAULT_WORKOUT_TYPES) {
     await db.runAsync(
@@ -688,6 +747,66 @@ async function repairProgramDateFormats(db) {
     SET start_date = substr(start_date, 9, 2) || '.' || substr(start_date, 6, 2) || '.' || substr(start_date, 1, 4)
     WHERE start_date LIKE '____-__-__';
   `);
+}
+
+async function migrateWorkoutTypeInstanceDeleteQueueSchema(db) {
+  const queueColumns = await getTableColumns(db, "Workout_Type_Instance_Sync_Delete");
+
+  if (!queueColumns.length) {
+    return;
+  }
+
+  const hasCloudId = hasColumn(queueColumns, "cloud_workout_type_instance_id");
+  const hasRemoteLocalId = hasColumn(
+    queueColumns,
+    "remote_local_workout_type_instance_id"
+  );
+  const cloudIdColumn = queueColumns.find(
+    (column) => column.name === "cloud_workout_type_instance_id"
+  );
+  const cloudIdIsRequired = Number(cloudIdColumn?.notnull ?? 0) === 1;
+
+  if (hasCloudId && hasRemoteLocalId && !cloudIdIsRequired) {
+    return;
+  }
+
+  await db.execAsync("BEGIN IMMEDIATE;");
+
+  try {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS Workout_Type_Instance_Sync_Delete_next (
+        workout_type_instance_sync_delete_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cloud_workout_type_instance_id INTEGER UNIQUE,
+        remote_local_workout_type_instance_id INTEGER UNIQUE,
+        deleted_at TEXT
+      );
+
+      INSERT OR IGNORE INTO Workout_Type_Instance_Sync_Delete_next (
+        workout_type_instance_sync_delete_id,
+        cloud_workout_type_instance_id,
+        remote_local_workout_type_instance_id,
+        deleted_at
+      )
+      SELECT
+        workout_type_instance_sync_delete_id,
+        ${
+          hasCloudId ? "cloud_workout_type_instance_id" : "NULL"
+        },
+        ${
+          hasRemoteLocalId ? "remote_local_workout_type_instance_id" : "NULL"
+        },
+        deleted_at
+      FROM Workout_Type_Instance_Sync_Delete;
+
+      DROP TABLE Workout_Type_Instance_Sync_Delete;
+      ALTER TABLE Workout_Type_Instance_Sync_Delete_next RENAME TO Workout_Type_Instance_Sync_Delete;
+    `);
+
+    await db.execAsync("COMMIT;");
+  } catch (error) {
+    await db.execAsync("ROLLBACK;");
+    throw error;
+  }
 }
 
 async function getAppMetadataValue(db, metadataKey) {
@@ -815,17 +934,27 @@ export async function initializeDatabase(db) {
   `);
 
   await ensureTableColumns(db, "Workout_Type_Instance", [
+    ["cloud_workout_type_instance_id", "INTEGER"],
+    ["remote_local_workout_type_instance_id", "INTEGER"],
     ["workout_type", "TEXT"],
     ["label", "TEXT"],
     ["done", "INTEGER NOT NULL DEFAULT 0"],
+    ["needs_sync", "INTEGER NOT NULL DEFAULT 1"],
     ["is_active", "INTEGER DEFAULT 0"],
     ["original_start_time", "INTEGER"],
     ["timer_start", "INTEGER"],
     ["elapsed_time", "INTEGER DEFAULT 0"],
   ]);
+  await restoreLocalWorkoutTypeCatalogSchema(db);
   await ensureTableColumns(db, "Workout_Type", [
     ["display_name", "TEXT"],
   ]);
+  await migrateWorkoutTypeInstanceDeleteQueueSchema(db);
+  await db.execAsync(`
+    UPDATE Workout_Type_Instance
+    SET remote_local_workout_type_instance_id = COALESCE(remote_local_workout_type_instance_id, workout_id)
+    WHERE remote_local_workout_type_instance_id IS NULL;
+  `);
   await backfillWorkoutTypeInstances(db);
   await initializeWorkoutTypes(db);
 

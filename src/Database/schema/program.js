@@ -87,16 +87,26 @@ export const programSchemaSql = `
 
   CREATE TABLE IF NOT EXISTS Workout_Type_Instance (
       workout_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cloud_workout_type_instance_id INTEGER,
+      remote_local_workout_type_instance_id INTEGER,
       day_id INTEGER NOT NULL,
       workout_type TEXT,
       date TEXT NOT NULL,
       label TEXT,
       done INTEGER NOT NULL DEFAULT 0,
+      needs_sync INTEGER NOT NULL DEFAULT 1,
 
       /*======Workout Timer=======*/
       is_active INTEGER DEFAULT 0,
       original_start_time INTEGER,
       timer_start INTEGER,
       elapsed_time INTEGER DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS Workout_Type_Instance_Sync_Delete (
+    workout_type_instance_sync_delete_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cloud_workout_type_instance_id INTEGER UNIQUE,
+    remote_local_workout_type_instance_id INTEGER UNIQUE,
+    deleted_at TEXT
   );
 `;

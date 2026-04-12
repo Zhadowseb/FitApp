@@ -8,6 +8,9 @@ export default StyleSheet.create({
     flex: 1,
     paddingTop: 10,
   },
+  contentContainer: {
+    paddingBottom: 28,
+  },
   button_spacing: {
     padding: 12,
     borderRadius: 8,

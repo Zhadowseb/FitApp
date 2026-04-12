@@ -4481,6 +4481,29 @@ export async function getTodayProgramSnapshot(db, { programId, date }) {
   };
 }
 
+export async function getTodayProgramSnapshots(db, { date }) {
+  const programs = await programRepository.getProgramsOverview(db);
+  const snapshots = await Promise.all(
+    programs.map(async (program) => {
+      const snapshot = await getTodayProgramSnapshot(db, {
+        programId: program.program_id,
+        date,
+      });
+
+      if (!snapshot || snapshot.workouts.length === 0) {
+        return null;
+      }
+
+      return {
+        ...snapshot,
+        program,
+      };
+    })
+  );
+
+  return snapshots.filter(Boolean);
+}
+
 export async function getProgramExerciseBests(db, programId) {
   const sets = await programRepository.getCompletedStrengthSetsByProgram(
     db,

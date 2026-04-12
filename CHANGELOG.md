@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.5.11] - Unreleased
+### Changed
+- Describe pending changes here.
+
+---
 ## [0.5.10] - Unreleased
 ### Added
 - Added the first `set` cloud sync flow with local cloud-id tracking, delete queueing, parent `exercise_instance(id)` repair, and an app-level sync runner that depends on `Exercise_Instance` sync.

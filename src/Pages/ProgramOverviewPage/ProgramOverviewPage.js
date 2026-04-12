@@ -16,7 +16,6 @@ import {
 import Rm_List from './Components/rm_list/rm_list';
 
 import AddEstimatedSet from './Components/rm_list/Components/AddEstimatedSet/AddEstimatedSet';
-import TodayShortcut from './Components/TodayShortcut/TodayShortcut';
 import MesocycleList from "./Components/MesocycleList/MesocycleList";
 import ThreeDots from "../../Resources/Icons/UI-icons/ThreeDots"
 import Cogwheel from "../../Resources/Icons/UI-icons/Cogwheel";
@@ -301,12 +300,6 @@ const ProgramOverviewPage = ( {route} ) => {
             style={styles.container}
             nestedScrollEnabled
             contentContainerStyle={{ paddingBottom: insets.bottom + 15}}>
-
-            {/* Workout shortcut */}
-            <View>    
-                <TodayShortcut
-                    program_id = {program_id}/>
-            </View>
 
             {/* Mesocycle list */}
             <ThemedTitle type="h2"> Blocks </ThemedTitle>

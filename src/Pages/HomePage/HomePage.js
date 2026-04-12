@@ -1,12 +1,13 @@
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { TouchableOpacity, View, useColorScheme } from 'react-native';
+import { ScrollView, TouchableOpacity, View, useColorScheme } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
 import styles from './HomePageStyle';
 import { Colors } from '../../Resources/GlobalStyling/colors';
 import Male from '../../Resources/Icons/UI-icons/Male';
 import FeedbackModal from './Components/FeedbackModal/FeedbackModal';
+import TodayProgramsShortcut from './Components/TodayProgramsShortcut/TodayProgramsShortcut';
 
 import { 
   ThemedView,  
@@ -76,7 +77,13 @@ export default function App() {
         </View>
       </ThemedHeader>
 
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        <TodayProgramsShortcut />
+
         <View style={styles.button_spacing}> 
           <ThemedButton 
             title="Go to Program Page"
@@ -152,7 +159,7 @@ export default function App() {
           </ThemedText>
 
         </TouchableOpacity>
-      </View>
+      </ScrollView>
 
       <FeedbackModal
         visible={feedbackModalVisible}

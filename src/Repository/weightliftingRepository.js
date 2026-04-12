@@ -366,6 +366,24 @@ export async function getExercisesByWorkoutId(db, workoutId) {
   );
 }
 
+export async function getExercisesForCloudSync(db) {
+  return db.getAllAsync(
+    `SELECT
+        exercise_instance_id,
+        cloud_exercise_instance_id,
+        remote_local_exercise_instance_id,
+        workout_type_instance_id,
+        exercise_name,
+        sets,
+        visible_columns,
+        note,
+        done,
+        needs_sync
+     FROM Exercise_Instance
+     ORDER BY exercise_instance_id ASC;`
+  );
+}
+
 export async function createExercise(
   db,
   {
@@ -384,9 +402,192 @@ export async function createExercise(
       sets,
       visible_columns,
       note,
-      done
-    ) VALUES (?, ?, ?, ?, ?, ?);`,
+      done,
+      needs_sync
+    ) VALUES (?, ?, ?, ?, ?, ?, 1);`,
     [workoutId, exerciseName, sets, visibleColumns, note, done]
+  );
+}
+
+export async function createExerciseFromCloud(
+  db,
+  {
+    cloudExerciseInstanceId,
+    remoteLocalExerciseInstanceId,
+    workoutId,
+    exerciseName,
+    sets,
+    visibleColumns,
+    note,
+    done,
+  }
+) {
+  return db.runAsync(
+    `INSERT INTO Exercise_Instance (
+      cloud_exercise_instance_id,
+      remote_local_exercise_instance_id,
+      workout_type_instance_id,
+      exercise_name,
+      sets,
+      visible_columns,
+      note,
+      done,
+      needs_sync
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0);`,
+    [
+      cloudExerciseInstanceId,
+      remoteLocalExerciseInstanceId,
+      workoutId,
+      exerciseName,
+      sets,
+      visibleColumns,
+      note,
+      done ? 1 : 0,
+    ]
+  );
+}
+
+export async function updateExerciseFromCloud(
+  db,
+  {
+    exerciseId,
+    cloudExerciseInstanceId,
+    remoteLocalExerciseInstanceId,
+    workoutId,
+    exerciseName,
+    sets,
+    visibleColumns,
+    note,
+    done,
+  }
+) {
+  await db.runAsync(
+    `UPDATE Exercise_Instance
+     SET cloud_exercise_instance_id = ?,
+         remote_local_exercise_instance_id = ?,
+         workout_type_instance_id = ?,
+         exercise_name = ?,
+         sets = ?,
+         visible_columns = ?,
+         note = ?,
+         done = ?,
+         needs_sync = 0
+     WHERE exercise_instance_id = ?;`,
+    [
+      cloudExerciseInstanceId,
+      remoteLocalExerciseInstanceId,
+      workoutId,
+      exerciseName,
+      sets,
+      visibleColumns,
+      note,
+      done ? 1 : 0,
+      exerciseId,
+    ]
+  );
+}
+
+export async function markExerciseSynced(
+  db,
+  {
+    exerciseId,
+    cloudExerciseInstanceId,
+    remoteLocalExerciseInstanceId = null,
+  }
+) {
+  await db.runAsync(
+    `UPDATE Exercise_Instance
+     SET cloud_exercise_instance_id = ?,
+         remote_local_exercise_instance_id = COALESCE(
+           ?,
+           remote_local_exercise_instance_id,
+           exercise_instance_id
+         ),
+         needs_sync = 0
+     WHERE exercise_instance_id = ?;`,
+    [cloudExerciseInstanceId, remoteLocalExerciseInstanceId, exerciseId]
+  );
+}
+
+export async function updateExerciseCloudIdentity(
+  db,
+  {
+    exerciseId,
+    cloudExerciseInstanceId,
+    remoteLocalExerciseInstanceId = null,
+  }
+) {
+  await db.runAsync(
+    `UPDATE Exercise_Instance
+     SET cloud_exercise_instance_id = ?,
+         remote_local_exercise_instance_id = COALESCE(
+           ?,
+           remote_local_exercise_instance_id,
+           exercise_instance_id
+         )
+     WHERE exercise_instance_id = ?;`,
+    [cloudExerciseInstanceId, remoteLocalExerciseInstanceId, exerciseId]
+  );
+}
+
+export async function markExerciseForCloudResync(db, { exerciseId }) {
+  await db.runAsync(
+    `UPDATE Exercise_Instance
+     SET cloud_exercise_instance_id = NULL,
+         needs_sync = 1
+     WHERE exercise_instance_id = ?;`,
+    [exerciseId]
+  );
+}
+
+export async function getExerciseSyncMetadata(db, exerciseId) {
+  return db.getFirstAsync(
+    `SELECT
+        exercise_instance_id,
+        cloud_exercise_instance_id,
+        remote_local_exercise_instance_id,
+        needs_sync
+     FROM Exercise_Instance
+     WHERE exercise_instance_id = ?;`,
+    [exerciseId]
+  );
+}
+
+export async function getQueuedExerciseInstanceDeletes(db) {
+  return db.getAllAsync(
+    `SELECT
+        exercise_instance_sync_delete_id,
+        cloud_exercise_instance_id,
+        remote_local_exercise_instance_id,
+        deleted_at
+     FROM Exercise_Instance_Sync_Delete
+     ORDER BY exercise_instance_sync_delete_id ASC;`
+  );
+}
+
+export async function queueExerciseInstanceDeleteSync(
+  db,
+  {
+    cloudExerciseInstanceId = null,
+    remoteLocalExerciseInstanceId = null,
+    deletedAt,
+  }
+) {
+  await db.runAsync(
+    `INSERT OR IGNORE INTO Exercise_Instance_Sync_Delete (
+      cloud_exercise_instance_id,
+      remote_local_exercise_instance_id,
+      deleted_at
+    ) VALUES (?, ?, ?);`,
+    [cloudExerciseInstanceId, remoteLocalExerciseInstanceId, deletedAt]
+  );
+}
+
+export async function deleteQueuedExerciseInstanceDelete(db, queueId) {
+  await db.runAsync(
+    `DELETE FROM Exercise_Instance_Sync_Delete
+     WHERE exercise_instance_sync_delete_id = ?;`,
+    [queueId]
   );
 }
 
@@ -483,7 +684,8 @@ export async function updateExerciseSetCount(db, exerciseId) {
        SELECT COUNT(*)
        FROM "Set"
        WHERE "Set".exercise_instance_id = Exercise_Instance.exercise_instance_id
-     )
+     ),
+         needs_sync = 1
      WHERE exercise_instance_id = ?;`,
     [exerciseId]
   );
@@ -499,7 +701,8 @@ export async function updateExerciseDoneFromSets(db, exerciseId) {
          WHERE "Set".exercise_instance_id = Exercise_Instance.exercise_instance_id
            AND "Set".done = 0
        )
-     )
+     ),
+         needs_sync = 1
      WHERE exercise_instance_id = ?;`,
     [exerciseId]
   );
@@ -511,7 +714,8 @@ export async function updateExerciseVisibleColumns(
 ) {
   await db.runAsync(
     `UPDATE Exercise_Instance
-     SET visible_columns = ?
+     SET visible_columns = ?,
+         needs_sync = 1
      WHERE exercise_instance_id = ?;`,
     [JSON.stringify(columns), exerciseId]
   );
@@ -520,7 +724,8 @@ export async function updateExerciseVisibleColumns(
 export async function updateExerciseNote(db, { exerciseId, note }) {
   await db.runAsync(
     `UPDATE Exercise_Instance
-     SET note = ?
+     SET note = ?,
+         needs_sync = 1
      WHERE exercise_instance_id = ?;`,
     [note, exerciseId]
   );
@@ -545,7 +750,8 @@ export async function updateExerciseDoneBySet(db, setId) {
          WHERE "Set".exercise_instance_id = Exercise_Instance.exercise_instance_id
            AND "Set".done = 0
        )
-     )
+     ),
+         needs_sync = 1
      WHERE exercise_instance_id = (
        SELECT exercise_instance_id
        FROM "Set"
@@ -684,7 +890,8 @@ export async function updateSetByExerciseAndNumber(
 export async function updateExerciseDone(db, { exerciseId, done }) {
   await db.runAsync(
     `UPDATE Exercise_Instance
-     SET done = ?
+     SET done = ?,
+         needs_sync = 1
      WHERE exercise_instance_id = ?;`,
     [done ? 1 : 0, exerciseId]
   );

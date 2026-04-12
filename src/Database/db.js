@@ -236,31 +236,40 @@ async function migrateExerciseInstanceSchema(db) {
 
       CREATE TABLE Exercise_Instance_next (
         exercise_instance_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cloud_exercise_instance_id INTEGER,
+        remote_local_exercise_instance_id INTEGER,
         workout_type_instance_id INTEGER NOT NULL,
         exercise_name TEXT NOT NULL,
         sets INTEGER NOT NULL DEFAULT 0,
         visible_columns TEXT,
         note TEXT,
-        done INTEGER NOT NULL DEFAULT 0
+        done INTEGER NOT NULL DEFAULT 0,
+        needs_sync INTEGER NOT NULL DEFAULT 1
       );
 
       INSERT INTO Exercise_Instance_next (
         exercise_instance_id,
+        cloud_exercise_instance_id,
+        remote_local_exercise_instance_id,
         workout_type_instance_id,
         exercise_name,
         sets,
         visible_columns,
         note,
-        done
+        done,
+        needs_sync
       )
       SELECT
         ${idColumn},
+        ${hasColumn(exerciseInstanceColumns, "cloud_exercise_instance_id") ? "cloud_exercise_instance_id" : "NULL"},
+        ${hasColumn(exerciseInstanceColumns, "remote_local_exercise_instance_id") ? "remote_local_exercise_instance_id" : "NULL"},
         ${workoutColumn},
         exercise_name,
         COALESCE(sets, 0),
         ${hasColumn(exerciseInstanceColumns, "visible_columns") ? "visible_columns" : "NULL"},
         ${hasColumn(exerciseInstanceColumns, "note") ? "note" : "NULL"},
-        ${hasColumn(exerciseInstanceColumns, "done") ? "COALESCE(done, 0)" : "0"}
+        ${hasColumn(exerciseInstanceColumns, "done") ? "COALESCE(done, 0)" : "0"},
+        ${hasColumn(exerciseInstanceColumns, "needs_sync") ? "COALESCE(needs_sync, 1)" : "1"}
       FROM Exercise_Instance;
 
       DROP TABLE Exercise_Instance;
@@ -809,6 +818,62 @@ async function migrateWorkoutTypeInstanceDeleteQueueSchema(db) {
   }
 }
 
+async function migrateExerciseInstanceDeleteQueueSchema(db) {
+  const queueColumns = await getTableColumns(db, "Exercise_Instance_Sync_Delete");
+
+  if (!queueColumns.length) {
+    return;
+  }
+
+  const hasCloudId = hasColumn(queueColumns, "cloud_exercise_instance_id");
+  const hasRemoteLocalId = hasColumn(
+    queueColumns,
+    "remote_local_exercise_instance_id"
+  );
+  const cloudIdColumn = queueColumns.find(
+    (column) => column.name === "cloud_exercise_instance_id"
+  );
+  const cloudIdIsRequired = Number(cloudIdColumn?.notnull ?? 0) === 1;
+
+  if (hasCloudId && hasRemoteLocalId && !cloudIdIsRequired) {
+    return;
+  }
+
+  await db.execAsync("BEGIN IMMEDIATE;");
+
+  try {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS Exercise_Instance_Sync_Delete_next (
+        exercise_instance_sync_delete_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cloud_exercise_instance_id INTEGER UNIQUE,
+        remote_local_exercise_instance_id INTEGER UNIQUE,
+        deleted_at TEXT
+      );
+
+      INSERT OR IGNORE INTO Exercise_Instance_Sync_Delete_next (
+        exercise_instance_sync_delete_id,
+        cloud_exercise_instance_id,
+        remote_local_exercise_instance_id,
+        deleted_at
+      )
+      SELECT
+        exercise_instance_sync_delete_id,
+        ${hasCloudId ? "cloud_exercise_instance_id" : "NULL"},
+        ${hasRemoteLocalId ? "remote_local_exercise_instance_id" : "NULL"},
+        deleted_at
+      FROM Exercise_Instance_Sync_Delete;
+
+      DROP TABLE Exercise_Instance_Sync_Delete;
+      ALTER TABLE Exercise_Instance_Sync_Delete_next RENAME TO Exercise_Instance_Sync_Delete;
+    `);
+
+    await db.execAsync("COMMIT;");
+  } catch (error) {
+    await db.execAsync("ROLLBACK;");
+    throw error;
+  }
+}
+
 async function getAppMetadataValue(db, metadataKey) {
   const row = await db.getFirstAsync(
     `SELECT metadata_value
@@ -961,12 +1026,28 @@ export async function initializeDatabase(db) {
   await ensureTableColumns(db, "Exercise", [["nickname", "TEXT"]]);
 
   await ensureTableColumns(db, "Exercise_Instance", [
+    ["cloud_exercise_instance_id", "INTEGER"],
+    ["remote_local_exercise_instance_id", "INTEGER"],
     ["exercise_name", "TEXT NOT NULL DEFAULT ''"],
     ["sets", "INTEGER NOT NULL DEFAULT 0"],
     ["visible_columns", "TEXT"],
     ["note", "TEXT"],
     ["done", "INTEGER NOT NULL DEFAULT 0"],
+    ["needs_sync", "INTEGER NOT NULL DEFAULT 1"],
   ]);
+  await migrateExerciseInstanceDeleteQueueSchema(db);
+  await db.execAsync(`
+    UPDATE Exercise_Instance
+    SET remote_local_exercise_instance_id = COALESCE(
+      remote_local_exercise_instance_id,
+      exercise_instance_id
+    )
+    WHERE remote_local_exercise_instance_id IS NULL;
+
+    UPDATE Exercise_Instance
+    SET needs_sync = COALESCE(needs_sync, 1)
+    WHERE needs_sync IS NULL;
+  `);
 
   await ensureTableColumns(db, "Set", [
     ["date", "TEXT"],

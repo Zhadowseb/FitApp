@@ -1,6 +1,6 @@
 {
   "name": "programapp",
-  "version": "0.5.8-minor-workout-type-instance-cloud-sync.1",
+  "version": "0.5.9-minor-exercise-instance-cloud-sync.1",
   "main": "index.js",
   "scripts": {
     "start": "expo start --dev-client --scheme exp+programapp-dev",

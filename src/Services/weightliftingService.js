@@ -7,6 +7,19 @@ import { supabase } from "../Database/supaBaseClient";
 import * as workoutService from "./workoutService";
 import { withTransaction } from "./shared";
 
+async function syncExerciseInstancesInBackground(db) {
+  try {
+    const programServiceModule = await import("./programService");
+    void programServiceModule.syncExerciseInstancesWithCloud(db).catch(
+      (error) => {
+        console.error("Exercise instance cloud sync failed:", error);
+      }
+    );
+  } catch (error) {
+    console.error("Failed to start exercise instance cloud sync:", error);
+  }
+}
+
 export const DEFAULT_VISIBLE_COLUMNS = {
   note: true,
   rest: true,
@@ -802,6 +815,8 @@ export async function addExerciseToWorkout(db, { workoutId, exerciseName }) {
 
     await workoutService.refreshWorkoutHierarchyCompletion(db, workoutId);
   });
+
+  syncExerciseInstancesInBackground(db);
 }
 
 export async function deleteExercise(db, exerciseId) {
@@ -810,6 +825,27 @@ export async function deleteExercise(db, exerciseId) {
       db,
       exerciseId
     );
+    const syncMetadata = await weightliftingRepository.getExerciseSyncMetadata(
+      db,
+      exerciseId
+    );
+    const remoteLocalExerciseInstanceId =
+      Number(syncMetadata?.remote_local_exercise_instance_id) ||
+      Number(syncMetadata?.exercise_instance_id) ||
+      Number(exerciseId) ||
+      null;
+
+    if (
+      syncMetadata?.cloud_exercise_instance_id ||
+      remoteLocalExerciseInstanceId !== null
+    ) {
+      await weightliftingRepository.queueExerciseInstanceDeleteSync(db, {
+        cloudExerciseInstanceId:
+          syncMetadata?.cloud_exercise_instance_id ?? null,
+        remoteLocalExerciseInstanceId,
+        deletedAt: new Date().toISOString(),
+      });
+    }
 
     await weightliftingRepository.deleteSetsByExercise(db, exerciseId);
     await weightliftingRepository.deleteExerciseById(db, exerciseId);
@@ -825,6 +861,8 @@ export async function deleteExercise(db, exerciseId) {
       );
     }
   });
+
+  syncExerciseInstancesInBackground(db);
 }
 
 export async function addSetToExercise(db, exerciseId) {
@@ -854,6 +892,8 @@ export async function addSetToExercise(db, exerciseId) {
       );
     }
   });
+
+  syncExerciseInstancesInBackground(db);
 }
 
 export async function updateExerciseVisibleColumns(
@@ -864,6 +904,7 @@ export async function updateExerciseVisibleColumns(
     exerciseId,
     columns,
   });
+  syncExerciseInstancesInBackground(db);
 }
 
 export async function updateExerciseNote(db, { exerciseId, note }) {
@@ -871,6 +912,7 @@ export async function updateExerciseNote(db, { exerciseId, note }) {
     exerciseId,
     note,
   });
+  syncExerciseInstancesInBackground(db);
 }
 
 export async function updateStrengthSetDone(db, { workoutId, setId, done }) {
@@ -880,6 +922,8 @@ export async function updateStrengthSetDone(db, { workoutId, setId, done }) {
     await weightliftingRepository.updateWorkoutDoneFromExercises(db, workoutId);
     await workoutService.refreshWorkoutHierarchyCompletion(db, workoutId);
   });
+
+  syncExerciseInstancesInBackground(db);
 }
 
 export async function deleteSet(db, setId) {
@@ -916,6 +960,8 @@ export async function deleteSet(db, setId) {
     );
     await workoutService.refreshWorkoutHierarchyCompletion(db, set.workout_id);
   });
+
+  syncExerciseInstancesInBackground(db);
 }
 
 export async function updateSetField(db, { field, value, setId }) {
@@ -1040,6 +1086,8 @@ export async function initializeExerciseSets(db, { exerciseId, count }) {
 
     await weightliftingRepository.updateExerciseSetCount(db, exerciseId);
   });
+
+  syncExerciseInstancesInBackground(db);
 }
 
 export async function saveExerciseSets(db, { exerciseId, sets }) {
@@ -1078,6 +1126,8 @@ export async function saveExerciseSets(db, { exerciseId, sets }) {
       );
     }
   });
+
+  syncExerciseInstancesInBackground(db);
 }
 
 export async function updateExerciseDone(db, { exerciseId, done }) {
@@ -1100,4 +1150,6 @@ export async function updateExerciseDone(db, { exerciseId, done }) {
       );
     }
   });
+
+  syncExerciseInstancesInBackground(db);
 }

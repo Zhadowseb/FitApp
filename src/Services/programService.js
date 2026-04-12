@@ -39,13 +39,28 @@ const DAY_CLOUD_SYNC_SELECT =
 const WORKOUT_TYPE_INSTANCE_CLOUD_TABLE = "workout_type_instance";
 const WORKOUT_TYPE_INSTANCE_CLOUD_SYNC_SELECT =
   "id, user_id, local_workout_type_instance_id, cloud_day_id, workout_type, date, label, done, is_active, original_start_time, timer_start, elapsed_time";
+const EXERCISE_INSTANCE_CLOUD_TABLE = "exercise_instance";
+const EXERCISE_INSTANCE_CLOUD_SYNC_SELECT =
+  "id, user_id, local_exercise_instance_id, cloud_workout_type_instance_id, exercise_name, sets, visible_columns, note, done";
+const EXERCISE_VISIBLE_COLUMN_KEYS = [
+  "note",
+  "rest",
+  "set",
+  "reps",
+  "rpe",
+  "rm_percentage",
+  "weight",
+  "done",
+];
 
 let activeProgramSyncPromise = null;
 let activeMesocycleSyncPromise = null;
 let activeMicrocycleSyncPromise = null;
 let activeDaySyncPromise = null;
 let activeWorkoutTypeInstanceSyncPromise = null;
+let activeExerciseInstanceSyncPromise = null;
 let pendingWorkoutTypeInstanceSyncPass = false;
+let pendingExerciseInstanceSyncPass = false;
 
 function formatDisplayNumber(value) {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1);
@@ -408,6 +423,68 @@ async function ensureDayCloudIdentity(db, userId, localDay) {
   return null;
 }
 
+async function ensureWorkoutTypeInstanceCloudIdentity(db, userId, localWorkout) {
+  const remoteLocalWorkoutTypeInstanceId =
+    resolveWorkoutTypeInstanceCloudLocalId(localWorkout);
+
+  if (!localWorkout || remoteLocalWorkoutTypeInstanceId === null) {
+    return null;
+  }
+
+  const { data: cloudWorkout, error } = await supabase
+    .from(WORKOUT_TYPE_INSTANCE_CLOUD_TABLE)
+    .select("id, local_workout_type_instance_id")
+    .eq("user_id", userId)
+    .eq("local_workout_type_instance_id", remoteLocalWorkoutTypeInstanceId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  const cloudWorkoutTypeInstanceId = parseCloudWorkoutTypeInstanceId(
+    cloudWorkout?.id
+  );
+
+  if (cloudWorkoutTypeInstanceId !== null) {
+    const syncedRemoteLocalWorkoutTypeInstanceId =
+      normalizeOptionalInteger(
+        cloudWorkout?.local_workout_type_instance_id,
+        null
+      ) ?? remoteLocalWorkoutTypeInstanceId;
+
+    if (
+      parseCloudWorkoutTypeInstanceId(
+        localWorkout.cloud_workout_type_instance_id
+      ) !== cloudWorkoutTypeInstanceId ||
+      resolveWorkoutTypeInstanceCloudLocalId(localWorkout) !==
+        syncedRemoteLocalWorkoutTypeInstanceId
+    ) {
+      await programRepository.updateWorkoutCloudIdentity(db, {
+        workoutId: localWorkout.workout_id,
+        cloudWorkoutTypeInstanceId,
+        remoteLocalWorkoutTypeInstanceId:
+          syncedRemoteLocalWorkoutTypeInstanceId,
+      });
+    }
+
+    return cloudWorkoutTypeInstanceId;
+  }
+
+  if (
+    parseCloudWorkoutTypeInstanceId(
+      localWorkout.cloud_workout_type_instance_id
+    ) !== null ||
+    Number(localWorkout.needs_sync) !== 1
+  ) {
+    await programRepository.markWorkoutForCloudResync(db, {
+      workoutId: localWorkout.workout_id,
+    });
+  }
+
+  return null;
+}
+
 function getComparableMesocycleSnapshot(mesocycle) {
   return {
     cloud_program_id: normalizeOptionalInteger(
@@ -692,6 +769,117 @@ function buildCloudWorkoutTypeInstancePayload(localWorkout, userId, cloudDayId) 
     ),
     timer_start: timestampToCloudTimeString(localWorkout.timer_start),
     elapsed_time: normalizeOptionalInteger(localWorkout.elapsed_time, 0),
+  };
+}
+
+function parseCloudExerciseInstanceId(value) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function resolveExerciseInstanceCloudLocalId(exercise) {
+  return normalizeOptionalInteger(
+    exercise?.remote_local_exercise_instance_id ??
+      exercise?.local_exercise_instance_id ??
+      exercise?.exercise_instance_id,
+    null
+  );
+}
+
+function normalizeExerciseName(value) {
+  return normalizeOptionalText(value);
+}
+
+function normalizeExerciseVisibleColumns(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  let parsedValue = value;
+
+  if (typeof value === "string") {
+    try {
+      parsedValue = JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+
+  if (
+    !parsedValue ||
+    typeof parsedValue !== "object" ||
+    Array.isArray(parsedValue)
+  ) {
+    return null;
+  }
+
+  const normalizedColumns = {};
+
+  for (const key of EXERCISE_VISIBLE_COLUMN_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(parsedValue, key)) {
+      normalizedColumns[key] = Boolean(parsedValue[key]);
+    }
+  }
+
+  return Object.keys(normalizedColumns).length > 0 ? normalizedColumns : null;
+}
+
+function serializeExerciseVisibleColumns(value) {
+  const normalizedColumns = normalizeExerciseVisibleColumns(value);
+  return normalizedColumns ? JSON.stringify(normalizedColumns) : null;
+}
+
+function getComparableExerciseInstanceSnapshot(exercise) {
+  return {
+    local_exercise_instance_id: normalizeOptionalInteger(
+      exercise?.local_exercise_instance_id,
+      null
+    ),
+    cloud_workout_type_instance_id: normalizeOptionalInteger(
+      exercise?.cloud_workout_type_instance_id,
+      null
+    ),
+    exercise_name: normalizeExerciseName(exercise?.exercise_name),
+    sets: normalizeOptionalInteger(exercise?.sets, 0),
+    visible_columns: normalizeExerciseVisibleColumns(exercise?.visible_columns),
+    note: normalizeOptionalText(exercise?.note),
+    done: normalizeBooleanFlag(exercise?.done),
+  };
+}
+
+function areComparableExerciseInstancesEqual(leftExercise, rightExercise) {
+  const leftSnapshot = getComparableExerciseInstanceSnapshot(leftExercise);
+  const rightSnapshot = getComparableExerciseInstanceSnapshot(rightExercise);
+
+  return (
+    leftSnapshot.cloud_workout_type_instance_id ===
+      rightSnapshot.cloud_workout_type_instance_id &&
+    leftSnapshot.exercise_name === rightSnapshot.exercise_name &&
+    leftSnapshot.sets === rightSnapshot.sets &&
+    JSON.stringify(leftSnapshot.visible_columns) ===
+      JSON.stringify(rightSnapshot.visible_columns) &&
+    leftSnapshot.note === rightSnapshot.note &&
+    leftSnapshot.done === rightSnapshot.done
+  );
+}
+
+function buildCloudExerciseInstancePayload(
+  localExercise,
+  userId,
+  cloudWorkoutTypeInstanceId
+) {
+  return {
+    user_id: userId,
+    local_exercise_instance_id:
+      resolveExerciseInstanceCloudLocalId(localExercise),
+    cloud_workout_type_instance_id: cloudWorkoutTypeInstanceId,
+    exercise_name: normalizeExerciseName(localExercise.exercise_name),
+    sets: normalizeOptionalInteger(localExercise.sets, 0),
+    visible_columns: normalizeExerciseVisibleColumns(
+      localExercise.visible_columns
+    ),
+    note: normalizeOptionalText(localExercise.note),
+    done: normalizeBooleanFlag(localExercise.done),
   };
 }
 
@@ -2647,6 +2835,501 @@ function syncWorkoutTypeInstancesInBackground(db) {
   });
 }
 
+async function processQueuedExerciseInstanceDeletes(db, userId) {
+  const queuedDeletes =
+    await weightliftingRepository.getQueuedExerciseInstanceDeletes(db);
+  let deletedCount = 0;
+
+  for (const queuedDelete of queuedDeletes) {
+    let wasDeletedNow = false;
+
+    if (queuedDelete.cloud_exercise_instance_id) {
+      wasDeletedNow = await deleteCloudRowForUserOrThrow({
+        tableName: EXERCISE_INSTANCE_CLOUD_TABLE,
+        rowId: queuedDelete.cloud_exercise_instance_id,
+        userId,
+        entityLabel: "Exercise instance",
+      });
+    }
+
+    if (!wasDeletedNow) {
+      wasDeletedNow = await deleteCloudRowByUserLocalIdOrThrow({
+        tableName: EXERCISE_INSTANCE_CLOUD_TABLE,
+        localIdColumn: "local_exercise_instance_id",
+        localId: normalizeOptionalInteger(
+          queuedDelete.remote_local_exercise_instance_id,
+          null
+        ),
+        userId,
+        entityLabel: "Exercise instance",
+      });
+    }
+
+    await weightliftingRepository.deleteQueuedExerciseInstanceDelete(
+      db,
+      queuedDelete.exercise_instance_sync_delete_id
+    );
+    deletedCount += wasDeletedNow ? 1 : 0;
+  }
+
+  return deletedCount;
+}
+
+async function uploadDirtyExerciseInstances(
+  db,
+  userId,
+  { allowParentRepair = true } = {}
+) {
+  const [localExercises, localWorkouts] = await Promise.all([
+    weightliftingRepository.getExercisesForCloudSync(db),
+    programRepository.getWorkoutsForCloudSync(db),
+  ]);
+  const localWorkoutsById = new Map(
+    localWorkouts.map((workout) => [workout.workout_id, workout])
+  );
+  let uploadedCount = 0;
+  let requiresWorkoutRepair = false;
+
+  for (const localExercise of localExercises) {
+    if (Number(localExercise.needs_sync) !== 1) {
+      continue;
+    }
+
+    const parentWorkout = localWorkoutsById.get(
+      localExercise.workout_type_instance_id
+    );
+    const parentWorkoutCloudId = await ensureWorkoutTypeInstanceCloudIdentity(
+      db,
+      userId,
+      parentWorkout
+    );
+
+    if (parentWorkoutCloudId === null) {
+      requiresWorkoutRepair = true;
+      continue;
+    }
+
+    const payload = buildCloudExerciseInstancePayload(
+      localExercise,
+      userId,
+      parentWorkoutCloudId
+    );
+
+    if (
+      payload.local_exercise_instance_id === null ||
+      !payload.exercise_name
+    ) {
+      continue;
+    }
+
+    if (localExercise.cloud_exercise_instance_id) {
+      const { data: updatedExercise, error: updateError } = await supabase
+        .from(EXERCISE_INSTANCE_CLOUD_TABLE)
+        .update({
+          cloud_workout_type_instance_id:
+            payload.cloud_workout_type_instance_id,
+          exercise_name: payload.exercise_name,
+          sets: payload.sets,
+          visible_columns: payload.visible_columns,
+          note: payload.note,
+          done: payload.done,
+        })
+        .eq("id", localExercise.cloud_exercise_instance_id)
+        .eq("user_id", userId)
+        .select("id, local_exercise_instance_id")
+        .maybeSingle();
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      let syncedExerciseRecord = updatedExercise;
+      let cloudExerciseInstanceId = parseCloudExerciseInstanceId(
+        updatedExercise?.id
+      );
+
+      if (cloudExerciseInstanceId === null) {
+        const { data: insertedExercise, error: insertError } = await supabase
+          .from(EXERCISE_INSTANCE_CLOUD_TABLE)
+          .upsert(payload, {
+            onConflict: "user_id,local_exercise_instance_id",
+          })
+          .select("id, local_exercise_instance_id")
+          .single();
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        syncedExerciseRecord = insertedExercise;
+        cloudExerciseInstanceId = parseCloudExerciseInstanceId(
+          insertedExercise?.id
+        );
+      }
+
+      if (cloudExerciseInstanceId === null) {
+        throw new Error(
+          "Could not resolve cloud exercise instance id after update."
+        );
+      }
+
+      const remoteLocalExerciseInstanceId =
+        resolveExerciseInstanceCloudLocalId(syncedExerciseRecord) ??
+        payload.local_exercise_instance_id;
+
+      await weightliftingRepository.markExerciseSynced(db, {
+        exerciseId: localExercise.exercise_instance_id,
+        cloudExerciseInstanceId,
+        remoteLocalExerciseInstanceId,
+      });
+      uploadedCount += 1;
+      continue;
+    }
+
+    const { data: syncedExercise, error: syncError } = await supabase
+      .from(EXERCISE_INSTANCE_CLOUD_TABLE)
+      .upsert(payload, {
+        onConflict: "user_id,local_exercise_instance_id",
+      })
+      .select("id, local_exercise_instance_id")
+      .single();
+
+    if (syncError) {
+      throw syncError;
+    }
+
+    const cloudExerciseInstanceId = parseCloudExerciseInstanceId(
+      syncedExercise?.id
+    );
+
+    if (cloudExerciseInstanceId === null) {
+      throw new Error(
+        "Could not resolve cloud exercise instance id after insert."
+      );
+    }
+
+    const remoteLocalExerciseInstanceId =
+      resolveExerciseInstanceCloudLocalId(syncedExercise) ??
+      payload.local_exercise_instance_id;
+
+    await weightliftingRepository.markExerciseSynced(db, {
+      exerciseId: localExercise.exercise_instance_id,
+      cloudExerciseInstanceId,
+      remoteLocalExerciseInstanceId,
+    });
+    uploadedCount += 1;
+  }
+
+  if (requiresWorkoutRepair && allowParentRepair) {
+    await syncWorkoutTypeInstancesWithCloud(db);
+    uploadedCount += await uploadDirtyExerciseInstances(db, userId, {
+      allowParentRepair: false,
+    });
+  }
+
+  return uploadedCount;
+}
+
+async function reconcileExerciseInstancesFromCloud(db, userId) {
+  const { data: cloudExercises, error } = await supabase
+    .from(EXERCISE_INSTANCE_CLOUD_TABLE)
+    .select(EXERCISE_INSTANCE_CLOUD_SYNC_SELECT)
+    .eq("user_id", userId)
+    .order("cloud_workout_type_instance_id", { ascending: true })
+    .order("id", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  const [localExercises, localWorkouts] = await Promise.all([
+    weightliftingRepository.getExercisesForCloudSync(db),
+    programRepository.getWorkoutsForCloudSync(db),
+  ]);
+  const queuedDeletes =
+    await weightliftingRepository.getQueuedExerciseInstanceDeletes(db);
+  const localWorkoutsByCloudId = new Map();
+  const localExercisesByCloudId = new Map();
+  const localExercisesByRemoteLocalId = new Map();
+  const localExercisesByLocalId = new Map();
+  const pendingDeletedExerciseLocalIds = new Set(
+    queuedDeletes
+      .map((queuedDelete) =>
+        normalizeOptionalInteger(
+          queuedDelete.remote_local_exercise_instance_id,
+          null
+        )
+      )
+      .filter((exerciseLocalId) => exerciseLocalId !== null)
+  );
+
+  for (const localWorkout of localWorkouts) {
+    const cloudWorkoutTypeInstanceId = parseCloudWorkoutTypeInstanceId(
+      localWorkout.cloud_workout_type_instance_id
+    );
+
+    if (cloudWorkoutTypeInstanceId !== null) {
+      localWorkoutsByCloudId.set(cloudWorkoutTypeInstanceId, localWorkout);
+    }
+  }
+
+  for (const localExercise of localExercises) {
+    const cloudExerciseInstanceId = parseCloudExerciseInstanceId(
+      localExercise.cloud_exercise_instance_id
+    );
+    const remoteLocalExerciseInstanceId =
+      resolveExerciseInstanceCloudLocalId(localExercise);
+
+    if (cloudExerciseInstanceId !== null) {
+      localExercisesByCloudId.set(cloudExerciseInstanceId, localExercise);
+    }
+
+    if (remoteLocalExerciseInstanceId !== null) {
+      localExercisesByRemoteLocalId.set(
+        remoteLocalExerciseInstanceId,
+        localExercise
+      );
+    }
+
+    localExercisesByLocalId.set(
+      localExercise.exercise_instance_id,
+      localExercise
+    );
+  }
+
+  let downloadedCount = 0;
+
+  await withTransaction(db, async () => {
+    for (const cloudExercise of cloudExercises ?? []) {
+      const cloudExerciseInstanceId = parseCloudExerciseInstanceId(
+        cloudExercise.id
+      );
+      const localExerciseInstanceId = normalizeOptionalInteger(
+        cloudExercise.local_exercise_instance_id,
+        null
+      );
+      const cloudWorkoutTypeInstanceId = normalizeOptionalInteger(
+        cloudExercise.cloud_workout_type_instance_id,
+        null
+      );
+      const parentWorkout = localWorkoutsByCloudId.get(cloudWorkoutTypeInstanceId);
+      const comparableCloudExercise =
+        getComparableExerciseInstanceSnapshot(cloudExercise);
+
+      if (
+        cloudExerciseInstanceId === null ||
+        localExerciseInstanceId === null ||
+        cloudWorkoutTypeInstanceId === null ||
+        !parentWorkout ||
+        !comparableCloudExercise.exercise_name
+      ) {
+        continue;
+      }
+
+      if (pendingDeletedExerciseLocalIds.has(localExerciseInstanceId)) {
+        continue;
+      }
+
+      const localExercise =
+        localExercisesByCloudId.get(cloudExerciseInstanceId) ??
+        localExercisesByRemoteLocalId.get(localExerciseInstanceId) ??
+        localExercisesByLocalId.get(localExerciseInstanceId) ??
+        null;
+
+      if (!localExercise) {
+        const result = await weightliftingRepository.createExerciseFromCloud(db, {
+          cloudExerciseInstanceId,
+          remoteLocalExerciseInstanceId: localExerciseInstanceId,
+          workoutId: parentWorkout.workout_id,
+          exerciseName: comparableCloudExercise.exercise_name,
+          sets: comparableCloudExercise.sets,
+          visibleColumns: serializeExerciseVisibleColumns(
+            comparableCloudExercise.visible_columns
+          ),
+          note: comparableCloudExercise.note,
+          done: comparableCloudExercise.done,
+        });
+
+        const createdExercise = {
+          exercise_instance_id: result.lastInsertRowId,
+          cloud_exercise_instance_id: cloudExerciseInstanceId,
+          remote_local_exercise_instance_id: localExerciseInstanceId,
+          workout_type_instance_id: parentWorkout.workout_id,
+          exercise_name: comparableCloudExercise.exercise_name,
+          sets: comparableCloudExercise.sets,
+          visible_columns: serializeExerciseVisibleColumns(
+            comparableCloudExercise.visible_columns
+          ),
+          note: comparableCloudExercise.note,
+          done: comparableCloudExercise.done ? 1 : 0,
+          needs_sync: 0,
+        };
+
+        localExercisesByCloudId.set(
+          cloudExerciseInstanceId,
+          createdExercise
+        );
+        localExercisesByRemoteLocalId.set(
+          localExerciseInstanceId,
+          createdExercise
+        );
+        localExercisesByLocalId.set(
+          createdExercise.exercise_instance_id,
+          createdExercise
+        );
+        downloadedCount += 1;
+        continue;
+      }
+
+      const comparableLocalExercise = getComparableExerciseInstanceSnapshot({
+        ...localExercise,
+        cloud_workout_type_instance_id: parseCloudWorkoutTypeInstanceId(
+          parentWorkout.cloud_workout_type_instance_id
+        ),
+      });
+
+      if (Number(localExercise.needs_sync) === 1) {
+        if (
+          areComparableExerciseInstancesEqual(
+            comparableLocalExercise,
+            comparableCloudExercise
+          )
+        ) {
+          await weightliftingRepository.markExerciseSynced(db, {
+            exerciseId: localExercise.exercise_instance_id,
+            cloudExerciseInstanceId,
+            remoteLocalExerciseInstanceId: localExerciseInstanceId,
+          });
+        } else if (
+          !localExercise.cloud_exercise_instance_id ||
+          resolveExerciseInstanceCloudLocalId(localExercise) !==
+            localExerciseInstanceId
+        ) {
+          await weightliftingRepository.updateExerciseCloudIdentity(db, {
+            exerciseId: localExercise.exercise_instance_id,
+            cloudExerciseInstanceId,
+            remoteLocalExerciseInstanceId: localExerciseInstanceId,
+          });
+        }
+        continue;
+      }
+
+      if (
+        areComparableExerciseInstancesEqual(
+          comparableLocalExercise,
+          comparableCloudExercise
+        )
+      ) {
+        if (
+          !localExercise.cloud_exercise_instance_id ||
+          resolveExerciseInstanceCloudLocalId(localExercise) !==
+            localExerciseInstanceId
+        ) {
+          await weightliftingRepository.markExerciseSynced(db, {
+            exerciseId: localExercise.exercise_instance_id,
+            cloudExerciseInstanceId,
+            remoteLocalExerciseInstanceId: localExerciseInstanceId,
+          });
+        }
+        continue;
+      }
+
+      await weightliftingRepository.updateExerciseFromCloud(db, {
+        exerciseId: localExercise.exercise_instance_id,
+        cloudExerciseInstanceId,
+        remoteLocalExerciseInstanceId: localExerciseInstanceId,
+        workoutId: parentWorkout.workout_id,
+        exerciseName: comparableCloudExercise.exercise_name,
+        sets: comparableCloudExercise.sets,
+        visibleColumns: serializeExerciseVisibleColumns(
+          comparableCloudExercise.visible_columns
+        ),
+        note: comparableCloudExercise.note,
+        done: comparableCloudExercise.done,
+      });
+
+      const updatedExercise = {
+        ...localExercise,
+        cloud_exercise_instance_id: cloudExerciseInstanceId,
+        remote_local_exercise_instance_id: localExerciseInstanceId,
+        workout_type_instance_id: parentWorkout.workout_id,
+        exercise_name: comparableCloudExercise.exercise_name,
+        sets: comparableCloudExercise.sets,
+        visible_columns: serializeExerciseVisibleColumns(
+          comparableCloudExercise.visible_columns
+        ),
+        note: comparableCloudExercise.note,
+        done: comparableCloudExercise.done ? 1 : 0,
+        needs_sync: 0,
+      };
+
+      localExercisesByCloudId.set(cloudExerciseInstanceId, updatedExercise);
+      localExercisesByRemoteLocalId.set(
+        localExerciseInstanceId,
+        updatedExercise
+      );
+      localExercisesByLocalId.set(
+        localExercise.exercise_instance_id,
+        updatedExercise
+      );
+      downloadedCount += 1;
+    }
+  });
+
+  return downloadedCount;
+}
+
+async function syncExerciseInstancesWithCloudInternal(db) {
+  await syncWorkoutTypeInstancesWithCloud(db);
+
+  const userId = await getAuthenticatedUserId();
+
+  if (!userId) {
+    return {
+      changed: false,
+      deletedCount: 0,
+      downloadedCount: 0,
+      uploadedCount: 0,
+    };
+  }
+
+  const deletedCount = await processQueuedExerciseInstanceDeletes(db, userId);
+  const initialDownloadedCount = await reconcileExerciseInstancesFromCloud(
+    db,
+    userId
+  );
+  const uploadedCount = await uploadDirtyExerciseInstances(db, userId);
+  const finalDownloadedCount = await reconcileExerciseInstancesFromCloud(
+    db,
+    userId
+  );
+  const downloadedCount = initialDownloadedCount + finalDownloadedCount;
+
+  return {
+    changed: deletedCount > 0 || uploadedCount > 0 || downloadedCount > 0,
+    deletedCount,
+    downloadedCount,
+    uploadedCount,
+  };
+}
+
+function syncExerciseInstancesInBackground(db) {
+  if (activeExerciseInstanceSyncPromise) {
+    pendingExerciseInstanceSyncPass = true;
+  }
+
+  void syncExerciseInstancesWithCloud(db)
+    .catch((error) => {
+      console.error("Exercise instance cloud sync failed:", error);
+    })
+    .finally(() => {
+      if (pendingExerciseInstanceSyncPass && !activeExerciseInstanceSyncPromise) {
+        pendingExerciseInstanceSyncPass = false;
+        syncExerciseInstancesInBackground(db);
+      }
+    });
+}
+
 async function ensureDefaultDaysForMicrocycle(
   db,
   { microcycleId, programId, mesocycleNumber, microcycleNumber, startDate }
@@ -2965,6 +3648,19 @@ export async function syncWorkoutTypeInstancesWithCloud(db) {
     });
 
   return activeWorkoutTypeInstanceSyncPromise;
+}
+
+export async function syncExerciseInstancesWithCloud(db) {
+  if (activeExerciseInstanceSyncPromise) {
+    return activeExerciseInstanceSyncPromise;
+  }
+
+  activeExerciseInstanceSyncPromise =
+    syncExerciseInstancesWithCloudInternal(db).finally(() => {
+      activeExerciseInstanceSyncPromise = null;
+    });
+
+  return activeExerciseInstanceSyncPromise;
 }
 
 export async function createProgram(db, { programName, startDate, status }) {
@@ -3459,6 +4155,9 @@ export async function copyMicrocycleWorkouts(
       });
     }
   });
+
+  syncWorkoutTypeInstancesInBackground(db);
+  syncExerciseInstancesInBackground(db);
 }
 
 export async function deleteMicrocycle(db, microcycleId) {
@@ -3605,6 +4304,7 @@ export async function copyWorkoutToDate(
 
   if (copiedWorkoutId) {
     syncWorkoutTypeInstancesInBackground(db);
+    syncExerciseInstancesInBackground(db);
   }
 
   return copiedWorkoutId;

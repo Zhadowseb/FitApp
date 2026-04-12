@@ -8,13 +8,22 @@ export const weightliftingSchemaSql = `
 
   CREATE TABLE IF NOT EXISTS Exercise_Instance (
       exercise_instance_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cloud_exercise_instance_id INTEGER,
+      remote_local_exercise_instance_id INTEGER,
       workout_type_instance_id INTEGER NOT NULL,
       exercise_name TEXT NOT NULL,
       sets INTEGER NOT NULL DEFAULT 0,
       visible_columns TEXT,
       note TEXT,
+      done INTEGER NOT NULL DEFAULT 0,
+      needs_sync INTEGER NOT NULL DEFAULT 1
+  );
 
-      done INTEGER NOT NULL DEFAULT 0
+  CREATE TABLE IF NOT EXISTS Exercise_Instance_Sync_Delete (
+      exercise_instance_sync_delete_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cloud_exercise_instance_id INTEGER UNIQUE,
+      remote_local_exercise_instance_id INTEGER UNIQUE,
+      deleted_at TEXT
   );
 
   CREATE TABLE IF NOT EXISTS "Set" (

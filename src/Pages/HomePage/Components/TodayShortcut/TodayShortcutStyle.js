@@ -7,7 +7,9 @@ export default StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1,
     borderRadius: 26,
-    marginBottom: 12,
+    marginHorizontal: 0,
+    marginVertical: 0,
+    marginBottom: 0,
   },
 
   card_accent: {
@@ -58,6 +60,16 @@ export default StyleSheet.create({
     flex: 1,
   },
 
+  header_workout_badge: {
+    width: 54,
+    height: 54,
+    borderWidth: 1,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+
   card_eyebrow: {
     fontWeight: "800",
     fontSize: 10,
@@ -94,10 +106,32 @@ export default StyleSheet.create({
   },
 
   top_meta_summary: {
-    alignSelf: "center",
+    flex: 1,
     fontWeight: "700",
     letterSpacing: 1,
+    paddingRight: 8,
+  },
+
+  compact_meta_group: {
     marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+
+  compact_workout_chip: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    flexShrink: 0,
+  },
+
+  compact_workout_chip_text: {
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
   },
 
   hero_workout_badge: {

@@ -3,7 +3,8 @@ import { StyleSheet } from "react-native";
 export default StyleSheet.create({
   container: {
     paddingHorizontal: 18,
-    marginBottom: 18,
+    marginBottom: 12,
+    gap: 12,
   },
   stateCard: {
     borderWidth: 1,
@@ -46,6 +47,6 @@ export default StyleSheet.create({
     lineHeight: 20,
   },
   programSection: {
-    marginBottom: 12,
+    marginBottom: 0,
   },
 });

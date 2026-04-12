@@ -7,7 +7,7 @@ import { programService } from "../../../../Services";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 import { ThemedText, ThemedTitle } from "../../../../Resources/ThemedComponents";
 import { getTodaysDate } from "../../../../Utils/dateUtils";
-import TodayShortcut from "../../../ProgramOverviewPage/Components/TodayShortcut/TodayShortcut";
+import TodayShortcut from "../TodayShortcut/TodayShortcut";
 import styles from "./TodayProgramsShortcutStyle";
 
 const TodayProgramsShortcut = () => {

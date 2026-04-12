@@ -95,6 +95,9 @@ const TodayShortcut = ({
   const isRestDay = Boolean(day) && !hasWorkouts;
   const sectionDateLabel = day?.Weekday ? `${day.Weekday} - ${date}` : date;
   const remainingWorkoutCount = Math.max(workoutCount - completedWorkoutCount, 0);
+  const shouldUseDateAsHeaderTitle = Boolean(headerEyebrow) && headerTitle === "Today";
+  const resolvedHeaderTitle = shouldUseDateAsHeaderTitle ? sectionDateLabel : headerTitle;
+  const showDateBadge = !shouldUseDateAsHeaderTitle;
 
   let headline = "No session today";
   let description = "Nothing is mapped to today's date in this program.";
@@ -222,14 +225,35 @@ const TodayShortcut = ({
               </ThemedText>
             ) : null}
 
-            {headerTitle ? (
+            {resolvedHeaderTitle ? (
               <ThemedTitle type="h3" style={styles.card_title}>
-                {headerTitle}
+                {resolvedHeaderTitle}
               </ThemedTitle>
             ) : null}
           </View>
 
-          {!useCompactSingleWorkoutHeader && (
+          {useCompactSingleWorkoutHeader && HeroWorkoutIcon ? (
+            <View
+              style={[
+                styles.header_workout_badge,
+                {
+                  backgroundColor: panelBackground,
+                  borderColor: chipBackground,
+                },
+              ]}
+            >
+              <HeroWorkoutIcon
+                width={22}
+                height={22}
+                color={theme.primary}
+                fill={theme.primary}
+                primaryColor={theme.primary}
+                backgroundColor="transparent"
+              />
+            </View>
+          ) : null}
+
+          {!useCompactSingleWorkoutHeader && showDateBadge && (
             <View
               style={[
                 styles.date_badge,
@@ -246,6 +270,39 @@ const TodayShortcut = ({
             </View>
           )}
         </View>
+
+        {useCompactSingleWorkoutHeader ? (
+          <View style={styles.compact_meta_group}>
+            <ThemedText
+              size={11}
+              style={styles.top_meta_summary}
+              setColor={supportiveColor}
+            >
+              {planSummaryLabel}
+            </ThemedText>
+
+            {singleWorkout?.label ? (
+              <View
+                style={[
+                  styles.compact_workout_chip,
+                  {
+                    backgroundColor: accentSoft,
+                    borderColor: chipBackground,
+                  },
+                ]}
+              >
+                <ThemedText
+                  size={10}
+                  style={styles.compact_workout_chip_text}
+                  setColor={accentColor}
+                  numberOfLines={1}
+                >
+                  {singleWorkout.label}
+                </ThemedText>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
 
           {(headline || description) && !isMultiWorkout && (
             isCompletedSingleWorkout ? (
@@ -436,7 +493,7 @@ const TodayShortcut = ({
 
                 return (
                 <View key={workout.workout_id}>
-                  {singleWorkout && (
+                  {singleWorkout && !useCompactSingleWorkoutHeader && (
                     <TouchableOpacity
                       activeOpacity={0.92}
                       onPress={handleShortcutPress}
@@ -444,20 +501,22 @@ const TodayShortcut = ({
                       <View style={styles.joined_header}>
                       {useCompactSingleWorkoutHeader && (
                         <View style={styles.joined_header_copy}>
-                          <View
-                            style={[
-                              styles.date_badge,
-                              { backgroundColor: dateBadgeBackground },
-                            ]}
-                          >
-                            <ThemedText
-                              size={10}
-                              style={styles.date_badge_text}
-                              setColor={dateBadgeTextColor}
+                          {showDateBadge ? (
+                            <View
+                              style={[
+                                styles.date_badge,
+                                { backgroundColor: dateBadgeBackground },
+                              ]}
                             >
-                              {sectionDateLabel}
-                            </ThemedText>
-                          </View>
+                              <ThemedText
+                                size={10}
+                                style={styles.date_badge_text}
+                                setColor={dateBadgeTextColor}
+                              >
+                                {sectionDateLabel}
+                              </ThemedText>
+                            </View>
+                          ) : null}
 
                           <ThemedText
                             size={11}
@@ -516,7 +575,9 @@ const TodayShortcut = ({
                     style={[
                       styles.plan_card,
                       isCompletedMultiWorkout && styles.plan_card_compact,
-                      singleWorkout && styles.plan_card_joined,
+                      singleWorkout &&
+                        !useCompactSingleWorkoutHeader &&
+                        styles.plan_card_joined,
                       {
                         backgroundColor: panelBackground,
                         borderColor: chipBackground,
@@ -605,7 +666,7 @@ const TodayShortcut = ({
                             styles.plan_item_row,
                             index === workout.previewItems.length - 1 &&
                               styles.plan_item_row_last,
-                            { backgroundColor: chipBackground },
+                            { backgroundColor: theme.cardBackground },
                           ]}
                         >
                           <View style={styles.plan_item_left}>
@@ -636,9 +697,12 @@ const TodayShortcut = ({
                               size={10}
                               style={[
                                 styles.plan_item_meta,
-                                { backgroundColor: dateBadgeBackground },
+                                {
+                                  backgroundColor:
+                                    theme.primaryLight,
+                                },
                               ]}
-                              setColor={dateBadgeTextColor}
+                              setColor={theme.cardBackground}
                             >
                               {item.detail}
                             </ThemedText>

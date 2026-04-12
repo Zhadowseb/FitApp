@@ -36,7 +36,7 @@ export default StyleSheet.create({
   },
   quickAccessSection: {
     marginHorizontal: 18,
-    marginBottom: 8,
+    marginBottom: 0,
   },
   quickAccessGrid: {
     gap: 12,
@@ -119,8 +119,8 @@ export default StyleSheet.create({
     borderRadius: 999,
   },
   feedbackPortal: {
-    marginTop: 20,
-    marginHorizontal: 22,
+    marginTop: 12,
+    marginHorizontal: 18,
     borderWidth: 1,
     borderRadius: 28,
     paddingHorizontal: 18,

@@ -36,6 +36,7 @@ import ExerciseLibrarySync from "./src/Sync/ExerciseLibrarySync";
 import MesocycleSync from "./src/Sync/MesocycleSync";
 import MicrocycleSync from "./src/Sync/MicrocycleSync";
 import ProgramSync from "./src/Sync/ProgramSync";
+import SetSync from "./src/Sync/SetSync";
 import WorkoutTypeInstanceSync from "./src/Sync/WorkoutTypeInstanceSync";
 
 import * as SQLite from 'expo-sqlite';
@@ -195,6 +196,7 @@ function UserScopedDatabaseApp() {
       <WorkoutTypeInstanceSync />
       <ExerciseLibrarySync />
       <ExerciseInstanceSync />
+      <SetSync />
       <RootNavigator />
     </SQLiteProvider>
   );

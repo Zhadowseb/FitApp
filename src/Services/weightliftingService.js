@@ -20,6 +20,17 @@ async function syncExerciseInstancesInBackground(db) {
   }
 }
 
+async function syncSetsInBackground(db) {
+  try {
+    const programServiceModule = await import("./programService");
+    void programServiceModule.syncSetsWithCloud(db).catch((error) => {
+      console.error("Set cloud sync failed:", error);
+    });
+  } catch (error) {
+    console.error("Failed to start set cloud sync:", error);
+  }
+}
+
 export const DEFAULT_VISIBLE_COLUMNS = {
   note: true,
   rest: true,
@@ -894,6 +905,7 @@ export async function addSetToExercise(db, exerciseId) {
   });
 
   syncExerciseInstancesInBackground(db);
+  syncSetsInBackground(db);
 }
 
 export async function updateExerciseVisibleColumns(
@@ -924,6 +936,7 @@ export async function updateStrengthSetDone(db, { workoutId, setId, done }) {
   });
 
   syncExerciseInstancesInBackground(db);
+  syncSetsInBackground(db);
 }
 
 export async function deleteSet(db, setId) {
@@ -935,6 +948,24 @@ export async function deleteSet(db, setId) {
 
     if (!set) {
       return;
+    }
+
+    const syncMetadata = await weightliftingRepository.getSetSyncMetadata(
+      db,
+      setId
+    );
+    const remoteLocalSetId =
+      Number(syncMetadata?.remote_local_set_id) ||
+      Number(syncMetadata?.sets_id) ||
+      Number(setId) ||
+      null;
+
+    if (syncMetadata?.cloud_set_id || remoteLocalSetId !== null) {
+      await weightliftingRepository.queueSetDeleteSync(db, {
+        cloudSetId: syncMetadata?.cloud_set_id ?? null,
+        remoteLocalSetId,
+        deletedAt: new Date().toISOString(),
+      });
     }
 
     await weightliftingRepository.deleteSetById(db, setId);
@@ -962,16 +993,18 @@ export async function deleteSet(db, setId) {
   });
 
   syncExerciseInstancesInBackground(db);
+  syncSetsInBackground(db);
 }
 
 export async function updateSetField(db, { field, value, setId }) {
   await weightliftingRepository.updateSetField(db, { field, value, setId });
+  syncSetsInBackground(db);
 }
 
 export async function updateSetRmPercentage(db, { setId, rmPercentage }) {
   const nextRmPercentage = normalizeOptionalNumber(rmPercentage);
 
-  return withTransaction(db, async () => {
+  const result = await withTransaction(db, async () => {
     await weightliftingRepository.updateSetField(db, {
       field: "rm_percentage",
       value: nextRmPercentage,
@@ -1012,12 +1045,15 @@ export async function updateSetRmPercentage(db, { setId, rmPercentage }) {
       weight: calculatedWeight,
     };
   });
+
+  syncSetsInBackground(db);
+  return result;
 }
 
 export async function updateSetWeight(db, { setId, weight }) {
   const nextWeight = normalizeOptionalNumber(weight);
 
-  return withTransaction(db, async () => {
+  const result = await withTransaction(db, async () => {
     await weightliftingRepository.updateSetField(db, {
       field: "weight",
       value: nextWeight,
@@ -1065,6 +1101,9 @@ export async function updateSetWeight(db, { setId, weight }) {
       rmPercentage: nextRmPercentage,
     };
   });
+
+  syncSetsInBackground(db);
+  return result;
 }
 
 export async function getExerciseSets(db, exerciseId) {
@@ -1088,6 +1127,7 @@ export async function initializeExerciseSets(db, { exerciseId, count }) {
   });
 
   syncExerciseInstancesInBackground(db);
+  syncSetsInBackground(db);
 }
 
 export async function saveExerciseSets(db, { exerciseId, sets }) {
@@ -1128,6 +1168,7 @@ export async function saveExerciseSets(db, { exerciseId, sets }) {
   });
 
   syncExerciseInstancesInBackground(db);
+  syncSetsInBackground(db);
 }
 
 export async function updateExerciseDone(db, { exerciseId, done }) {

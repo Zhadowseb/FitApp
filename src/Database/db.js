@@ -318,6 +318,8 @@ async function migrateSetSchema(db) {
 
       CREATE TABLE "Set_next" (
         sets_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cloud_set_id INTEGER,
+        remote_local_set_id INTEGER,
         set_number INTEGER NOT NULL,
         exercise_instance_id INTEGER NOT NULL,
         date TEXT,
@@ -330,11 +332,14 @@ async function migrateSetSchema(db) {
         done INTEGER NOT NULL DEFAULT 0,
         failed INTEGER NOT NULL DEFAULT 0,
         amrap INTEGER NOT NULL DEFAULT 0,
-        note TEXT
+        note TEXT,
+        needs_sync INTEGER NOT NULL DEFAULT 1
       );
 
       INSERT INTO "Set_next" (
         sets_id,
+        cloud_set_id,
+        remote_local_set_id,
         set_number,
         exercise_instance_id,
         date,
@@ -347,10 +352,13 @@ async function migrateSetSchema(db) {
         done,
         failed,
         amrap,
-        note
+        note,
+        needs_sync
       )
       SELECT
         sets_id,
+        ${hasColumn(sourceColumns, "cloud_set_id") ? "cloud_set_id" : "NULL"},
+        ${hasColumn(sourceColumns, "remote_local_set_id") ? "remote_local_set_id" : "NULL"},
         set_number,
         ${exerciseColumn},
         ${hasColumn(sourceColumns, "date") ? "date" : "NULL"},
@@ -363,7 +371,8 @@ async function migrateSetSchema(db) {
         ${hasColumn(sourceColumns, "done") ? "COALESCE(done, 0)" : "0"},
         ${hasColumn(sourceColumns, "failed") ? "COALESCE(failed, 0)" : "0"},
         ${hasColumn(sourceColumns, "amrap") ? "COALESCE(amrap, 0)" : "0"},
-        ${hasColumn(sourceColumns, "note") ? "note" : "NULL"}
+        ${hasColumn(sourceColumns, "note") ? "note" : "NULL"},
+        ${hasColumn(sourceColumns, "needs_sync") ? "COALESCE(needs_sync, 1)" : "1"}
       FROM ${quoteIdentifier(sourceTable)};
 
       DROP TABLE ${quoteIdentifier(sourceTable)};
@@ -874,6 +883,59 @@ async function migrateExerciseInstanceDeleteQueueSchema(db) {
   }
 }
 
+async function migrateSetDeleteQueueSchema(db) {
+  const queueColumns = await getTableColumns(db, "Set_Sync_Delete");
+
+  if (!queueColumns.length) {
+    return;
+  }
+
+  const hasCloudId = hasColumn(queueColumns, "cloud_set_id");
+  const hasRemoteLocalId = hasColumn(queueColumns, "remote_local_set_id");
+  const cloudIdColumn = queueColumns.find(
+    (column) => column.name === "cloud_set_id"
+  );
+  const cloudIdIsRequired = Number(cloudIdColumn?.notnull ?? 0) === 1;
+
+  if (hasCloudId && hasRemoteLocalId && !cloudIdIsRequired) {
+    return;
+  }
+
+  await db.execAsync("BEGIN IMMEDIATE;");
+
+  try {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS Set_Sync_Delete_next (
+        set_sync_delete_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cloud_set_id INTEGER UNIQUE,
+        remote_local_set_id INTEGER UNIQUE,
+        deleted_at TEXT
+      );
+
+      INSERT OR IGNORE INTO Set_Sync_Delete_next (
+        set_sync_delete_id,
+        cloud_set_id,
+        remote_local_set_id,
+        deleted_at
+      )
+      SELECT
+        set_sync_delete_id,
+        ${hasCloudId ? "cloud_set_id" : "NULL"},
+        ${hasRemoteLocalId ? "remote_local_set_id" : "NULL"},
+        deleted_at
+      FROM Set_Sync_Delete;
+
+      DROP TABLE Set_Sync_Delete;
+      ALTER TABLE Set_Sync_Delete_next RENAME TO Set_Sync_Delete;
+    `);
+
+    await db.execAsync("COMMIT;");
+  } catch (error) {
+    await db.execAsync("ROLLBACK;");
+    throw error;
+  }
+}
+
 async function getAppMetadataValue(db, metadataKey) {
   const row = await db.getFirstAsync(
     `SELECT metadata_value
@@ -1050,6 +1112,8 @@ export async function initializeDatabase(db) {
   `);
 
   await ensureTableColumns(db, "Set", [
+    ["cloud_set_id", "INTEGER"],
+    ["remote_local_set_id", "INTEGER"],
     ["date", "TEXT"],
     ["personal_record", "INTEGER NOT NULL DEFAULT 0"],
     ["pause", "INTEGER"],
@@ -1061,7 +1125,18 @@ export async function initializeDatabase(db) {
     ["failed", "INTEGER NOT NULL DEFAULT 0"],
     ["amrap", "INTEGER NOT NULL DEFAULT 0"],
     ["note", "TEXT"],
+    ["needs_sync", "INTEGER NOT NULL DEFAULT 1"],
   ]);
+  await migrateSetDeleteQueueSchema(db);
+  await db.execAsync(`
+    UPDATE "Set"
+    SET remote_local_set_id = COALESCE(remote_local_set_id, sets_id)
+    WHERE remote_local_set_id IS NULL;
+
+    UPDATE "Set"
+    SET needs_sync = COALESCE(needs_sync, 1)
+    WHERE needs_sync IS NULL;
+  `);
 
   await ensureTableColumns(db, "Run", [
     ["type", "TEXT NOT NULL DEFAULT 'WORKING_SET'"],

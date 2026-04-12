@@ -28,6 +28,8 @@ export const weightliftingSchemaSql = `
 
   CREATE TABLE IF NOT EXISTS "Set" (
       sets_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cloud_set_id INTEGER,
+      remote_local_set_id INTEGER,
       set_number INTEGER NOT NULL,
       exercise_instance_id INTEGER NOT NULL,
       date TEXT,
@@ -43,7 +45,15 @@ export const weightliftingSchemaSql = `
       done INTEGER NOT NULL DEFAULT 0,
       failed INTEGER NOT NULL DEFAULT 0,
       amrap INTEGER NOT NULL DEFAULT 0,
-      note TEXT
+      note TEXT,
+      needs_sync INTEGER NOT NULL DEFAULT 1
+  );
+
+  CREATE TABLE IF NOT EXISTS Set_Sync_Delete (
+      set_sync_delete_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cloud_set_id INTEGER UNIQUE,
+      remote_local_set_id INTEGER UNIQUE,
+      deleted_at TEXT
   );
 
   CREATE TABLE IF NOT EXISTS Estimated_Set (

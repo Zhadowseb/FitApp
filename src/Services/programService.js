@@ -42,6 +42,9 @@ const WORKOUT_TYPE_INSTANCE_CLOUD_SYNC_SELECT =
 const EXERCISE_INSTANCE_CLOUD_TABLE = "exercise_instance";
 const EXERCISE_INSTANCE_CLOUD_SYNC_SELECT =
   "id, user_id, local_exercise_instance_id, cloud_workout_type_instance_id, exercise_name, sets, visible_columns, note, done";
+const SET_CLOUD_TABLE = "set";
+const SET_CLOUD_SYNC_SELECT =
+  "id, user_id, local_set_id, cloud_exercise_instance_id, set_number, date, personal_record, pause, rpe, weight, rm_percentage, reps, done, failed, amrap, note";
 const EXERCISE_VISIBLE_COLUMN_KEYS = [
   "note",
   "rest",
@@ -59,8 +62,10 @@ let activeMicrocycleSyncPromise = null;
 let activeDaySyncPromise = null;
 let activeWorkoutTypeInstanceSyncPromise = null;
 let activeExerciseInstanceSyncPromise = null;
+let activeSetSyncPromise = null;
 let pendingWorkoutTypeInstanceSyncPass = false;
 let pendingExerciseInstanceSyncPass = false;
+let pendingSetSyncPass = false;
 
 function formatDisplayNumber(value) {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1);
@@ -485,6 +490,63 @@ async function ensureWorkoutTypeInstanceCloudIdentity(db, userId, localWorkout) 
   return null;
 }
 
+async function ensureExerciseInstanceCloudIdentity(db, userId, localExercise) {
+  const remoteLocalExerciseInstanceId =
+    resolveExerciseInstanceCloudLocalId(localExercise);
+
+  if (!localExercise || remoteLocalExerciseInstanceId === null) {
+    return null;
+  }
+
+  const { data: cloudExercises, error } = await supabase
+    .from(EXERCISE_INSTANCE_CLOUD_TABLE)
+    .select("id, local_exercise_instance_id")
+    .eq("user_id", userId)
+    .eq("local_exercise_instance_id", remoteLocalExerciseInstanceId)
+    .order("id", { ascending: true })
+    .limit(1);
+
+  if (error) {
+    throw error;
+  }
+
+  const cloudExercise = cloudExercises?.[0] ?? null;
+  const cloudExerciseInstanceId = parseCloudExerciseInstanceId(cloudExercise?.id);
+
+  if (cloudExerciseInstanceId !== null) {
+    const syncedRemoteLocalExerciseInstanceId =
+      normalizeOptionalInteger(cloudExercise?.local_exercise_instance_id, null) ??
+      remoteLocalExerciseInstanceId;
+
+    if (
+      parseCloudExerciseInstanceId(localExercise.cloud_exercise_instance_id) !==
+        cloudExerciseInstanceId ||
+      resolveExerciseInstanceCloudLocalId(localExercise) !==
+        syncedRemoteLocalExerciseInstanceId
+    ) {
+      await weightliftingRepository.updateExerciseCloudIdentity(db, {
+        exerciseId: localExercise.exercise_instance_id,
+        cloudExerciseInstanceId,
+        remoteLocalExerciseInstanceId: syncedRemoteLocalExerciseInstanceId,
+      });
+    }
+
+    return cloudExerciseInstanceId;
+  }
+
+  if (
+    parseCloudExerciseInstanceId(localExercise.cloud_exercise_instance_id) !==
+      null ||
+    Number(localExercise.needs_sync) !== 1
+  ) {
+    await weightliftingRepository.markExerciseForCloudResync(db, {
+      exerciseId: localExercise.exercise_instance_id,
+    });
+  }
+
+  return null;
+}
+
 function getComparableMesocycleSnapshot(mesocycle) {
   return {
     cloud_program_id: normalizeOptionalInteger(
@@ -880,6 +942,90 @@ function buildCloudExerciseInstancePayload(
     ),
     note: normalizeOptionalText(localExercise.note),
     done: normalizeBooleanFlag(localExercise.done),
+  };
+}
+
+function parseCloudSetId(value) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function resolveSetCloudLocalId(set) {
+  return normalizeOptionalInteger(
+    set?.remote_local_set_id ?? set?.local_set_id ?? set?.sets_id,
+    null
+  );
+}
+
+function normalizeSetDate(value) {
+  return normalizeLocalDateString(value);
+}
+
+function normalizeSetDateForCloud(value) {
+  return normalizeIsoDateString(value);
+}
+
+function getComparableSetSnapshot(set) {
+  return {
+    local_set_id: normalizeOptionalInteger(set?.local_set_id, null),
+    cloud_exercise_instance_id: normalizeOptionalInteger(
+      set?.cloud_exercise_instance_id,
+      null
+    ),
+    set_number: normalizeOptionalInteger(set?.set_number, null),
+    date: normalizeSetDate(set?.date),
+    personal_record: normalizeBooleanFlag(set?.personal_record),
+    pause: normalizeOptionalInteger(set?.pause, null),
+    rpe: normalizeOptionalInteger(set?.rpe, null),
+    weight: normalizeOptionalInteger(set?.weight, null),
+    rm_percentage: normalizeOptionalInteger(set?.rm_percentage, null),
+    reps: normalizeOptionalInteger(set?.reps, null),
+    done: normalizeBooleanFlag(set?.done),
+    failed: normalizeBooleanFlag(set?.failed),
+    amrap: normalizeBooleanFlag(set?.amrap),
+    note: normalizeOptionalText(set?.note),
+  };
+}
+
+function areComparableSetsEqual(leftSet, rightSet) {
+  const leftSnapshot = getComparableSetSnapshot(leftSet);
+  const rightSnapshot = getComparableSetSnapshot(rightSet);
+
+  return (
+    leftSnapshot.cloud_exercise_instance_id ===
+      rightSnapshot.cloud_exercise_instance_id &&
+    leftSnapshot.set_number === rightSnapshot.set_number &&
+    leftSnapshot.date === rightSnapshot.date &&
+    leftSnapshot.personal_record === rightSnapshot.personal_record &&
+    leftSnapshot.pause === rightSnapshot.pause &&
+    leftSnapshot.rpe === rightSnapshot.rpe &&
+    leftSnapshot.weight === rightSnapshot.weight &&
+    leftSnapshot.rm_percentage === rightSnapshot.rm_percentage &&
+    leftSnapshot.reps === rightSnapshot.reps &&
+    leftSnapshot.done === rightSnapshot.done &&
+    leftSnapshot.failed === rightSnapshot.failed &&
+    leftSnapshot.amrap === rightSnapshot.amrap &&
+    leftSnapshot.note === rightSnapshot.note
+  );
+}
+
+function buildCloudSetPayload(localSet, userId, cloudExerciseInstanceId) {
+  return {
+    user_id: userId,
+    local_set_id: resolveSetCloudLocalId(localSet),
+    cloud_exercise_instance_id: cloudExerciseInstanceId,
+    set_number: normalizeOptionalInteger(localSet.set_number, null),
+    date: normalizeSetDateForCloud(localSet.date),
+    personal_record: normalizeBooleanFlag(localSet.personal_record),
+    pause: normalizeOptionalInteger(localSet.pause, null),
+    rpe: normalizeOptionalInteger(localSet.rpe, null),
+    weight: normalizeOptionalInteger(localSet.weight, null),
+    rm_percentage: normalizeOptionalInteger(localSet.rm_percentage, null),
+    reps: normalizeOptionalInteger(localSet.reps, null),
+    done: normalizeBooleanFlag(localSet.done),
+    failed: normalizeBooleanFlag(localSet.failed),
+    amrap: normalizeBooleanFlag(localSet.amrap),
+    note: normalizeOptionalText(localSet.note),
   };
 }
 
@@ -3330,6 +3476,566 @@ function syncExerciseInstancesInBackground(db) {
     });
 }
 
+async function findCloudSetByUserLocalId(userId, localSetId) {
+  if (localSetId === null || localSetId === undefined) {
+    return null;
+  }
+
+  const { data: cloudSets, error } = await supabase
+    .from(SET_CLOUD_TABLE)
+    .select("id, local_set_id")
+    .eq("user_id", userId)
+    .eq("local_set_id", localSetId)
+    .order("id", { ascending: true })
+    .limit(1);
+
+  if (error) {
+    throw error;
+  }
+
+  return cloudSets?.[0] ?? null;
+}
+
+async function deleteCloudSetsByUserLocalIdOrThrow({
+  localSetId,
+  userId,
+  entityLabel,
+}) {
+  if (localSetId === null || localSetId === undefined) {
+    return false;
+  }
+
+  const { data: deletedRows, error: deleteError } = await supabase
+    .from(SET_CLOUD_TABLE)
+    .delete()
+    .eq("local_set_id", localSetId)
+    .eq("user_id", userId)
+    .select("id");
+
+  if (deleteError) {
+    throw deleteError;
+  }
+
+  if ((deletedRows?.length ?? 0) > 0) {
+    return true;
+  }
+
+  const { data: existingRows, error: selectError } = await supabase
+    .from(SET_CLOUD_TABLE)
+    .select("id")
+    .eq("local_set_id", localSetId)
+    .eq("user_id", userId)
+    .limit(1);
+
+  if (selectError) {
+    throw selectError;
+  }
+
+  if ((existingRows?.length ?? 0) > 0) {
+    throw new Error(
+      `${entityLabel} cloud delete did not remove the remote row. The delete will stay queued and retry on the next sync.`
+    );
+  }
+
+  return false;
+}
+
+async function processQueuedSetDeletes(db, userId) {
+  const queuedDeletes = await weightliftingRepository.getQueuedSetDeletes(db);
+  let deletedCount = 0;
+
+  for (const queuedDelete of queuedDeletes) {
+    let wasDeletedNow = false;
+
+    if (queuedDelete.cloud_set_id) {
+      wasDeletedNow = await deleteCloudRowForUserOrThrow({
+        tableName: SET_CLOUD_TABLE,
+        rowId: queuedDelete.cloud_set_id,
+        userId,
+        entityLabel: "Set",
+      });
+    }
+
+    if (!wasDeletedNow) {
+      wasDeletedNow = await deleteCloudSetsByUserLocalIdOrThrow({
+        localSetId: normalizeOptionalInteger(
+          queuedDelete.remote_local_set_id,
+          null
+        ),
+        userId,
+        entityLabel: "Set",
+      });
+    }
+
+    await weightliftingRepository.deleteQueuedSetDelete(
+      db,
+      queuedDelete.set_sync_delete_id
+    );
+    deletedCount += wasDeletedNow ? 1 : 0;
+  }
+
+  return deletedCount;
+}
+
+async function uploadDirtySets(
+  db,
+  userId,
+  { allowParentRepair = true } = {}
+) {
+  const [localSets, localExercises] = await Promise.all([
+    weightliftingRepository.getSetsForCloudSync(db),
+    weightliftingRepository.getExercisesForCloudSync(db),
+  ]);
+  const localExercisesById = new Map(
+    localExercises.map((exercise) => [exercise.exercise_instance_id, exercise])
+  );
+  let uploadedCount = 0;
+  let requiresExerciseRepair = false;
+
+  for (const localSet of localSets) {
+    if (Number(localSet.needs_sync) !== 1) {
+      continue;
+    }
+
+    const parentExercise = localExercisesById.get(localSet.exercise_instance_id);
+    const parentExerciseCloudId = await ensureExerciseInstanceCloudIdentity(
+      db,
+      userId,
+      parentExercise
+    );
+
+    if (parentExerciseCloudId === null) {
+      requiresExerciseRepair = true;
+      continue;
+    }
+
+    const payload = buildCloudSetPayload(localSet, userId, parentExerciseCloudId);
+
+    if (payload.local_set_id === null) {
+      continue;
+    }
+
+    if (localSet.cloud_set_id) {
+      const { data: updatedSet, error: updateError } = await supabase
+        .from(SET_CLOUD_TABLE)
+        .update({
+          cloud_exercise_instance_id: payload.cloud_exercise_instance_id,
+          set_number: payload.set_number,
+          date: payload.date,
+          personal_record: payload.personal_record,
+          pause: payload.pause,
+          rpe: payload.rpe,
+          weight: payload.weight,
+          rm_percentage: payload.rm_percentage,
+          reps: payload.reps,
+          done: payload.done,
+          failed: payload.failed,
+          amrap: payload.amrap,
+          note: payload.note,
+        })
+        .eq("id", localSet.cloud_set_id)
+        .eq("user_id", userId)
+        .select("id, local_set_id")
+        .maybeSingle();
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      let syncedSetRecord = updatedSet;
+      let cloudSetId = parseCloudSetId(updatedSet?.id);
+
+      if (cloudSetId === null) {
+        const existingCloudSet = await findCloudSetByUserLocalId(
+          userId,
+          payload.local_set_id
+        );
+
+        if (existingCloudSet?.id) {
+          const existingCloudSetId = parseCloudSetId(existingCloudSet.id);
+
+          const { data: repairedSet, error: repairError } = await supabase
+            .from(SET_CLOUD_TABLE)
+            .update({
+              cloud_exercise_instance_id: payload.cloud_exercise_instance_id,
+              set_number: payload.set_number,
+              date: payload.date,
+              personal_record: payload.personal_record,
+              pause: payload.pause,
+              rpe: payload.rpe,
+              weight: payload.weight,
+              rm_percentage: payload.rm_percentage,
+              reps: payload.reps,
+              done: payload.done,
+              failed: payload.failed,
+              amrap: payload.amrap,
+              note: payload.note,
+            })
+            .eq("id", existingCloudSetId)
+            .eq("user_id", userId)
+            .select("id, local_set_id")
+            .single();
+
+          if (repairError) {
+            throw repairError;
+          }
+
+          syncedSetRecord = repairedSet;
+          cloudSetId = parseCloudSetId(repairedSet?.id);
+        } else {
+          const { data: insertedSet, error: insertError } = await supabase
+            .from(SET_CLOUD_TABLE)
+            .insert(payload)
+            .select("id, local_set_id")
+            .single();
+
+          if (insertError) {
+            throw insertError;
+          }
+
+          syncedSetRecord = insertedSet;
+          cloudSetId = parseCloudSetId(insertedSet?.id);
+        }
+      }
+
+      if (cloudSetId === null) {
+        throw new Error("Could not resolve cloud set id after update.");
+      }
+
+      const remoteLocalSetId =
+        resolveSetCloudLocalId(syncedSetRecord) ?? payload.local_set_id;
+
+      await weightliftingRepository.markSetSynced(db, {
+        setId: localSet.sets_id,
+        cloudSetId,
+        remoteLocalSetId,
+      });
+      uploadedCount += 1;
+      continue;
+    }
+
+    const existingCloudSet = await findCloudSetByUserLocalId(
+      userId,
+      payload.local_set_id
+    );
+
+    let syncedSet = null;
+
+    if (existingCloudSet?.id) {
+      const cloudSetId = parseCloudSetId(existingCloudSet.id);
+      const { data: repairedSet, error: repairError } = await supabase
+        .from(SET_CLOUD_TABLE)
+        .update({
+          cloud_exercise_instance_id: payload.cloud_exercise_instance_id,
+          set_number: payload.set_number,
+          date: payload.date,
+          personal_record: payload.personal_record,
+          pause: payload.pause,
+          rpe: payload.rpe,
+          weight: payload.weight,
+          rm_percentage: payload.rm_percentage,
+          reps: payload.reps,
+          done: payload.done,
+          failed: payload.failed,
+          amrap: payload.amrap,
+          note: payload.note,
+        })
+        .eq("id", cloudSetId)
+        .eq("user_id", userId)
+        .select("id, local_set_id")
+        .single();
+
+      if (repairError) {
+        throw repairError;
+      }
+
+      syncedSet = repairedSet;
+    } else {
+      const { data: insertedSet, error: insertError } = await supabase
+        .from(SET_CLOUD_TABLE)
+        .insert(payload)
+        .select("id, local_set_id")
+        .single();
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      syncedSet = insertedSet;
+    }
+
+    const cloudSetId = parseCloudSetId(syncedSet?.id);
+
+    if (cloudSetId === null) {
+      throw new Error("Could not resolve cloud set id after insert.");
+    }
+
+    const remoteLocalSetId =
+      resolveSetCloudLocalId(syncedSet) ?? payload.local_set_id;
+
+    await weightliftingRepository.markSetSynced(db, {
+      setId: localSet.sets_id,
+      cloudSetId,
+      remoteLocalSetId,
+    });
+    uploadedCount += 1;
+  }
+
+  if (requiresExerciseRepair && allowParentRepair) {
+    await syncExerciseInstancesWithCloud(db);
+    uploadedCount += await uploadDirtySets(db, userId, {
+      allowParentRepair: false,
+    });
+  }
+
+  return uploadedCount;
+}
+
+async function reconcileSetsFromCloud(db, userId) {
+  const { data: cloudSets, error } = await supabase
+    .from(SET_CLOUD_TABLE)
+    .select(SET_CLOUD_SYNC_SELECT)
+    .eq("user_id", userId)
+    .order("cloud_exercise_instance_id", { ascending: true })
+    .order("id", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  const [localSets, localExercises] = await Promise.all([
+    weightliftingRepository.getSetsForCloudSync(db),
+    weightliftingRepository.getExercisesForCloudSync(db),
+  ]);
+  const queuedDeletes = await weightliftingRepository.getQueuedSetDeletes(db);
+  const localExercisesByCloudId = new Map();
+  const localSetsByCloudId = new Map();
+  const localSetsByRemoteLocalId = new Map();
+  const localSetsByLocalId = new Map();
+  const pendingDeletedSetLocalIds = new Set(
+    queuedDeletes
+      .map((queuedDelete) =>
+        normalizeOptionalInteger(queuedDelete.remote_local_set_id, null)
+      )
+      .filter((setLocalId) => setLocalId !== null)
+  );
+
+  for (const localExercise of localExercises) {
+    const cloudExerciseInstanceId = parseCloudExerciseInstanceId(
+      localExercise.cloud_exercise_instance_id
+    );
+
+    if (cloudExerciseInstanceId !== null) {
+      localExercisesByCloudId.set(cloudExerciseInstanceId, localExercise);
+    }
+  }
+
+  for (const localSet of localSets) {
+    const cloudSetId = parseCloudSetId(localSet.cloud_set_id);
+    const remoteLocalSetId = resolveSetCloudLocalId(localSet);
+
+    if (cloudSetId !== null) {
+      localSetsByCloudId.set(cloudSetId, localSet);
+    }
+
+    if (remoteLocalSetId !== null) {
+      localSetsByRemoteLocalId.set(remoteLocalSetId, localSet);
+    }
+
+    localSetsByLocalId.set(localSet.sets_id, localSet);
+  }
+
+  let downloadedCount = 0;
+
+  await withTransaction(db, async () => {
+    for (const cloudSet of cloudSets ?? []) {
+      const cloudSetId = parseCloudSetId(cloudSet.id);
+      const localSetId = normalizeOptionalInteger(cloudSet.local_set_id, null);
+      const cloudExerciseInstanceId = normalizeOptionalInteger(
+        cloudSet.cloud_exercise_instance_id,
+        null
+      );
+      const parentExercise = localExercisesByCloudId.get(cloudExerciseInstanceId);
+      const comparableCloudSet = getComparableSetSnapshot(cloudSet);
+
+      if (
+        cloudSetId === null ||
+        localSetId === null ||
+        cloudExerciseInstanceId === null ||
+        !parentExercise
+      ) {
+        continue;
+      }
+
+      if (pendingDeletedSetLocalIds.has(localSetId)) {
+        continue;
+      }
+
+      const localSet =
+        localSetsByCloudId.get(cloudSetId) ??
+        localSetsByRemoteLocalId.get(localSetId) ??
+        localSetsByLocalId.get(localSetId) ??
+        null;
+
+      if (!localSet) {
+        const result = await weightliftingRepository.createSetFromCloud(db, {
+          cloudSetId,
+          remoteLocalSetId: localSetId,
+          exerciseId: parentExercise.exercise_instance_id,
+          setNumber: comparableCloudSet.set_number,
+          date: comparableCloudSet.date,
+          personalRecord: comparableCloudSet.personal_record,
+          pause: comparableCloudSet.pause,
+          rpe: comparableCloudSet.rpe,
+          weight: comparableCloudSet.weight,
+          rmPercentage: comparableCloudSet.rm_percentage,
+          reps: comparableCloudSet.reps,
+          done: comparableCloudSet.done,
+          failed: comparableCloudSet.failed,
+          amrap: comparableCloudSet.amrap,
+          note: comparableCloudSet.note,
+        });
+
+        const createdSet = {
+          sets_id: result.lastInsertRowId,
+          cloud_set_id: cloudSetId,
+          remote_local_set_id: localSetId,
+          exercise_instance_id: parentExercise.exercise_instance_id,
+          ...comparableCloudSet,
+          needs_sync: 0,
+        };
+
+        localSetsByCloudId.set(cloudSetId, createdSet);
+        localSetsByRemoteLocalId.set(localSetId, createdSet);
+        localSetsByLocalId.set(createdSet.sets_id, createdSet);
+        downloadedCount += 1;
+        continue;
+      }
+
+      const comparableLocalSet = getComparableSetSnapshot({
+        ...localSet,
+        cloud_exercise_instance_id: parseCloudExerciseInstanceId(
+          parentExercise.cloud_exercise_instance_id
+        ),
+      });
+
+      if (Number(localSet.needs_sync) === 1) {
+        if (areComparableSetsEqual(comparableLocalSet, comparableCloudSet)) {
+          await weightliftingRepository.markSetSynced(db, {
+            setId: localSet.sets_id,
+            cloudSetId,
+            remoteLocalSetId: localSetId,
+          });
+        } else if (
+          !localSet.cloud_set_id ||
+          resolveSetCloudLocalId(localSet) !== localSetId
+        ) {
+          await weightliftingRepository.updateSetCloudIdentity(db, {
+            setId: localSet.sets_id,
+            cloudSetId,
+            remoteLocalSetId: localSetId,
+          });
+        }
+        continue;
+      }
+
+      if (areComparableSetsEqual(comparableLocalSet, comparableCloudSet)) {
+        if (
+          !localSet.cloud_set_id ||
+          resolveSetCloudLocalId(localSet) !== localSetId
+        ) {
+          await weightliftingRepository.markSetSynced(db, {
+            setId: localSet.sets_id,
+            cloudSetId,
+            remoteLocalSetId: localSetId,
+          });
+        }
+        continue;
+      }
+
+      await weightliftingRepository.updateSetFromCloud(db, {
+        setId: localSet.sets_id,
+        cloudSetId,
+        remoteLocalSetId: localSetId,
+        exerciseId: parentExercise.exercise_instance_id,
+        setNumber: comparableCloudSet.set_number,
+        date: comparableCloudSet.date,
+        personalRecord: comparableCloudSet.personal_record,
+        pause: comparableCloudSet.pause,
+        rpe: comparableCloudSet.rpe,
+        weight: comparableCloudSet.weight,
+        rmPercentage: comparableCloudSet.rm_percentage,
+        reps: comparableCloudSet.reps,
+        done: comparableCloudSet.done,
+        failed: comparableCloudSet.failed,
+        amrap: comparableCloudSet.amrap,
+        note: comparableCloudSet.note,
+      });
+
+      const updatedSet = {
+        ...localSet,
+        cloud_set_id: cloudSetId,
+        remote_local_set_id: localSetId,
+        exercise_instance_id: parentExercise.exercise_instance_id,
+        ...comparableCloudSet,
+        needs_sync: 0,
+      };
+
+      localSetsByCloudId.set(cloudSetId, updatedSet);
+      localSetsByRemoteLocalId.set(localSetId, updatedSet);
+      localSetsByLocalId.set(localSet.sets_id, updatedSet);
+      downloadedCount += 1;
+    }
+  });
+
+  return downloadedCount;
+}
+
+async function syncSetsWithCloudInternal(db) {
+  await syncExerciseInstancesWithCloud(db);
+
+  const userId = await getAuthenticatedUserId();
+
+  if (!userId) {
+    return {
+      changed: false,
+      deletedCount: 0,
+      downloadedCount: 0,
+      uploadedCount: 0,
+    };
+  }
+
+  const deletedCount = await processQueuedSetDeletes(db, userId);
+  const initialDownloadedCount = await reconcileSetsFromCloud(db, userId);
+  const uploadedCount = await uploadDirtySets(db, userId);
+  const finalDownloadedCount = await reconcileSetsFromCloud(db, userId);
+  const downloadedCount = initialDownloadedCount + finalDownloadedCount;
+
+  return {
+    changed: deletedCount > 0 || uploadedCount > 0 || downloadedCount > 0,
+    deletedCount,
+    downloadedCount,
+    uploadedCount,
+  };
+}
+
+function syncSetsInBackground(db) {
+  if (activeSetSyncPromise) {
+    pendingSetSyncPass = true;
+  }
+
+  void syncSetsWithCloud(db)
+    .catch((error) => {
+      console.error("Set cloud sync failed:", error);
+    })
+    .finally(() => {
+      if (pendingSetSyncPass && !activeSetSyncPromise) {
+        pendingSetSyncPass = false;
+        syncSetsInBackground(db);
+      }
+    });
+}
+
 async function ensureDefaultDaysForMicrocycle(
   db,
   { microcycleId, programId, mesocycleNumber, microcycleNumber, startDate }
@@ -3661,6 +4367,18 @@ export async function syncExerciseInstancesWithCloud(db) {
     });
 
   return activeExerciseInstanceSyncPromise;
+}
+
+export async function syncSetsWithCloud(db) {
+  if (activeSetSyncPromise) {
+    return activeSetSyncPromise;
+  }
+
+  activeSetSyncPromise = syncSetsWithCloudInternal(db).finally(() => {
+    activeSetSyncPromise = null;
+  });
+
+  return activeSetSyncPromise;
 }
 
 export async function createProgram(db, { programName, startDate, status }) {
@@ -4158,6 +4876,7 @@ export async function copyMicrocycleWorkouts(
 
   syncWorkoutTypeInstancesInBackground(db);
   syncExerciseInstancesInBackground(db);
+  syncSetsInBackground(db);
 }
 
 export async function deleteMicrocycle(db, microcycleId) {
@@ -4305,6 +5024,7 @@ export async function copyWorkoutToDate(
   if (copiedWorkoutId) {
     syncWorkoutTypeInstancesInBackground(db);
     syncExerciseInstancesInBackground(db);
+    syncSetsInBackground(db);
   }
 
   return copiedWorkoutId;

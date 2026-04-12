@@ -2,7 +2,7 @@
   "expo": {
     "name": "FitVen",
     "slug": "programapp",
-    "version": "0.5.9-minor-exercise-instance-cloud-sync.1",
+    "version": "0.5.10-minor-set-cloud-sync.1",
     "orientation": "portrait",
     "icon": "./assets/icon_v1.0.png",
     "userInterfaceStyle": "dark",

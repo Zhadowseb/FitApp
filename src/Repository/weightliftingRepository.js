@@ -657,8 +657,9 @@ export async function createSet(
       done,
       failed,
       amrap,
-      note
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+      note,
+      needs_sync
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1);`,
     [
       setNumber,
       exerciseId,
@@ -674,6 +675,243 @@ export async function createSet(
       amrap,
       note,
     ]
+  );
+}
+
+export async function getSetsForCloudSync(db) {
+  return db.getAllAsync(
+    `SELECT
+        sets_id,
+        cloud_set_id,
+        remote_local_set_id,
+        set_number,
+        exercise_instance_id,
+        date,
+        personal_record,
+        pause,
+        rpe,
+        weight,
+        rm_percentage,
+        reps,
+        done,
+        failed,
+        amrap,
+        note,
+        needs_sync
+     FROM "Set"
+     ORDER BY sets_id ASC;`
+  );
+}
+
+export async function createSetFromCloud(
+  db,
+  {
+    cloudSetId,
+    remoteLocalSetId,
+    exerciseId,
+    setNumber,
+    date,
+    personalRecord,
+    pause,
+    rpe,
+    weight,
+    rmPercentage,
+    reps,
+    done,
+    failed,
+    amrap,
+    note,
+  }
+) {
+  return db.runAsync(
+    `INSERT INTO "Set" (
+      cloud_set_id,
+      remote_local_set_id,
+      set_number,
+      exercise_instance_id,
+      date,
+      personal_record,
+      pause,
+      rpe,
+      weight,
+      rm_percentage,
+      reps,
+      done,
+      failed,
+      amrap,
+      note,
+      needs_sync
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0);`,
+    [
+      cloudSetId,
+      remoteLocalSetId,
+      setNumber,
+      exerciseId,
+      date,
+      personalRecord ? 1 : 0,
+      pause,
+      rpe,
+      weight,
+      rmPercentage,
+      reps,
+      done ? 1 : 0,
+      failed ? 1 : 0,
+      amrap ? 1 : 0,
+      note,
+    ]
+  );
+}
+
+export async function updateSetFromCloud(
+  db,
+  {
+    setId,
+    cloudSetId,
+    remoteLocalSetId,
+    exerciseId,
+    setNumber,
+    date,
+    personalRecord,
+    pause,
+    rpe,
+    weight,
+    rmPercentage,
+    reps,
+    done,
+    failed,
+    amrap,
+    note,
+  }
+) {
+  await db.runAsync(
+    `UPDATE "Set"
+     SET cloud_set_id = ?,
+         remote_local_set_id = ?,
+         set_number = ?,
+         exercise_instance_id = ?,
+         date = ?,
+         personal_record = ?,
+         pause = ?,
+         rpe = ?,
+         weight = ?,
+         rm_percentage = ?,
+         reps = ?,
+         done = ?,
+         failed = ?,
+         amrap = ?,
+         note = ?,
+         needs_sync = 0
+     WHERE sets_id = ?;`,
+    [
+      cloudSetId,
+      remoteLocalSetId,
+      setNumber,
+      exerciseId,
+      date,
+      personalRecord ? 1 : 0,
+      pause,
+      rpe,
+      weight,
+      rmPercentage,
+      reps,
+      done ? 1 : 0,
+      failed ? 1 : 0,
+      amrap ? 1 : 0,
+      note,
+      setId,
+    ]
+  );
+}
+
+export async function markSetSynced(
+  db,
+  { setId, cloudSetId, remoteLocalSetId = null }
+) {
+  await db.runAsync(
+    `UPDATE "Set"
+     SET cloud_set_id = ?,
+         remote_local_set_id = COALESCE(
+           ?,
+           remote_local_set_id,
+           sets_id
+         ),
+         needs_sync = 0
+     WHERE sets_id = ?;`,
+    [cloudSetId, remoteLocalSetId, setId]
+  );
+}
+
+export async function updateSetCloudIdentity(
+  db,
+  { setId, cloudSetId, remoteLocalSetId = null }
+) {
+  await db.runAsync(
+    `UPDATE "Set"
+     SET cloud_set_id = ?,
+         remote_local_set_id = COALESCE(
+           ?,
+           remote_local_set_id,
+           sets_id
+         )
+     WHERE sets_id = ?;`,
+    [cloudSetId, remoteLocalSetId, setId]
+  );
+}
+
+export async function markSetForCloudResync(db, { setId }) {
+  await db.runAsync(
+    `UPDATE "Set"
+     SET cloud_set_id = NULL,
+         needs_sync = 1
+     WHERE sets_id = ?;`,
+    [setId]
+  );
+}
+
+export async function getSetSyncMetadata(db, setId) {
+  return db.getFirstAsync(
+    `SELECT
+        sets_id,
+        cloud_set_id,
+        remote_local_set_id,
+        needs_sync
+     FROM "Set"
+     WHERE sets_id = ?;`,
+    [setId]
+  );
+}
+
+export async function getQueuedSetDeletes(db) {
+  return db.getAllAsync(
+    `SELECT
+        set_sync_delete_id,
+        cloud_set_id,
+        remote_local_set_id,
+        deleted_at
+     FROM Set_Sync_Delete
+     ORDER BY set_sync_delete_id ASC;`
+  );
+}
+
+export async function queueSetDeleteSync(
+  db,
+  { cloudSetId = null, remoteLocalSetId = null, deletedAt }
+) {
+  await db.runAsync(
+    `INSERT OR IGNORE INTO Set_Sync_Delete (
+      cloud_set_id,
+      remote_local_set_id,
+      deleted_at
+    ) VALUES (?, ?, ?);`,
+    [cloudSetId, remoteLocalSetId, deletedAt]
+  );
+}
+
+export async function deleteQueuedSetDelete(db, queueId) {
+  await db.runAsync(
+    `DELETE FROM Set_Sync_Delete
+     WHERE set_sync_delete_id = ?;`,
+    [queueId]
   );
 }
 
@@ -734,7 +972,8 @@ export async function updateExerciseNote(db, { exerciseId, note }) {
 export async function updateSetDone(db, { setId, done }) {
   await db.runAsync(
     `UPDATE "Set"
-     SET done = ?
+     SET done = ?,
+         needs_sync = 1
      WHERE sets_id = ?;`,
     [done ? 1 : 0, setId]
   );
@@ -809,7 +1048,8 @@ export async function getSetIdsByExercise(db, exerciseId) {
 export async function updateSetNumber(db, { setId, setNumber }) {
   await db.runAsync(
     `UPDATE "Set"
-     SET set_number = ?
+     SET set_number = ?,
+         needs_sync = 1
      WHERE sets_id = ?;`,
     [setNumber, setId]
   );
@@ -818,7 +1058,8 @@ export async function updateSetNumber(db, { setId, setNumber }) {
 export async function updateSetField(db, { field, value, setId }) {
   await db.runAsync(
     `UPDATE "Set"
-     SET ${field} = ?
+     SET ${field} = ?,
+         needs_sync = 1
      WHERE sets_id = ?;`,
     [value, setId]
   );
@@ -868,7 +1109,8 @@ export async function updateSetByExerciseAndNumber(
          done = ?,
          failed = ?,
          amrap = ?,
-         note = ?
+         note = ?,
+         needs_sync = 1
      WHERE exercise_instance_id = ?
        AND set_number = ?;`,
     [

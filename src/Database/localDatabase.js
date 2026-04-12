@@ -24,6 +24,7 @@ const LEGACY_COPY_TABLE_ORDER = [
   "Exercise_Instance",
   "Exercise_Instance_Sync_Delete",
   "Set",
+  "Set_Sync_Delete",
   "Estimated_Set",
   "RMWeightProgression",
   "Run",

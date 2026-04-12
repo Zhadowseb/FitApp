@@ -5,8 +5,17 @@ export default StyleSheet.create({
     minHeight: 220,
     padding: 0,
     overflow: "hidden",
-    borderWidth: 1.5,
+    borderWidth: 1,
+    borderRadius: 26,
     marginBottom: 12,
+  },
+
+  card_accent: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 4,
   },
 
   shortcut_card_complete: {
@@ -18,22 +27,47 @@ export default StyleSheet.create({
   },
 
   touchable: {
-    paddingHorizontal: 10,
-    paddingVertical: 0,
+    paddingHorizontal: 18,
+    paddingTop: 20,
+    paddingBottom: 16,
   },
 
   touchable_multi: {
-    paddingTop: 10,
+    paddingTop: 20,
   },
 
   touchable_complete: {
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingTop: 20,
+    paddingBottom: 16,
   },
 
   touchable_empty: {
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingTop: 20,
+    paddingBottom: 16,
+  },
+
+  card_header: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 2,
+  },
+
+  card_header_copy: {
+    flex: 1,
+  },
+
+  card_eyebrow: {
+    fontWeight: "800",
+    fontSize: 10,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+
+  card_title: {
+    lineHeight: 28,
   },
 
   top_row: {
@@ -104,7 +138,7 @@ export default StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 14,
-    marginTop: 12,
+    marginTop: 14,
   },
 
   complete_summary_row: {

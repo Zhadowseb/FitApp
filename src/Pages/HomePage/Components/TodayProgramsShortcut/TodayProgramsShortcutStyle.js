@@ -2,13 +2,36 @@ import { StyleSheet } from "react-native";
 
 export default StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     marginBottom: 18,
   },
+  stateCard: {
+    borderWidth: 1,
+    borderRadius: 26,
+    paddingHorizontal: 18,
+    paddingTop: 20,
+    paddingBottom: 18,
+    overflow: "hidden",
+  },
+  stateAccent: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 4,
+  },
+  stateEyebrow: {
+    fontWeight: "800",
+    fontSize: 10,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
   loadingState: {
-    minHeight: 140,
+    minHeight: 120,
     alignItems: "center",
     justifyContent: "center",
+    paddingTop: 12,
   },
   loadingCopy: {
     marginTop: 10,
@@ -19,23 +42,10 @@ export default StyleSheet.create({
     justifyContent: "center",
   },
   emptyCopy: {
-    marginTop: 8,
+    marginTop: 10,
     lineHeight: 20,
   },
   programSection: {
     marginBottom: 12,
-  },
-  programLabelGroup: {
-    marginBottom: 8,
-  },
-  programLabelEyebrow: {
-    fontWeight: "800",
-    fontSize: 11,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    marginBottom: 4,
-  },
-  programLabelTitle: {
-    lineHeight: 24,
   },
 });

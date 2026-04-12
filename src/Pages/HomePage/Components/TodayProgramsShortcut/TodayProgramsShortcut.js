@@ -46,40 +46,81 @@ const TodayProgramsShortcut = () => {
   return (
     <View style={styles.container}>
       {loading ? (
-        <View style={styles.loadingState}>
-          <ActivityIndicator size="small" color={theme.primary} />
-          <ThemedText style={styles.loadingCopy} setColor={quietText}>
-            Loading today&apos;s training...
+        <View
+          style={[
+            styles.stateCard,
+            {
+              backgroundColor: theme.cardBackground ?? theme.background,
+              borderColor: theme.cardBorder ?? theme.border ?? theme.primary,
+            },
+          ]}
+        >
+          <View
+            pointerEvents="none"
+            style={[
+              styles.stateAccent,
+              { backgroundColor: theme.primary ?? "#f7742e" },
+            ]}
+          />
+
+          <ThemedText
+            style={styles.stateEyebrow}
+            setColor={theme.primary ?? "#f7742e"}
+          >
+            TODAY
           </ThemedText>
+          <ThemedTitle type="h3">Today</ThemedTitle>
+          <View style={styles.loadingState}>
+            <ActivityIndicator size="small" color={theme.primary} />
+            <ThemedText style={styles.loadingCopy} setColor={quietText}>
+              Loading today&apos;s training...
+            </ThemedText>
+          </View>
         </View>
       ) : programSnapshots.length === 0 ? (
-        <View style={styles.emptyState}>
-          <ThemedTitle type="h2">Today</ThemedTitle>
+        <View
+          style={[
+            styles.stateCard,
+            {
+              backgroundColor: theme.cardBackground ?? theme.background,
+              borderColor: theme.cardBorder ?? theme.border ?? theme.primary,
+            },
+          ]}
+        >
+          <View
+            pointerEvents="none"
+            style={[
+              styles.stateAccent,
+              {
+                backgroundColor:
+                  theme.cardBorder ?? theme.border ?? theme.iconColor ?? theme.text,
+              },
+            ]}
+          />
+
+          <ThemedText
+            style={styles.stateEyebrow}
+            setColor={theme.primary ?? "#f7742e"}
+          >
+            TODAY
+          </ThemedText>
+          <ThemedTitle type="h3">Today</ThemedTitle>
           <ThemedText style={styles.emptyCopy} setColor={quietText}>
             No workouts are scheduled today.
           </ThemedText>
         </View>
       ) : (
         programSnapshots.map((programSnapshot) => (
-          <View
-            key={programSnapshot.program.program_id}
-            style={styles.programSection}
-          >
-            {hasMultiplePrograms ? (
-              <View style={styles.programLabelGroup}>
-                <ThemedText
-                  style={styles.programLabelEyebrow}
-                  setColor={quietText}
-                >
-                  Program
-                </ThemedText>
-                <ThemedTitle type="h3" style={styles.programLabelTitle}>
-                  {programSnapshot.program.program_name || "Untitled program"}
-                </ThemedTitle>
-              </View>
-            ) : null}
-
-            <TodayShortcut program_id={programSnapshot.program.program_id} />
+          <View key={programSnapshot.program.program_id} style={styles.programSection}>
+            <TodayShortcut
+              program_id={programSnapshot.program.program_id}
+              headerEyebrow="TODAY"
+              headerTitle={
+                hasMultiplePrograms
+                  ? programSnapshot.program.program_name || "Untitled program"
+                  : "Today"
+              }
+            />
           </View>
         ))
       )}

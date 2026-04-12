@@ -14,7 +14,11 @@ import {
   ThemedTitle,
 } from "../../../../Resources/ThemedComponents";
 
-const TodayShortcut = ({ program_id }) => {
+const TodayShortcut = ({
+  program_id,
+  headerEyebrow = null,
+  headerTitle = "Today",
+}) => {
   const db = useSQLiteContext();
   const navigation = useNavigation();
   const colorScheme = useColorScheme();
@@ -119,20 +123,19 @@ const TodayShortcut = ({ program_id }) => {
     footerCopy = null;
   }
 
-  const cardBackground = !hasWorkouts
-    ? theme.cardBackground ?? theme.navBackground ?? "rgba(255, 255, 255, 0.08)"
-    : allWorkoutsDone
-      ? theme.secondaryLight ?? "rgba(96, 218, 172, 0.18)"
-      : theme.primaryLight ?? "rgba(247, 116, 46, 0.18)";
-  const cardBorder = !hasWorkouts
-    ? theme.cardBorder ?? "rgba(255, 255, 255, 0.08)"
+  const accentColor = !hasWorkouts
+    ? theme.cardBorder ?? theme.border ?? theme.iconColor ?? theme.text
     : allWorkoutsDone
       ? theme.secondary ?? "#60daac"
       : theme.primary ?? "#f7742e";
-  const panelBackground =
-    colorScheme === "dark"
-      ? "rgba(14, 15, 18, 0.30)"
-      : "rgba(255, 255, 255, 0.72)";
+  const cardBackground = theme.cardBackground ?? theme.background;
+  const cardBorder = theme.cardBorder ?? theme.border ?? accentColor;
+  const accentSoft = !hasWorkouts
+    ? theme.uiBackground ?? "rgba(255, 255, 255, 0.06)"
+    : allWorkoutsDone
+      ? theme.secondaryLight ?? "rgba(96, 218, 172, 0.18)"
+      : theme.primaryLight ?? "rgba(247, 116, 46, 0.18)";
+  const panelBackground = theme.uiBackground ?? accentSoft;
   const chipBackground =
     colorScheme === "dark"
       ? "rgba(255, 255, 255, 0.06)"
@@ -142,20 +145,14 @@ const TodayShortcut = ({ program_id }) => {
     (colorScheme === "dark"
       ? "rgba(212, 212, 212, 0.72)"
       : "rgba(32, 30, 43, 0.66)");
-  const headlineColor = hasWorkouts
-    ? theme.cardBackground ?? theme.textInverted ?? "#1b1918"
-    : theme.title ?? "#fff";
-  const supportiveColor = hasWorkouts
-    ? "rgba(27, 25, 24, 0.72)"
-    : labelColor;
+  const headlineColor = theme.title ?? theme.text ?? "#201e2b";
+  const supportiveColor = labelColor;
   const ctaBackground = allWorkoutsDone
     ? theme.secondary ?? "#60daac"
     : theme.primary ?? "#f7742e";
   const ctaTextColor = theme.cardBackground ?? theme.textInverted ?? "#1b1918";
-  const dateBadgeBackground =
-    theme.primaryLight ?? theme.primary ?? "rgba(247, 116, 46, 0.18)";
-  const dateBadgeTextColor =
-    theme.cardBackground ?? theme.textInverted ?? theme.title ?? "#201e2b";
+  const dateBadgeBackground = accentSoft;
+  const dateBadgeTextColor = accentColor;
   const previewScrollThreshold = 4;
   const visibleWorkoutPreviews = workouts.map((workout) => ({
     ...workout,
@@ -190,48 +187,65 @@ const TodayShortcut = ({ program_id }) => {
     Boolean(singleWorkout) && !headline && !description;
 
   return (
-    <>
-      <ThemedTitle type="h2">Today</ThemedTitle>
+    <ThemedCard
+      style={[
+        styles.shortcut_card,
+        isCompletedSingleWorkout && styles.shortcut_card_complete,
+        isRestDay && styles.shortcut_card_empty,
+        {
+          backgroundColor: cardBackground,
+          borderColor: cardBorder,
+        },
+      ]}
+    >
+      <View
+        pointerEvents="none"
+        style={[styles.card_accent, { backgroundColor: accentColor }]}
+      />
 
-      <ThemedCard
+      <View
         style={[
-          styles.shortcut_card,
-          isCompletedSingleWorkout && styles.shortcut_card_complete,
-          isRestDay && styles.shortcut_card_empty,
-          {
-            backgroundColor: cardBackground,
-            borderColor: cardBorder,
-          },
+          styles.touchable,
+          isMultiWorkout && styles.touchable_multi,
+          isCompletedSingleWorkout && styles.touchable_complete,
+          isRestDay && styles.touchable_empty,
         ]}
-      > 
-        <View
-          style={[
-            styles.touchable,
-            isMultiWorkout && styles.touchable_multi,
-            isCompletedSingleWorkout && styles.touchable_complete,
-            isRestDay && styles.touchable_empty,
-          ]}
-        >
+      >
+        <View style={styles.card_header}>
+          <View style={styles.card_header_copy}>
+            {headerEyebrow ? (
+              <ThemedText
+                style={styles.card_eyebrow}
+                setColor={accentColor}
+              >
+                {headerEyebrow}
+              </ThemedText>
+            ) : null}
+
+            {headerTitle ? (
+              <ThemedTitle type="h3" style={styles.card_title}>
+                {headerTitle}
+              </ThemedTitle>
+            ) : null}
+          </View>
+
           {!useCompactSingleWorkoutHeader && (
-            <View style={styles.top_row}>
-              <View style={styles.top_meta}>
-                <View
-                  style={[
-                    styles.date_badge,
-                    { backgroundColor: dateBadgeBackground },
-                  ]}
-                >
-                  <ThemedText
-                    size={10}
-                    style={styles.date_badge_text}
-                    setColor={dateBadgeTextColor}
-                  >
-                    {sectionDateLabel}
-                  </ThemedText>
-                </View>
-              </View>
+            <View
+              style={[
+                styles.date_badge,
+                { backgroundColor: dateBadgeBackground },
+              ]}
+            >
+              <ThemedText
+                size={10}
+                style={styles.date_badge_text}
+                setColor={dateBadgeTextColor}
+              >
+                {sectionDateLabel}
+              </ThemedText>
             </View>
           )}
+        </View>
 
           {(headline || description) && !isMultiWorkout && (
             isCompletedSingleWorkout ? (
@@ -670,9 +684,8 @@ const TodayShortcut = ({ program_id }) => {
               </ThemedText>
             </View>
           )}
-        </View>
-      </ThemedCard>
-    </>
+      </View>
+    </ThemedCard>
   );
 };
 

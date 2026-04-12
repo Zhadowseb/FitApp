@@ -2,7 +2,7 @@
   "expo": {
     "name": "FitVen",
     "slug": "programapp",
-    "version": "0.5.11-fix-homepage-today-shortcut-multi-program.1",
+    "version": "0.5.12-fix-homepage-dashboard-navigation.1",
     "orientation": "portrait",
     "icon": "./assets/icon_v1.0.png",
     "userInterfaceStyle": "dark",

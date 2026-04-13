@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.5.13] - Unreleased
+### Changed
+- Describe pending changes here.
+
+---
 ## [0.5.12] - Unreleased
 ### Changed
 - HomePage quick access is being reshaped into a more informative dashboard layout so programs and exercise tools feel like overview surfaces instead of standalone buttons.

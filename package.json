@@ -1,6 +1,6 @@
 {
   "name": "programapp",
-  "version": "0.5.12-fix-homepage-dashboard-navigation.1",
+  "version": "0.5.13-fix-programpage-card-touchup.1",
   "main": "index.js",
   "scripts": {
     "start": "expo start --dev-client --scheme exp+programapp-dev",

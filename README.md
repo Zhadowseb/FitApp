@@ -261,6 +261,7 @@ Examples:
   - `app.json > expo.android.versionCode`
   - `app.json > expo.ios.buildNumber`
   - the release section in `CHANGELOG.md`
+  - older pending sections that were shipped together, which are marked `Released with x.y.z`
 
 - `npm run release:android -- 0.4.0`
   Runs release preparation and starts an Android EAS production build using the current EAS login or `EXPO_TOKEN`.
@@ -274,6 +275,12 @@ Examples:
 4. Do the work.
 5. Replace placeholder text in `CHANGELOG.md` before shipping.
 6. Commit before moving on to a new unrelated task.
+
+If a stable release closes one line and you want the next work to start the next minor line, sync the first follow-up branch explicitly, for example:
+
+```bash
+npm run version:sync -- 0.6.0
+```
 
 For the detailed rules, see `docs/VERSIONING.md`.
 

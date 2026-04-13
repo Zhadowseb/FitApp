@@ -579,6 +579,7 @@ function updateChangelog({ content, changelogMode, targetVersion }) {
   nextContent = removeGlobalUnreleasedSection(nextContent, eol);
 
   if (changelogMode === "release") {
+    nextContent = markOlderUnreleasedSectionsAsReleasedWith(nextContent, targetVersion);
     nextContent = upsertReleaseSection(nextContent, targetVersion, eol);
   } else if (changelogMode === "unreleased") {
     nextContent = upsertUnreleasedVersionSection(nextContent, targetVersion, eol);
@@ -649,6 +650,42 @@ function removeGlobalUnreleasedSection(content, eol) {
 function getChangelogSectionVersion(targetVersion) {
   const [stablePart] = String(targetVersion).split("-");
   return normalizeStableVersion(stablePart);
+}
+
+function compareStableVersions(leftVersion, rightVersion) {
+  const left = normalizeStableVersion(leftVersion)
+    .split(".")
+    .map((value) => Number(value));
+  const right = normalizeStableVersion(rightVersion)
+    .split(".")
+    .map((value) => Number(value));
+
+  for (let index = 0; index < 3; index += 1) {
+    if (left[index] < right[index]) {
+      return -1;
+    }
+
+    if (left[index] > right[index]) {
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+function markOlderUnreleasedSectionsAsReleasedWith(content, targetVersion) {
+  const releaseVersion = getChangelogSectionVersion(targetVersion);
+
+  return content.replace(
+    /^## \[(\d+\.\d+\.\d+)\] - Unreleased$/gm,
+    (match, version) => {
+      if (compareStableVersions(version, releaseVersion) < 0) {
+        return buildVersionSectionHeader(version, `Released with ${releaseVersion}`);
+      }
+
+      return match;
+    }
+  );
 }
 
 function buildVersionSectionHeader(version, suffix) {

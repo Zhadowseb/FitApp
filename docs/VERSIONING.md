@@ -83,6 +83,7 @@ npm run version:sync -- 0.4.0 skip-changelog
 - Increments `app.json > expo.android.versionCode`
 - Sets `app.json > expo.ios.buildNumber` to the same incremented build number
 - Converts `## [x.y.z] - Unreleased` into a dated release entry in `CHANGELOG.md`
+- Marks any older pending sections below that version as `Released with x.y.z`
 
 `npm run release:android -- <version>`
 
@@ -99,6 +100,18 @@ npm run version:sync -- 0.4.0 skip-changelog
 4. Do the work.
 5. Replace the placeholder text in `CHANGELOG.md` before shipping.
 6. For a stable release branch, run `npm run release:prepare -- x.y.z` or `npm run release:android -- x.y.z`.
+
+## Starting The Next Version Line
+
+If a stable release closes one line and you want the next work to live in the next minor line, sync the first follow-up branch explicitly before continuing normal branch versioning.
+
+Example:
+
+```bash
+npm run version:sync -- 0.6.0
+```
+
+After that first reset, later stacked branches can continue normally from that new `0.6.x` base.
 
 ## Codex Workflow
 

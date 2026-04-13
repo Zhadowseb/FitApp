@@ -2,7 +2,7 @@
   "expo": {
     "name": "FitVen",
     "slug": "programapp",
-    "version": "0.5.13-fix-programpage-card-touchup.1",
+    "version": "0.6.3-fix-post-0510-versioning-baseline.1",
     "orientation": "portrait",
     "icon": "./assets/icon_v1.0.png",
     "userInterfaceStyle": "dark",

@@ -34,6 +34,7 @@ Keep the root guide short and place domain-specific rules in closer `AGENTS.md` 
 - Use `npm run version:status` whenever you need to verify the current branch/version state.
 - Prefer branch names like `major/...`, `minor/...`, `fix/...`, or `release/x.y.z`.
 - Use `npm run release:prepare -- <version>` for stable releases.
+- If a release closes one version line and the next work should start the next minor line, use `npm run version:sync -- <nextMinor>.0` on the first follow-up branch before continuing normal branch versioning.
 - See `docs/VERSIONING.md` for the full workflow and branch rules.
 
 ## Local Guides

@@ -1,21 +1,27 @@
 # Changelog
 
-## [0.5.13] - Unreleased
+## [0.6.3] - Unreleased
 ### Changed
-- Describe pending changes here.
+- Realigned the post-`0.5.10` development line to `0.6.x`, so new pending work no longer looks like extra `0.5.11+` patches after the `0.5.10` release.
+- Updated the release workflow so older pending sections can be marked `Released with x.y.z` when one stable release bundles several earlier work branches.
 
 ---
-## [0.5.12] - Unreleased
+## [0.6.2] - Unreleased
+### Changed
+- Refreshed ProgramPage cards with a larger hero section, cleaner metric panels, and automatic refresh when returning from Program Overview.
+
+---
+## [0.6.1] - Unreleased
 ### Changed
 - HomePage quick access is being reshaped into a more informative dashboard layout so programs and exercise tools feel like overview surfaces instead of standalone buttons.
 
 ---
-## [0.5.11] - Unreleased
+## [0.6.0] - Unreleased
 ### Changed
-- Describe pending changes here.
+- Serialized shared SQLite transactions used by background sync and reconcile flows, so overlapping sync jobs no longer try to open nested transactions on the same connection.
 
 ---
-## [0.5.10] - Unreleased
+## [0.5.10] - 2026-04-12
 ### Added
 - Added the first `set` cloud sync flow with local cloud-id tracking, delete queueing, parent `exercise_instance(id)` repair, and an app-level sync runner that depends on `Exercise_Instance` sync.
 ### Changed
@@ -23,7 +29,7 @@
 - Strength data sync now treats `Set` as the lowest cloud boundary, while still keeping derived `Exercise_Instance` fields such as set count and completion aligned and synced parent-first.
 
 ---
-## [0.5.9] - Unreleased
+## [0.5.9] - Released with 0.5.10
 ### Added
 - Added the first `exercise_instance` cloud sync flow with local cloud-id tracking, delete queueing, workout-parent repair, and an app-level sync runner that depends on `workout_type_instance` sync.
 ### Changed
@@ -31,7 +37,7 @@
 - Strength workout copy flows now trigger both workout and exercise background sync, so copied exercise rows do not stay local-only after a successful workout copy.
 
 ---
-## [0.5.8] - Unreleased
+## [0.5.8] - Released with 0.5.10
 ### Added
 - Added the first `workout_type_instance` cloud sync flow with local cloud-id tracking, delete queueing, parent `Day.id` mapping, and an app-level sync runner.
 ### Changed
@@ -41,7 +47,7 @@
 - Local workout deletes now queue a tombstone by local workout sync-id, so deleting a newly created workout no longer waits on cloud sync and no longer risks being re-downloaded immediately after removal.
 
 ---
-## [0.5.7] - Unreleased
+## [0.5.7] - Released with 0.5.10
 ### Added
 - Added the first `Day` cloud sync flow with local cloud-id tracking, dirty-state sync flags, and an app-level sync runner that depends on `Microcycle` sync.
 ### Changed
@@ -49,7 +55,7 @@
 - Workout completion updates now mark the owning local `Day` row as dirty, so `done` can be synced later without making direct child-row cloud writes from `Set` or `Exercise_Instance`.
 
 ---
-## [0.5.6] - Unreleased
+## [0.5.6] - Released with 0.5.10
 ### Added
 - Added the first `Microcycle` cloud sync flow with local cloud-id tracking, dirty-state sync flags, remote delete queueing, and app-level sync triggers that depend on `Program` and `Mesocycle` sync.
 ### Changed
@@ -61,7 +67,7 @@
 - Hardened mesocycle and microcycle uploads so they re-resolve parent cloud ids by sync key before writing children, which prevents stale cached parent ids from causing cloud FK failures.
 
 ---
-## [0.5.5] - Unreleased
+## [0.5.5] - Released with 0.5.10
 ### Changed
 - Switched the changelog workflow from a single global `Unreleased` bucket to versioned sections like `## [0.5.x] - Unreleased`, so pending releases are visible per version and `release:prepare` can convert the same section into a dated release entry.
 ### Added
@@ -69,19 +75,19 @@
 
 ---
 
-## [0.5.4] - Unreleased
+## [0.5.4] - Released with 0.5.10
 ### Changed
 - Hardened program cloud deletes so a local program deletion only clears the local delete queue after the remote row is actually gone, and explicit program deletes now attempt cloud sync immediately while keeping failed deletes queued for retry.
 
 ---
 
-## [0.5.3] - Unreleased
+## [0.5.3] - Released with 0.5.10
 ### Changed
 - Scoped local SQLite storage to one database file per authenticated user, so logging into another profile no longer exposes the previous user's local programs on the device.
 
 ---
 
-## [0.5.2] - Unreleased
+## [0.5.2] - Released with 0.5.10
 ### Added
 - Added the first `Mesocycle` cloud sync flow with local cloud-id tracking, dirty-state sync flags, remote delete queueing, and app-level sync triggers that depend on `Program` sync.
 ### Changed
@@ -89,13 +95,13 @@
 
 ---
 
-## [0.5.1] - Unreleased
+## [0.5.1] - Released with 0.5.10
 ### Changed
 - Updated branch-driven versioning to support `major/...` and `minor/...` feature prefixes, where `minor/...` and `fix/...` both produce patch-level prerelease bumps.
 
 ---
 
-## [0.5.0] - Unreleased
+## [0.5.0] - Released with 0.5.10
 ### Added
 - Added the first `Program` cloud sync flow with local cloud-id tracking, dirty-state sync flags, remote delete queueing, and an app-level sync runner that uploads local program changes and pulls remote-only programs.
 ### Changed

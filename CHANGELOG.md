@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.6.6] - Unreleased
+### Changed
+- Added a subtle swipe hint under the ProgramOverviewPage block carousel so it is easier to see that the mesocycle list scrolls horizontally.
+
+---
+## [0.6.5] - Unreleased
+### Changed
+- Fixed ProgramPage delete navigation so returning from a deleted program now replaces the route instead of leaving a broken overview screen in the stack.
+- Hardened SQLite sync transactions to use savepoints, which avoids nested transaction failures during login and cloud sync startup.
+- Repaired the Mesocycle cloud insert mapping so older synced programs no longer fail with a column/value mismatch.
+
+---
+## [0.6.4] - Unreleased
+### Changed
+- Describe pending changes here.
+
+---
 ## [0.6.3] - Unreleased
 ### Changed
 - Realigned the post-`0.5.10` development line to `0.6.x`, so new pending work no longer looks like extra `0.5.11+` patches after the `0.5.10` release.

@@ -1,3 +1,5 @@
+import { withTransaction } from "../Database/transaction";
+
 export async function getExerciseStorage(db) {
   return db.getAllAsync(
     `SELECT
@@ -17,9 +19,7 @@ export async function createExerciseStorage(db, exerciseName) {
 }
 
 export async function replaceExerciseCatalog(db, exercises) {
-  await db.execAsync("BEGIN TRANSACTION;");
-
-  try {
+  await withTransaction(db, async () => {
     await db.runAsync(`DELETE FROM Exercise;`);
 
     if (exercises.length > 0) {
@@ -37,12 +37,7 @@ export async function replaceExerciseCatalog(db, exercises) {
         values
       );
     }
-
-    await db.execAsync("COMMIT;");
-  } catch (error) {
-    await db.execAsync("ROLLBACK;");
-    throw error;
-  }
+  });
 }
 
 export async function getEstimatedSets(db, programId) {

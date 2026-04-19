@@ -28,6 +28,7 @@ import { ThemedTitle,
         ThemedButton, 
         ThemedHeader,
         ThemedBottomSheet, 
+        ThemedModal,
         ThemedEditableCell} 
   from "../../Resources/ThemedComponents";
 import Delete from '../../Resources/Icons/UI-icons/Delete';
@@ -54,6 +55,8 @@ const ProgramOverviewPage = ( {route} ) => {
 
     const [OptionsBottomsheet_visible, set_OptionsBottomsheet_visible] = useState(false);
     const [prSettingsBottomsheet_visible, set_prSettingsBottomsheet_visible] = useState(false);
+    const [deleteConfirmModal_visible, set_DeleteConfirmModal_visible] = useState(false);
+    const [isDeletingProgram, set_IsDeletingProgram] = useState(false);
 
     const refresh = () => {
         set_refreshKey(prev => prev + 1);
@@ -143,12 +146,18 @@ const ProgramOverviewPage = ( {route} ) => {
 
     const deleteProgram = async () => {
         try {
+            set_IsDeletingProgram(true);
             await programService.deleteProgram(db, program_id);
         } catch (e) {
-            throw e;
+            console.error("deleteProgram failed:", e);
+            set_IsDeletingProgram(false);
+            return;
         }
 
-        navigation.navigate("ProgramPage");
+        set_IsDeletingProgram(false);
+        set_DeleteConfirmModal_visible(false);
+        set_OptionsBottomsheet_visible(false);
+        navigation.replace("ProgramPage");
     };
 
     const changeStatus = async (new_status) => {
@@ -660,8 +669,9 @@ const ProgramOverviewPage = ( {route} ) => {
                 {/* Delete Program */}
                 <TouchableOpacity 
                     style={styles.option}
-                    onPress={async () => {
-                        deleteProgram();
+                    onPress={() => {
+                        set_OptionsBottomsheet_visible(false);
+                        set_DeleteConfirmModal_visible(true);
                     }}>
 
                     <Delete
@@ -676,6 +686,64 @@ const ProgramOverviewPage = ( {route} ) => {
 
 
         </ThemedBottomSheet>
+
+        <ThemedModal
+            visible={deleteConfirmModal_visible}
+            onClose={() => {
+                if (isDeletingProgram) {
+                    return;
+                }
+
+                set_DeleteConfirmModal_visible(false);
+            }}
+            dismissOnBackdropPress={!isDeletingProgram}
+            style={styles.confirm_modal}>
+
+            <View style={styles.confirm_sheet_header}>
+                <ThemedTitle type={"h3"} style={styles.confirm_sheet_title}>
+                    Delete program?
+                </ThemedTitle>
+
+                <ThemedText style={styles.confirm_sheet_description}>
+                    Are you sure you want to delete this program? This will remove the full program structure and cannot be undone.
+                </ThemedText>
+            </View>
+
+            <View style={styles.confirm_sheet_actions}>
+                <TouchableOpacity
+                    style={[
+                        styles.confirm_action,
+                        styles.confirm_action_secondary,
+                        {
+                            borderColor: settingsOutlineColor,
+                            opacity: isDeletingProgram ? 0.6 : 1,
+                        },
+                    ]}
+                    disabled={isDeletingProgram}
+                    onPress={() => set_DeleteConfirmModal_visible(false)}>
+                    <ThemedText style={styles.confirm_action_secondary_text}>
+                        Cancel
+                    </ThemedText>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[
+                        styles.confirm_action,
+                        styles.confirm_action_danger,
+                        {
+                            backgroundColor: theme.danger ?? "#ba0000",
+                            opacity: isDeletingProgram ? 0.7 : 1,
+                        },
+                    ]}
+                    disabled={isDeletingProgram}
+                    onPress={deleteProgram}>
+                    <ThemedText style={styles.confirm_action_danger_text}>
+                        {isDeletingProgram ? "Deleting..." : "Delete program"}
+                    </ThemedText>
+                </TouchableOpacity>
+            </View>
+
+        </ThemedModal>
 
         <ThemedBottomSheet
             visible={prSettingsBottomsheet_visible}

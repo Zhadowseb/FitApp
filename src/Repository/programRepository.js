@@ -168,7 +168,7 @@ export async function createMesocycleFromCloud(
       focus,
       done,
       needs_sync
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, 0);`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0);`,
     [
       localMesocycleId,
       cloudMesocycleId,

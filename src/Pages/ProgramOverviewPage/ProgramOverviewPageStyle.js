@@ -322,5 +322,56 @@ export default StyleSheet.create({
     filter_option_text_unselected: {
         fontWeight: "400",
     },
+    confirm_sheet_header: {
+        gap: 10,
+        alignItems: "center",
+    },
+    confirm_sheet_title: {
+        textAlign: "center",
+    },
+    confirm_modal: {
+        width: "88%",
+        maxWidth: 420,
+        borderRadius: 24,
+        paddingTop: 22,
+        paddingHorizontal: 18,
+    },
+    confirm_sheet_description: {
+        fontSize: 14,
+        lineHeight: 21,
+        textAlign: "center",
+    },
+    confirm_sheet_actions: {
+        flexDirection: "row",
+        gap: 12,
+        marginTop: 24,
+    },
+    confirm_action: {
+        flex: 1,
+        minHeight: 52,
+        borderRadius: 18,
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+    },
+    confirm_action_secondary: {
+        borderWidth: 1,
+    },
+    confirm_action_danger: {
+        borderWidth: 1,
+        borderColor: "transparent",
+    },
+    confirm_action_secondary_text: {
+        fontSize: 15,
+        fontWeight: "700",
+        textAlign: "center",
+    },
+    confirm_action_danger_text: {
+        fontSize: 15,
+        fontWeight: "700",
+        color: "#fff",
+        textAlign: "center",
+    },
 
 });

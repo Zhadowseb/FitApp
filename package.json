@@ -1,6 +1,6 @@
 {
   "name": "programapp",
-  "version": "0.6.3-fix-post-0510-versioning-baseline.1",
+  "version": "0.6.6-fix-programoverview-next-open-block-scroll.1",
   "main": "index.js",
   "scripts": {
     "start": "expo start --dev-client --scheme exp+programapp-dev",

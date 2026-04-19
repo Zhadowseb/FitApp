@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   ScrollView,
@@ -20,9 +20,26 @@ import {
   ThemedText,
 } from "../../../../Resources/ThemedComponents";
 import Plus from "../../../../Resources/Icons/UI-icons/Plus";
+import ArrowDoubleUp from "../../../../Resources/Icons/UI-icons/ArrowDoubleUp";
 import { parseCustomDate, formatDate } from "../../../../Utils/dateUtils";
 
 const CARD_HEIGHT = 290;
+const LIST_HORIZONTAL_PADDING = 4;
+const CARD_GAP = 10;
+
+function getAutoScrollIndex(mesocycles) {
+  const firstIncompleteIndex = mesocycles.findIndex((cycle) => !cycle.done);
+
+  if (firstIncompleteIndex >= 0) {
+    return firstIncompleteIndex;
+  }
+
+  return mesocycles.length;
+}
+
+function getAutoScrollOffset(cardWidth, targetIndex) {
+  return LIST_HORIZONTAL_PADDING + targetIndex * (cardWidth + CARD_GAP);
+}
 
 const styles = StyleSheet.create({
   loadingContainer: {
@@ -213,6 +230,31 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 18,
   },
+  scrollHintRow: {
+    alignItems: "center",
+    marginTop: 10,
+  },
+  scrollHintPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  scrollHintIcon: {
+    marginRight: 6,
+  },
+  scrollHintText: {
+    fontWeight: "700",
+    letterSpacing: 0.4,
+  },
+  scrollHintHandle: {
+    width: 42,
+    height: 4,
+    borderRadius: 999,
+    marginTop: 8,
+    opacity: 0.55,
+  },
 });
 
 const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
@@ -226,6 +268,8 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
   const [mesocycles, setMesocycles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const scrollViewRef = useRef(null);
+  const lastAutoScrollKeyRef = useRef("");
 
   const accentColor = theme.primary ?? "#f7742e";
   const accentSoft = theme.primaryLight ?? "rgba(247, 116, 46, 0.18)";
@@ -236,6 +280,10 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
   const quietText = theme.quietText ?? theme.iconColor ?? "#9591a5";
   const invertedText = theme.textInverted ?? "#201e2b";
   const textColor = theme.text ?? "#d4d4d4";
+  const hintBackground =
+    colorScheme === "dark"
+      ? "rgba(255, 255, 255, 0.05)"
+      : "rgba(255, 255, 255, 0.74)";
   const periodPanelBackground =
     colorScheme === "dark"
       ? "rgba(255, 255, 255, 0.04)"
@@ -302,6 +350,33 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
     });
   };
 
+  useEffect(() => {
+    if (loading || mesocycles.length === 0) {
+      return;
+    }
+
+    const autoScrollKey = mesocycles
+      .map((cycle) => `${cycle.mesocycle_id}:${Number(cycle.done)}`)
+      .join("|");
+
+    if (lastAutoScrollKeyRef.current === autoScrollKey) {
+      return;
+    }
+
+    lastAutoScrollKeyRef.current = autoScrollKey;
+
+    const targetIndex = getAutoScrollIndex(mesocycles);
+    const targetOffset = getAutoScrollOffset(cardWidth, targetIndex);
+    const animationFrame = requestAnimationFrame(() => {
+      scrollViewRef.current?.scrollTo({
+        x: targetOffset,
+        animated: false,
+      });
+    });
+
+    return () => cancelAnimationFrame(animationFrame);
+  }, [loading, mesocycles, cardWidth]);
+
   const handleAdd = async (data) => {
     try {
       await programService.createMesocycle(db, {
@@ -338,6 +413,7 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
   return (
     <>
       <ScrollView
+        ref={scrollViewRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
@@ -651,6 +727,49 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
           </ThemedCard>
         </TouchableOpacity>
       </ScrollView>
+
+      {mesocycles.length > 1 && (
+        <View style={styles.scrollHintRow}>
+          <View
+            style={[
+              styles.scrollHintPill,
+              {
+                backgroundColor: hintBackground,
+                borderWidth: 1,
+                borderColor: cardBorder,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.scrollHintIcon,
+                { transform: [{ rotate: "90deg" }] },
+              ]}
+            >
+              <ArrowDoubleUp
+                width={16}
+                height={16}
+                color={quietText}
+              />
+            </View>
+
+            <ThemedText
+              size={11}
+              style={styles.scrollHintText}
+              setColor={quietText}
+            >
+              Swipe between blocks
+            </ThemedText>
+          </View>
+
+          <View
+            style={[
+              styles.scrollHintHandle,
+              { backgroundColor: quietText },
+            ]}
+          />
+        </View>
+      )}
 
       <AddMesocycleModal
         visible={modalVisible}

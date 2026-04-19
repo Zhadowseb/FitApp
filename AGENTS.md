@@ -25,6 +25,7 @@ Keep the root guide short and place domain-specific rules in closer `AGENTS.md` 
 - Treat a new feature, fix, refactor, or unrelated request as a new unit of work.
 - Before starting a new unit of work, check whether the current branch and uncommitted changes belong to the previous task.
 - If the user appears satisfied with the current work and then asks for something new, suggest committing the finished work before starting the next change.
+- Before switching to a new work branch, make sure the finished branch is committed and pushed if its state should stay visible on GitHub.
 - If the current branch name no longer matches the requested work, suggest creating a new branch before editing files.
 - When suggesting a branch, propose a concrete branch name instead of asking an open-ended question.
 

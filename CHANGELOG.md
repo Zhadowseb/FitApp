@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.6.7] - Unreleased
+### Changed
+- Temporarily made cloud `Set` rows authoritative during authenticated sync, so local SQLite now pulls cloud sets down, removes stray local-only set rows, and refreshes exercise set counts/completion from the downloaded data.
+
+---
 ## [0.6.6] - Unreleased
 ### Changed
 - Added a subtle swipe hint under the ProgramOverviewPage block carousel so it is easier to see that the mesocycle list scrolls horizontally.

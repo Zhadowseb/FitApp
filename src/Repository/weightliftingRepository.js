@@ -910,6 +910,52 @@ export async function deleteQueuedSetDelete(db, queueId) {
   );
 }
 
+export async function clearQueuedSetDeletes(db) {
+  await db.runAsync(`DELETE FROM Set_Sync_Delete;`);
+}
+
+export async function refreshExerciseDerivedFieldsFromSets(db) {
+  await db.runAsync(
+    `UPDATE Exercise_Instance
+     SET needs_sync = CASE
+           WHEN COALESCE(sets, 0) <> (
+             SELECT COUNT(*)
+             FROM "Set"
+             WHERE "Set".exercise_instance_id = Exercise_Instance.exercise_instance_id
+           )
+           OR COALESCE(done, 0) <> (
+             CASE
+               WHEN EXISTS (
+                 SELECT 1
+                 FROM "Set"
+                 WHERE "Set".exercise_instance_id = Exercise_Instance.exercise_instance_id
+                   AND "Set".done = 0
+               )
+               THEN 0
+               ELSE 1
+             END
+           )
+           THEN 1
+           ELSE needs_sync
+         END,
+         sets = (
+           SELECT COUNT(*)
+           FROM "Set"
+           WHERE "Set".exercise_instance_id = Exercise_Instance.exercise_instance_id
+         ),
+         done = CASE
+           WHEN EXISTS (
+             SELECT 1
+             FROM "Set"
+             WHERE "Set".exercise_instance_id = Exercise_Instance.exercise_instance_id
+               AND "Set".done = 0
+           )
+           THEN 0
+           ELSE 1
+         END;`
+  );
+}
+
 export async function updateExerciseSetCount(db, exerciseId) {
   await db.runAsync(
     `UPDATE Exercise_Instance

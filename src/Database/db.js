@@ -5,6 +5,7 @@ import {
 } from './schema/weightlifting';
 import { runningSchemaSql } from './schema/running';
 import { locationSchemaSql } from './schema/location';
+import { SQLITE_UUID_SQL } from "../Utils/syncUtils";
 
 const DEFAULT_WORKOUT_TYPES = [
   ["Resistance", "Resistance"],
@@ -44,6 +45,27 @@ async function getTableColumns(db, tableName) {
 
 function hasColumn(columns, columnName) {
   return columns.some((column) => column.name === columnName);
+}
+
+async function backfillSyncStateColumns(db, tableName) {
+  await db.execAsync(`
+    UPDATE ${quoteIdentifier(tableName)}
+    SET sync_id = COALESCE(NULLIF(TRIM(sync_id), ''), ${SQLITE_UUID_SQL}),
+        sync_version = CASE
+          WHEN sync_version IS NULL OR sync_version <= 0 THEN 1
+          ELSE sync_version
+        END,
+        deleted_at = NULLIF(TRIM(deleted_at), '')
+    WHERE sync_id IS NULL
+       OR TRIM(sync_id) = ''
+       OR sync_version IS NULL
+       OR sync_version <= 0
+       OR (deleted_at IS NOT NULL AND TRIM(deleted_at) = '');
+
+    UPDATE ${quoteIdentifier(tableName)}
+    SET sync_id = ${SQLITE_UUID_SQL}
+    WHERE sync_id IS NULL OR TRIM(sync_id) = '';
+  `);
 }
 
 function isExerciseCatalogTable(columns) {
@@ -1012,29 +1034,53 @@ export async function initializeDatabase(db) {
   await ensureTableColumns(db, "Program", [
     ["cloud_program_id", "INTEGER"],
     ["remote_local_program_id", "INTEGER"],
+    ["sync_id", "TEXT"],
+    ["sync_version", "INTEGER NOT NULL DEFAULT 0"],
+    ["deleted_at", "TEXT"],
     ["status", "TEXT NOT NULL DEFAULT 'NOT_STARTED'"],
     ["needs_sync", "INTEGER NOT NULL DEFAULT 1"],
+  ]);
+  await ensureTableColumns(db, "Program_Sync_Delete", [
+    ["sync_id", "TEXT"],
+    ["sync_version", "INTEGER NOT NULL DEFAULT 0"],
   ]);
 
   await ensureTableColumns(db, "Mesocycle", [
     ["cloud_mesocycle_id", "INTEGER"],
     ["remote_local_mesocycle_id", "INTEGER"],
+    ["sync_id", "TEXT"],
+    ["sync_version", "INTEGER NOT NULL DEFAULT 0"],
+    ["deleted_at", "TEXT"],
     ["weeks", "INTEGER NOT NULL DEFAULT 0"],
     ["focus", 'TEXT DEFAULT "No focus set"'],
     ["done", "INTEGER NOT NULL DEFAULT 0"],
     ["needs_sync", "INTEGER NOT NULL DEFAULT 1"],
   ]);
+  await ensureTableColumns(db, "Mesocycle_Sync_Delete", [
+    ["sync_id", "TEXT"],
+    ["sync_version", "INTEGER NOT NULL DEFAULT 0"],
+  ]);
 
   await ensureTableColumns(db, "Microcycle", [
+    ["sync_id", "TEXT"],
+    ["sync_version", "INTEGER NOT NULL DEFAULT 0"],
+    ["deleted_at", "TEXT"],
     ["focus", 'TEXT DEFAULT "No focus"'],
     ["done", "INTEGER NOT NULL DEFAULT 0"],
   ]);
   await migrateMicrocycleProgramIdRemoval(db);
   await ensureTableColumns(db, "Microcycle", [
     ["cloud_microcycle_id", "INTEGER"],
+    ["sync_id", "TEXT"],
+    ["sync_version", "INTEGER NOT NULL DEFAULT 0"],
+    ["deleted_at", "TEXT"],
     ["focus", 'TEXT DEFAULT "No focus"'],
     ["done", "INTEGER NOT NULL DEFAULT 0"],
     ["needs_sync", "INTEGER NOT NULL DEFAULT 1"],
+  ]);
+  await ensureTableColumns(db, "Microcycle_Sync_Delete", [
+    ["sync_id", "TEXT"],
+    ["sync_version", "INTEGER NOT NULL DEFAULT 0"],
   ]);
 
   await db.execAsync(`
@@ -1050,6 +1096,9 @@ export async function initializeDatabase(db) {
   await ensureTableColumns(db, "Day", [
     ["cloud_day_id", "INTEGER"],
     ["remote_local_day_id", "INTEGER"],
+    ["sync_id", "TEXT"],
+    ["sync_version", "INTEGER NOT NULL DEFAULT 0"],
+    ["deleted_at", "TEXT"],
     ["done", "INTEGER NOT NULL DEFAULT 0"],
     ["needs_sync", "INTEGER NOT NULL DEFAULT 1"],
   ]);
@@ -1063,6 +1112,9 @@ export async function initializeDatabase(db) {
   await ensureTableColumns(db, "Workout_Type_Instance", [
     ["cloud_workout_type_instance_id", "INTEGER"],
     ["remote_local_workout_type_instance_id", "INTEGER"],
+    ["sync_id", "TEXT"],
+    ["sync_version", "INTEGER NOT NULL DEFAULT 0"],
+    ["deleted_at", "TEXT"],
     ["workout_type", "TEXT"],
     ["label", "TEXT"],
     ["done", "INTEGER NOT NULL DEFAULT 0"],
@@ -1077,6 +1129,10 @@ export async function initializeDatabase(db) {
     ["display_name", "TEXT"],
   ]);
   await migrateWorkoutTypeInstanceDeleteQueueSchema(db);
+  await ensureTableColumns(db, "Workout_Type_Instance_Sync_Delete", [
+    ["sync_id", "TEXT"],
+    ["sync_version", "INTEGER NOT NULL DEFAULT 0"],
+  ]);
   await db.execAsync(`
     UPDATE Workout_Type_Instance
     SET remote_local_workout_type_instance_id = COALESCE(remote_local_workout_type_instance_id, workout_id)
@@ -1090,6 +1146,9 @@ export async function initializeDatabase(db) {
   await ensureTableColumns(db, "Exercise_Instance", [
     ["cloud_exercise_instance_id", "INTEGER"],
     ["remote_local_exercise_instance_id", "INTEGER"],
+    ["sync_id", "TEXT"],
+    ["sync_version", "INTEGER NOT NULL DEFAULT 0"],
+    ["deleted_at", "TEXT"],
     ["exercise_name", "TEXT NOT NULL DEFAULT ''"],
     ["sets", "INTEGER NOT NULL DEFAULT 0"],
     ["visible_columns", "TEXT"],
@@ -1098,6 +1157,10 @@ export async function initializeDatabase(db) {
     ["needs_sync", "INTEGER NOT NULL DEFAULT 1"],
   ]);
   await migrateExerciseInstanceDeleteQueueSchema(db);
+  await ensureTableColumns(db, "Exercise_Instance_Sync_Delete", [
+    ["sync_id", "TEXT"],
+    ["sync_version", "INTEGER NOT NULL DEFAULT 0"],
+  ]);
   await db.execAsync(`
     UPDATE Exercise_Instance
     SET remote_local_exercise_instance_id = COALESCE(
@@ -1114,6 +1177,9 @@ export async function initializeDatabase(db) {
   await ensureTableColumns(db, "Set", [
     ["cloud_set_id", "INTEGER"],
     ["remote_local_set_id", "INTEGER"],
+    ["sync_id", "TEXT"],
+    ["sync_version", "INTEGER NOT NULL DEFAULT 0"],
+    ["deleted_at", "TEXT"],
     ["date", "TEXT"],
     ["personal_record", "INTEGER NOT NULL DEFAULT 0"],
     ["pause", "INTEGER"],
@@ -1128,6 +1194,10 @@ export async function initializeDatabase(db) {
     ["needs_sync", "INTEGER NOT NULL DEFAULT 1"],
   ]);
   await migrateSetDeleteQueueSchema(db);
+  await ensureTableColumns(db, "Set_Sync_Delete", [
+    ["sync_id", "TEXT"],
+    ["sync_version", "INTEGER NOT NULL DEFAULT 0"],
+  ]);
   await db.execAsync(`
     UPDATE "Set"
     SET remote_local_set_id = COALESCE(remote_local_set_id, sets_id)
@@ -1137,6 +1207,14 @@ export async function initializeDatabase(db) {
     SET needs_sync = COALESCE(needs_sync, 1)
     WHERE needs_sync IS NULL;
   `);
+
+  await backfillSyncStateColumns(db, "Program");
+  await backfillSyncStateColumns(db, "Mesocycle");
+  await backfillSyncStateColumns(db, "Microcycle");
+  await backfillSyncStateColumns(db, "Day");
+  await backfillSyncStateColumns(db, "Workout_Type_Instance");
+  await backfillSyncStateColumns(db, "Exercise_Instance");
+  await backfillSyncStateColumns(db, "Set");
 
   await ensureTableColumns(db, "Run", [
     ["type", "TEXT NOT NULL DEFAULT 'WORKING_SET'"],

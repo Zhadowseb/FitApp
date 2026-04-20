@@ -6,6 +6,7 @@ import {
 import { supabase } from "../Database/supaBaseClient";
 import * as workoutService from "./workoutService";
 import { withTransaction } from "./shared";
+import { createNextSyncVersion, normalizeSyncId } from "../Utils/syncUtils";
 
 async function syncExerciseInstancesInBackground(db) {
   try {
@@ -845,6 +846,7 @@ export async function deleteExercise(db, exerciseId) {
       Number(syncMetadata?.exercise_instance_id) ||
       Number(exerciseId) ||
       null;
+    const deleteSyncVersion = createNextSyncVersion(syncMetadata?.sync_version);
 
     if (
       syncMetadata?.cloud_exercise_instance_id ||
@@ -854,6 +856,8 @@ export async function deleteExercise(db, exerciseId) {
         cloudExerciseInstanceId:
           syncMetadata?.cloud_exercise_instance_id ?? null,
         remoteLocalExerciseInstanceId,
+        syncId: normalizeSyncId(syncMetadata?.sync_id),
+        syncVersion: deleteSyncVersion,
         deletedAt: new Date().toISOString(),
       });
     }
@@ -959,11 +963,14 @@ export async function deleteSet(db, setId) {
       Number(syncMetadata?.sets_id) ||
       Number(setId) ||
       null;
+    const deleteSyncVersion = createNextSyncVersion(syncMetadata?.sync_version);
 
     if (syncMetadata?.cloud_set_id || remoteLocalSetId !== null) {
       await weightliftingRepository.queueSetDeleteSync(db, {
         cloudSetId: syncMetadata?.cloud_set_id ?? null,
         remoteLocalSetId,
+        syncId: normalizeSyncId(syncMetadata?.sync_id),
+        syncVersion: deleteSyncVersion,
         deletedAt: new Date().toISOString(),
       });
     }

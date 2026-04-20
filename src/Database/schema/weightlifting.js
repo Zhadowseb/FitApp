@@ -10,6 +10,9 @@ export const weightliftingSchemaSql = `
       exercise_instance_id INTEGER PRIMARY KEY AUTOINCREMENT,
       cloud_exercise_instance_id INTEGER,
       remote_local_exercise_instance_id INTEGER,
+      sync_id TEXT,
+      sync_version INTEGER NOT NULL DEFAULT 0,
+      deleted_at TEXT,
       workout_type_instance_id INTEGER NOT NULL,
       exercise_name TEXT NOT NULL,
       sets INTEGER NOT NULL DEFAULT 0,
@@ -23,6 +26,8 @@ export const weightliftingSchemaSql = `
       exercise_instance_sync_delete_id INTEGER PRIMARY KEY AUTOINCREMENT,
       cloud_exercise_instance_id INTEGER UNIQUE,
       remote_local_exercise_instance_id INTEGER UNIQUE,
+      sync_id TEXT,
+      sync_version INTEGER NOT NULL DEFAULT 0,
       deleted_at TEXT
   );
 
@@ -30,6 +35,9 @@ export const weightliftingSchemaSql = `
       sets_id INTEGER PRIMARY KEY AUTOINCREMENT,
       cloud_set_id INTEGER,
       remote_local_set_id INTEGER,
+      sync_id TEXT,
+      sync_version INTEGER NOT NULL DEFAULT 0,
+      deleted_at TEXT,
       set_number INTEGER NOT NULL,
       exercise_instance_id INTEGER NOT NULL,
       date TEXT,
@@ -53,6 +61,8 @@ export const weightliftingSchemaSql = `
       set_sync_delete_id INTEGER PRIMARY KEY AUTOINCREMENT,
       cloud_set_id INTEGER UNIQUE,
       remote_local_set_id INTEGER UNIQUE,
+      sync_id TEXT,
+      sync_version INTEGER NOT NULL DEFAULT 0,
       deleted_at TEXT
   );
 

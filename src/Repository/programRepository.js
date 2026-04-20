@@ -1,8 +1,17 @@
+import { createNextSyncVersion, SQLITE_UUID_SQL } from "../Utils/syncUtils";
+
 export async function createProgram(db, { programName, startDate, status }) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
-    `INSERT INTO Program (program_name, start_date, status)
-     VALUES (?, ?, ?);`,
-    [programName, startDate, status]
+    `INSERT INTO Program (
+      program_name,
+      start_date,
+      status,
+      sync_id,
+      sync_version
+    )
+     VALUES (?, ?, ?, ${SQLITE_UUID_SQL}, ?);`,
+    [programName, startDate, status, syncVersion]
   );
 }
 
@@ -12,6 +21,9 @@ export async function getProgramsForCloudSync(db) {
         program_id,
         cloud_program_id,
         remote_local_program_id,
+        sync_id,
+        sync_version,
+        deleted_at,
         program_name,
         start_date,
         status,
@@ -26,6 +38,9 @@ export async function createProgramFromCloud(
   {
     cloudProgramId,
     remoteLocalProgramId,
+    syncId,
+    syncVersion,
+    deletedAt,
     programName,
     startDate,
     status,
@@ -35,14 +50,20 @@ export async function createProgramFromCloud(
     `INSERT INTO Program (
       cloud_program_id,
       remote_local_program_id,
+      sync_id,
+      sync_version,
+      deleted_at,
       program_name,
       start_date,
       status,
       needs_sync
-    ) VALUES (?, ?, ?, ?, ?, 0);`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0);`,
     [
       cloudProgramId,
       remoteLocalProgramId,
+      syncId,
+      syncVersion,
+      deletedAt,
       programName,
       startDate,
       status,
@@ -56,6 +77,9 @@ export async function updateProgramFromCloud(
     programId,
     cloudProgramId,
     remoteLocalProgramId,
+    syncId,
+    syncVersion,
+    deletedAt,
     programName,
     startDate,
     status,
@@ -65,6 +89,9 @@ export async function updateProgramFromCloud(
     `UPDATE Program
      SET cloud_program_id = ?,
          remote_local_program_id = ?,
+         sync_id = ?,
+         sync_version = ?,
+         deleted_at = ?,
          program_name = ?,
          start_date = ?,
          status = ?,
@@ -73,6 +100,9 @@ export async function updateProgramFromCloud(
     [
       cloudProgramId,
       remoteLocalProgramId,
+      syncId,
+      syncVersion,
+      deletedAt,
       programName,
       startDate,
       status,
@@ -83,28 +113,62 @@ export async function updateProgramFromCloud(
 
 export async function markProgramSynced(
   db,
-  { programId, cloudProgramId, remoteLocalProgramId = null }
+  {
+    programId,
+    cloudProgramId,
+    remoteLocalProgramId = null,
+    syncId = null,
+    syncVersion = null,
+    deletedAt = null,
+  }
 ) {
   await db.runAsync(
     `UPDATE Program
      SET cloud_program_id = ?,
          remote_local_program_id = COALESCE(?, remote_local_program_id, program_id),
+         sync_id = COALESCE(?, sync_id),
+         sync_version = COALESCE(?, sync_version),
+         deleted_at = ?,
          needs_sync = 0
      WHERE program_id = ?;`,
-    [cloudProgramId, remoteLocalProgramId, programId]
+    [
+      cloudProgramId,
+      remoteLocalProgramId,
+      syncId,
+      syncVersion,
+      deletedAt,
+      programId,
+    ]
   );
 }
 
 export async function updateProgramCloudIdentity(
   db,
-  { programId, cloudProgramId, remoteLocalProgramId = null }
+  {
+    programId,
+    cloudProgramId,
+    remoteLocalProgramId = null,
+    syncId = null,
+    syncVersion = null,
+    deletedAt = null,
+  }
 ) {
   await db.runAsync(
     `UPDATE Program
      SET cloud_program_id = ?,
-         remote_local_program_id = COALESCE(?, remote_local_program_id, program_id)
+         remote_local_program_id = COALESCE(?, remote_local_program_id, program_id),
+         sync_id = COALESCE(?, sync_id),
+         sync_version = COALESCE(?, sync_version),
+         deleted_at = COALESCE(?, deleted_at)
      WHERE program_id = ?;`,
-    [cloudProgramId, remoteLocalProgramId, programId]
+    [
+      cloudProgramId,
+      remoteLocalProgramId,
+      syncId,
+      syncVersion,
+      deletedAt,
+      programId,
+    ]
   );
 }
 
@@ -120,7 +184,14 @@ export async function markProgramForCloudResync(db, { programId }) {
 
 export async function getProgramSyncMetadata(db, programId) {
   return db.getFirstAsync(
-    `SELECT program_id, cloud_program_id, remote_local_program_id, needs_sync
+    `SELECT
+        program_id,
+        cloud_program_id,
+        remote_local_program_id,
+        sync_id,
+        sync_version,
+        deleted_at,
+        needs_sync
      FROM Program
      WHERE program_id = ?;`,
     [programId]
@@ -133,6 +204,9 @@ export async function getMesocyclesForCloudSync(db) {
         mesocycle_id,
         cloud_mesocycle_id,
         remote_local_mesocycle_id,
+        sync_id,
+        sync_version,
+        deleted_at,
         program_id,
         mesocycle_number,
         weeks,
@@ -150,6 +224,9 @@ export async function createMesocycleFromCloud(
     localMesocycleId,
     cloudMesocycleId,
     remoteLocalMesocycleId,
+    syncId,
+    syncVersion,
+    deletedAt,
     programId,
     mesocycleNumber,
     weeks,
@@ -162,17 +239,23 @@ export async function createMesocycleFromCloud(
       mesocycle_id,
       cloud_mesocycle_id,
       remote_local_mesocycle_id,
+      sync_id,
+      sync_version,
+      deleted_at,
       program_id,
       mesocycle_number,
       weeks,
       focus,
       done,
       needs_sync
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0);`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0);`,
     [
       localMesocycleId,
       cloudMesocycleId,
       remoteLocalMesocycleId,
+      syncId,
+      syncVersion,
+      deletedAt,
       programId,
       mesocycleNumber,
       weeks,
@@ -188,6 +271,9 @@ export async function updateMesocycleFromCloud(
     mesocycleId,
     cloudMesocycleId,
     remoteLocalMesocycleId,
+    syncId,
+    syncVersion,
+    deletedAt,
     programId,
     mesocycleNumber,
     weeks,
@@ -199,6 +285,9 @@ export async function updateMesocycleFromCloud(
     `UPDATE Mesocycle
      SET cloud_mesocycle_id = ?,
          remote_local_mesocycle_id = ?,
+         sync_id = ?,
+         sync_version = ?,
+         deleted_at = ?,
          program_id = ?,
          mesocycle_number = ?,
          weeks = ?,
@@ -209,6 +298,9 @@ export async function updateMesocycleFromCloud(
     [
       cloudMesocycleId,
       remoteLocalMesocycleId,
+      syncId,
+      syncVersion,
+      deletedAt,
       programId,
       mesocycleNumber,
       weeks,
@@ -221,28 +313,62 @@ export async function updateMesocycleFromCloud(
 
 export async function markMesocycleSynced(
   db,
-  { mesocycleId, cloudMesocycleId, remoteLocalMesocycleId = null }
+  {
+    mesocycleId,
+    cloudMesocycleId,
+    remoteLocalMesocycleId = null,
+    syncId = null,
+    syncVersion = null,
+    deletedAt = null,
+  }
 ) {
   await db.runAsync(
     `UPDATE Mesocycle
      SET cloud_mesocycle_id = ?,
          remote_local_mesocycle_id = COALESCE(?, remote_local_mesocycle_id, mesocycle_id),
+         sync_id = COALESCE(?, sync_id),
+         sync_version = COALESCE(?, sync_version),
+         deleted_at = ?,
          needs_sync = 0
      WHERE mesocycle_id = ?;`,
-    [cloudMesocycleId, remoteLocalMesocycleId, mesocycleId]
+    [
+      cloudMesocycleId,
+      remoteLocalMesocycleId,
+      syncId,
+      syncVersion,
+      deletedAt,
+      mesocycleId,
+    ]
   );
 }
 
 export async function updateMesocycleCloudIdentity(
   db,
-  { mesocycleId, cloudMesocycleId, remoteLocalMesocycleId = null }
+  {
+    mesocycleId,
+    cloudMesocycleId,
+    remoteLocalMesocycleId = null,
+    syncId = null,
+    syncVersion = null,
+    deletedAt = null,
+  }
 ) {
   await db.runAsync(
     `UPDATE Mesocycle
      SET cloud_mesocycle_id = ?,
-         remote_local_mesocycle_id = COALESCE(?, remote_local_mesocycle_id, mesocycle_id)
+         remote_local_mesocycle_id = COALESCE(?, remote_local_mesocycle_id, mesocycle_id),
+         sync_id = COALESCE(?, sync_id),
+         sync_version = COALESCE(?, sync_version),
+         deleted_at = COALESCE(?, deleted_at)
      WHERE mesocycle_id = ?;`,
-    [cloudMesocycleId, remoteLocalMesocycleId, mesocycleId]
+    [
+      cloudMesocycleId,
+      remoteLocalMesocycleId,
+      syncId,
+      syncVersion,
+      deletedAt,
+      mesocycleId,
+    ]
   );
 }
 
@@ -258,7 +384,14 @@ export async function markMesocycleForCloudResync(db, { mesocycleId }) {
 
 export async function getMesocycleSyncMetadata(db, mesocycleId) {
   return db.getFirstAsync(
-    `SELECT mesocycle_id, cloud_mesocycle_id, remote_local_mesocycle_id, needs_sync
+    `SELECT
+        mesocycle_id,
+        cloud_mesocycle_id,
+        remote_local_mesocycle_id,
+        sync_id,
+        sync_version,
+        deleted_at,
+        needs_sync
      FROM Mesocycle
      WHERE mesocycle_id = ?;`,
     [mesocycleId]
@@ -270,6 +403,9 @@ export async function getMicrocyclesForCloudSync(db) {
     `SELECT
         microcycle_id,
         cloud_microcycle_id,
+        sync_id,
+        sync_version,
+        deleted_at,
         mesocycle_id,
         microcycle_number,
         focus,
@@ -285,6 +421,9 @@ export async function createMicrocycleFromCloud(
   {
     localMicrocycleId,
     cloudMicrocycleId,
+    syncId,
+    syncVersion,
+    deletedAt,
     mesocycleId,
     microcycleNumber,
     focus,
@@ -295,15 +434,21 @@ export async function createMicrocycleFromCloud(
     `INSERT INTO Microcycle (
       microcycle_id,
       cloud_microcycle_id,
+      sync_id,
+      sync_version,
+      deleted_at,
       mesocycle_id,
       microcycle_number,
       focus,
       done,
       needs_sync
-    ) VALUES (?, ?, ?, ?, ?, ?, 0);`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0);`,
     [
       localMicrocycleId,
       cloudMicrocycleId,
+      syncId,
+      syncVersion,
+      deletedAt,
       mesocycleId,
       microcycleNumber,
       focus,
@@ -317,6 +462,9 @@ export async function updateMicrocycleFromCloud(
   {
     microcycleId,
     cloudMicrocycleId,
+    syncId,
+    syncVersion,
+    deletedAt,
     mesocycleId,
     microcycleNumber,
     focus,
@@ -326,6 +474,9 @@ export async function updateMicrocycleFromCloud(
   await db.runAsync(
     `UPDATE Microcycle
      SET cloud_microcycle_id = ?,
+         sync_id = ?,
+         sync_version = ?,
+         deleted_at = ?,
          mesocycle_id = ?,
          microcycle_number = ?,
          focus = ?,
@@ -334,6 +485,9 @@ export async function updateMicrocycleFromCloud(
      WHERE microcycle_id = ?;`,
     [
       cloudMicrocycleId,
+      syncId,
+      syncVersion,
+      deletedAt,
       mesocycleId,
       microcycleNumber,
       focus,
@@ -345,26 +499,32 @@ export async function updateMicrocycleFromCloud(
 
 export async function markMicrocycleSynced(
   db,
-  { microcycleId, cloudMicrocycleId }
+  { microcycleId, cloudMicrocycleId, syncId = null, syncVersion = null, deletedAt = null }
 ) {
   await db.runAsync(
     `UPDATE Microcycle
      SET cloud_microcycle_id = ?,
+         sync_id = COALESCE(?, sync_id),
+         sync_version = COALESCE(?, sync_version),
+         deleted_at = ?,
          needs_sync = 0
      WHERE microcycle_id = ?;`,
-    [cloudMicrocycleId, microcycleId]
+    [cloudMicrocycleId, syncId, syncVersion, deletedAt, microcycleId]
   );
 }
 
 export async function updateMicrocycleCloudIdentity(
   db,
-  { microcycleId, cloudMicrocycleId }
+  { microcycleId, cloudMicrocycleId, syncId = null, syncVersion = null, deletedAt = null }
 ) {
   await db.runAsync(
     `UPDATE Microcycle
-     SET cloud_microcycle_id = ?
+     SET cloud_microcycle_id = ?,
+         sync_id = COALESCE(?, sync_id),
+         sync_version = COALESCE(?, sync_version),
+         deleted_at = COALESCE(?, deleted_at)
      WHERE microcycle_id = ?;`,
-    [cloudMicrocycleId, microcycleId]
+    [cloudMicrocycleId, syncId, syncVersion, deletedAt, microcycleId]
   );
 }
 
@@ -380,7 +540,13 @@ export async function markMicrocycleForCloudResync(db, { microcycleId }) {
 
 export async function getMicrocycleSyncMetadata(db, microcycleId) {
   return db.getFirstAsync(
-    `SELECT microcycle_id, cloud_microcycle_id, needs_sync
+    `SELECT
+        microcycle_id,
+        cloud_microcycle_id,
+        sync_id,
+        sync_version,
+        deleted_at,
+        needs_sync
      FROM Microcycle
      WHERE microcycle_id = ?;`,
     [microcycleId]
@@ -392,6 +558,8 @@ export async function getQueuedMicrocycleDeletes(db) {
     `SELECT
         microcycle_sync_delete_id,
         cloud_microcycle_id,
+        sync_id,
+        sync_version,
         deleted_at
      FROM Microcycle_Sync_Delete
      ORDER BY microcycle_sync_delete_id ASC;`
@@ -400,14 +568,16 @@ export async function getQueuedMicrocycleDeletes(db) {
 
 export async function queueMicrocycleDeleteSync(
   db,
-  { cloudMicrocycleId, deletedAt }
+  { cloudMicrocycleId, syncId = null, syncVersion = 0, deletedAt }
 ) {
   await db.runAsync(
     `INSERT OR IGNORE INTO Microcycle_Sync_Delete (
       cloud_microcycle_id,
+      sync_id,
+      sync_version,
       deleted_at
-    ) VALUES (?, ?);`,
-    [cloudMicrocycleId, deletedAt]
+    ) VALUES (?, ?, ?, ?);`,
+    [cloudMicrocycleId, syncId, syncVersion, deletedAt]
   );
 }
 
@@ -424,6 +594,8 @@ export async function getQueuedMesocycleDeletes(db) {
     `SELECT
         mesocycle_sync_delete_id,
         cloud_mesocycle_id,
+        sync_id,
+        sync_version,
         deleted_at
      FROM Mesocycle_Sync_Delete
      ORDER BY mesocycle_sync_delete_id ASC;`
@@ -432,14 +604,16 @@ export async function getQueuedMesocycleDeletes(db) {
 
 export async function queueMesocycleDeleteSync(
   db,
-  { cloudMesocycleId, deletedAt }
+  { cloudMesocycleId, syncId = null, syncVersion = 0, deletedAt }
 ) {
   await db.runAsync(
     `INSERT OR IGNORE INTO Mesocycle_Sync_Delete (
       cloud_mesocycle_id,
+      sync_id,
+      sync_version,
       deleted_at
-    ) VALUES (?, ?);`,
-    [cloudMesocycleId, deletedAt]
+    ) VALUES (?, ?, ?, ?);`,
+    [cloudMesocycleId, syncId, syncVersion, deletedAt]
   );
 }
 
@@ -456,19 +630,26 @@ export async function getQueuedProgramDeletes(db) {
     `SELECT
         program_sync_delete_id,
         cloud_program_id,
+        sync_id,
+        sync_version,
         deleted_at
      FROM Program_Sync_Delete
      ORDER BY program_sync_delete_id ASC;`
   );
 }
 
-export async function queueProgramDeleteSync(db, { cloudProgramId, deletedAt }) {
+export async function queueProgramDeleteSync(
+  db,
+  { cloudProgramId, syncId = null, syncVersion = 0, deletedAt }
+) {
   await db.runAsync(
     `INSERT OR IGNORE INTO Program_Sync_Delete (
       cloud_program_id,
+      sync_id,
+      sync_version,
       deleted_at
-    ) VALUES (?, ?);`,
-    [cloudProgramId, deletedAt]
+    ) VALUES (?, ?, ?, ?);`,
+    [cloudProgramId, syncId, syncVersion, deletedAt]
   );
 }
 
@@ -589,22 +770,30 @@ export async function upsertProgramBestExerciseSelection(
 }
 
 export async function updateProgramStatus(db, { programId, status }) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Program
      SET status = ?,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE program_id = ?;`,
-    [status, programId]
+    [status, syncVersion, programId]
   );
 }
 
 export async function updateProgramName(db, { programId, programName }) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Program
      SET program_name = ?,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE program_id = ?;`,
-    [programName, programId]
+    [programName, syncVersion, programId]
   );
 }
 
@@ -827,10 +1016,18 @@ export async function insertMesocycle(
   db,
   { programId, mesocycleNumber, weeks, focus }
 ) {
+  const syncVersion = createNextSyncVersion();
   return db.runAsync(
-    `INSERT INTO Mesocycle (program_id, mesocycle_number, weeks, focus)
-     VALUES (?, ?, ?, ?);`,
-    [programId, mesocycleNumber, weeks, focus]
+    `INSERT INTO Mesocycle (
+      program_id,
+      mesocycle_number,
+      weeks,
+      focus,
+      sync_id,
+      sync_version
+    )
+     VALUES (?, ?, ?, ?, ${SQLITE_UUID_SQL}, ?);`,
+    [programId, mesocycleNumber, weeks, focus, syncVersion]
   );
 }
 
@@ -838,10 +1035,17 @@ export async function insertMicrocycle(
   db,
   { mesocycleId, microcycleNumber }
 ) {
+  const syncVersion = createNextSyncVersion();
   return db.runAsync(
-    `INSERT INTO Microcycle (mesocycle_id, microcycle_number, needs_sync)
-     VALUES (?, ?, 1);`,
-    [mesocycleId, microcycleNumber]
+    `INSERT INTO Microcycle (
+      mesocycle_id,
+      microcycle_number,
+      needs_sync,
+      sync_id,
+      sync_version
+    )
+     VALUES (?, ?, 1, ${SQLITE_UUID_SQL}, ?);`,
+    [mesocycleId, microcycleNumber, syncVersion]
   );
 }
 
@@ -849,10 +1053,18 @@ export async function insertDay(
   db,
   { microcycleId, programId, weekday, date }
 ) {
+  const syncVersion = createNextSyncVersion();
   return db.runAsync(
-    `INSERT INTO Day (microcycle_id, program_id, Weekday, date)
-     VALUES (?, ?, ?, ?);`,
-    [microcycleId, programId, weekday, date]
+    `INSERT INTO Day (
+      microcycle_id,
+      program_id,
+      Weekday,
+      date,
+      sync_id,
+      sync_version
+    )
+     VALUES (?, ?, ?, ?, ${SQLITE_UUID_SQL}, ?);`,
+    [microcycleId, programId, weekday, date, syncVersion]
   );
 }
 
@@ -879,12 +1091,16 @@ export async function getMesocycleWorkoutCountsByProgram(db, programId) {
 }
 
 export async function updateMesocycleFocus(db, { mesocycleId, focus }) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Mesocycle
      SET focus = ?,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE mesocycle_id = ?;`,
-    [focus, mesocycleId]
+    [focus, syncVersion, mesocycleId]
   );
 }
 
@@ -923,12 +1139,16 @@ export async function getLastSundayByMicrocycle(db, microcycleId) {
 }
 
 export async function incrementMesocycleWeeks(db, mesocycleId) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Mesocycle
      SET weeks = weeks + 1,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE mesocycle_id = ?;`,
-    [mesocycleId]
+    [syncVersion, mesocycleId]
   );
 }
 
@@ -1056,12 +1276,16 @@ export async function getMicrocycleNumberAndMesocycleNumber(
 }
 
 export async function updateMicrocycleFocus(db, { microcycleId, focus }) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Microcycle
      SET focus = ?,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE microcycle_id = ?;`,
-    [focus, microcycleId]
+    [focus, syncVersion, microcycleId]
   );
 }
 
@@ -1137,6 +1361,9 @@ export async function getDaysForCloudSync(db) {
         day_id,
         cloud_day_id,
         remote_local_day_id,
+        sync_id,
+        sync_version,
+        deleted_at,
         microcycle_id,
         program_id,
         Weekday AS weekday,
@@ -1153,6 +1380,9 @@ export async function createDayFromCloud(
   {
     cloudDayId,
     remoteLocalDayId,
+    syncId,
+    syncVersion,
+    deletedAt,
     microcycleId,
     programId,
     weekday,
@@ -1164,16 +1394,22 @@ export async function createDayFromCloud(
     `INSERT INTO Day (
       cloud_day_id,
       remote_local_day_id,
+      sync_id,
+      sync_version,
+      deleted_at,
       microcycle_id,
       program_id,
       Weekday,
       date,
       done,
       needs_sync
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, 0);`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0);`,
     [
       cloudDayId,
       remoteLocalDayId,
+      syncId,
+      syncVersion,
+      deletedAt,
       microcycleId,
       programId,
       weekday,
@@ -1189,6 +1425,9 @@ export async function updateDayFromCloud(
     dayId,
     cloudDayId,
     remoteLocalDayId,
+    syncId,
+    syncVersion,
+    deletedAt,
     microcycleId,
     programId,
     weekday,
@@ -1200,6 +1439,9 @@ export async function updateDayFromCloud(
     `UPDATE Day
      SET cloud_day_id = ?,
          remote_local_day_id = ?,
+         sync_id = ?,
+         sync_version = ?,
+         deleted_at = ?,
          microcycle_id = ?,
          program_id = ?,
          Weekday = ?,
@@ -1210,6 +1452,9 @@ export async function updateDayFromCloud(
     [
       cloudDayId,
       remoteLocalDayId,
+      syncId,
+      syncVersion,
+      deletedAt,
       microcycleId,
       programId,
       weekday,
@@ -1222,28 +1467,48 @@ export async function updateDayFromCloud(
 
 export async function markDaySynced(
   db,
-  { dayId, cloudDayId, remoteLocalDayId = null }
+  {
+    dayId,
+    cloudDayId,
+    remoteLocalDayId = null,
+    syncId = null,
+    syncVersion = null,
+    deletedAt = null,
+  }
 ) {
   await db.runAsync(
     `UPDATE Day
      SET cloud_day_id = ?,
          remote_local_day_id = COALESCE(?, remote_local_day_id, day_id),
+         sync_id = COALESCE(?, sync_id),
+         sync_version = COALESCE(?, sync_version),
+         deleted_at = ?,
          needs_sync = 0
      WHERE day_id = ?;`,
-    [cloudDayId, remoteLocalDayId, dayId]
+    [cloudDayId, remoteLocalDayId, syncId, syncVersion, deletedAt, dayId]
   );
 }
 
 export async function updateDayCloudIdentity(
   db,
-  { dayId, cloudDayId, remoteLocalDayId = null }
+  {
+    dayId,
+    cloudDayId,
+    remoteLocalDayId = null,
+    syncId = null,
+    syncVersion = null,
+    deletedAt = null,
+  }
 ) {
   await db.runAsync(
     `UPDATE Day
      SET cloud_day_id = ?,
-         remote_local_day_id = COALESCE(?, remote_local_day_id, day_id)
+         remote_local_day_id = COALESCE(?, remote_local_day_id, day_id),
+         sync_id = COALESCE(?, sync_id),
+         sync_version = COALESCE(?, sync_version),
+         deleted_at = COALESCE(?, deleted_at)
      WHERE day_id = ?;`,
-    [cloudDayId, remoteLocalDayId, dayId]
+    [cloudDayId, remoteLocalDayId, syncId, syncVersion, deletedAt, dayId]
   );
 }
 
@@ -1259,7 +1524,14 @@ export async function markDayForCloudResync(db, { dayId }) {
 
 export async function getDaySyncMetadata(db, dayId) {
   return db.getFirstAsync(
-    `SELECT day_id, cloud_day_id, remote_local_day_id, needs_sync
+    `SELECT
+        day_id,
+        cloud_day_id,
+        remote_local_day_id,
+        sync_id,
+        sync_version,
+        deleted_at,
+        needs_sync
      FROM Day
      WHERE day_id = ?;`,
     [dayId]
@@ -1272,6 +1544,9 @@ export async function getWorkoutsByDay(db, dayId) {
         workout_id,
         cloud_workout_type_instance_id,
         remote_local_workout_type_instance_id,
+        sync_id,
+        sync_version,
+        deleted_at,
         day_id,
         workout_type,
         date,
@@ -1294,6 +1569,9 @@ export async function getWorkoutsForCloudSync(db) {
         workout_id,
         cloud_workout_type_instance_id,
         remote_local_workout_type_instance_id,
+        sync_id,
+        sync_version,
+        deleted_at,
         day_id,
         workout_type,
         date,
@@ -1314,6 +1592,9 @@ export async function createWorkoutFromCloud(
   {
     cloudWorkoutTypeInstanceId,
     remoteLocalWorkoutTypeInstanceId,
+    syncId,
+    syncVersion,
+    deletedAt,
     dayId,
     workoutType,
     date,
@@ -1329,6 +1610,9 @@ export async function createWorkoutFromCloud(
     `INSERT INTO Workout_Type_Instance (
       cloud_workout_type_instance_id,
       remote_local_workout_type_instance_id,
+      sync_id,
+      sync_version,
+      deleted_at,
       day_id,
       workout_type,
       date,
@@ -1339,10 +1623,13 @@ export async function createWorkoutFromCloud(
       original_start_time,
       timer_start,
       elapsed_time
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?);`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?);`,
     [
       cloudWorkoutTypeInstanceId,
       remoteLocalWorkoutTypeInstanceId,
+      syncId,
+      syncVersion,
+      deletedAt,
       dayId,
       workoutType,
       date,
@@ -1362,6 +1649,9 @@ export async function updateWorkoutFromCloud(
     workoutId,
     cloudWorkoutTypeInstanceId,
     remoteLocalWorkoutTypeInstanceId,
+    syncId,
+    syncVersion,
+    deletedAt,
     dayId,
     workoutType,
     date,
@@ -1377,6 +1667,9 @@ export async function updateWorkoutFromCloud(
     `UPDATE Workout_Type_Instance
      SET cloud_workout_type_instance_id = ?,
          remote_local_workout_type_instance_id = ?,
+         sync_id = ?,
+         sync_version = ?,
+         deleted_at = ?,
          day_id = ?,
          workout_type = ?,
          date = ?,
@@ -1391,6 +1684,9 @@ export async function updateWorkoutFromCloud(
     [
       cloudWorkoutTypeInstanceId,
       remoteLocalWorkoutTypeInstanceId,
+      syncId,
+      syncVersion,
+      deletedAt,
       dayId,
       workoutType,
       date,
@@ -1411,6 +1707,9 @@ export async function markWorkoutSynced(
     workoutId,
     cloudWorkoutTypeInstanceId,
     remoteLocalWorkoutTypeInstanceId = null,
+    syncId = null,
+    syncVersion = null,
+    deletedAt = null,
   }
 ) {
   await db.runAsync(
@@ -1421,9 +1720,19 @@ export async function markWorkoutSynced(
            remote_local_workout_type_instance_id,
            workout_id
          ),
+         sync_id = COALESCE(?, sync_id),
+         sync_version = COALESCE(?, sync_version),
+         deleted_at = ?,
          needs_sync = 0
      WHERE workout_id = ?;`,
-    [cloudWorkoutTypeInstanceId, remoteLocalWorkoutTypeInstanceId, workoutId]
+    [
+      cloudWorkoutTypeInstanceId,
+      remoteLocalWorkoutTypeInstanceId,
+      syncId,
+      syncVersion,
+      deletedAt,
+      workoutId,
+    ]
   );
 }
 
@@ -1433,6 +1742,9 @@ export async function updateWorkoutCloudIdentity(
     workoutId,
     cloudWorkoutTypeInstanceId,
     remoteLocalWorkoutTypeInstanceId = null,
+    syncId = null,
+    syncVersion = null,
+    deletedAt = null,
   }
 ) {
   await db.runAsync(
@@ -1442,9 +1754,19 @@ export async function updateWorkoutCloudIdentity(
            ?,
            remote_local_workout_type_instance_id,
            workout_id
-         )
+         ),
+         sync_id = COALESCE(?, sync_id),
+         sync_version = COALESCE(?, sync_version),
+         deleted_at = COALESCE(?, deleted_at)
      WHERE workout_id = ?;`,
-    [cloudWorkoutTypeInstanceId, remoteLocalWorkoutTypeInstanceId, workoutId]
+    [
+      cloudWorkoutTypeInstanceId,
+      remoteLocalWorkoutTypeInstanceId,
+      syncId,
+      syncVersion,
+      deletedAt,
+      workoutId,
+    ]
   );
 }
 
@@ -1464,6 +1786,9 @@ export async function getWorkoutSyncMetadata(db, workoutId) {
         workout_id,
         cloud_workout_type_instance_id,
         remote_local_workout_type_instance_id,
+        sync_id,
+        sync_version,
+        deleted_at,
         needs_sync
      FROM Workout_Type_Instance
      WHERE workout_id = ?;`,
@@ -1477,6 +1802,8 @@ export async function getQueuedWorkoutTypeInstanceDeletes(db) {
         workout_type_instance_sync_delete_id,
         cloud_workout_type_instance_id,
         remote_local_workout_type_instance_id,
+        sync_id,
+        sync_version,
         deleted_at
      FROM Workout_Type_Instance_Sync_Delete
      ORDER BY workout_type_instance_sync_delete_id ASC;`
@@ -1488,6 +1815,8 @@ export async function queueWorkoutTypeInstanceDeleteSync(
   {
     cloudWorkoutTypeInstanceId = null,
     remoteLocalWorkoutTypeInstanceId = null,
+    syncId = null,
+    syncVersion = 0,
     deletedAt,
   }
 ) {
@@ -1495,9 +1824,17 @@ export async function queueWorkoutTypeInstanceDeleteSync(
     `INSERT OR IGNORE INTO Workout_Type_Instance_Sync_Delete (
       cloud_workout_type_instance_id,
       remote_local_workout_type_instance_id,
+      sync_id,
+      sync_version,
       deleted_at
-    ) VALUES (?, ?, ?);`,
-    [cloudWorkoutTypeInstanceId, remoteLocalWorkoutTypeInstanceId, deletedAt]
+    ) VALUES (?, ?, ?, ?, ?);`,
+    [
+      cloudWorkoutTypeInstanceId,
+      remoteLocalWorkoutTypeInstanceId,
+      syncId,
+      syncVersion,
+      deletedAt,
+    ]
   );
 }
 
@@ -1569,6 +1906,14 @@ export async function deleteDaysByMicrocycle(db, microcycleId) {
   );
 }
 
+export async function deleteDayById(db, dayId) {
+  await db.runAsync(
+    `DELETE FROM Day
+     WHERE day_id = ?;`,
+    [dayId]
+  );
+}
+
 export async function deleteMicrocycleById(db, microcycleId) {
   await db.runAsync(
     `DELETE FROM Microcycle
@@ -1594,16 +1939,19 @@ export async function createWorkout(
   db,
   { date, dayId, workoutType = null, label = workoutType }
 ) {
+  const syncVersion = createNextSyncVersion();
   return db.runAsync(
     `INSERT INTO Workout_Type_Instance (
       date,
       day_id,
       workout_type,
       label,
-      needs_sync
+      needs_sync,
+      sync_id,
+      sync_version
     )
-     VALUES (?, ?, ?, ?, 1);`,
-    [date, dayId, workoutType ?? label, label ?? workoutType]
+     VALUES (?, ?, ?, ?, 1, ${SQLITE_UUID_SQL}, ?);`,
+    [date, dayId, workoutType ?? label, label ?? workoutType, syncVersion]
   );
 }
 
@@ -1611,23 +1959,28 @@ export async function copyWorkoutIntoDay(
   db,
   { date, dayId, workoutId }
 ) {
+  const syncVersion = createNextSyncVersion();
   return db.runAsync(
     `INSERT INTO Workout_Type_Instance (
        date,
        day_id,
        workout_type,
        label,
-       needs_sync
+       needs_sync,
+       sync_id,
+       sync_version
      )
      SELECT
        ?,
        ?,
        COALESCE(workout_type, label),
        COALESCE(label, workout_type),
-       1
+       1,
+       ${SQLITE_UUID_SQL},
+       ?
      FROM Workout_Type_Instance
      WHERE workout_id = ?;`,
-    [date, dayId, workoutId]
+    [date, dayId, syncVersion, workoutId]
   );
 }
 

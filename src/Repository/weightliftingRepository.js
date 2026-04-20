@@ -1,4 +1,5 @@
 import { withTransaction } from "../Database/transaction";
+import { createNextSyncVersion, SQLITE_UUID_SQL } from "../Utils/syncUtils";
 
 export async function getExerciseStorage(db) {
   return db.getAllAsync(
@@ -367,6 +368,9 @@ export async function getExercisesForCloudSync(db) {
         exercise_instance_id,
         cloud_exercise_instance_id,
         remote_local_exercise_instance_id,
+        sync_id,
+        sync_version,
+        deleted_at,
         workout_type_instance_id,
         exercise_name,
         sets,
@@ -390,6 +394,7 @@ export async function createExercise(
     done = 0,
   }
 ) {
+  const syncVersion = createNextSyncVersion();
   return db.runAsync(
     `INSERT INTO Exercise_Instance (
       workout_type_instance_id,
@@ -398,9 +403,11 @@ export async function createExercise(
       visible_columns,
       note,
       done,
-      needs_sync
-    ) VALUES (?, ?, ?, ?, ?, ?, 1);`,
-    [workoutId, exerciseName, sets, visibleColumns, note, done]
+      needs_sync,
+      sync_id,
+      sync_version
+    ) VALUES (?, ?, ?, ?, ?, ?, 1, ${SQLITE_UUID_SQL}, ?);`,
+    [workoutId, exerciseName, sets, visibleColumns, note, done, syncVersion]
   );
 }
 
@@ -409,6 +416,9 @@ export async function createExerciseFromCloud(
   {
     cloudExerciseInstanceId,
     remoteLocalExerciseInstanceId,
+    syncId,
+    syncVersion,
+    deletedAt,
     workoutId,
     exerciseName,
     sets,
@@ -421,6 +431,9 @@ export async function createExerciseFromCloud(
     `INSERT INTO Exercise_Instance (
       cloud_exercise_instance_id,
       remote_local_exercise_instance_id,
+      sync_id,
+      sync_version,
+      deleted_at,
       workout_type_instance_id,
       exercise_name,
       sets,
@@ -428,10 +441,13 @@ export async function createExerciseFromCloud(
       note,
       done,
       needs_sync
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0);`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0);`,
     [
       cloudExerciseInstanceId,
       remoteLocalExerciseInstanceId,
+      syncId,
+      syncVersion,
+      deletedAt,
       workoutId,
       exerciseName,
       sets,
@@ -448,6 +464,9 @@ export async function updateExerciseFromCloud(
     exerciseId,
     cloudExerciseInstanceId,
     remoteLocalExerciseInstanceId,
+    syncId,
+    syncVersion,
+    deletedAt,
     workoutId,
     exerciseName,
     sets,
@@ -460,6 +479,9 @@ export async function updateExerciseFromCloud(
     `UPDATE Exercise_Instance
      SET cloud_exercise_instance_id = ?,
          remote_local_exercise_instance_id = ?,
+         sync_id = ?,
+         sync_version = ?,
+         deleted_at = ?,
          workout_type_instance_id = ?,
          exercise_name = ?,
          sets = ?,
@@ -471,6 +493,9 @@ export async function updateExerciseFromCloud(
     [
       cloudExerciseInstanceId,
       remoteLocalExerciseInstanceId,
+      syncId,
+      syncVersion,
+      deletedAt,
       workoutId,
       exerciseName,
       sets,
@@ -488,6 +513,9 @@ export async function markExerciseSynced(
     exerciseId,
     cloudExerciseInstanceId,
     remoteLocalExerciseInstanceId = null,
+    syncId = null,
+    syncVersion = null,
+    deletedAt = null,
   }
 ) {
   await db.runAsync(
@@ -498,9 +526,19 @@ export async function markExerciseSynced(
            remote_local_exercise_instance_id,
            exercise_instance_id
          ),
+         sync_id = COALESCE(?, sync_id),
+         sync_version = COALESCE(?, sync_version),
+         deleted_at = ?,
          needs_sync = 0
      WHERE exercise_instance_id = ?;`,
-    [cloudExerciseInstanceId, remoteLocalExerciseInstanceId, exerciseId]
+    [
+      cloudExerciseInstanceId,
+      remoteLocalExerciseInstanceId,
+      syncId,
+      syncVersion,
+      deletedAt,
+      exerciseId,
+    ]
   );
 }
 
@@ -510,6 +548,9 @@ export async function updateExerciseCloudIdentity(
     exerciseId,
     cloudExerciseInstanceId,
     remoteLocalExerciseInstanceId = null,
+    syncId = null,
+    syncVersion = null,
+    deletedAt = null,
   }
 ) {
   await db.runAsync(
@@ -519,9 +560,19 @@ export async function updateExerciseCloudIdentity(
            ?,
            remote_local_exercise_instance_id,
            exercise_instance_id
-         )
+         ),
+         sync_id = COALESCE(?, sync_id),
+         sync_version = COALESCE(?, sync_version),
+         deleted_at = COALESCE(?, deleted_at)
      WHERE exercise_instance_id = ?;`,
-    [cloudExerciseInstanceId, remoteLocalExerciseInstanceId, exerciseId]
+    [
+      cloudExerciseInstanceId,
+      remoteLocalExerciseInstanceId,
+      syncId,
+      syncVersion,
+      deletedAt,
+      exerciseId,
+    ]
   );
 }
 
@@ -541,6 +592,9 @@ export async function getExerciseSyncMetadata(db, exerciseId) {
         exercise_instance_id,
         cloud_exercise_instance_id,
         remote_local_exercise_instance_id,
+        sync_id,
+        sync_version,
+        deleted_at,
         needs_sync
      FROM Exercise_Instance
      WHERE exercise_instance_id = ?;`,
@@ -554,6 +608,8 @@ export async function getQueuedExerciseInstanceDeletes(db) {
         exercise_instance_sync_delete_id,
         cloud_exercise_instance_id,
         remote_local_exercise_instance_id,
+        sync_id,
+        sync_version,
         deleted_at
      FROM Exercise_Instance_Sync_Delete
      ORDER BY exercise_instance_sync_delete_id ASC;`
@@ -565,6 +621,8 @@ export async function queueExerciseInstanceDeleteSync(
   {
     cloudExerciseInstanceId = null,
     remoteLocalExerciseInstanceId = null,
+    syncId = null,
+    syncVersion = 0,
     deletedAt,
   }
 ) {
@@ -572,9 +630,17 @@ export async function queueExerciseInstanceDeleteSync(
     `INSERT OR IGNORE INTO Exercise_Instance_Sync_Delete (
       cloud_exercise_instance_id,
       remote_local_exercise_instance_id,
+      sync_id,
+      sync_version,
       deleted_at
-    ) VALUES (?, ?, ?);`,
-    [cloudExerciseInstanceId, remoteLocalExerciseInstanceId, deletedAt]
+    ) VALUES (?, ?, ?, ?, ?);`,
+    [
+      cloudExerciseInstanceId,
+      remoteLocalExerciseInstanceId,
+      syncId,
+      syncVersion,
+      deletedAt,
+    ]
   );
 }
 
@@ -638,10 +704,13 @@ export async function createSet(
     note = null,
   }
 ) {
+  const syncVersion = createNextSyncVersion();
   return db.runAsync(
     `INSERT INTO "Set" (
       set_number,
       exercise_instance_id,
+      sync_id,
+      sync_version,
       date,
       personal_record,
       pause,
@@ -654,10 +723,11 @@ export async function createSet(
       amrap,
       note,
       needs_sync
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1);`,
+    ) VALUES (?, ?, ${SQLITE_UUID_SQL}, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1);`,
     [
       setNumber,
       exerciseId,
+      syncVersion,
       date,
       personalRecord,
       pause,
@@ -679,6 +749,9 @@ export async function getSetsForCloudSync(db) {
         sets_id,
         cloud_set_id,
         remote_local_set_id,
+        sync_id,
+        sync_version,
+        deleted_at,
         set_number,
         exercise_instance_id,
         date,
@@ -703,6 +776,9 @@ export async function createSetFromCloud(
   {
     cloudSetId,
     remoteLocalSetId,
+    syncId,
+    syncVersion,
+    deletedAt,
     exerciseId,
     setNumber,
     date,
@@ -722,6 +798,9 @@ export async function createSetFromCloud(
     `INSERT INTO "Set" (
       cloud_set_id,
       remote_local_set_id,
+      sync_id,
+      sync_version,
+      deleted_at,
       set_number,
       exercise_instance_id,
       date,
@@ -736,10 +815,13 @@ export async function createSetFromCloud(
       amrap,
       note,
       needs_sync
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0);`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0);`,
     [
       cloudSetId,
       remoteLocalSetId,
+      syncId,
+      syncVersion,
+      deletedAt,
       setNumber,
       exerciseId,
       date,
@@ -763,6 +845,9 @@ export async function updateSetFromCloud(
     setId,
     cloudSetId,
     remoteLocalSetId,
+    syncId,
+    syncVersion,
+    deletedAt,
     exerciseId,
     setNumber,
     date,
@@ -782,6 +867,9 @@ export async function updateSetFromCloud(
     `UPDATE "Set"
      SET cloud_set_id = ?,
          remote_local_set_id = ?,
+         sync_id = ?,
+         sync_version = ?,
+         deleted_at = ?,
          set_number = ?,
          exercise_instance_id = ?,
          date = ?,
@@ -800,6 +888,9 @@ export async function updateSetFromCloud(
     [
       cloudSetId,
       remoteLocalSetId,
+      syncId,
+      syncVersion,
+      deletedAt,
       setNumber,
       exerciseId,
       date,
@@ -820,7 +911,14 @@ export async function updateSetFromCloud(
 
 export async function markSetSynced(
   db,
-  { setId, cloudSetId, remoteLocalSetId = null }
+  {
+    setId,
+    cloudSetId,
+    remoteLocalSetId = null,
+    syncId = null,
+    syncVersion = null,
+    deletedAt = null,
+  }
 ) {
   await db.runAsync(
     `UPDATE "Set"
@@ -830,15 +928,25 @@ export async function markSetSynced(
            remote_local_set_id,
            sets_id
          ),
+         sync_id = COALESCE(?, sync_id),
+         sync_version = COALESCE(?, sync_version),
+         deleted_at = ?,
          needs_sync = 0
      WHERE sets_id = ?;`,
-    [cloudSetId, remoteLocalSetId, setId]
+    [cloudSetId, remoteLocalSetId, syncId, syncVersion, deletedAt, setId]
   );
 }
 
 export async function updateSetCloudIdentity(
   db,
-  { setId, cloudSetId, remoteLocalSetId = null }
+  {
+    setId,
+    cloudSetId,
+    remoteLocalSetId = null,
+    syncId = null,
+    syncVersion = null,
+    deletedAt = null,
+  }
 ) {
   await db.runAsync(
     `UPDATE "Set"
@@ -847,9 +955,12 @@ export async function updateSetCloudIdentity(
            ?,
            remote_local_set_id,
            sets_id
-         )
+         ),
+         sync_id = COALESCE(?, sync_id),
+         sync_version = COALESCE(?, sync_version),
+         deleted_at = COALESCE(?, deleted_at)
      WHERE sets_id = ?;`,
-    [cloudSetId, remoteLocalSetId, setId]
+    [cloudSetId, remoteLocalSetId, syncId, syncVersion, deletedAt, setId]
   );
 }
 
@@ -869,6 +980,9 @@ export async function getSetSyncMetadata(db, setId) {
         sets_id,
         cloud_set_id,
         remote_local_set_id,
+        sync_id,
+        sync_version,
+        deleted_at,
         needs_sync
      FROM "Set"
      WHERE sets_id = ?;`,
@@ -882,6 +996,8 @@ export async function getQueuedSetDeletes(db) {
         set_sync_delete_id,
         cloud_set_id,
         remote_local_set_id,
+        sync_id,
+        sync_version,
         deleted_at
      FROM Set_Sync_Delete
      ORDER BY set_sync_delete_id ASC;`
@@ -890,15 +1006,23 @@ export async function getQueuedSetDeletes(db) {
 
 export async function queueSetDeleteSync(
   db,
-  { cloudSetId = null, remoteLocalSetId = null, deletedAt }
+  {
+    cloudSetId = null,
+    remoteLocalSetId = null,
+    syncId = null,
+    syncVersion = 0,
+    deletedAt,
+  }
 ) {
   await db.runAsync(
     `INSERT OR IGNORE INTO Set_Sync_Delete (
       cloud_set_id,
       remote_local_set_id,
+      sync_id,
+      sync_version,
       deleted_at
-    ) VALUES (?, ?, ?);`,
-    [cloudSetId, remoteLocalSetId, deletedAt]
+    ) VALUES (?, ?, ?, ?, ?);`,
+    [cloudSetId, remoteLocalSetId, syncId, syncVersion, deletedAt]
   );
 }
 
@@ -957,6 +1081,7 @@ export async function refreshExerciseDerivedFieldsFromSets(db) {
 }
 
 export async function updateExerciseSetCount(db, exerciseId) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Exercise_Instance
      SET sets = (
@@ -964,13 +1089,17 @@ export async function updateExerciseSetCount(db, exerciseId) {
        FROM "Set"
        WHERE "Set".exercise_instance_id = Exercise_Instance.exercise_instance_id
      ),
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE exercise_instance_id = ?;`,
-    [exerciseId]
+    [syncVersion, exerciseId]
   );
 }
 
 export async function updateExerciseDoneFromSets(db, exerciseId) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Exercise_Instance
      SET done = (
@@ -981,9 +1110,12 @@ export async function updateExerciseDoneFromSets(db, exerciseId) {
            AND "Set".done = 0
        )
      ),
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE exercise_instance_id = ?;`,
-    [exerciseId]
+    [syncVersion, exerciseId]
   );
 }
 
@@ -991,36 +1123,49 @@ export async function updateExerciseVisibleColumns(
   db,
   { exerciseId, columns }
 ) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Exercise_Instance
      SET visible_columns = ?,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE exercise_instance_id = ?;`,
-    [JSON.stringify(columns), exerciseId]
+    [JSON.stringify(columns), syncVersion, exerciseId]
   );
 }
 
 export async function updateExerciseNote(db, { exerciseId, note }) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Exercise_Instance
      SET note = ?,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE exercise_instance_id = ?;`,
-    [note, exerciseId]
+    [note, syncVersion, exerciseId]
   );
 }
 
 export async function updateSetDone(db, { setId, done }) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE "Set"
      SET done = ?,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE sets_id = ?;`,
-    [done ? 1 : 0, setId]
+    [done ? 1 : 0, syncVersion, setId]
   );
 }
 
 export async function updateExerciseDoneBySet(db, setId) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Exercise_Instance
      SET done = (
@@ -1031,17 +1176,21 @@ export async function updateExerciseDoneBySet(db, setId) {
            AND "Set".done = 0
        )
      ),
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE exercise_instance_id = (
        SELECT exercise_instance_id
        FROM "Set"
        WHERE sets_id = ?
      );`,
-    [setId]
+    [syncVersion, setId]
   );
 }
 
 export async function updateWorkoutDoneFromExercises(db, workoutId) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Workout_Type_Instance
      SET done = (
@@ -1052,9 +1201,12 @@ export async function updateWorkoutDoneFromExercises(db, workoutId) {
            AND Exercise_Instance.done = 0
        )
      ),
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE workout_id = ?;`,
-    [workoutId]
+    [syncVersion, workoutId]
   );
 }
 
@@ -1087,22 +1239,30 @@ export async function getSetIdsByExercise(db, exerciseId) {
 }
 
 export async function updateSetNumber(db, { setId, setNumber }) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE "Set"
      SET set_number = ?,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE sets_id = ?;`,
-    [setNumber, setId]
+    [setNumber, syncVersion, setId]
   );
 }
 
 export async function updateSetField(db, { field, value, setId }) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE "Set"
      SET ${field} = ?,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE sets_id = ?;`,
-    [value, setId]
+    [value, syncVersion, setId]
   );
 }
 
@@ -1140,6 +1300,7 @@ export async function updateSetByExerciseAndNumber(
     note,
   }
 ) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE "Set"
      SET pause = ?,
@@ -1151,6 +1312,9 @@ export async function updateSetByExerciseAndNumber(
          failed = ?,
          amrap = ?,
          note = ?,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE exercise_instance_id = ?
        AND set_number = ?;`,
@@ -1164,6 +1328,7 @@ export async function updateSetByExerciseAndNumber(
       failed,
       amrap,
       note,
+      syncVersion,
       exerciseId,
       setNumber,
     ]
@@ -1171,12 +1336,16 @@ export async function updateSetByExerciseAndNumber(
 }
 
 export async function updateExerciseDone(db, { exerciseId, done }) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Exercise_Instance
      SET done = ?,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE exercise_instance_id = ?;`,
-    [done ? 1 : 0, exerciseId]
+    [done ? 1 : 0, syncVersion, exerciseId]
   );
 }
 

@@ -2,7 +2,7 @@
   "expo": {
     "name": "FitVen",
     "slug": "programapp",
-    "version": "0.6.7-fix-set-cloud-source-of-truth.1",
+    "version": "0.6.8-fix-local-first-versioned-sync.1",
     "orientation": "portrait",
     "icon": "./assets/icon_v1.0.png",
     "userInterfaceStyle": "dark",

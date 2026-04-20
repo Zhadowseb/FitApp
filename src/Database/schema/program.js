@@ -9,6 +9,9 @@ export const programSchemaSql = `
     program_id INTEGER PRIMARY KEY AUTOINCREMENT,
     cloud_program_id INTEGER,
     remote_local_program_id INTEGER,
+    sync_id TEXT,
+    sync_version INTEGER NOT NULL DEFAULT 0,
+    deleted_at TEXT,
     program_name TEXT,
     start_date TEXT NOT NULL,
     status TEXT
@@ -20,7 +23,9 @@ export const programSchemaSql = `
 
   CREATE TABLE IF NOT EXISTS Program_Sync_Delete (
     program_sync_delete_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    cloud_program_id INTEGER NOT NULL UNIQUE,
+    cloud_program_id INTEGER UNIQUE,
+    sync_id TEXT,
+    sync_version INTEGER NOT NULL DEFAULT 0,
     deleted_at TEXT
   );
 
@@ -37,6 +42,9 @@ export const programSchemaSql = `
       mesocycle_id INTEGER PRIMARY KEY AUTOINCREMENT,
       cloud_mesocycle_id INTEGER,
       remote_local_mesocycle_id INTEGER,
+      sync_id TEXT,
+      sync_version INTEGER NOT NULL DEFAULT 0,
+      deleted_at TEXT,
       program_id INTEGER NOT NULL,
       mesocycle_number INTEGER NOT NULL,
       weeks INTEGER NOT NULL DEFAULT 0,
@@ -47,13 +55,18 @@ export const programSchemaSql = `
 
   CREATE TABLE IF NOT EXISTS Mesocycle_Sync_Delete (
     mesocycle_sync_delete_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    cloud_mesocycle_id INTEGER NOT NULL UNIQUE,
+    cloud_mesocycle_id INTEGER UNIQUE,
+    sync_id TEXT,
+    sync_version INTEGER NOT NULL DEFAULT 0,
     deleted_at TEXT
   );
 
   CREATE TABLE IF NOT EXISTS Microcycle(
       microcycle_id INTEGER PRIMARY KEY AUTOINCREMENT,
       cloud_microcycle_id INTEGER,
+      sync_id TEXT,
+      sync_version INTEGER NOT NULL DEFAULT 0,
+      deleted_at TEXT,
       mesocycle_id INTEGER NOT NULL,
       microcycle_number INTEGER NOT NULL,
       focus TEXT DEFAULT "No focus",
@@ -63,7 +76,9 @@ export const programSchemaSql = `
 
   CREATE TABLE IF NOT EXISTS Microcycle_Sync_Delete (
     microcycle_sync_delete_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    cloud_microcycle_id INTEGER NOT NULL UNIQUE,
+    cloud_microcycle_id INTEGER UNIQUE,
+    sync_id TEXT,
+    sync_version INTEGER NOT NULL DEFAULT 0,
     deleted_at TEXT
   );
 
@@ -71,6 +86,9 @@ export const programSchemaSql = `
       day_id INTEGER PRIMARY KEY AUTOINCREMENT,
       cloud_day_id INTEGER,
       remote_local_day_id INTEGER,
+      sync_id TEXT,
+      sync_version INTEGER NOT NULL DEFAULT 0,
+      deleted_at TEXT,
       microcycle_id INTEGER NOT NULL,
       program_id INTEGER NOT NULL,
       Weekday TEXT NOT NULL,
@@ -89,6 +107,9 @@ export const programSchemaSql = `
       workout_id INTEGER PRIMARY KEY AUTOINCREMENT,
       cloud_workout_type_instance_id INTEGER,
       remote_local_workout_type_instance_id INTEGER,
+      sync_id TEXT,
+      sync_version INTEGER NOT NULL DEFAULT 0,
+      deleted_at TEXT,
       day_id INTEGER NOT NULL,
       workout_type TEXT,
       date TEXT NOT NULL,
@@ -107,6 +128,8 @@ export const programSchemaSql = `
     workout_type_instance_sync_delete_id INTEGER PRIMARY KEY AUTOINCREMENT,
     cloud_workout_type_instance_id INTEGER UNIQUE,
     remote_local_workout_type_instance_id INTEGER UNIQUE,
+    sync_id TEXT,
+    sync_version INTEGER NOT NULL DEFAULT 0,
     deleted_at TEXT
   );
 `;

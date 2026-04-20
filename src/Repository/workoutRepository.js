@@ -1,3 +1,5 @@
+import { createNextSyncVersion, SQLITE_UUID_SQL } from "../Utils/syncUtils";
+
 export async function getWorkoutHierarchyIds(db, workoutId) {
   return db.getFirstAsync(
     `SELECT
@@ -54,21 +56,32 @@ export async function getWorkoutTimerState(db, workoutId) {
 }
 
 export async function clearActiveWorkoutFlags(db) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Workout_Type_Instance
      SET is_active = 0,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE is_active != 0;`
+    ,
+    [syncVersion]
   );
 }
 
 export async function normalizeActiveWorkoutFlags(db) {
+  const resetSyncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Workout_Type_Instance
      SET is_active = 0,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE is_active = 1
-       AND (timer_start IS NULL OR done = 1);`
+       AND (timer_start IS NULL OR done = 1);`,
+    [resetSyncVersion]
   );
 
   const activeWorkouts = await db.getAllAsync(
@@ -87,23 +100,31 @@ export async function normalizeActiveWorkoutFlags(db) {
   const [workoutToKeep, ...staleWorkouts] = activeWorkouts;
 
   for (const staleWorkout of staleWorkouts) {
+    const syncVersion = createNextSyncVersion();
     await db.runAsync(
       `UPDATE Workout_Type_Instance
        SET is_active = 0,
+           sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+           sync_version = ?,
+           deleted_at = NULL,
            needs_sync = 1
        WHERE workout_id = ?;`,
-      [staleWorkout.workout_id]
+      [syncVersion, staleWorkout.workout_id]
     );
   }
 }
 
 export async function setWorkoutActiveFlag(db, { workoutId, isActive }) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Workout_Type_Instance
      SET is_active = ?,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE workout_id = ?;`,
-    [isActive ? 1 : 0, workoutId]
+    [isActive ? 1 : 0, syncVersion, workoutId]
   );
 }
 
@@ -122,23 +143,31 @@ export async function persistWorkoutTimerState(
   db,
   { workoutId, timerStart, elapsedTime }
 ) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Workout_Type_Instance
      SET timer_start = ?,
          elapsed_time = ?,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE workout_id = ?;`,
-    [timerStart, elapsedTime, workoutId]
+    [timerStart, elapsedTime, syncVersion, workoutId]
   );
 }
 
 export async function updateWorkoutElapsedTime(db, { workoutId, elapsedTime }) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Workout_Type_Instance
      SET elapsed_time = ?,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE workout_id = ?;`,
-    [elapsedTime, workoutId]
+    [elapsedTime, syncVersion, workoutId]
   );
 }
 
@@ -152,12 +181,16 @@ export async function getWorkoutOriginalStartTime(db, workoutId) {
 }
 
 export async function setWorkoutOriginalStartTime(db, { workoutId, startTime }) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Workout_Type_Instance
      SET original_start_time = ?,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE workout_id = ?;`,
-    [startTime, workoutId]
+    [startTime, syncVersion, workoutId]
   );
 }
 
@@ -193,16 +226,21 @@ export async function stopWorkoutStopwatch(
 }
 
 export async function updateWorkoutDone(db, { workoutId, done }) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Workout_Type_Instance
      SET done = ?,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE workout_id = ?;`,
-    [done ? 1 : 0, workoutId]
+    [done ? 1 : 0, syncVersion, workoutId]
   );
 }
 
 export async function resetWorkoutStateFields(db, workoutId) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Workout_Type_Instance
      SET done = 0,
@@ -210,13 +248,17 @@ export async function resetWorkoutStateFields(db, workoutId) {
          original_start_time = NULL,
          timer_start = NULL,
          elapsed_time = 0,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE workout_id = ?;`,
-    [workoutId]
+    [syncVersion, workoutId]
   );
 }
 
 export async function updateDayDoneFromWorkouts(db, dayId) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Day
      SET done = (
@@ -227,13 +269,17 @@ export async function updateDayDoneFromWorkouts(db, dayId) {
            AND Workout_Type_Instance.done = 0
        )
      ),
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE day_id = ?;`,
-    [dayId]
+    [syncVersion, dayId]
   );
 }
 
 export async function updateMicrocycleDoneFromWorkouts(db, microcycleId) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Microcycle
      SET done = (
@@ -245,13 +291,17 @@ export async function updateMicrocycleDoneFromWorkouts(db, microcycleId) {
            AND Workout_Type_Instance.done = 0
        )
      ),
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE microcycle_id = ?;`,
-    [microcycleId]
+    [syncVersion, microcycleId]
   );
 }
 
 export async function updateMesocycleDoneFromMicrocycles(db, mesocycleId) {
+  const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Mesocycle
      SET done = (
@@ -262,8 +312,11 @@ export async function updateMesocycleDoneFromMicrocycles(db, mesocycleId) {
            AND Microcycle.done = 0
        )
      ),
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
          needs_sync = 1
      WHERE mesocycle_id = ?;`,
-    [mesocycleId]
+    [syncVersion, mesocycleId]
   );
 }

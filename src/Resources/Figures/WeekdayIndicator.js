@@ -9,6 +9,7 @@ const WeekdayIndicator = ({
   dateLabel,
   active,
   completed,
+  overdue = false,
   icon: Icon,
   iconLabel,
   workoutCards = [],
@@ -28,6 +29,7 @@ const WeekdayIndicator = ({
   const cardBorder = theme.cardBorder ?? theme.iconColor ?? theme.text;
   const activeBorder = theme.primary ?? cardBorder;
   const completedBorder = theme.secondary ?? cardBorder;
+  const dangerColor = theme.danger ?? Colors.dark.danger ?? "#ba0000ff";
   const activeText = theme.primaryDark ?? titleColor;
   const completedText = theme.cardBackground ?? theme.background ?? titleColor;
   const badgeBackgroundColor = active
@@ -96,6 +98,16 @@ const WeekdayIndicator = ({
         <View style={styles.workoutCards}>
           {workoutCards.map((workoutCard, index) => {
             const WorkoutIcon = workoutCard.icon;
+            const workoutSurfaceColor = workoutCard.overdue
+              ? dangerColor
+              : workoutCard.completed
+                ? theme.secondary
+                : theme.primary;
+            const workoutBorderColor = workoutCard.overdue
+              ? dangerColor
+              : workoutCard.completed
+                ? theme.secondaryDark
+                : theme.primaryDark;
 
             return (
               <TouchableOpacity
@@ -110,12 +122,8 @@ const WeekdayIndicator = ({
                   active && styles.activeCircle,
                   index < workoutCards.length - 1 && styles.workoutCardSpacing,
                   {
-                    backgroundColor: workoutCard.completed
-                      ? theme.secondary
-                      : theme.primary,
-                    borderColor: workoutCard.completed
-                      ? theme.secondaryDark
-                      : theme.primaryDark,
+                    backgroundColor: workoutSurfaceColor,
+                    borderColor: workoutBorderColor,
                   },
                 ]}
               >
@@ -153,8 +161,16 @@ const WeekdayIndicator = ({
             styles.circle,
             active && styles.activeCircle,
             {
-              backgroundColor: completed ? theme.secondary : theme.primary,
-              borderColor: completed ? theme.secondaryDark : theme.primaryDark,
+              backgroundColor: overdue
+                ? dangerColor
+                : completed
+                  ? theme.secondary
+                  : theme.primary,
+              borderColor: overdue
+                ? dangerColor
+                : completed
+                  ? theme.secondaryDark
+                  : theme.primaryDark,
             },
           ]}
         >

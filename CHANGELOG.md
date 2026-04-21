@@ -1,6 +1,11 @@
 # Changelog
 
-## [0.6.8] - Unreleased
+## [0.7.0] - 2026-04-21
+### Changed
+- Added overdue workout highlighting in the week indicator, so unfinished workouts from previous days now use the danger color.
+
+---
+## [0.6.8] - Released with 0.7.0
 ### Changed
 - Restored the normal local-first `Set` sync flow so authenticated sync no longer treats cloud rows as the authoritative source for local SQLite state.
 - Added local SQLite support for `sync_id`, `sync_version`, and `deleted_at` across the program hierarchy and strength workout entities, including safe local backfills for existing rows.
@@ -8,45 +13,45 @@
 - Updated local edit flows so legacy rows that still lack a `sync_id` get one automatically on first local change, which lets older cloud-backed data enter the new sync model without manual repair.
 
 ---
-## [0.6.7] - Unreleased
+## [0.6.7] - Released with 0.7.0
 ### Changed
 - Temporarily made cloud `Set` rows authoritative during authenticated sync, so local SQLite now pulls cloud sets down, removes stray local-only set rows, and refreshes exercise set counts/completion from the downloaded data.
 
 ---
-## [0.6.6] - Unreleased
+## [0.6.6] - Released with 0.7.0
 ### Changed
 - Added a subtle swipe hint under the ProgramOverviewPage block carousel so it is easier to see that the mesocycle list scrolls horizontally.
 
 ---
-## [0.6.5] - Unreleased
+## [0.6.5] - Released with 0.7.0
 ### Changed
 - Fixed ProgramPage delete navigation so returning from a deleted program now replaces the route instead of leaving a broken overview screen in the stack.
 - Hardened SQLite sync transactions to use savepoints, which avoids nested transaction failures during login and cloud sync startup.
 - Repaired the Mesocycle cloud insert mapping so older synced programs no longer fail with a column/value mismatch.
 
 ---
-## [0.6.4] - Unreleased
+## [0.6.4] - Released with 0.7.0
 ### Changed
 - Describe pending changes here.
 
 ---
-## [0.6.3] - Unreleased
+## [0.6.3] - Released with 0.7.0
 ### Changed
 - Realigned the post-`0.5.10` development line to `0.6.x`, so new pending work no longer looks like extra `0.5.11+` patches after the `0.5.10` release.
 - Updated the release workflow so older pending sections can be marked `Released with x.y.z` when one stable release bundles several earlier work branches.
 
 ---
-## [0.6.2] - Unreleased
+## [0.6.2] - Released with 0.7.0
 ### Changed
 - Refreshed ProgramPage cards with a larger hero section, cleaner metric panels, and automatic refresh when returning from Program Overview.
 
 ---
-## [0.6.1] - Unreleased
+## [0.6.1] - Released with 0.7.0
 ### Changed
 - HomePage quick access is being reshaped into a more informative dashboard layout so programs and exercise tools feel like overview surfaces instead of standalone buttons.
 
 ---
-## [0.6.0] - Unreleased
+## [0.6.0] - Released with 0.7.0
 ### Changed
 - Serialized shared SQLite transactions used by background sync and reconcile flows, so overlapping sync jobs no longer try to open nested transactions on the same connection.
 

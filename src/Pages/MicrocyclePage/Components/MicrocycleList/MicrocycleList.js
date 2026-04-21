@@ -64,6 +64,9 @@ const MicrocycleList = ({
     COPY: "copy",
   };
 
+  const isWorkoutCompleted = (workout) =>
+    workout.done === 1 || workout.done === true;
+
 
   const loadMicrocycles = async () => {
     try {
@@ -93,6 +96,9 @@ const MicrocycleList = ({
       "Sunday",
     ];
     const weekDayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0);
+    const today = formatDate(todayDate);
 
     for (const mc of microcycles) {
       const days = [];
@@ -103,20 +109,25 @@ const MicrocycleList = ({
           weekday: weekDayNames[i],
         });
         const date = dayRow?.date ?? buildMicrocycleDate(mc.period_start, i);
+        const dayDate = parseCustomDate(date);
+        dayDate.setHours(0, 0, 0, 0);
+        const isPastDay = dayDate < todayDate;
         const workouts = dayRow?.workouts ?? [];
         const completed =
           workouts.length > 0 &&
-          workouts.every((workout) => workout.done === 1);
+          workouts.every((workout) => isWorkoutCompleted(workout));
 
         const workoutCards = workouts.map((workout) => {
           const workoutType = workout.workout_type ?? workout.label;
           const found = getWorkoutIconConfig(workoutType);
+          const workoutCompleted = isWorkoutCompleted(workout);
 
           return {
             key: workout.workout_id,
             icon: found?.Icon ?? null,
             iconLabel: found?.short ?? workout.label ?? workoutType,
-            completed: workout.done === 1,
+            completed: workoutCompleted,
+            overdue: isPastDay && !workoutCompleted,
             workout,
           };
         });
@@ -132,7 +143,7 @@ const MicrocycleList = ({
           day: weekDayNames[i],
           date,
           dateLabel: date.slice(0, 5),
-          active: date === formatDate(new Date()),
+          active: date === today,
           completed,
           icon,
           iconLabel,

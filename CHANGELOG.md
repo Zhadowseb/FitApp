@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.8.0] - Unreleased
+### Changed
+- Refreshed the Create Program modal with themed inputs and a start-week picker that supports direct week selection and year navigation.
+
+---
 ## [0.7.0] - 2026-04-21
 ### Changed
 - Added overdue workout highlighting in the week indicator, so unfinished workouts from previous days now use the danger color.

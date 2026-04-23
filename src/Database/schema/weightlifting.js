@@ -40,7 +40,6 @@ export const weightliftingSchemaSql = `
       deleted_at TEXT,
       set_number INTEGER NOT NULL,
       exercise_instance_id INTEGER NOT NULL,
-      date TEXT,
 
       personal_record INTEGER NOT NULL DEFAULT 0,
 

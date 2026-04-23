@@ -50,7 +50,7 @@ const EXERCISE_INSTANCE_CLOUD_SYNC_SELECT =
   "id, user_id, local_exercise_instance_id, sync_id, sync_version, deleted_at, cloud_workout_type_instance_id, exercise_name, sets, visible_columns, note, done";
 const SET_CLOUD_TABLE = "set";
 const SET_CLOUD_SYNC_SELECT =
-  "id, user_id, local_set_id, sync_id, sync_version, deleted_at, cloud_exercise_instance_id, set_number, date, personal_record, pause, rpe, weight, rm_percentage, reps, done, failed, amrap, note";
+  "id, user_id, local_set_id, sync_id, sync_version, deleted_at, cloud_exercise_instance_id, set_number, personal_record, pause, rpe, weight, rm_percentage, reps, done, failed, amrap, note";
 const EXERCISE_VISIBLE_COLUMN_KEYS = [
   "note",
   "rest",
@@ -1060,14 +1060,6 @@ function resolveSetCloudLocalId(set) {
   );
 }
 
-function normalizeSetDate(value) {
-  return normalizeLocalDateString(value);
-}
-
-function normalizeSetDateForCloud(value) {
-  return normalizeIsoDateString(value);
-}
-
 function getComparableSetSnapshot(set) {
   return {
     local_set_id: normalizeOptionalInteger(set?.local_set_id, null),
@@ -1076,7 +1068,6 @@ function getComparableSetSnapshot(set) {
       null
     ),
     set_number: normalizeOptionalInteger(set?.set_number, null),
-    date: normalizeSetDate(set?.date),
     personal_record: normalizeBooleanFlag(set?.personal_record),
     pause: normalizeOptionalInteger(set?.pause, null),
     rpe: normalizeOptionalInteger(set?.rpe, null),
@@ -1098,7 +1089,6 @@ function areComparableSetsEqual(leftSet, rightSet) {
     leftSnapshot.cloud_exercise_instance_id ===
       rightSnapshot.cloud_exercise_instance_id &&
     leftSnapshot.set_number === rightSnapshot.set_number &&
-    leftSnapshot.date === rightSnapshot.date &&
     leftSnapshot.personal_record === rightSnapshot.personal_record &&
     leftSnapshot.pause === rightSnapshot.pause &&
     leftSnapshot.rpe === rightSnapshot.rpe &&
@@ -1121,7 +1111,6 @@ function buildCloudSetPayload(localSet, userId, cloudExerciseInstanceId) {
     deleted_at: normalizeDeletedAt(localSet?.deleted_at),
     cloud_exercise_instance_id: cloudExerciseInstanceId,
     set_number: normalizeOptionalInteger(localSet.set_number, null),
-    date: normalizeSetDateForCloud(localSet.date),
     personal_record: normalizeBooleanFlag(localSet.personal_record),
     pause: normalizeOptionalInteger(localSet.pause, null),
     rpe: normalizeOptionalInteger(localSet.rpe, null),
@@ -3907,7 +3896,6 @@ async function reconcileSetsFromCloud(db, userId) {
           deletedAt: normalizeDeletedAt(cloudSet.deleted_at),
           exerciseId: parentExercise.exercise_instance_id,
           setNumber: comparableCloudSet.set_number,
-          date: comparableCloudSet.date,
           personalRecord: comparableCloudSet.personal_record,
           pause: comparableCloudSet.pause,
           rpe: comparableCloudSet.rpe,
@@ -3960,7 +3948,6 @@ async function reconcileSetsFromCloud(db, userId) {
             deletedAt: normalizeDeletedAt(cloudSet.deleted_at),
             exerciseId: parentExercise.exercise_instance_id,
             setNumber: comparableCloudSet.set_number,
-            date: comparableCloudSet.date,
             personalRecord: comparableCloudSet.personal_record,
             pause: comparableCloudSet.pause,
             rpe: comparableCloudSet.rpe,
@@ -4030,7 +4017,6 @@ async function reconcileSetsFromCloud(db, userId) {
         deletedAt: normalizeDeletedAt(cloudSet.deleted_at),
         exerciseId: parentExercise.exercise_instance_id,
         setNumber: comparableCloudSet.set_number,
-        date: comparableCloudSet.date,
         personalRecord: comparableCloudSet.personal_record,
         pause: comparableCloudSet.pause,
         rpe: comparableCloudSet.rpe,
@@ -4198,7 +4184,6 @@ async function cloneWorkoutContents(db, { sourceWorkoutId, targetWorkoutId }) {
       await weightliftingRepository.createSet(db, {
         setNumber: set.set_number,
         exerciseId: exerciseResult.lastInsertRowId,
-        date: set.date,
         personalRecord: set.personal_record,
         pause: set.pause,
         rpe: set.rpe,

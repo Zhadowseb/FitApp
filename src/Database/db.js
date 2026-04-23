@@ -317,8 +317,14 @@ async function migrateSetSchema(db) {
 
   const hasLegacyExerciseColumn = hasColumn(sourceColumns, "exercise_id");
   const hasNewExerciseColumn = hasColumn(sourceColumns, "exercise_instance_id");
+  const hasLegacyDateColumn = hasColumn(sourceColumns, "date");
 
-  if (sourceTable === "Set" && !hasLegacyExerciseColumn && hasNewExerciseColumn) {
+  if (
+    sourceTable === "Set" &&
+    !hasLegacyExerciseColumn &&
+    hasNewExerciseColumn &&
+    !hasLegacyDateColumn
+  ) {
     return;
   }
 
@@ -342,9 +348,11 @@ async function migrateSetSchema(db) {
         sets_id INTEGER PRIMARY KEY AUTOINCREMENT,
         cloud_set_id INTEGER,
         remote_local_set_id INTEGER,
+        sync_id TEXT,
+        sync_version INTEGER NOT NULL DEFAULT 0,
+        deleted_at TEXT,
         set_number INTEGER NOT NULL,
         exercise_instance_id INTEGER NOT NULL,
-        date TEXT,
         personal_record INTEGER NOT NULL DEFAULT 0,
         pause INTEGER,
         rpe INTEGER,
@@ -362,9 +370,11 @@ async function migrateSetSchema(db) {
         sets_id,
         cloud_set_id,
         remote_local_set_id,
+        sync_id,
+        sync_version,
+        deleted_at,
         set_number,
         exercise_instance_id,
-        date,
         personal_record,
         pause,
         rpe,
@@ -381,9 +391,11 @@ async function migrateSetSchema(db) {
         sets_id,
         ${hasColumn(sourceColumns, "cloud_set_id") ? "cloud_set_id" : "NULL"},
         ${hasColumn(sourceColumns, "remote_local_set_id") ? "remote_local_set_id" : "NULL"},
+        ${hasColumn(sourceColumns, "sync_id") ? "sync_id" : "NULL"},
+        ${hasColumn(sourceColumns, "sync_version") ? "COALESCE(sync_version, 0)" : "0"},
+        ${hasColumn(sourceColumns, "deleted_at") ? "deleted_at" : "NULL"},
         set_number,
         ${exerciseColumn},
-        ${hasColumn(sourceColumns, "date") ? "date" : "NULL"},
         ${hasColumn(sourceColumns, "personal_record") ? "COALESCE(personal_record, 0)" : "0"},
         ${hasColumn(sourceColumns, "pause") ? "pause" : "NULL"},
         ${hasColumn(sourceColumns, "rpe") ? "rpe" : "NULL"},
@@ -1180,7 +1192,6 @@ export async function initializeDatabase(db) {
     ["sync_id", "TEXT"],
     ["sync_version", "INTEGER NOT NULL DEFAULT 0"],
     ["deleted_at", "TEXT"],
-    ["date", "TEXT"],
     ["personal_record", "INTEGER NOT NULL DEFAULT 0"],
     ["pause", "INTEGER"],
     ["rpe", "INTEGER"],

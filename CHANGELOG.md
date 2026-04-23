@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.8.1] - Unreleased
+### Changed
+- Removed the unused local `Set.date` field and set cloud-sync mapping so set dates are derived from the owning workout/day instead of duplicated on each set.
+
+---
 ## [0.8.0] - Unreleased
 ### Changed
 - Refreshed the Create Program modal with themed inputs and a start-week picker that supports direct week selection and year navigation.

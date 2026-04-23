@@ -49,7 +49,7 @@ export default function App() {
 
   return (
     <>
-    <ThemedView>
+    <ThemedView safe={["top", "left", "right"]}>
 
       <ThemedHeader
         right={

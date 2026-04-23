@@ -6,7 +6,6 @@ import { useSQLiteContext } from "expo-sqlite";
 
 import styles from './HomePageStyle';
 import { Colors } from '../../Resources/GlobalStyling/colors';
-import Male from '../../Resources/Icons/UI-icons/Male';
 import FeedbackModal from './Components/FeedbackModal/FeedbackModal';
 import TodayProgramsShortcut from './Components/TodayProgramsShortcut/TodayProgramsShortcut';
 import {
@@ -16,7 +15,6 @@ import {
 
 import { 
   ThemedView,  
-  ThemedHeader,
   ThemedText,
   ThemedTitle,
 } from "../../Resources/ThemedComponents";
@@ -34,7 +32,6 @@ export default function App() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
   const { user } = useAuth();
-  const headerEyebrowColor = theme.quietText ?? theme.iconColor;
   const primaryColor = theme.primary ?? "#f7742e";
   const secondaryColor = theme.secondary ?? "#60daac";
   const cardSurface = theme.cardBackground ?? theme.background;
@@ -109,49 +106,7 @@ export default function App() {
   ];
 
   return (
-    <ThemedView style={styles.container}>
-      <ThemedHeader
-        showBack={false}
-        right={
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate("ProfilePage")}
-          >
-            <View
-              style={[
-                styles.headerAvatar,
-                {
-                  backgroundColor: theme.uiBackground ?? theme.cardBackground,
-                  borderColor: theme.cardBorder ?? theme.border,
-                },
-              ]}
-            >
-              <Male width={22} height={22} color={theme.primary} />
-            </View>
-          </TouchableOpacity>
-        }
-      >
-        <View style={styles.pageHeaderTitleGroup}>
-          <ThemedText
-            size={10}
-            style={[
-              styles.pageHeaderTitleEyebrow,
-              { color: headerEyebrowColor },
-            ]}
-          >
-            FitVen
-          </ThemedText>
-
-          <ThemedTitle
-            type="h3"
-            style={styles.pageHeaderTitleMain}
-            numberOfLines={1}
-          >
-            Home
-          </ThemedTitle>
-        </View>
-      </ThemedHeader>
-
+    <ThemedView safe={["top", "left", "right"]} style={styles.container}>
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}

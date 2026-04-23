@@ -278,7 +278,7 @@ const ProgramOverviewPage = ( {route} ) => {
 
   return (
     <>
-    <ThemedView>
+    <ThemedView safe={["top", "left", "right"]}>
         <ThemedHeader
             right={
                 <TouchableOpacity onPress={() => {

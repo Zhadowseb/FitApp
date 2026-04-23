@@ -6,33 +6,10 @@ export default StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingTop: 10,
+    paddingTop: 16,
   },
   contentContainer: {
     paddingBottom: 28,
-  },
-  headerAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    overflow: "hidden",
-  },
-  pageHeaderTitleGroup: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pageHeaderTitleEyebrow: {
-    fontWeight: "800",
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    marginBottom: 2,
-  },
-  pageHeaderTitleMain: {
-    textAlign: "center",
-    lineHeight: 26,
   },
   quickAccessSection: {
     marginHorizontal: 18,

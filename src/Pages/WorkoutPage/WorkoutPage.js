@@ -114,7 +114,7 @@ const WorkoutPage = ({ route }) => {
   };
 
   return (
-    <ThemedView>
+    <ThemedView safe={["top", "left", "right"]}>
       <ThemedHeader
         right={
           <TouchableOpacity

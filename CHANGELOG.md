@@ -1,11 +1,16 @@
 # Changelog
 
-## [0.8.1] - Unreleased
+## [0.9.0] - 2026-04-24
+### Changed
+- Replaced the HomePage top header with a global bottom navigation bar for authenticated screens, adding persistent Home and Profile actions across the app.
+
+---
+## [0.8.1] - Released with 0.9.0
 ### Changed
 - Removed the unused local `Set.date` field and set cloud-sync mapping so set dates are derived from the owning workout/day instead of duplicated on each set.
 
 ---
-## [0.8.0] - Unreleased
+## [0.8.0] - Released with 0.9.0
 ### Changed
 - Refreshed the Create Program modal with themed inputs and a start-week picker that supports direct week selection and year navigation.
 

@@ -1,9 +1,14 @@
-import { useEffect } from 'react';
-import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
+import { useEffect, useState } from 'react';
+import {
+  NavigationContainer,
+  DefaultTheme,
+  DarkTheme,
+  createNavigationContainerRef,
+} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SQLiteProvider } from 'expo-sqlite';
 import { initializeDatabase } from './src/Database/db';
-import { useColorScheme } from "react-native"
+import { View, useColorScheme } from "react-native"
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as TaskManager from 'expo-task-manager';
 
@@ -21,7 +26,11 @@ import SetPage from './src/Pages/SetPage/SetPage';
 import ExerciseLibraryPage from "./src/Pages/ExerciseLibraryPage/ExerciseLibraryPage";
 
 import { Colors } from './src/Resources/GlobalStyling/colors';
-import { ThemedText, ThemedView } from './src/Resources/ThemedComponents';
+import {
+  ThemedBottomNavigation,
+  ThemedText,
+  ThemedView,
+} from './src/Resources/ThemedComponents';
 import {
   getActiveDatabaseName,
   getDatabaseNameForUserId,
@@ -72,10 +81,13 @@ TaskManager.defineTask(locationService.RUN_LOCATION_TASK, async ({ data, error }
 
 
 const Stack = createNativeStackNavigator();
+const navigationRef = createNavigationContainerRef();
+
 function RootNavigator() {
   const colorScheme = useColorScheme()
   const theme = Colors[colorScheme] ?? Colors.light
   const { isAuthenticated, isAuthLoading } = useAuth();
+  const [currentRouteName, setCurrentRouteName] = useState(null);
 
   const navTheme =
     colorScheme === "dark"
@@ -109,41 +121,62 @@ function RootNavigator() {
       </ThemedView>
     );
   }
+
+  const syncCurrentRoute = () => {
+    const nextRouteName = navigationRef.getCurrentRoute()?.name ?? null;
+    setCurrentRouteName(nextRouteName);
+  };
   
   return (
-    <NavigationContainer theme={navTheme}>
-      <Stack.Navigator
-            key={isAuthenticated ? "app" : "auth"}
-            initialRouteName={isAuthenticated ? 'HomePage' : 'LoginPage'}
-            screenOptions={{ 
-              headerShown: true,
-              headerStyle: {
-                backgroundColor: theme.background
-              },
-              contentStyle: {
-                backgroundColor: theme.background
-              }
-            }}>
-        {isAuthenticated ? (
-          <>
-            <Stack.Screen name="HomePage" component={HomePage} options={{ headerShown: false }} />
-            <Stack.Screen name="ProfilePage" component={ProfilePage} options={{ headerShown: false }} />
-            <Stack.Screen name="ProgramPage" component={ProgramPage} options={{headerShown: false}} />
-            <Stack.Screen name="ProgramOverviewPage" component={ProgramOverviewPage} options={{headerShown: false}} />
-            <Stack.Screen name="MicrocyclePage" component={MicrocyclePage} options={{headerShown: false}} />
-            <Stack.Screen name="WeekPage" component={WeekPage} options={{headerShown: false}} />
-            <Stack.Screen name="WorkoutPage" component={WorkoutPage} options={{headerShown: false}} />
-            <Stack.Screen name="SetPage" component={SetPage} />
-            <Stack.Screen name="ExerciseLibraryPage" component={ExerciseLibraryPage} options={{ headerShown: false }} />
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="LoginPage" component={LoginPage} options={{ headerShown: false }} />
-            <Stack.Screen name="RegisterPage" component={RegisterPage} options={{ headerShown: false }} />
-          </>
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
+      <View style={{ flex: 1 }}>
+        <NavigationContainer
+          ref={navigationRef}
+          theme={navTheme}
+          onReady={syncCurrentRoute}
+          onStateChange={syncCurrentRoute}
+        >
+          <Stack.Navigator
+                key={isAuthenticated ? "app" : "auth"}
+                initialRouteName={isAuthenticated ? 'HomePage' : 'LoginPage'}
+                screenOptions={{
+                  headerShown: true,
+                  headerStyle: {
+                    backgroundColor: theme.background
+                  },
+                  contentStyle: {
+                    backgroundColor: theme.background
+                  }
+                }}>
+            {isAuthenticated ? (
+              <>
+                <Stack.Screen name="HomePage" component={HomePage} options={{ headerShown: false }} />
+                <Stack.Screen name="ProfilePage" component={ProfilePage} options={{ headerShown: false }} />
+                <Stack.Screen name="ProgramPage" component={ProgramPage} options={{headerShown: false}} />
+                <Stack.Screen name="ProgramOverviewPage" component={ProgramOverviewPage} options={{headerShown: false}} />
+                <Stack.Screen name="MicrocyclePage" component={MicrocyclePage} options={{headerShown: false}} />
+                <Stack.Screen name="WeekPage" component={WeekPage} options={{headerShown: false}} />
+                <Stack.Screen name="WorkoutPage" component={WorkoutPage} options={{headerShown: false}} />
+                <Stack.Screen name="SetPage" component={SetPage} />
+                <Stack.Screen name="ExerciseLibraryPage" component={ExerciseLibraryPage} options={{ headerShown: false }} />
+              </>
+            ) : (
+              <>
+                <Stack.Screen name="LoginPage" component={LoginPage} options={{ headerShown: false }} />
+                <Stack.Screen name="RegisterPage" component={RegisterPage} options={{ headerShown: false }} />
+              </>
+            )}
+          </Stack.Navigator>
+        </NavigationContainer>
+      </View>
+
+      {isAuthenticated ? (
+        <ThemedBottomNavigation
+          currentRouteName={currentRouteName}
+          navigationRef={navigationRef}
+        />
+      ) : null}
+    </View>
   );
 }
 

@@ -30,7 +30,7 @@ const ExerciseLibraryPage = () => {
   );
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView safe={["top", "left", "right"]} style={styles.container}>
       <ThemedHeader>
         <View style={styles.pageHeaderTitleGroup}>
           <ThemedText

@@ -3,7 +3,11 @@ import { ScrollView, TouchableOpacity, View, useColorScheme } from "react-native
 import styles from "./FriendsActivityStyle";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 import Male from "../../../../Resources/Icons/UI-icons/Male";
-import { ThemedText, ThemedTitle } from "../../../../Resources/ThemedComponents";
+import {
+  ThemedText,
+  ThemedTitle,
+  UserAvatar,
+} from "../../../../Resources/ThemedComponents";
 
 function getRelationshipMeta(theme, relationshipType) {
   const primary = theme.primary ?? "#f7742e";
@@ -43,6 +47,7 @@ function CircleCard({
   chipTextColor,
   iconColor,
   avatarBackgroundColor,
+  avatarUrl,
   onPress,
 }) {
   return (
@@ -67,7 +72,13 @@ function CircleCard({
             },
           ]}
         >
-          <Male width={30} height={30} color={iconColor} />
+          <UserAvatar
+            uri={avatarUrl}
+            size={56}
+            iconSize={28}
+            iconColor={iconColor}
+            backgroundColor={avatarBackgroundColor}
+          />
         </View>
       </View>
 
@@ -169,6 +180,7 @@ export default function FriendsActivity({
             chipTextColor={theme.secondaryDark ?? secondary}
             iconColor={iconColor}
             avatarBackgroundColor={avatarBackgroundColor}
+            avatarUrl={currentUser?.avatarUrl}
             onPress={onOpenProfile}
           />
 
@@ -195,6 +207,7 @@ export default function FriendsActivity({
                   chipTextColor={meta.chipTextColor}
                   iconColor={iconColor}
                   avatarBackgroundColor={avatarBackgroundColor}
+                  avatarUrl={person.avatarUrl}
                   onPress={onSeeAll}
                 />
               );

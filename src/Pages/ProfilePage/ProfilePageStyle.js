@@ -60,6 +60,30 @@ export default StyleSheet.create({
   cardBody: {
     lineHeight: 20,
   },
+  avatarSection: {
+    marginTop: 18,
+    alignItems: "center",
+  },
+  avatarButton: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  avatarButtonPressed: {
+    opacity: 0.88,
+  },
+  avatarButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  avatarHelperText: {
+    marginTop: 10,
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: "center",
+  },
   identityList: {
     marginTop: 16,
     gap: 14,
@@ -178,8 +202,14 @@ export default StyleSheet.create({
     paddingBottom: 4,
   },
   relationshipRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
     paddingVertical: 12,
     borderBottomWidth: 1,
+  },
+  relationshipCopy: {
+    flex: 1,
     gap: 4,
   },
   relationshipDisplayName: {

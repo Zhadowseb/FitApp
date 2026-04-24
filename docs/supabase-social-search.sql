@@ -6,6 +6,7 @@ create table if not exists public.profiles (
   username_base text not null,
   username_code text not null,
   display_name text not null,
+  avatar_path text,
   bio text not null default '',
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
@@ -13,6 +14,7 @@ create table if not exists public.profiles (
 
 alter table public.profiles add column if not exists username_base text;
 alter table public.profiles add column if not exists username_code text;
+alter table public.profiles add column if not exists avatar_path text;
 alter table public.profiles alter column bio set default '';
 alter table public.profiles alter column created_at set default timezone('utc', now());
 alter table public.profiles alter column updated_at set default timezone('utc', now());
@@ -233,6 +235,50 @@ on public.user_follows
 for delete
 to authenticated
 using (auth.uid() = follower_id);
+
+drop policy if exists "Users can select their own avatar objects" on storage.objects;
+create policy "Users can select their own avatar objects"
+on storage.objects
+for select
+to authenticated
+using (
+  bucket_id = 'avatars'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists "Users can upload their own avatar objects" on storage.objects;
+create policy "Users can upload their own avatar objects"
+on storage.objects
+for insert
+to authenticated
+with check (
+  bucket_id = 'avatars'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists "Users can update their own avatar objects" on storage.objects;
+create policy "Users can update their own avatar objects"
+on storage.objects
+for update
+to authenticated
+using (
+  bucket_id = 'avatars'
+  and (storage.foldername(name))[1] = auth.uid()::text
+)
+with check (
+  bucket_id = 'avatars'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists "Users can delete their own avatar objects" on storage.objects;
+create policy "Users can delete their own avatar objects"
+on storage.objects
+for delete
+to authenticated
+using (
+  bucket_id = 'avatars'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
 
 create or replace function private.handle_new_user()
 returns trigger

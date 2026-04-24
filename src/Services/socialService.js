@@ -11,11 +11,36 @@ import {
 
 const PROFILES_TABLE = "profiles";
 const USER_FOLLOWS_TABLE = "user_follows";
+const AVATAR_BUCKET = "avatars";
+const PROFILE_SELECT_FIELDS =
+  "id, username, username_base, username_code, display_name, bio, avatar_path, created_at, updated_at";
 const SOCIAL_SETUP_MESSAGE =
   "User search and follows are not set up in Supabase yet. Run docs/supabase-social-search.sql in the Supabase SQL editor first.";
+const SOCIAL_AVATAR_SETUP_MESSAGE =
+  "Profile photos are not set up in Supabase yet. Make sure the avatars bucket exists and rerun the updated docs/supabase-social-search.sql script first.";
 export const PROFILE_DISPLAY_NAME_MAX_LENGTH = 40;
 export const PROFILE_BIO_MAX_LENGTH = 160;
+export const PROFILE_AVATAR_MAX_BYTES = 3 * 1024 * 1024;
 const USERNAME_INSERT_RETRY_LIMIT = 3;
+
+function buildAvatarPublicUrl(avatarPath, updatedAt) {
+  if (!avatarPath) {
+    return null;
+  }
+
+  const { data } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(avatarPath);
+  const publicUrl = data?.publicUrl;
+
+  if (!publicUrl) {
+    return null;
+  }
+
+  return updatedAt ? `${publicUrl}?t=${encodeURIComponent(updatedAt)}` : publicUrl;
+}
+
+function getAvatarObjectPath(userId) {
+  return `${userId}/avatar`;
+}
 
 function createFallbackUsernameBase(user) {
   return slugifyUsernameBase(
@@ -47,6 +72,7 @@ function mapProfileRow(row, followingIdSet = new Set()) {
     row.username_base ?? parsedUsername?.usernameBase ?? "";
   const usernameCode =
     row.username_code ?? parsedUsername?.usernameCode ?? "";
+  const updatedAt = row.updated_at ?? row.created_at ?? null;
 
   return {
     id: row.id,
@@ -56,7 +82,10 @@ function mapProfileRow(row, followingIdSet = new Set()) {
     usernameCode,
     displayName: row.display_name,
     bio: row.bio ?? "",
+    avatarPath: row.avatar_path ?? null,
+    avatarUrl: buildAvatarPublicUrl(row.avatar_path, updatedAt),
     createdAt: row.created_at ?? null,
+    updatedAt,
     isFollowing: followingIdSet.has(row.id),
   };
 }
@@ -69,13 +98,23 @@ function isMissingSocialSchemaError(error) {
     (message.includes("profiles") && message.includes("does not exist")) ||
     (message.includes("user_follows") && message.includes("does not exist")) ||
     (message.includes("username_base") && message.includes("does not exist")) ||
-    (message.includes("username_code") && message.includes("does not exist"))
+    (message.includes("username_code") && message.includes("does not exist")) ||
+    (message.includes("avatar_path") && message.includes("does not exist"))
   );
 }
 
 function normalizeSocialError(error) {
   if (isMissingSocialSchemaError(error)) {
     return new Error(SOCIAL_SETUP_MESSAGE);
+  }
+
+  const message = `${error?.message ?? ""} ${error?.details ?? ""}`.toLowerCase();
+  if (
+    message.includes("bucket") &&
+    message.includes("avatars") &&
+    (message.includes("not found") || message.includes("does not exist"))
+  ) {
+    return new Error(SOCIAL_AVATAR_SETUP_MESSAGE);
   }
 
   return error;
@@ -118,9 +157,7 @@ async function fetchProfilesByIds({ profileIds, currentUserId }) {
   const uniqueProfileIds = [...new Set(profileIds)];
   const { data: profiles, error: profileError } = await supabase
     .from(PROFILES_TABLE)
-    .select(
-      "id, username, username_base, username_code, display_name, bio, created_at"
-    )
+    .select(PROFILE_SELECT_FIELDS)
     .in("id", uniqueProfileIds);
 
   if (profileError) {
@@ -188,9 +225,7 @@ export async function ensureOwnProfile(user) {
 
   const { data: existingProfile, error: fetchError } = await supabase
     .from(PROFILES_TABLE)
-    .select(
-      "id, username, username_base, username_code, display_name, bio, created_at"
-    )
+    .select(PROFILE_SELECT_FIELDS)
     .eq("id", user.id)
     .maybeSingle();
 
@@ -221,9 +256,7 @@ export async function ensureOwnProfile(user) {
         display_name: displayName,
         bio: "",
       })
-      .select(
-        "id, username, username_base, username_code, display_name, bio, created_at"
-      )
+      .select(PROFILE_SELECT_FIELDS)
       .single();
 
     if (!insertError) {
@@ -236,9 +269,7 @@ export async function ensureOwnProfile(user) {
 
     const { data: refetchedProfile, error: refetchError } = await supabase
       .from(PROFILES_TABLE)
-      .select(
-        "id, username, username_base, username_code, display_name, bio, created_at"
-      )
+      .select(PROFILE_SELECT_FIELDS)
       .eq("id", user.id)
       .maybeSingle();
 
@@ -291,9 +322,7 @@ export async function updateOwnProfile({ user, displayName, bio }) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", user.id)
-    .select(
-      "id, username, username_base, username_code, display_name, bio, created_at"
-    )
+    .select(PROFILE_SELECT_FIELDS)
     .single();
 
   if (updateError) {
@@ -320,6 +349,65 @@ export async function updateOwnProfile({ user, displayName, bio }) {
   return mapProfileRow(updatedProfile);
 }
 
+export async function uploadOwnAvatar({ user, asset }) {
+  if (!user?.id) {
+    throw new Error("You need to be signed in to update your profile photo.");
+  }
+
+  if (!asset?.uri) {
+    throw new Error("Pick an image before uploading a profile photo.");
+  }
+
+  if (asset.fileSize && asset.fileSize > PROFILE_AVATAR_MAX_BYTES) {
+    throw new Error("Profile photo must stay within 3 MB.");
+  }
+
+  await ensureOwnProfile(user);
+
+  const response = await fetch(asset.uri);
+
+  if (!response.ok) {
+    throw new Error("Could not read the selected image.");
+  }
+
+  const avatarBuffer = await response.arrayBuffer();
+
+  if (!avatarBuffer.byteLength) {
+    throw new Error("The selected image was empty.");
+  }
+
+  const avatarPath = getAvatarObjectPath(user.id);
+  const contentType =
+    asset.mimeType ?? response.headers.get("Content-Type") ?? "image/jpeg";
+  const { error: uploadError } = await supabase.storage
+    .from(AVATAR_BUCKET)
+    .upload(avatarPath, avatarBuffer, {
+      contentType,
+      upsert: true,
+    });
+
+  if (uploadError) {
+    throw normalizeSocialError(uploadError);
+  }
+
+  const nextUpdatedAt = new Date().toISOString();
+  const { data: updatedProfile, error: updateError } = await supabase
+    .from(PROFILES_TABLE)
+    .update({
+      avatar_path: avatarPath,
+      updated_at: nextUpdatedAt,
+    })
+    .eq("id", user.id)
+    .select(PROFILE_SELECT_FIELDS)
+    .single();
+
+  if (updateError) {
+    throw normalizeSocialError(updateError);
+  }
+
+  return mapProfileRow(updatedProfile);
+}
+
 export async function searchUsers({ query, currentUserId, limit = 20 }) {
   if (!currentUserId) {
     throw new Error("You need to be signed in to search for users.");
@@ -328,9 +416,7 @@ export async function searchUsers({ query, currentUserId, limit = 20 }) {
   const normalizedQuery = buildSearchFilter(query ?? "");
   let profilesQuery = supabase
     .from(PROFILES_TABLE)
-    .select(
-      "id, username, username_base, username_code, display_name, bio, created_at"
-    )
+    .select(PROFILE_SELECT_FIELDS)
     .neq("id", currentUserId)
     .order("display_name", { ascending: true })
     .limit(limit);

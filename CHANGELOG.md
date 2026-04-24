@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.9.6] - Unreleased
+### Changed
+- Added profile photo upload backed by Supabase Storage, including avatar previews on the profile page, people search, relationship lists, and the HomePage social circle.
+
+---
 ## [0.9.5] - Unreleased
 ### Changed
 - Added a HomePage social circle strip inspired by the shared `FriendsActivity` reference, using static full rings and generic user icons instead of rotating avatar images or segmented activity rings.

@@ -1,6 +1,7 @@
 import { Pressable, ScrollView, View, useColorScheme } from "react-native";
 import { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
+import * as ImagePicker from "expo-image-picker";
 
 import styles from "./ProfilePageStyle";
 import { Colors } from "../../Resources/GlobalStyling/colors";
@@ -17,6 +18,7 @@ import {
   ThemedTextInput,
   ThemedTitle,
   ThemedView,
+  UserAvatar,
 } from "../../Resources/ThemedComponents";
 
 export default function ProfilePage() {
@@ -37,6 +39,7 @@ export default function ProfilePage() {
   const [isLoadingRelationships, setIsLoadingRelationships] = useState(false);
   const [relationshipError, setRelationshipError] = useState("");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [profileFeedback, setProfileFeedback] = useState({
     status: "idle",
     message: "",
@@ -66,6 +69,11 @@ export default function ProfilePage() {
     : false;
   const relationshipTitle =
     activeRelationshipType === "following" ? "Following" : "Followers";
+  const avatarButtonLabel = isUploadingAvatar
+    ? "Uploading..."
+    : profile?.avatarUrl
+      ? "Change photo"
+      : "Upload photo";
 
   useFocusEffect(
     useCallback(() => {
@@ -245,6 +253,71 @@ export default function ProfilePage() {
     }
   };
 
+  const handleChooseAvatar = async () => {
+    if (!user?.id) {
+      setProfileFeedback({
+        status: "error",
+        message: "Sign in to update your profile photo.",
+      });
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    setProfileFeedback({
+      status: "idle",
+      message: "",
+    });
+
+    try {
+      const permissionResponse =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permissionResponse.granted) {
+        throw new Error(
+          "Photo library permission is required to choose a profile picture."
+        );
+      }
+
+      const pickerResult = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+
+      if (pickerResult.canceled) {
+        return;
+      }
+
+      const selectedAsset = pickerResult.assets?.[0];
+
+      if (!selectedAsset) {
+        throw new Error("No image was selected.");
+      }
+
+      const updatedProfile = await socialService.uploadOwnAvatar({
+        user,
+        asset: selectedAsset,
+      });
+
+      setProfile(updatedProfile);
+      setProfileFeedback({
+        status: "success",
+        message: "Profile photo updated.",
+      });
+    } catch (error) {
+      setProfileFeedback({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Could not upload your profile photo.",
+      });
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
   const handleLogout = async () => {
     setLogoutError("");
     setIsLoggingOut(true);
@@ -382,6 +455,47 @@ export default function ProfilePage() {
               Your display name and bio show up in people search. Your username
               tag stays fixed once the account is created.
             </ThemedText>
+
+            <View style={styles.avatarSection}>
+              <UserAvatar
+                uri={profile?.avatarUrl}
+                size={104}
+                iconSize={42}
+                iconColor={theme.primary ?? titleColor}
+                backgroundColor={panelSurface}
+                borderColor={cardBorder}
+                borderWidth={1}
+              />
+
+              <Pressable
+                onPress={handleChooseAvatar}
+                disabled={isLoadingProfile || isUploadingAvatar}
+                style={({ pressed }) => [
+                  styles.avatarButton,
+                  {
+                    backgroundColor: panelSurface,
+                    borderColor: cardBorder,
+                  },
+                  pressed && !isLoadingProfile && !isUploadingAvatar
+                    ? styles.avatarButtonPressed
+                    : null,
+                ]}
+              >
+                <ThemedText
+                  style={styles.avatarButtonText}
+                  setColor={titleColor}
+                >
+                  {avatarButtonLabel}
+                </ThemedText>
+              </Pressable>
+
+              <ThemedText style={styles.avatarHelperText} setColor={quietText}>
+                Shown in your profile, search and social circle. Square images
+                work best. Up to{" "}
+                {Math.round(socialService.PROFILE_AVATAR_MAX_BYTES / (1024 * 1024))}{" "}
+                MB.
+              </ThemedText>
+            </View>
 
             <View style={styles.identityList}>
               <View style={styles.identityGroup}>
@@ -601,18 +715,29 @@ export default function ProfilePage() {
                   },
                 ]}
               >
-                <ThemedText
-                  style={styles.relationshipDisplayName}
-                  setColor={titleColor}
-                >
-                  {relationshipProfile.displayName}
-                </ThemedText>
-                <ThemedText
-                  style={styles.relationshipUsername}
-                  setColor={quietText}
-                >
-                  {relationshipProfile.username}
-                </ThemedText>
+                <UserAvatar
+                  uri={relationshipProfile.avatarUrl}
+                  size={48}
+                  iconSize={24}
+                  iconColor={theme.primary ?? titleColor}
+                  backgroundColor={panelSurface}
+                  borderColor={cardBorder}
+                  borderWidth={1}
+                />
+                <View style={styles.relationshipCopy}>
+                  <ThemedText
+                    style={styles.relationshipDisplayName}
+                    setColor={titleColor}
+                  >
+                    {relationshipProfile.displayName}
+                  </ThemedText>
+                  <ThemedText
+                    style={styles.relationshipUsername}
+                    setColor={quietText}
+                  >
+                    {relationshipProfile.username}
+                  </ThemedText>
+                </View>
               </View>
             ))}
           </ScrollView>

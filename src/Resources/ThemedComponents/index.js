@@ -15,3 +15,4 @@ export { default as ThemedHeader } from "./ThemedHeader";
 export { default as ThemedBottomNavigation } from "./ThemedBottomNavigation";
 export { default as ThemedSegmentedToggle} from "./ThemedSegmentedToggle";
 export { default as ThemedEditableCell} from "./ThemedEditableCell";
+export { default as UserAvatar } from "./UserAvatar";

@@ -1,6 +1,6 @@
 {
   "name": "programapp",
-  "version": "0.9.5-minor-home-friends-activity.1",
+  "version": "0.9.6-minor-profile-avatar-upload.1",
   "main": "index.js",
   "scripts": {
     "start": "expo start --dev-client --scheme exp+programapp-dev",
@@ -31,6 +31,7 @@
     "expo": "~54.0.25",
     "expo-checkbox": "~5.0.8",
     "expo-dev-client": "~6.0.20",
+    "expo-image-picker": "~17.0.10",
     "expo-location": "~19.0.8",
     "expo-sqlite": "^16.0.9",
     "expo-status-bar": "~3.0.8",

@@ -79,6 +79,9 @@ export default StyleSheet.create({
     alignItems: "flex-start",
     gap: 12,
   },
+  resultAvatar: {
+    marginTop: 2,
+  },
   resultCopy: {
     flex: 1,
   },

@@ -20,6 +20,7 @@ import {
   ThemedTextInput,
   ThemedTitle,
   ThemedView,
+  UserAvatar,
 } from "../../Resources/ThemedComponents";
 
 const SearchPage = () => {
@@ -227,6 +228,17 @@ const SearchPage = () => {
                 ]}
               >
                 <View style={styles.resultTopRow}>
+                  <UserAvatar
+                    uri={profile.avatarUrl}
+                    size={56}
+                    iconSize={28}
+                    iconColor={theme.primary ?? titleColor}
+                    backgroundColor={theme.uiBackground ?? theme.background}
+                    borderColor={cardBorder}
+                    borderWidth={1}
+                    style={styles.resultAvatar}
+                  />
+
                   <View style={styles.resultCopy}>
                     <ThemedText
                       style={styles.resultDisplayName}

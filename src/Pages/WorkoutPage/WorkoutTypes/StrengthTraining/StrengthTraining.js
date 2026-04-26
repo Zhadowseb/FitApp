@@ -48,6 +48,7 @@ const StrengthTraining = ({workout_id, date, restartRequestKey}) =>  {
   const [filterBottomsheetVisible, setFilterBottomsheetVisible] = useState(false);
   const [showCompletedExercises, setShowCompletedExercises] = useState(true);
   const [expansionAction, setExpansionAction] = useState(null);
+  const [isReorderingExercises, setIsReorderingExercises] = useState(false);
 
   const [totalSets, set_totalSets] = useState(0);
   const [doneSets, set_doneSets] = useState(0);
@@ -336,7 +337,10 @@ const StrengthTraining = ({workout_id, date, restartRequestKey}) =>  {
 
   return (
     <ThemedView style={{ flex: 1 }}>
-      <ThemedKeyboardProtection scroll>
+      <ThemedKeyboardProtection
+        scroll
+        scrollViewProps={{ scrollEnabled: !isReorderingExercises }}
+      >
         <View style={styles.heroShell}>
           <ThemedCard
             style={[
@@ -544,6 +548,7 @@ const StrengthTraining = ({workout_id, date, restartRequestKey}) =>  {
             updateUI={refresh}
             showCompletedExercises={showCompletedExercises}
             expansionAction={expansionAction}
+            onReorderDragChange={setIsReorderingExercises}
           />
         </View>
 

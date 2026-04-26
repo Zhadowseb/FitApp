@@ -1,5 +1,21 @@
 import { createNextSyncVersion, SQLITE_UUID_SQL } from "../Utils/syncUtils";
 
+function normalizeSqliteParam(value) {
+  if (value === undefined) {
+    return null;
+  }
+
+  if (typeof value === "number" && !Number.isFinite(value)) {
+    return null;
+  }
+
+  return value;
+}
+
+function sqliteParams(values) {
+  return values.map(normalizeSqliteParam);
+}
+
 export async function createProgram(db, { programName, startDate, status }) {
   const syncVersion = createNextSyncVersion();
   await db.runAsync(
@@ -1628,7 +1644,7 @@ export async function createWorkoutFromCloud(
       timer_start,
       elapsed_time
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?);`,
-    [
+    sqliteParams([
       cloudWorkoutTypeInstanceId,
       remoteLocalWorkoutTypeInstanceId,
       syncId,
@@ -1643,7 +1659,7 @@ export async function createWorkoutFromCloud(
       originalStartTime,
       timerStart,
       elapsedTime,
-    ]
+    ])
   );
 }
 
@@ -1685,7 +1701,7 @@ export async function updateWorkoutFromCloud(
          elapsed_time = ?,
          needs_sync = 0
      WHERE workout_id = ?;`,
-    [
+    sqliteParams([
       cloudWorkoutTypeInstanceId,
       remoteLocalWorkoutTypeInstanceId,
       syncId,
@@ -1701,7 +1717,7 @@ export async function updateWorkoutFromCloud(
       timerStart,
       elapsedTime,
       workoutId,
-    ]
+    ])
   );
 }
 
@@ -1729,14 +1745,14 @@ export async function markWorkoutSynced(
          deleted_at = ?,
          needs_sync = 0
      WHERE workout_id = ?;`,
-    [
+    sqliteParams([
       cloudWorkoutTypeInstanceId,
       remoteLocalWorkoutTypeInstanceId,
       syncId,
       syncVersion,
       deletedAt,
       workoutId,
-    ]
+    ])
   );
 }
 
@@ -1763,14 +1779,14 @@ export async function updateWorkoutCloudIdentity(
          sync_version = COALESCE(?, sync_version),
          deleted_at = COALESCE(?, deleted_at)
      WHERE workout_id = ?;`,
-    [
+    sqliteParams([
       cloudWorkoutTypeInstanceId,
       remoteLocalWorkoutTypeInstanceId,
       syncId,
       syncVersion,
       deletedAt,
       workoutId,
-    ]
+    ])
   );
 }
 
@@ -1832,21 +1848,25 @@ export async function queueWorkoutTypeInstanceDeleteSync(
       sync_version,
       deleted_at
     ) VALUES (?, ?, ?, ?, ?);`,
-    [
+    sqliteParams([
       cloudWorkoutTypeInstanceId,
       remoteLocalWorkoutTypeInstanceId,
       syncId,
       syncVersion,
       deletedAt,
-    ]
+    ])
   );
 }
 
 export async function deleteQueuedWorkoutTypeInstanceDelete(db, queueId) {
+  if (queueId === null || queueId === undefined) {
+    return;
+  }
+
   await db.runAsync(
     `DELETE FROM Workout_Type_Instance_Sync_Delete
      WHERE workout_type_instance_sync_delete_id = ?;`,
-    [queueId]
+    sqliteParams([queueId])
   );
 }
 

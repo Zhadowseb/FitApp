@@ -53,7 +53,7 @@ const WORKOUT_TYPE_INSTANCE_CLOUD_SYNC_SELECT =
   "id, user_id, local_workout_type_instance_id, sync_id, sync_version, deleted_at, cloud_day_id, workout_type, date, label, done, is_active, original_start_time, timer_start, elapsed_time";
 const EXERCISE_INSTANCE_CLOUD_TABLE = "exercise_instance";
 const EXERCISE_INSTANCE_CLOUD_SYNC_SELECT =
-  "id, user_id, local_exercise_instance_id, sync_id, sync_version, deleted_at, cloud_workout_type_instance_id, exercise_name, sets, visible_columns, note, done";
+  "id, user_id, local_exercise_instance_id, sync_id, sync_version, deleted_at, cloud_workout_type_instance_id, exercise_name, exercise_order, sets, visible_columns, note, done";
 const SET_CLOUD_TABLE = "set";
 const SET_CLOUD_SYNC_SELECT =
   "id, user_id, local_set_id, sync_id, sync_version, deleted_at, cloud_exercise_instance_id, set_number, personal_record, pause, rpe, weight, rm_percentage, reps, done, failed, amrap, note";
@@ -1002,6 +1002,10 @@ function normalizeExerciseName(value) {
   return normalizeOptionalText(value);
 }
 
+function normalizeExerciseOrder(value) {
+  return Math.max(0, normalizeOptionalInteger(value, 0) ?? 0);
+}
+
 function normalizeExerciseVisibleColumns(value) {
   if (value === null || value === undefined || value === "") {
     return null;
@@ -1052,6 +1056,7 @@ function getComparableExerciseInstanceSnapshot(exercise) {
       null
     ),
     exercise_name: normalizeExerciseName(exercise?.exercise_name),
+    exercise_order: normalizeExerciseOrder(exercise?.exercise_order),
     sets: normalizeOptionalInteger(exercise?.sets, 0),
     visible_columns: normalizeExerciseVisibleColumns(exercise?.visible_columns),
     note: normalizeOptionalText(exercise?.note),
@@ -1067,6 +1072,7 @@ function areComparableExerciseInstancesEqual(leftExercise, rightExercise) {
     leftSnapshot.cloud_workout_type_instance_id ===
       rightSnapshot.cloud_workout_type_instance_id &&
     leftSnapshot.exercise_name === rightSnapshot.exercise_name &&
+    leftSnapshot.exercise_order === rightSnapshot.exercise_order &&
     leftSnapshot.sets === rightSnapshot.sets &&
     JSON.stringify(leftSnapshot.visible_columns) ===
       JSON.stringify(rightSnapshot.visible_columns) &&
@@ -1089,6 +1095,7 @@ function buildCloudExerciseInstancePayload(
     deleted_at: normalizeDeletedAt(localExercise?.deleted_at),
     cloud_workout_type_instance_id: cloudWorkoutTypeInstanceId,
     exercise_name: normalizeExerciseName(localExercise.exercise_name),
+    exercise_order: normalizeExerciseOrder(localExercise.exercise_order),
     sets: normalizeOptionalInteger(localExercise.sets, 0),
     visible_columns: normalizeExerciseVisibleColumns(
       localExercise.visible_columns
@@ -3395,6 +3402,7 @@ async function reconcileExerciseInstancesFromCloud(db, userId) {
     .select(EXERCISE_INSTANCE_CLOUD_SYNC_SELECT)
     .eq("user_id", userId)
     .order("cloud_workout_type_instance_id", { ascending: true })
+    .order("exercise_order", { ascending: true })
     .order("id", { ascending: true });
 
   if (error) {
@@ -3536,6 +3544,7 @@ async function reconcileExerciseInstancesFromCloud(db, userId) {
           deletedAt: normalizeDeletedAt(cloudExercise.deleted_at),
           workoutId: parentWorkout.workout_id,
           exerciseName: comparableCloudExercise.exercise_name,
+          exerciseOrder: comparableCloudExercise.exercise_order,
           sets: comparableCloudExercise.sets,
           visibleColumns: serializeExerciseVisibleColumns(
             comparableCloudExercise.visible_columns
@@ -3553,6 +3562,7 @@ async function reconcileExerciseInstancesFromCloud(db, userId) {
           deleted_at: normalizeDeletedAt(cloudExercise.deleted_at),
           workout_type_instance_id: parentWorkout.workout_id,
           exercise_name: comparableCloudExercise.exercise_name,
+          exercise_order: comparableCloudExercise.exercise_order,
           sets: comparableCloudExercise.sets,
           visible_columns: serializeExerciseVisibleColumns(
             comparableCloudExercise.visible_columns
@@ -3599,6 +3609,7 @@ async function reconcileExerciseInstancesFromCloud(db, userId) {
             deletedAt: normalizeDeletedAt(cloudExercise.deleted_at),
             workoutId: parentWorkout.workout_id,
             exerciseName: comparableCloudExercise.exercise_name,
+            exerciseOrder: comparableCloudExercise.exercise_order,
             sets: comparableCloudExercise.sets,
             visibleColumns: serializeExerciseVisibleColumns(
               comparableCloudExercise.visible_columns
@@ -3655,6 +3666,7 @@ async function reconcileExerciseInstancesFromCloud(db, userId) {
         deletedAt: normalizeDeletedAt(cloudExercise.deleted_at),
         workoutId: parentWorkout.workout_id,
         exerciseName: comparableCloudExercise.exercise_name,
+        exerciseOrder: comparableCloudExercise.exercise_order,
         sets: comparableCloudExercise.sets,
         visibleColumns: serializeExerciseVisibleColumns(
           comparableCloudExercise.visible_columns
@@ -3672,6 +3684,7 @@ async function reconcileExerciseInstancesFromCloud(db, userId) {
         deleted_at: normalizeDeletedAt(cloudExercise.deleted_at),
         workout_type_instance_id: parentWorkout.workout_id,
         exercise_name: comparableCloudExercise.exercise_name,
+        exercise_order: comparableCloudExercise.exercise_order,
         sets: comparableCloudExercise.sets,
         visible_columns: serializeExerciseVisibleColumns(
           comparableCloudExercise.visible_columns
@@ -4172,9 +4185,8 @@ async function syncSetsWithCloudInternal(db) {
   try {
     await syncExerciseInstancesWithCloud(db);
   } catch (error) {
-    console.warn(
-      "Set sync continued after exercise sync prerequisite failed:",
-      error
+    throw new Error(
+      `Set sync prerequisite failed while syncing exercises: ${error?.message ?? error}`
     );
   }
 
@@ -4318,6 +4330,7 @@ async function cloneWorkoutContents(db, { sourceWorkoutId, targetWorkoutId }) {
       visibleColumns: exercise.visible_columns,
       note: exercise.note,
       done: 0,
+      exerciseOrder: normalizeExerciseOrder(exercise.exercise_order),
     });
 
     const sets = await weightliftingRepository.getSetsByExercise(

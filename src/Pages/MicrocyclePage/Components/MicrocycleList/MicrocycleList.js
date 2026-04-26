@@ -7,7 +7,7 @@ import { useColorScheme } from "react-native";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 import ThreeDots from "../../../../Resources/Icons/UI-icons/ThreeDots"
 import Copy from "../../../../Resources/Icons/UI-icons/Copy";
-import Plus from "../../../../Resources/Icons/UI-icons/Plus";
+import PlusCircled from "../../../../Resources/Icons/UI-icons/PlusCircled";
 import CalenderPastePicker from "../../../../Resources/Components/CalenderPastePicker/CalenderPasteModal";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
@@ -672,7 +672,7 @@ const MicrocycleList = ({
             setLabelModalVisible(true);
           }}
         >
-          <Plus width={24} height={24} />
+          <PlusCircled width={24} height={24} />
           <ThemedText style={styles.option_text}>
             Add new workout
           </ThemedText>

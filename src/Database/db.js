@@ -240,6 +240,7 @@ async function migrateExerciseInstanceSchema(db) {
         remote_local_exercise_instance_id INTEGER,
         workout_type_instance_id INTEGER NOT NULL,
         exercise_name TEXT NOT NULL,
+        exercise_order INTEGER NOT NULL DEFAULT 0,
         sets INTEGER NOT NULL DEFAULT 0,
         visible_columns TEXT,
         note TEXT,
@@ -253,6 +254,7 @@ async function migrateExerciseInstanceSchema(db) {
         remote_local_exercise_instance_id,
         workout_type_instance_id,
         exercise_name,
+        exercise_order,
         sets,
         visible_columns,
         note,
@@ -265,6 +267,11 @@ async function migrateExerciseInstanceSchema(db) {
         ${hasColumn(exerciseInstanceColumns, "remote_local_exercise_instance_id") ? "remote_local_exercise_instance_id" : "NULL"},
         ${workoutColumn},
         exercise_name,
+        CASE
+          WHEN ${hasColumn(exerciseInstanceColumns, "exercise_order") ? "COALESCE(exercise_order, 0)" : "0"} > 0
+          THEN ${hasColumn(exerciseInstanceColumns, "exercise_order") ? "exercise_order" : "0"}
+          ELSE ${idColumn}
+        END,
         COALESCE(sets, 0),
         ${hasColumn(exerciseInstanceColumns, "visible_columns") ? "visible_columns" : "NULL"},
         ${hasColumn(exerciseInstanceColumns, "note") ? "note" : "NULL"},
@@ -739,6 +746,59 @@ async function repairProgramDateFormats(db) {
   `);
 }
 
+async function repairExerciseOrders(db) {
+  const exercises = await db.getAllAsync(`
+    SELECT exercise_instance_id, workout_type_instance_id, exercise_order
+    FROM Exercise_Instance
+    ORDER BY
+      workout_type_instance_id ASC,
+      CASE
+        WHEN COALESCE(exercise_order, 0) > 0 THEN exercise_order
+        ELSE exercise_instance_id
+      END ASC,
+      exercise_instance_id ASC;
+  `);
+
+  let currentWorkoutId = null;
+  let nextExerciseOrder = 1;
+  const orderUpdates = [];
+
+  for (const exercise of exercises) {
+    if (currentWorkoutId !== exercise.workout_type_instance_id) {
+      currentWorkoutId = exercise.workout_type_instance_id;
+      nextExerciseOrder = 1;
+    }
+
+    if (Number(exercise.exercise_order) !== nextExerciseOrder) {
+      orderUpdates.push({
+        exerciseId: exercise.exercise_instance_id,
+        exerciseOrder: nextExerciseOrder,
+      });
+    }
+
+    nextExerciseOrder += 1;
+  }
+
+  if (orderUpdates.length === 0) {
+    return;
+  }
+
+  await withTransaction(db, async () => {
+    for (const update of orderUpdates) {
+      await db.runAsync(
+        `UPDATE Exercise_Instance
+         SET exercise_order = ?,
+             sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+             sync_version = COALESCE(sync_version, 0) + 1,
+             deleted_at = NULL,
+             needs_sync = 1
+         WHERE exercise_instance_id = ?;`,
+        [update.exerciseOrder, update.exerciseId]
+      );
+    }
+  });
+}
+
 async function migrateWorkoutTypeInstanceDeleteQueueSchema(db) {
   const queueColumns = await getTableColumns(db, "Workout_Type_Instance_Sync_Delete");
 
@@ -1073,6 +1133,7 @@ export async function initializeDatabase(db) {
     ["sync_version", "INTEGER NOT NULL DEFAULT 0"],
     ["deleted_at", "TEXT"],
     ["exercise_name", "TEXT NOT NULL DEFAULT ''"],
+    ["exercise_order", "INTEGER NOT NULL DEFAULT 0"],
     ["sets", "INTEGER NOT NULL DEFAULT 0"],
     ["visible_columns", "TEXT"],
     ["note", "TEXT"],
@@ -1159,6 +1220,7 @@ export async function initializeDatabase(db) {
 
   await repairWorkoutTrackingState(db);
   await repairStrengthTrainingState(db);
+  await repairExerciseOrders(db);
   await repairRunSetState(db);
   await repairProgramDateFormats(db);
   await repairCloudParentForeignKeySyncState(db);

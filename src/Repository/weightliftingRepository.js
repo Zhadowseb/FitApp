@@ -1,6 +1,62 @@
 import { withTransaction } from "../Database/transaction";
 import { createNextSyncVersion, SQLITE_UUID_SQL } from "../Utils/syncUtils";
 
+const exerciseOrderColumnReadyByDatabase = new Map();
+
+function normalizeSqliteParam(value) {
+  if (value === undefined) {
+    return null;
+  }
+
+  if (typeof value === "number" && !Number.isFinite(value)) {
+    return null;
+  }
+
+  return value;
+}
+
+function sqliteParams(values) {
+  return values.map(normalizeSqliteParam);
+}
+
+function quoteIdentifier(identifier) {
+  return `"${String(identifier).replace(/"/g, '""')}"`;
+}
+
+function getDatabaseStateKey(db) {
+  return db?.databasePath ?? db;
+}
+
+async function ensureExerciseOrderColumn(db) {
+  const databaseKey = getDatabaseStateKey(db);
+
+  if (exerciseOrderColumnReadyByDatabase.get(databaseKey)) {
+    return;
+  }
+
+  const columns = await db.getAllAsync(
+    `PRAGMA table_info(${quoteIdentifier("Exercise_Instance")});`
+  );
+  const hasExerciseOrderColumn = columns.some(
+    (column) => column.name === "exercise_order"
+  );
+
+  if (!hasExerciseOrderColumn) {
+    await db.execAsync(`
+      ALTER TABLE Exercise_Instance
+      ADD COLUMN exercise_order INTEGER NOT NULL DEFAULT 0;
+    `);
+  }
+
+  await db.execAsync(`
+    UPDATE Exercise_Instance
+    SET exercise_order = exercise_instance_id
+    WHERE COALESCE(exercise_order, 0) <= 0;
+  `);
+
+  exerciseOrderColumnReadyByDatabase.set(databaseKey, true);
+}
+
 export async function getExerciseStorage(db) {
   return db.getAllAsync(
     `SELECT
@@ -300,17 +356,21 @@ export async function getDoneSetCountByWorkout(db, workoutId) {
 }
 
 export async function getExercisesByWorkout(db, workoutId) {
+  await ensureExerciseOrderColumn(db);
+
   return db.getAllAsync(
     `SELECT
         exercise_instance_id AS exercise_id,
         workout_type_instance_id AS workout_id,
         exercise_name,
+        exercise_order,
         sets,
         done,
         visible_columns,
         note
      FROM Exercise_Instance
-     WHERE workout_type_instance_id = ?;`,
+     WHERE workout_type_instance_id = ?
+     ORDER BY exercise_order ASC, exercise_instance_id ASC;`,
     [workoutId]
   );
 }
@@ -328,41 +388,53 @@ export async function getProgramExerciseNames(db, programId) {
 }
 
 export async function getExerciseSummariesByWorkout(db, workoutId) {
+  await ensureExerciseOrderColumn(db);
+
   return db.getAllAsync(
     `SELECT exercise_name, sets
      FROM Exercise_Instance
-     WHERE workout_type_instance_id = ?;`,
+     WHERE workout_type_instance_id = ?
+     ORDER BY exercise_order ASC, exercise_instance_id ASC;`,
     [workoutId]
   );
 }
 
 export async function getSetsByWorkout(db, workoutId) {
+  await ensureExerciseOrderColumn(db);
+
   return db.getAllAsync(
     `SELECT s.*
      FROM "Set" s
      JOIN Exercise_Instance e ON e.exercise_instance_id = s.exercise_instance_id
-     WHERE e.workout_type_instance_id = ?;`,
+     WHERE e.workout_type_instance_id = ?
+     ORDER BY e.exercise_order ASC, e.exercise_instance_id ASC, s.set_number ASC, s.sets_id ASC;`,
     [workoutId]
   );
 }
 
 export async function getExercisesByWorkoutId(db, workoutId) {
+  await ensureExerciseOrderColumn(db);
+
   return db.getAllAsync(
     `SELECT
         exercise_instance_id AS exercise_id,
         workout_type_instance_id AS workout_id,
         exercise_name,
+        exercise_order,
         sets,
         visible_columns,
         note,
         done
      FROM Exercise_Instance
-     WHERE workout_type_instance_id = ?;`,
+     WHERE workout_type_instance_id = ?
+     ORDER BY exercise_order ASC, exercise_instance_id ASC;`,
     [workoutId]
   );
 }
 
 export async function getExercisesForCloudSync(db) {
+  await ensureExerciseOrderColumn(db);
+
   return db.getAllAsync(
     `SELECT
         exercise_instance_id,
@@ -373,13 +445,41 @@ export async function getExercisesForCloudSync(db) {
         deleted_at,
         workout_type_instance_id,
         exercise_name,
+        exercise_order,
         sets,
         visible_columns,
         note,
         done,
         needs_sync
      FROM Exercise_Instance
-     ORDER BY exercise_instance_id ASC;`
+     ORDER BY workout_type_instance_id ASC, exercise_order ASC, exercise_instance_id ASC;`
+  );
+}
+
+export async function getExerciseOrderByWorkout(db, workoutId) {
+  await ensureExerciseOrderColumn(db);
+
+  return db.getAllAsync(
+    `SELECT exercise_instance_id, exercise_order
+     FROM Exercise_Instance
+     WHERE workout_type_instance_id = ?
+     ORDER BY exercise_order ASC, exercise_instance_id ASC;`,
+    [workoutId]
+  );
+}
+
+export async function getNextExerciseOrderForWorkout(db, workoutId) {
+  await ensureExerciseOrderColumn(db);
+
+  return db.getFirstAsync(
+    `SELECT
+        COALESCE(
+          MAX(CASE WHEN exercise_order > 0 THEN exercise_order END),
+          COUNT(*)
+        ) + 1 AS exercise_order
+     FROM Exercise_Instance
+     WHERE workout_type_instance_id = ?;`,
+    [workoutId]
   );
 }
 
@@ -392,13 +492,17 @@ export async function createExercise(
     visibleColumns = null,
     note = null,
     done = 0,
+    exerciseOrder = 0,
   }
 ) {
+  await ensureExerciseOrderColumn(db);
+
   const syncVersion = createNextSyncVersion();
   return db.runAsync(
     `INSERT INTO Exercise_Instance (
       workout_type_instance_id,
       exercise_name,
+      exercise_order,
       sets,
       visible_columns,
       note,
@@ -406,8 +510,17 @@ export async function createExercise(
       needs_sync,
       sync_id,
       sync_version
-    ) VALUES (?, ?, ?, ?, ?, ?, 1, ${SQLITE_UUID_SQL}, ?);`,
-    [workoutId, exerciseName, sets, visibleColumns, note, done, syncVersion]
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ${SQLITE_UUID_SQL}, ?);`,
+    [
+      workoutId,
+      exerciseName,
+      exerciseOrder,
+      sets,
+      visibleColumns,
+      note,
+      done,
+      syncVersion,
+    ]
   );
 }
 
@@ -421,12 +534,15 @@ export async function createExerciseFromCloud(
     deletedAt,
     workoutId,
     exerciseName,
+    exerciseOrder = 0,
     sets,
     visibleColumns,
     note,
     done,
   }
 ) {
+  await ensureExerciseOrderColumn(db);
+
   return db.runAsync(
     `INSERT INTO Exercise_Instance (
       cloud_exercise_instance_id,
@@ -436,13 +552,14 @@ export async function createExerciseFromCloud(
       deleted_at,
       workout_type_instance_id,
       exercise_name,
+      exercise_order,
       sets,
       visible_columns,
       note,
       done,
       needs_sync
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0);`,
-    [
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0);`,
+    sqliteParams([
       cloudExerciseInstanceId,
       remoteLocalExerciseInstanceId,
       syncId,
@@ -450,11 +567,12 @@ export async function createExerciseFromCloud(
       deletedAt,
       workoutId,
       exerciseName,
+      exerciseOrder,
       sets,
       visibleColumns,
       note,
       done ? 1 : 0,
-    ]
+    ])
   );
 }
 
@@ -469,12 +587,15 @@ export async function updateExerciseFromCloud(
     deletedAt,
     workoutId,
     exerciseName,
+    exerciseOrder = 0,
     sets,
     visibleColumns,
     note,
     done,
   }
 ) {
+  await ensureExerciseOrderColumn(db);
+
   await db.runAsync(
     `UPDATE Exercise_Instance
      SET cloud_exercise_instance_id = ?,
@@ -484,13 +605,14 @@ export async function updateExerciseFromCloud(
          deleted_at = ?,
          workout_type_instance_id = ?,
          exercise_name = ?,
+         exercise_order = ?,
          sets = ?,
          visible_columns = ?,
          note = ?,
          done = ?,
          needs_sync = 0
      WHERE exercise_instance_id = ?;`,
-    [
+    sqliteParams([
       cloudExerciseInstanceId,
       remoteLocalExerciseInstanceId,
       syncId,
@@ -498,12 +620,13 @@ export async function updateExerciseFromCloud(
       deletedAt,
       workoutId,
       exerciseName,
+      exerciseOrder,
       sets,
       visibleColumns,
       note,
       done ? 1 : 0,
       exerciseId,
-    ]
+    ])
   );
 }
 
@@ -531,14 +654,14 @@ export async function markExerciseSynced(
          deleted_at = ?,
          needs_sync = 0
      WHERE exercise_instance_id = ?;`,
-    [
+    sqliteParams([
       cloudExerciseInstanceId,
       remoteLocalExerciseInstanceId,
       syncId,
       syncVersion,
       deletedAt,
       exerciseId,
-    ]
+    ])
   );
 }
 
@@ -565,14 +688,14 @@ export async function updateExerciseCloudIdentity(
          sync_version = COALESCE(?, sync_version),
          deleted_at = COALESCE(?, deleted_at)
      WHERE exercise_instance_id = ?;`,
-    [
+    sqliteParams([
       cloudExerciseInstanceId,
       remoteLocalExerciseInstanceId,
       syncId,
       syncVersion,
       deletedAt,
       exerciseId,
-    ]
+    ])
   );
 }
 
@@ -634,21 +757,25 @@ export async function queueExerciseInstanceDeleteSync(
       sync_version,
       deleted_at
     ) VALUES (?, ?, ?, ?, ?);`,
-    [
+    sqliteParams([
       cloudExerciseInstanceId,
       remoteLocalExerciseInstanceId,
       syncId,
       syncVersion,
       deletedAt,
-    ]
+    ])
   );
 }
 
 export async function deleteQueuedExerciseInstanceDelete(db, queueId) {
+  if (queueId === null || queueId === undefined) {
+    return;
+  }
+
   await db.runAsync(
     `DELETE FROM Exercise_Instance_Sync_Delete
      WHERE exercise_instance_sync_delete_id = ?;`,
-    [queueId]
+    sqliteParams([queueId])
   );
 }
 
@@ -810,7 +937,7 @@ export async function createSetFromCloud(
       note,
       needs_sync
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0);`,
-    [
+    sqliteParams([
       cloudSetId,
       remoteLocalSetId,
       syncId,
@@ -828,7 +955,7 @@ export async function createSetFromCloud(
       failed ? 1 : 0,
       amrap ? 1 : 0,
       note,
-    ]
+    ])
   );
 }
 
@@ -876,7 +1003,7 @@ export async function updateSetFromCloud(
          note = ?,
          needs_sync = 0
      WHERE sets_id = ?;`,
-    [
+    sqliteParams([
       cloudSetId,
       remoteLocalSetId,
       syncId,
@@ -895,7 +1022,7 @@ export async function updateSetFromCloud(
       amrap ? 1 : 0,
       note,
       setId,
-    ]
+    ])
   );
 }
 
@@ -923,7 +1050,14 @@ export async function markSetSynced(
          deleted_at = ?,
          needs_sync = 0
      WHERE sets_id = ?;`,
-    [cloudSetId, remoteLocalSetId, syncId, syncVersion, deletedAt, setId]
+    sqliteParams([
+      cloudSetId,
+      remoteLocalSetId,
+      syncId,
+      syncVersion,
+      deletedAt,
+      setId,
+    ])
   );
 }
 
@@ -950,7 +1084,14 @@ export async function updateSetCloudIdentity(
          sync_version = COALESCE(?, sync_version),
          deleted_at = COALESCE(?, deleted_at)
      WHERE sets_id = ?;`,
-    [cloudSetId, remoteLocalSetId, syncId, syncVersion, deletedAt, setId]
+    sqliteParams([
+      cloudSetId,
+      remoteLocalSetId,
+      syncId,
+      syncVersion,
+      deletedAt,
+      setId,
+    ])
   );
 }
 
@@ -1012,15 +1153,19 @@ export async function queueSetDeleteSync(
       sync_version,
       deleted_at
     ) VALUES (?, ?, ?, ?, ?);`,
-    [cloudSetId, remoteLocalSetId, syncId, syncVersion, deletedAt]
+    sqliteParams([cloudSetId, remoteLocalSetId, syncId, syncVersion, deletedAt])
   );
 }
 
 export async function deleteQueuedSetDelete(db, queueId) {
+  if (queueId === null || queueId === undefined) {
+    return;
+  }
+
   await db.runAsync(
     `DELETE FROM Set_Sync_Delete
      WHERE set_sync_delete_id = ?;`,
-    [queueId]
+    sqliteParams([queueId])
   );
 }
 
@@ -1137,6 +1282,25 @@ export async function updateExerciseNote(db, { exerciseId, note }) {
          needs_sync = 1
      WHERE exercise_instance_id = ?;`,
     [note, syncVersion, exerciseId]
+  );
+}
+
+export async function updateExerciseOrder(
+  db,
+  { exerciseId, exerciseOrder }
+) {
+  await ensureExerciseOrderColumn(db);
+
+  const syncVersion = createNextSyncVersion();
+  await db.runAsync(
+    `UPDATE Exercise_Instance
+     SET exercise_order = ?,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
+         needs_sync = 1
+     WHERE exercise_instance_id = ?;`,
+    [exerciseOrder, syncVersion, exerciseId]
   );
 }
 

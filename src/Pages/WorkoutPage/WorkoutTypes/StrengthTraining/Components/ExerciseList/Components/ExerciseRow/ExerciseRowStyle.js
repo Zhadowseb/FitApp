@@ -65,6 +65,14 @@ export default StyleSheet.create({
     marginLeft: 6,
   },
 
+  dragHandle: {
+    marginLeft: 6,
+  },
+
+  dragHandleActive: {
+    opacity: 0.72,
+  },
+
   summaryRow: {
     marginTop: 12,
     borderWidth: 1,
@@ -94,6 +102,6 @@ export default StyleSheet.create({
   expandedSection: {
     marginTop: 10,
     marginHorizontal: -6,
-    marginBottom: -6
+    marginBottom: -6,
   },
 });

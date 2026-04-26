@@ -16,7 +16,7 @@ import { getWorkoutIconConfig } from '../../../../Resources/Icons/WorkoutLabels/
 
 //Icons:
 import ThreeDots from '../../../../Resources/Icons/UI-icons/ThreeDots';
-import Plus from '../../../../Resources/Icons/UI-icons/Plus';
+import PlusCircled from '../../../../Resources/Icons/UI-icons/PlusCircled';
 import Copy from '../../../../Resources/Icons/UI-icons/Copy';
 import Delete from "../../../../Resources/Icons/UI-icons/Delete";
 
@@ -306,7 +306,7 @@ const Day = ( {day, program_id, microcycle_id} ) => {
                         set_labelModal_visible(true);
 
                     }}>
-                    <Plus
+                    <PlusCircled
                         width={24}
                         height={24}/>
                     <ThemedText style={styles.option_text}> 

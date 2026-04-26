@@ -7,7 +7,7 @@ import AddProgram from './Components/AddProgram/AddProgram';
 import { formatDate } from '../../Utils/dateUtils';
 import { programService } from "../../Services";
 import ThreeDots from "../../Resources/Icons/UI-icons/ThreeDots";
-import Plus from "../../Resources/Icons/UI-icons/Plus";
+import PlusCircled from "../../Resources/Icons/UI-icons/PlusCircled";
 
 import {
   ThemedView,
@@ -87,7 +87,7 @@ export default function App() {
             setOptionsBottomSheetVisible(false);
             set_addProgram_Visible(true);
           }}>
-          <Plus width={24} height={24} />
+          <PlusCircled width={24} height={24} />
           <ThemedText style={styles.option_text}>
             Create new program.
           </ThemedText>

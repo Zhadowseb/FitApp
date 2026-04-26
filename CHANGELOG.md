@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.9.8] - Unreleased
+### Changed
+- Added drag-and-drop reordering for strength workout exercises with persisted local and cloud ordering.
+
+---
 ## [0.9.7] - Unreleased
 ### Changed
 - Updated the HomePage crew activity strip so your own circle now reflects real local workout states with planned, live, done, and rest styling plus status badges.

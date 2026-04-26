@@ -19,7 +19,7 @@ import {
   ThemedCard,
   ThemedText,
 } from "../../../../Resources/ThemedComponents";
-import Plus from "../../../../Resources/Icons/UI-icons/Plus";
+import PlusCircled from "../../../../Resources/Icons/UI-icons/PlusCircled";
 import ArrowDoubleUp from "../../../../Resources/Icons/UI-icons/ArrowDoubleUp";
 import { parseCustomDate, formatDate } from "../../../../Utils/dateUtils";
 
@@ -716,7 +716,7 @@ const MesocycleList = ({ program_id, start_date, refreshKey, refresh }) => {
                 },
               ]}
             >
-              <Plus width={28} height={28} color={accentColor} />
+              <PlusCircled width={28} height={28} color={accentColor} />
             </View>
             <ThemedText size={18} style={styles.addTitle}>
               Add mesocycle

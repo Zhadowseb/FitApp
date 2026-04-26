@@ -53,7 +53,7 @@ const PRIMARY_ACTIVATION_LEVEL = "primary";
 const SECONDARY_ACTIVATION_LEVEL = "secondary";
 const EXERCISE_INSTANCE_CLOUD_TABLE = "exercise_instance";
 const EXERCISE_INSTANCE_CLOUD_SELECT =
-  "id, local_exercise_instance_id, sync_id, sync_version, deleted_at, cloud_workout_type_instance_id, exercise_name, sets, visible_columns, note, done";
+  "id, local_exercise_instance_id, sync_id, sync_version, deleted_at, cloud_workout_type_instance_id, exercise_name, exercise_order, sets, visible_columns, note, done";
 const SET_CLOUD_TABLE = "set";
 const SET_CLOUD_SELECT =
   "id, local_set_id, sync_id, sync_version, deleted_at, cloud_exercise_instance_id, set_number, personal_record, pause, rpe, weight, rm_percentage, reps, done, failed, amrap, note";
@@ -120,6 +120,21 @@ function normalizeBooleanFlag(value) {
   }
 
   return false;
+}
+
+function normalizeExerciseOrder(value, fallbackValue = 0) {
+  const numericValue = normalizeOptionalInteger(value, fallbackValue);
+  return Math.max(0, numericValue ?? fallbackValue);
+}
+
+function normalizeRequiredId(value, label) {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    throw new Error(`${label} is required.`);
+  }
+
+  return Math.trunc(numericValue);
 }
 
 function parseVisibleColumns(value) {
@@ -869,11 +884,15 @@ async function getAuthenticatedUserId() {
 }
 
 async function loadWorkoutExercisesFromLocal(db, workoutId) {
+  const resolvedWorkoutId = normalizeRequiredId(workoutId, "workoutId");
   const exercises = await weightliftingRepository.getExercisesByWorkout(
     db,
-    workoutId
+    resolvedWorkoutId
   );
-  const sets = await weightliftingRepository.getSetsByWorkout(db, workoutId);
+  const sets = await weightliftingRepository.getSetsByWorkout(
+    db,
+    resolvedWorkoutId
+  );
 
   const setsByExercise = {};
   for (const set of sets) {
@@ -928,6 +947,7 @@ async function hydrateWorkoutStrengthDataFromCloud(db, workoutId) {
     .select(EXERCISE_INSTANCE_CLOUD_SELECT)
     .eq("user_id", userId)
     .eq("cloud_workout_type_instance_id", cloudWorkoutTypeInstanceId)
+    .order("exercise_order", { ascending: true })
     .order("id", { ascending: true });
 
   if (cloudExercisesError) {
@@ -1011,6 +1031,7 @@ async function hydrateWorkoutStrengthDataFromCloud(db, workoutId) {
         deletedAt: normalizeOptionalText(cloudExercise?.deleted_at),
         workoutId,
         exerciseName,
+        exerciseOrder: normalizeExerciseOrder(cloudExercise?.exercise_order),
         sets: Math.max(0, normalizeOptionalInteger(cloudExercise?.sets, 0) ?? 0),
         visibleColumns: serializeVisibleColumns(cloudExercise?.visible_columns),
         note: normalizeOptionalText(cloudExercise?.note),
@@ -1275,10 +1296,20 @@ export async function getWorkoutExercises(
 
 export async function addExerciseToWorkout(db, { workoutId, exerciseName }) {
   await withTransaction(db, async () => {
+    const nextExerciseOrder =
+      await weightliftingRepository.getNextExerciseOrderForWorkout(
+        db,
+        workoutId
+      );
+
     await weightliftingRepository.createExercise(db, {
       workoutId,
       exerciseName,
       sets: 0,
+      exerciseOrder: normalizeExerciseOrder(
+        nextExerciseOrder?.exercise_order,
+        1
+      ),
     });
 
     await workoutRepository.updateWorkoutDone(db, {
@@ -1290,6 +1321,94 @@ export async function addExerciseToWorkout(db, { workoutId, exerciseName }) {
   });
 
   syncExerciseInstancesInBackground(db);
+}
+
+async function resequenceWorkoutExerciseOrder(db, workoutId) {
+  const exercises = await weightliftingRepository.getExerciseOrderByWorkout(
+    db,
+    workoutId
+  );
+  let didChange = false;
+
+  for (let index = 0; index < exercises.length; index += 1) {
+    const exercise = exercises[index];
+    const exerciseOrder = index + 1;
+
+    if (Number(exercise.exercise_order) === exerciseOrder) {
+      continue;
+    }
+
+    await weightliftingRepository.updateExerciseOrder(db, {
+      exerciseId: exercise.exercise_instance_id,
+      exerciseOrder,
+    });
+    didChange = true;
+  }
+
+  return didChange;
+}
+
+export async function reorderWorkoutExercises(db, { workoutId, exerciseIds }) {
+  const resolvedWorkoutId = normalizeRequiredId(workoutId, "workoutId");
+  const orderedExerciseIds = [...new Set(
+    (exerciseIds ?? [])
+      .map((exerciseId) => Number(exerciseId))
+      .filter((exerciseId) => Number.isFinite(exerciseId))
+  )];
+  let didChange = false;
+
+  if (orderedExerciseIds.length !== (exerciseIds ?? []).length) {
+    throw new Error("Exercise reorder payload contains an invalid exercise id.");
+  }
+
+  await withTransaction(db, async () => {
+    const currentExercises =
+      await weightliftingRepository.getExerciseOrderByWorkout(
+        db,
+        resolvedWorkoutId
+      );
+    const currentExerciseIds = currentExercises.map((exercise) =>
+      Number(exercise.exercise_instance_id)
+    );
+    const currentExerciseIdSet = new Set(currentExerciseIds);
+
+    if (
+      orderedExerciseIds.length !== currentExerciseIds.length ||
+      orderedExerciseIds.some(
+        (exerciseId) => !currentExerciseIdSet.has(exerciseId)
+      )
+    ) {
+      throw new Error("Exercise reorder payload does not match this workout.");
+    }
+
+    const currentOrdersById = new Map(
+      currentExercises.map((exercise) => [
+        Number(exercise.exercise_instance_id),
+        Number(exercise.exercise_order),
+      ])
+    );
+
+    for (let index = 0; index < orderedExerciseIds.length; index += 1) {
+      const exerciseId = orderedExerciseIds[index];
+      const exerciseOrder = index + 1;
+
+      if (currentOrdersById.get(exerciseId) === exerciseOrder) {
+        continue;
+      }
+
+      await weightliftingRepository.updateExerciseOrder(db, {
+        exerciseId,
+        exerciseOrder,
+      });
+      didChange = true;
+    }
+  });
+
+  if (didChange) {
+    syncExerciseInstancesInBackground(db);
+  }
+
+  return didChange;
 }
 
 export async function deleteExercise(db, exerciseId) {
@@ -1327,6 +1446,7 @@ export async function deleteExercise(db, exerciseId) {
     await weightliftingRepository.deleteExerciseById(db, exerciseId);
 
     if (exercise?.workout_id) {
+      await resequenceWorkoutExerciseOrder(db, exercise.workout_id);
       await weightliftingRepository.updateWorkoutDoneFromExercises(
         db,
         exercise.workout_id

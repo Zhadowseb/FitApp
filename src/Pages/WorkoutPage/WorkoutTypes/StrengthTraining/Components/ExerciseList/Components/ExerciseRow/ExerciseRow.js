@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { TouchableOpacity, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { PanResponder, TouchableOpacity, View } from "react-native";
 import { useColorScheme } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 
@@ -11,8 +11,9 @@ import { formatExerciseSetSummary } from "../../Utils/checkUniformSets";
 import Cogwheel from "../../../../../../../../Resources/Icons/UI-icons/Cogwheel";
 import Note from "../../../../../../../../Resources/Icons/UI-icons/Note";
 import Expand from "../../../../../../../../Resources/Icons/UI-icons/Expand";
-import Plus from "../../../../../../../../Resources/Icons/UI-icons/Plus";
+import PlusCircled from "../../../../../../../../Resources/Icons/UI-icons/PlusCircled";
 import Colapse from "../../../../../../../../Resources/Icons/UI-icons/Colapse";
+import ArrowUpAndDown from "../../../../../../../../Resources/Icons/UI-icons/ArrowUpAndDown";
 
 import {
   ThemedBouncyCheckbox,
@@ -30,6 +31,10 @@ const ExerciseRow = ({
   updateUI,
   onToggleSet,
   updateWeight,
+  isDragging = false,
+  onDragStart,
+  onDragMove,
+  onDragEnd,
 }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
@@ -38,8 +43,52 @@ const ExerciseRow = ({
   const [exerciseNote, setExerciseNote] = useState(exercise.note ?? "");
   const [panelModalVisible, setPanelModalVisible] = useState(false);
   const [noteModalVisible, setNoteModalVisible] = useState(false);
+  const dragActiveRef = useRef(false);
+  const onDragStartRef = useRef(onDragStart);
+  const onDragMoveRef = useRef(onDragMove);
+  const onDragEndRef = useRef(onDragEnd);
 
   const db = useSQLiteContext();
+
+  useEffect(() => {
+    onDragStartRef.current = onDragStart;
+    onDragMoveRef.current = onDragMove;
+    onDragEndRef.current = onDragEnd;
+  }, [onDragEnd, onDragMove, onDragStart]);
+
+  const dragPanResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => Boolean(onDragStartRef.current),
+        onMoveShouldSetPanResponder: () => Boolean(onDragStartRef.current),
+        onPanResponderGrant: () => {
+          dragActiveRef.current = onDragStartRef.current?.() !== false;
+        },
+        onPanResponderMove: (_event, gestureState) => {
+          if (!dragActiveRef.current) {
+            return;
+          }
+
+          onDragMoveRef.current?.(gestureState.dy);
+        },
+        onPanResponderRelease: () => {
+          if (dragActiveRef.current) {
+            onDragEndRef.current?.();
+          }
+
+          dragActiveRef.current = false;
+        },
+        onPanResponderTerminationRequest: () => false,
+        onPanResponderTerminate: () => {
+          if (dragActiveRef.current) {
+            onDragEndRef.current?.();
+          }
+
+          dragActiveRef.current = false;
+        },
+      }),
+    []
+  );
 
   useEffect(() => {
     setVisibleColumns(exercise.visibleColumns);
@@ -184,7 +233,7 @@ const ExerciseRow = ({
               ]}
               onPress={addSet}
             >
-              <Plus width={18} height={18} color={primaryColor} />
+              <PlusCircled width={18} height={18} color={primaryColor} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -220,6 +269,27 @@ const ExerciseRow = ({
                 <Expand width={18} height={18} color={primaryColor} />
               )}
             </TouchableOpacity>
+
+            {onDragStart && (
+              <View
+                {...dragPanResponder.panHandlers}
+                style={[
+                  styles.actionButton,
+                  styles.dragHandle,
+                  {
+                    backgroundColor: innerSurface,
+                    borderColor: cardBorder,
+                  },
+                  isDragging && styles.dragHandleActive,
+                ]}
+              >
+                <ArrowUpAndDown
+                  width={18}
+                  height={18}
+                  stroke={primaryColor}
+                />
+              </View>
+            )}
           </View>
         </View>
 

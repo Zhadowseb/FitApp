@@ -6,7 +6,7 @@ import { useColorScheme } from "react-native";
 
 import RunSetList from "./RunSetList";
 import RunLocationDebugModal from "./RunLocationDebugModal";
-import Plus from "../../../../Resources/Icons/UI-icons/Plus";
+import PlusCircled from "../../../../Resources/Icons/UI-icons/PlusCircled";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 import {
   ThemedCard,
@@ -1086,7 +1086,7 @@ const Run = ({ workout_id, restartRequestKey }) => {
                   ]}
                   onPress={() => addSet(section.type)}
                 >
-                  <Plus width={20} height={20} color={section.accent} />
+                  <PlusCircled width={20} height={20} color={section.accent} />
                 </TouchableOpacity>
               </View>
 

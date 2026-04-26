@@ -2,6 +2,15 @@
 import { StyleSheet } from "react-native";
 
 export default StyleSheet.create({
+  dragWrapper: {
+    position: "relative",
+  },
+
+  dragWrapperActive: {
+    opacity: 0.96,
+    zIndex: 10,
+    elevation: 8,
+  },
 
   card: {
       backgroundColor: "#fff",

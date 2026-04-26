@@ -12,7 +12,7 @@ import { Colors } from "../../Resources/GlobalStyling/colors";
 import styles from "./MicrocyclePageStyle";
 import MicrocycleList from "./Components/MicrocycleList/MicrocycleList";
 import ThreeDots from "../../Resources/Icons/UI-icons/ThreeDots";
-import Plus from "../../Resources/Icons/UI-icons/Plus";
+import PlusCircled from "../../Resources/Icons/UI-icons/PlusCircled";
 import Delete from "../../Resources/Icons/UI-icons/Delete";
 
 import {
@@ -373,7 +373,7 @@ const MicrocyclePage = ({ route }) => {
               addExtraWeek();
             }}
           >
-            <Plus width={24} height={24} />
+            <PlusCircled width={24} height={24} />
             <ThemedText style={styles.option_text}>
               Add week to mesocycle.
             </ThemedText>

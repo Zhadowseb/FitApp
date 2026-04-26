@@ -1,13 +1,13 @@
 import { workoutRepository } from "../Repository";
 import { withTransaction } from "./shared";
+import { startBackgroundSync } from "./syncScheduler";
 
 async function syncWorkoutTypeInstancesInBackground(db) {
   try {
     const programServiceModule = await import("./programService");
-    void programServiceModule.syncWorkoutTypeInstancesWithCloud(db).catch(
-      (error) => {
-        console.error("Workout type instance cloud sync failed:", error);
-      }
+    startBackgroundSync(
+      () => programServiceModule.syncWorkoutTypeInstancesWithCloud(db),
+      "Workout type instance cloud sync failed:"
     );
   } catch (error) {
     console.error("Failed to start workout type instance cloud sync:", error);

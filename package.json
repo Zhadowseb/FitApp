@@ -1,6 +1,6 @@
 {
   "name": "programapp",
-  "version": "0.9.6-minor-profile-avatar-upload.1",
+  "version": "0.9.7-minor-home-activity-states.1",
   "main": "index.js",
   "scripts": {
     "start": "expo start --dev-client --scheme exp+programapp-dev",
@@ -22,6 +22,7 @@
   "dependencies": {
     "@expo/ui": "~0.2.0-beta.9",
     "@expo/vector-icons": "^15.0.3",
+    "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "8.4.4",
     "@react-native-picker/picker": "^2.11.4",
     "@react-navigation/native": "^7.1.21",
@@ -41,7 +42,8 @@
     "react-native-bouncy-checkbox": "^4.1.4",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
-    "react-native-svg": "15.12.1"
+    "react-native-svg": "15.12.1",
+    "react-native-url-polyfill": "^3.0.0"
   },
   "private": true,
   "devDependencies": {

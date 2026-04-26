@@ -23,7 +23,13 @@ import {
   ThemedText,
   ThemedButton,
 } from "../../../../Resources/ThemedComponents";
-import { formatTime, formatWorkoutStart } from "../../../../Utils/timeUtils";
+import {
+  formatTime,
+  formatWorkoutStart,
+  getCurrentStoredTimestampSeconds,
+  normalizeElapsedDurationSeconds,
+  normalizeStoredTimestampSeconds,
+} from "../../../../Utils/timeUtils";
 import { weightliftingService, workoutService } from "../../../../Services";
 
 //Icons:
@@ -54,6 +60,9 @@ const StrengthTraining = ({workout_id, date, restartRequestKey}) =>  {
   const [isRunning, set_isRunning] = useState(false);
   const timerStartRef = useRef(null);
   const elapsedTimeRef = useRef(0);
+
+  const normalizeTimerStartValue = (value) =>
+    normalizeStoredTimestampSeconds(value);
 
   const refresh = () => {
     set_refreshing(prev => prev + 1);
@@ -98,6 +107,7 @@ const StrengthTraining = ({workout_id, date, restartRequestKey}) =>  {
   //Focus coming back to the page
   useFocusEffect(
     useCallback(() => {
+      let isActive = true;
       
       loadTotalSets();
       loadCompletedSets();
@@ -105,16 +115,50 @@ const StrengthTraining = ({workout_id, date, restartRequestKey}) =>  {
       const reload = async () => {
           const row = await workoutService.getWorkoutTimerState(db, workout_id);
           const nextIsDone = Number(row.done) === 1;
+          const resolvedOriginalStartTime = normalizeStoredTimestampSeconds(
+            row.original_start_time
+          );
+          const resolvedTimerStart = normalizeTimerStartValue(row.timer_start);
+          const resolvedElapsedTime = normalizeElapsedDurationSeconds(
+            row.elapsed_time,
+            0
+          );
 
-          set_isRunning(row.timer_start !== null && !nextIsDone);
+          if (!isActive) {
+            return;
+          }
+
+          set_isRunning(resolvedTimerStart !== null && !nextIsDone);
           set_isDone(nextIsDone);
-          set_original_start_time(row.original_start_time);
-          set_timer_start(row.timer_start);
-          set_elapsed_time(row.elapsed_time);
+          set_original_start_time(resolvedOriginalStartTime);
+          set_timer_start(resolvedTimerStart);
+          set_elapsed_time(resolvedElapsedTime);
       }
-      reload();
+      void reload();
 
-    }, [workout_id])
+      void (async () => {
+        try {
+          await weightliftingService.hydrateStrengthWorkoutDataForWorkout(
+            db,
+            workout_id
+          );
+        } catch (error) {
+          console.warn("Failed to hydrate workout strength data from cloud:", error);
+          return;
+        }
+
+        if (!isActive) {
+          return;
+        }
+
+        await reload();
+        set_refreshing((prev) => prev + 1);
+      })();
+
+      return () => {
+        isActive = false;
+      };
+    }, [db, workout_id])
   );  
 
   useEffect(() => {
@@ -152,16 +196,20 @@ const StrengthTraining = ({workout_id, date, restartRequestKey}) =>  {
   }, [isRunning, isRunning, timer_start]);
 
   const computeCurrentElapsed = () => {
-      if (!timer_start) return 0;
+      const resolvedTimerStart = normalizeTimerStartValue(timer_start);
 
-      return Math.floor(
-          (Date.now() - timer_start) / 1000
+      if (resolvedTimerStart === null) return 0;
+
+      return Math.max(
+          0,
+          getCurrentStoredTimestampSeconds() - resolvedTimerStart
       );
   };
 
   const updateElapsed = async () => {
-      const newElapsed = Math.floor(
-          elapsed_time + computeCurrentElapsed()
+      const newElapsed = normalizeElapsedDurationSeconds(
+          elapsed_time + computeCurrentElapsed(),
+          0
       );
       
       await workoutService.persistWorkoutTimerState(db, {
@@ -180,7 +228,7 @@ const StrengthTraining = ({workout_id, date, restartRequestKey}) =>  {
     const row = await workoutService.getWorkoutOriginalStartTime(db, workout_id);
 
     //Miliseconds since 1. januar 1970 at 00:00:00 UTC
-    const start_time = Date.now();
+    const start_time = getCurrentStoredTimestampSeconds();
 
     if(row.original_start_time === null){
         set_original_start_time(start_time);
@@ -251,7 +299,10 @@ const StrengthTraining = ({workout_id, date, restartRequestKey}) =>  {
   const quietText = theme.quietText ?? theme.iconColor ?? theme.text;
   const invertedText = theme.textInverted ?? theme.background ?? "#0E0F12";
 
-  const currentElapsed = elapsed_time + computeCurrentElapsed();
+  const currentElapsed = normalizeElapsedDurationSeconds(
+    elapsed_time + computeCurrentElapsed(),
+    0
+  );
   const resolvedTotalSets = Math.max(Number(totalSets) || 0, 0);
   const resolvedDoneSets = Math.max(Number(doneSets) || 0, 0);
   const progressPercent =

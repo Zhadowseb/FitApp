@@ -4,6 +4,11 @@ import {
   normalizeLocalDateString,
   parseCustomDate,
 } from "../Utils/dateUtils";
+import {
+  normalizeElapsedDurationSeconds,
+  normalizeStoredTimestampSeconds,
+  storedTimestampSecondsToMilliseconds,
+} from "../Utils/timeUtils";
 import { supabase } from "../Database/supaBaseClient";
 import {
   programRepository,
@@ -13,6 +18,7 @@ import {
 } from "../Repository";
 import * as workoutService from "./workoutService";
 import { withTransaction } from "./shared";
+import { startBackgroundSync } from "./syncScheduler";
 import {
   createNextSyncVersion,
   normalizeDeletedAt,
@@ -62,19 +68,31 @@ const EXERCISE_VISIBLE_COLUMN_KEYS = [
   "done",
 ];
 
-let activeProgramSyncPromise = null;
-let activeMesocycleSyncPromise = null;
-let activeMicrocycleSyncPromise = null;
-let activeDaySyncPromise = null;
-let activeWorkoutTypeInstanceSyncPromise = null;
-let activeExerciseInstanceSyncPromise = null;
-let activeSetSyncPromise = null;
-let pendingWorkoutTypeInstanceSyncPass = false;
-let pendingExerciseInstanceSyncPass = false;
-let pendingSetSyncPass = false;
-
 function formatDisplayNumber(value) {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1);
+}
+
+function isWorkoutLive(workout) {
+  return (
+    Number(workout?.done) !== 1 &&
+    (Number(workout?.is_active) === 1 || workout?.timer_start !== null)
+  );
+}
+
+function formatElapsedWorkoutDetail(workout) {
+  const storedElapsedSeconds = normalizeElapsedDurationSeconds(
+    workout?.elapsed_time,
+    0
+  );
+  const timerStartSeconds = normalizeStoredTimestampSeconds(workout?.timer_start);
+  const runningElapsedSeconds =
+    timerStartSeconds !== null
+      ? Math.max(0, Math.trunc(Date.now() / 1000) - timerStartSeconds)
+      : 0;
+  const totalElapsedSeconds = storedElapsedSeconds + runningElapsedSeconds;
+  const totalElapsedMinutes = Math.max(1, Math.floor(totalElapsedSeconds / 60));
+
+  return `${totalElapsedMinutes} min in`;
 }
 
 function normalizeProgramName(value) {
@@ -242,6 +260,37 @@ function normalizeDayDate(value) {
 
 function normalizeDayDateForCloud(value) {
   return normalizeIsoDateString(value);
+}
+
+async function resolveDayDateFallback(
+  db,
+  { programId, programStartDate, mesocycleNumber, microcycleNumber, weekday }
+) {
+  const normalizedStartDate = normalizeLocalDateString(programStartDate);
+  const normalizedWeekday = normalizeWeekday(weekday);
+  const weekdayIndex = WEEK_DAYS.indexOf(normalizedWeekday);
+
+  if (
+    !normalizedStartDate ||
+    weekdayIndex < 0 ||
+    !Number.isFinite(Number(programId)) ||
+    !Number.isFinite(Number(mesocycleNumber)) ||
+    !Number.isFinite(Number(microcycleNumber))
+  ) {
+    return null;
+  }
+
+  const weeksBeforeResult = await getWeeksBeforeMesocycle(db, {
+    programId,
+    mesocycleNumber,
+  });
+  const weeksBefore = Number(weeksBeforeResult?.total_weeks) || 0;
+  const date = parseCustomDate(normalizedStartDate);
+  const daysOffset =
+    (weeksBefore + Number(microcycleNumber) - 1) * 7 + weekdayIndex;
+
+  date.setDate(date.getDate() + daysOffset);
+  return formatDate(date);
 }
 
 function parseCloudDayId(value) {
@@ -837,13 +886,13 @@ function normalizeCloudTimeString(value) {
 }
 
 function timestampToCloudTimeString(value) {
-  const numericValue = Number(value);
+  const normalizedTimestampMs = storedTimestampSecondsToMilliseconds(value);
 
-  if (!Number.isFinite(numericValue)) {
+  if (normalizedTimestampMs === null) {
     return null;
   }
 
-  const date = new Date(numericValue);
+  const date = new Date(normalizedTimestampMs);
 
   if (Number.isNaN(date.getTime())) {
     return null;
@@ -865,8 +914,9 @@ function cloudTimeStringToLocalTimestamp(dateValue, timeValue) {
   const [day, month, year] = normalizedDate.split(".").map(Number);
   const [hours, minutes, seconds] = normalizedTime.split(":").map(Number);
   const date = new Date(year, month - 1, day, hours, minutes, seconds, 0);
+  const timestampMs = date.getTime();
 
-  return Number.isNaN(date.getTime()) ? null : date.getTime();
+  return Number.isNaN(timestampMs) ? null : Math.trunc(timestampMs / 1000);
 }
 
 function getComparableWorkoutTypeInstanceSnapshot(workout) {
@@ -891,7 +941,7 @@ function getComparableWorkoutTypeInstanceSnapshot(workout) {
         ? workout?.timer_start
         : timestampToCloudTimeString(workout?.timer_start)
     ),
-    elapsed_time: normalizeOptionalInteger(workout?.elapsed_time, 0),
+    elapsed_time: normalizeElapsedDurationSeconds(workout?.elapsed_time, 0),
   };
 }
 
@@ -930,7 +980,7 @@ function buildCloudWorkoutTypeInstancePayload(localWorkout, userId, cloudDayId) 
       localWorkout.original_start_time
     ),
     timer_start: timestampToCloudTimeString(localWorkout.timer_start),
-    elapsed_time: normalizeOptionalInteger(localWorkout.elapsed_time, 0),
+    elapsed_time: normalizeElapsedDurationSeconds(localWorkout.elapsed_time, 0),
   };
 }
 
@@ -1445,9 +1495,10 @@ async function syncProgramsWithCloudInternal(db) {
 }
 
 function syncProgramsInBackground(db) {
-  void syncProgramsWithCloud(db).catch((error) => {
-    console.error("Program cloud sync failed:", error);
-  });
+  startBackgroundSync(
+    () => syncProgramsWithCloud(db),
+    "Program cloud sync failed:"
+  );
 }
 
 async function processQueuedMesocycleDeletes(db, userId) {
@@ -2273,15 +2324,17 @@ async function syncMicrocyclesWithCloudInternal(db) {
 }
 
 function syncMesocyclesInBackground(db) {
-  void syncMesocyclesWithCloud(db).catch((error) => {
-    console.error("Mesocycle cloud sync failed:", error);
-  });
+  startBackgroundSync(
+    () => syncMesocyclesWithCloud(db),
+    "Mesocycle cloud sync failed:"
+  );
 }
 
 function syncMicrocyclesInBackground(db) {
-  void syncMicrocyclesWithCloud(db).catch((error) => {
-    console.error("Microcycle cloud sync failed:", error);
-  });
+  startBackgroundSync(
+    () => syncMicrocyclesWithCloud(db),
+    "Microcycle cloud sync failed:"
+  );
 }
 
 async function uploadDirtyDays(
@@ -2293,6 +2346,16 @@ async function uploadDirtyDays(
     programRepository.getDaysForCloudSync(db),
     programRepository.getMicrocyclesForCloudSync(db),
   ]);
+  const [localPrograms, localMesocycles] = await Promise.all([
+    programRepository.getProgramsForCloudSync(db),
+    programRepository.getMesocyclesForCloudSync(db),
+  ]);
+  const localProgramsById = new Map(
+    localPrograms.map((program) => [program.program_id, program])
+  );
+  const localMesocyclesById = new Map(
+    localMesocycles.map((mesocycle) => [mesocycle.mesocycle_id, mesocycle])
+  );
   const localMicrocyclesById = new Map(
     localMicrocycles.map((microcycle) => [microcycle.microcycle_id, microcycle])
   );
@@ -2317,11 +2380,21 @@ async function uploadDirtyDays(
     }
 
     const payload = buildCloudDayPayload(localDay, userId, parentMicrocycleCloudId);
+    const resolvedPayloadDate =
+      payload.date ??
+      (await resolveDayDateFallback(db, {
+        programId: localDay.program_id,
+        programStartDate: localProgramsById.get(localDay.program_id)?.start_date,
+        mesocycleNumber:
+          localMesocyclesById.get(parentMicrocycle.mesocycle_id)?.mesocycle_number,
+        microcycleNumber: parentMicrocycle.microcycle_number,
+        weekday: localDay.weekday ?? localDay.Weekday,
+      }));
 
     if (
       payload.local_day_id === null ||
       !payload.weekday ||
-      !payload.date
+      !resolvedPayloadDate
     ) {
       continue;
     }
@@ -2331,7 +2404,10 @@ async function uploadDirtyDays(
       selectColumns: DAY_CLOUD_SYNC_SELECT,
       userId,
       localEntity: localDay,
-      payload,
+      payload: {
+        ...payload,
+        date: resolvedPayloadDate,
+      },
       cloudId: parseCloudDayId(localDay.cloud_day_id),
       syncId: normalizeSyncId(localDay.sync_id),
       legacyLocalId: payload.local_day_id,
@@ -2385,11 +2461,15 @@ async function reconcileDaysFromCloud(db, userId) {
     throw error;
   }
 
-  const [localDays, localMicrocycles, localMesocycles] = await Promise.all([
+  const [localPrograms, localDays, localMicrocycles, localMesocycles] = await Promise.all([
+    programRepository.getProgramsForCloudSync(db),
     programRepository.getDaysForCloudSync(db),
     programRepository.getMicrocyclesForCloudSync(db),
     programRepository.getMesocyclesForCloudSync(db),
   ]);
+  const localProgramsById = new Map(
+    localPrograms.map((program) => [program.program_id, program])
+  );
   const localMicrocyclesByCloudId = new Map();
   const localMesocyclesById = new Map(
     localMesocycles.map((mesocycle) => [mesocycle.mesocycle_id, mesocycle])
@@ -2452,9 +2532,23 @@ async function reconcileDaysFromCloud(db, userId) {
       const parentMicrocycle = localMicrocyclesByCloudId.get(cloudMicrocycleId);
       const parentMesocycle = localMesocyclesById.get(parentMicrocycle?.mesocycle_id);
       const comparableCloudDay = getComparableDaySnapshot(cloudDay);
+      const parentProgram = localProgramsById.get(parentMesocycle?.program_id);
+      const resolvedCloudDayDate =
+        comparableCloudDay.date ??
+        (await resolveDayDateFallback(db, {
+          programId: parentMesocycle?.program_id,
+          programStartDate: parentProgram?.start_date,
+          mesocycleNumber: parentMesocycle?.mesocycle_number,
+          microcycleNumber: parentMicrocycle?.microcycle_number,
+          weekday: comparableCloudDay.weekday,
+        }));
+      const normalizedCloudDay = {
+        ...comparableCloudDay,
+        date: resolvedCloudDayDate,
+      };
       const identityKey = getDayIdentityKey(
         parentMicrocycle?.microcycle_id,
-        comparableCloudDay.weekday
+        normalizedCloudDay.weekday
       );
 
       if (
@@ -2463,8 +2557,8 @@ async function reconcileDaysFromCloud(db, userId) {
         cloudMicrocycleId === null ||
         !parentMicrocycle ||
         !parentMesocycle ||
-        !comparableCloudDay.weekday ||
-        !comparableCloudDay.date
+        !normalizedCloudDay.weekday ||
+        !normalizedCloudDay.date
       ) {
         continue;
       }
@@ -2499,9 +2593,9 @@ async function reconcileDaysFromCloud(db, userId) {
           deletedAt: normalizeDeletedAt(cloudDay.deleted_at),
           microcycleId: parentMicrocycle.microcycle_id,
           programId: parentMesocycle.program_id,
-          weekday: comparableCloudDay.weekday,
-          date: comparableCloudDay.date,
-          done: comparableCloudDay.done,
+          weekday: normalizedCloudDay.weekday,
+          date: normalizedCloudDay.date,
+          done: normalizedCloudDay.done,
         });
 
         const createdDay = {
@@ -2513,9 +2607,9 @@ async function reconcileDaysFromCloud(db, userId) {
           deleted_at: normalizeDeletedAt(cloudDay.deleted_at),
           microcycle_id: parentMicrocycle.microcycle_id,
           program_id: parentMesocycle.program_id,
-          weekday: comparableCloudDay.weekday,
-          date: comparableCloudDay.date,
-          done: comparableCloudDay.done ? 1 : 0,
+          weekday: normalizedCloudDay.weekday,
+          date: normalizedCloudDay.date,
+          done: normalizedCloudDay.done ? 1 : 0,
           needs_sync: 0,
         };
 
@@ -2550,12 +2644,12 @@ async function reconcileDaysFromCloud(db, userId) {
             deletedAt: normalizeDeletedAt(cloudDay.deleted_at),
             microcycleId: parentMicrocycle.microcycle_id,
             programId: parentMesocycle.program_id,
-            weekday: comparableCloudDay.weekday,
-            date: comparableCloudDay.date,
-            done: comparableCloudDay.done,
+            weekday: normalizedCloudDay.weekday,
+            date: normalizedCloudDay.date,
+            done: normalizedCloudDay.done,
           });
           downloadedCount += 1;
-        } else if (areComparableDaysEqual(comparableLocalDay, comparableCloudDay)) {
+        } else if (areComparableDaysEqual(comparableLocalDay, normalizedCloudDay)) {
           await programRepository.markDaySynced(db, {
             dayId: localDay.day_id,
             cloudDayId,
@@ -2581,7 +2675,7 @@ async function reconcileDaysFromCloud(db, userId) {
         continue;
       }
 
-      if (areComparableDaysEqual(comparableLocalDay, comparableCloudDay)) {
+      if (areComparableDaysEqual(comparableLocalDay, normalizedCloudDay)) {
         if (
           !localDay.cloud_day_id ||
           resolveDayCloudLocalId(localDay) !== localDayId ||
@@ -2612,9 +2706,9 @@ async function reconcileDaysFromCloud(db, userId) {
         deletedAt: normalizeDeletedAt(cloudDay.deleted_at),
         microcycleId: parentMicrocycle.microcycle_id,
         programId: parentMesocycle.program_id,
-        weekday: comparableCloudDay.weekday,
-        date: comparableCloudDay.date,
-        done: comparableCloudDay.done,
+        weekday: normalizedCloudDay.weekday,
+        date: normalizedCloudDay.date,
+        done: normalizedCloudDay.done,
       });
 
       const updatedDay = {
@@ -2626,9 +2720,9 @@ async function reconcileDaysFromCloud(db, userId) {
         deleted_at: normalizeDeletedAt(cloudDay.deleted_at),
         microcycle_id: parentMicrocycle.microcycle_id,
         program_id: parentMesocycle.program_id,
-        weekday: comparableCloudDay.weekday,
-        date: comparableCloudDay.date,
-        done: comparableCloudDay.done ? 1 : 0,
+        weekday: normalizedCloudDay.weekday,
+        date: normalizedCloudDay.date,
+        done: normalizedCloudDay.done ? 1 : 0,
         needs_sync: 0,
       };
 
@@ -2674,9 +2768,10 @@ async function syncDaysWithCloudInternal(db) {
 }
 
 function syncDaysInBackground(db) {
-  void syncDaysWithCloud(db).catch((error) => {
-    console.error("Day cloud sync failed:", error);
-  });
+  startBackgroundSync(
+    () => syncDaysWithCloud(db),
+    "Day cloud sync failed:"
+  );
 }
 
 async function processQueuedWorkoutTypeInstanceDeletes(db, userId) {
@@ -3153,21 +3248,12 @@ async function syncWorkoutTypeInstancesWithCloudInternal(db) {
 }
 
 function syncWorkoutTypeInstancesInBackground(db) {
-  if (activeWorkoutTypeInstanceSyncPromise) {
-    pendingWorkoutTypeInstanceSyncPass = true;
-  }
-
-  void syncWorkoutTypeInstancesWithCloud(db).catch((error) => {
-    console.error("Workout type instance cloud sync failed:", error);
-  }).finally(() => {
-    if (
-      pendingWorkoutTypeInstanceSyncPass &&
-      !activeWorkoutTypeInstanceSyncPromise
-    ) {
-      pendingWorkoutTypeInstanceSyncPass = false;
-      syncWorkoutTypeInstancesInBackground(db);
-    }
-  });
+  startBackgroundSync(
+    async () => {
+      await syncWorkoutTypeInstancesWithCloud(db);
+    },
+    "Workout type instance cloud sync failed:"
+  );
 }
 
 async function processQueuedExerciseInstanceDeletes(db, userId) {
@@ -3398,7 +3484,6 @@ async function reconcileExerciseInstancesFromCloud(db, userId) {
 
       if (
         cloudExerciseInstanceId === null ||
-        localExerciseInstanceId === null ||
         cloudWorkoutTypeInstanceId === null ||
         !parentWorkout ||
         !comparableCloudExercise.exercise_name
@@ -3616,7 +3701,13 @@ async function reconcileExerciseInstancesFromCloud(db, userId) {
 }
 
 async function syncExerciseInstancesWithCloudInternal(db) {
-  await syncWorkoutTypeInstancesWithCloud(db);
+  try {
+    await syncWorkoutTypeInstancesWithCloud(db);
+  } catch (error) {
+    throw new Error(
+      `Exercise sync prerequisite failed while syncing workouts: ${error?.message ?? error}`
+    );
+  }
 
   const userId = await getAuthenticatedUserId();
 
@@ -3629,16 +3720,48 @@ async function syncExerciseInstancesWithCloudInternal(db) {
     };
   }
 
-  const deletedCount = await processQueuedExerciseInstanceDeletes(db, userId);
-  const initialDownloadedCount = await reconcileExerciseInstancesFromCloud(
-    db,
-    userId
-  );
-  const uploadedCount = await uploadDirtyExerciseInstances(db, userId);
-  const finalDownloadedCount = await reconcileExerciseInstancesFromCloud(
-    db,
-    userId
-  );
+  let deletedCount = 0;
+  let initialDownloadedCount = 0;
+  let uploadedCount = 0;
+  let finalDownloadedCount = 0;
+
+  try {
+    deletedCount = await processQueuedExerciseInstanceDeletes(db, userId);
+  } catch (error) {
+    throw new Error(
+      `Exercise sync failed while applying queued deletes: ${error?.message ?? error}`
+    );
+  }
+
+  try {
+    initialDownloadedCount = await reconcileExerciseInstancesFromCloud(
+      db,
+      userId
+    );
+  } catch (error) {
+    throw new Error(
+      `Exercise sync failed while downloading cloud exercises: ${error?.message ?? error}`
+    );
+  }
+
+  try {
+    uploadedCount = await uploadDirtyExerciseInstances(db, userId);
+  } catch (error) {
+    throw new Error(
+      `Exercise sync failed while uploading local exercises: ${error?.message ?? error}`
+    );
+  }
+
+  try {
+    finalDownloadedCount = await reconcileExerciseInstancesFromCloud(
+      db,
+      userId
+    );
+  } catch (error) {
+    throw new Error(
+      `Exercise sync failed while reconciling cloud exercises: ${error?.message ?? error}`
+    );
+  }
   const downloadedCount = initialDownloadedCount + finalDownloadedCount;
 
   return {
@@ -3650,20 +3773,12 @@ async function syncExerciseInstancesWithCloudInternal(db) {
 }
 
 function syncExerciseInstancesInBackground(db) {
-  if (activeExerciseInstanceSyncPromise) {
-    pendingExerciseInstanceSyncPass = true;
-  }
-
-  void syncExerciseInstancesWithCloud(db)
-    .catch((error) => {
-      console.error("Exercise instance cloud sync failed:", error);
-    })
-    .finally(() => {
-      if (pendingExerciseInstanceSyncPass && !activeExerciseInstanceSyncPromise) {
-        pendingExerciseInstanceSyncPass = false;
-        syncExerciseInstancesInBackground(db);
-      }
-    });
+  startBackgroundSync(
+    async () => {
+      await syncExerciseInstancesWithCloud(db);
+    },
+    "Exercise instance cloud sync failed:"
+  );
 }
 
 async function processQueuedSetDeletes(db, userId) {
@@ -3856,7 +3971,6 @@ async function reconcileSetsFromCloud(db, userId) {
 
       if (
         cloudSetId === null ||
-        localSetId === null ||
         cloudExerciseInstanceId === null ||
         !parentExercise
       ) {
@@ -4055,7 +4169,14 @@ async function reconcileSetsFromCloud(db, userId) {
 }
 
 async function syncSetsWithCloudInternal(db) {
-  await syncExerciseInstancesWithCloud(db);
+  try {
+    await syncExerciseInstancesWithCloud(db);
+  } catch (error) {
+    console.warn(
+      "Set sync continued after exercise sync prerequisite failed:",
+      error
+    );
+  }
 
   const userId = await getAuthenticatedUserId();
 
@@ -4068,10 +4189,42 @@ async function syncSetsWithCloudInternal(db) {
     };
   }
 
-  const deletedCount = await processQueuedSetDeletes(db, userId);
-  const initialDownloadedCount = await reconcileSetsFromCloud(db, userId);
-  const uploadedCount = await uploadDirtySets(db, userId);
-  const finalDownloadedCount = await reconcileSetsFromCloud(db, userId);
+  let deletedCount = 0;
+  let initialDownloadedCount = 0;
+  let uploadedCount = 0;
+  let finalDownloadedCount = 0;
+
+  try {
+    deletedCount = await processQueuedSetDeletes(db, userId);
+  } catch (error) {
+    throw new Error(
+      `Set sync failed while applying queued deletes: ${error?.message ?? error}`
+    );
+  }
+
+  try {
+    initialDownloadedCount = await reconcileSetsFromCloud(db, userId);
+  } catch (error) {
+    throw new Error(
+      `Set sync failed while downloading cloud sets: ${error?.message ?? error}`
+    );
+  }
+
+  try {
+    uploadedCount = await uploadDirtySets(db, userId);
+  } catch (error) {
+    throw new Error(
+      `Set sync failed while uploading local sets: ${error?.message ?? error}`
+    );
+  }
+
+  try {
+    finalDownloadedCount = await reconcileSetsFromCloud(db, userId);
+  } catch (error) {
+    throw new Error(
+      `Set sync failed while reconciling cloud sets: ${error?.message ?? error}`
+    );
+  }
   const downloadedCount = initialDownloadedCount + finalDownloadedCount;
 
   return {
@@ -4083,20 +4236,12 @@ async function syncSetsWithCloudInternal(db) {
 }
 
 function syncSetsInBackground(db) {
-  if (activeSetSyncPromise) {
-    pendingSetSyncPass = true;
-  }
-
-  void syncSetsWithCloud(db)
-    .catch((error) => {
-      console.error("Set cloud sync failed:", error);
-    })
-    .finally(() => {
-      if (pendingSetSyncPass && !activeSetSyncPromise) {
-        pendingSetSyncPass = false;
-        syncSetsInBackground(db);
-      }
-    });
+  startBackgroundSync(
+    async () => {
+      await syncSetsWithCloud(db);
+    },
+    "Set cloud sync failed:"
+  );
 }
 
 async function ensureDefaultDaysForMicrocycle(
@@ -4358,89 +4503,31 @@ async function buildWorkoutPreview(db, workout) {
 }
 
 export async function syncProgramsWithCloud(db) {
-  if (activeProgramSyncPromise) {
-    return activeProgramSyncPromise;
-  }
-
-  activeProgramSyncPromise = syncProgramsWithCloudInternal(db).finally(() => {
-    activeProgramSyncPromise = null;
-  });
-
-  return activeProgramSyncPromise;
+  return syncProgramsWithCloudInternal(db);
 }
 
 export async function syncMesocyclesWithCloud(db) {
-  if (activeMesocycleSyncPromise) {
-    return activeMesocycleSyncPromise;
-  }
-
-  activeMesocycleSyncPromise = syncMesocyclesWithCloudInternal(db).finally(() => {
-    activeMesocycleSyncPromise = null;
-  });
-
-  return activeMesocycleSyncPromise;
+  return syncMesocyclesWithCloudInternal(db);
 }
 
 export async function syncMicrocyclesWithCloud(db) {
-  if (activeMicrocycleSyncPromise) {
-    return activeMicrocycleSyncPromise;
-  }
-
-  activeMicrocycleSyncPromise = syncMicrocyclesWithCloudInternal(db).finally(() => {
-    activeMicrocycleSyncPromise = null;
-  });
-
-  return activeMicrocycleSyncPromise;
+  return syncMicrocyclesWithCloudInternal(db);
 }
 
 export async function syncDaysWithCloud(db) {
-  if (activeDaySyncPromise) {
-    return activeDaySyncPromise;
-  }
-
-  activeDaySyncPromise = syncDaysWithCloudInternal(db).finally(() => {
-    activeDaySyncPromise = null;
-  });
-
-  return activeDaySyncPromise;
+  return syncDaysWithCloudInternal(db);
 }
 
 export async function syncWorkoutTypeInstancesWithCloud(db) {
-  if (activeWorkoutTypeInstanceSyncPromise) {
-    return activeWorkoutTypeInstanceSyncPromise;
-  }
-
-  activeWorkoutTypeInstanceSyncPromise =
-    syncWorkoutTypeInstancesWithCloudInternal(db).finally(() => {
-      activeWorkoutTypeInstanceSyncPromise = null;
-    });
-
-  return activeWorkoutTypeInstanceSyncPromise;
+  return syncWorkoutTypeInstancesWithCloudInternal(db);
 }
 
 export async function syncExerciseInstancesWithCloud(db) {
-  if (activeExerciseInstanceSyncPromise) {
-    return activeExerciseInstanceSyncPromise;
-  }
-
-  activeExerciseInstanceSyncPromise =
-    syncExerciseInstancesWithCloudInternal(db).finally(() => {
-      activeExerciseInstanceSyncPromise = null;
-    });
-
-  return activeExerciseInstanceSyncPromise;
+  return syncExerciseInstancesWithCloudInternal(db);
 }
 
 export async function syncSetsWithCloud(db) {
-  if (activeSetSyncPromise) {
-    return activeSetSyncPromise;
-  }
-
-  activeSetSyncPromise = syncSetsWithCloudInternal(db).finally(() => {
-    activeSetSyncPromise = null;
-  });
-
-  return activeSetSyncPromise;
+  return syncSetsWithCloudInternal(db);
 }
 
 export async function createProgram(db, { programName, startDate, status }) {
@@ -4540,6 +4627,56 @@ export async function getTodayProgramSnapshot(db, { programId, date }) {
       total: sets.length,
       done: sets.filter((set) => set.done === 1).length,
     },
+  };
+}
+
+export async function getTodayActivitySummary(db, { date }) {
+  const programSnapshots = await getTodayProgramSnapshots(db, { date });
+  const todaysWorkouts = programSnapshots.flatMap((snapshot) => snapshot.workouts);
+
+  if (!todaysWorkouts.length) {
+    return {
+      activityState: "rest",
+      detail: "Rest day",
+      workoutType: null,
+      workoutLabel: null,
+    };
+  }
+
+  const liveWorkout = todaysWorkouts.find((workout) => isWorkoutLive(workout));
+
+  if (liveWorkout) {
+    return {
+      activityState: "live",
+      detail: formatElapsedWorkoutDetail(liveWorkout),
+      workoutType: liveWorkout.workout_type ?? null,
+      workoutLabel: liveWorkout.label ?? liveWorkout.workout_type ?? null,
+    };
+  }
+
+  const plannedWorkouts = todaysWorkouts.filter(
+    (workout) => Number(workout.done) !== 1
+  );
+
+  if (plannedWorkouts.length > 0) {
+    const nextPlannedWorkout = plannedWorkouts[0];
+
+    return {
+      activityState: "planned",
+      detail: plannedWorkouts.length > 1 ? `${plannedWorkouts.length} planned` : "Planned",
+      workoutType: nextPlannedWorkout.workout_type ?? null,
+      workoutLabel:
+        nextPlannedWorkout.label ?? nextPlannedWorkout.workout_type ?? null,
+    };
+  }
+
+  const completedWorkout = todaysWorkouts[todaysWorkouts.length - 1];
+
+  return {
+    activityState: "done",
+    detail: todaysWorkouts.length > 1 ? `${todaysWorkouts.length} done` : "Done today",
+    workoutType: completedWorkout?.workout_type ?? null,
+    workoutLabel: completedWorkout?.label ?? completedWorkout?.workout_type ?? null,
   };
 }
 

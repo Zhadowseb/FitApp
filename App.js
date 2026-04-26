@@ -40,14 +40,8 @@ import {
 } from "./src/Database/localDatabase";
 import { locationService } from "./src/Services";
 import { AuthProvider, useAuth } from './src/Contexts/AuthContext';
-import DaySync from "./src/Sync/DaySync";
-import ExerciseInstanceSync from "./src/Sync/ExerciseInstanceSync";
 import ExerciseLibrarySync from "./src/Sync/ExerciseLibrarySync";
-import MesocycleSync from "./src/Sync/MesocycleSync";
-import MicrocycleSync from "./src/Sync/MicrocycleSync";
-import ProgramSync from "./src/Sync/ProgramSync";
 import SetSync from "./src/Sync/SetSync";
-import WorkoutTypeInstanceSync from "./src/Sync/WorkoutTypeInstanceSync";
 
 import * as SQLite from 'expo-sqlite';
 
@@ -222,15 +216,8 @@ function UserScopedDatabaseApp() {
     <SQLiteProvider
       key={databaseName}
       databaseName={databaseName}
-      onInit={handleInitializeDatabase}
-      options={{ useNewConnection: false }}>
-      <ProgramSync />
-      <MesocycleSync />
-      <MicrocycleSync />
-      <DaySync />
-      <WorkoutTypeInstanceSync />
+      onInit={handleInitializeDatabase}>
       <ExerciseLibrarySync />
-      <ExerciseInstanceSync />
       <SetSync />
       <RootNavigator />
     </SQLiteProvider>

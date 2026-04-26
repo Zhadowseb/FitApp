@@ -4,6 +4,7 @@ import { useSQLiteContext } from "expo-sqlite";
 
 import { useAuth } from "../Contexts/AuthContext";
 import { programService } from "../Services";
+import { enqueueSync } from "./syncQueue";
 
 export default function DaySync() {
   const db = useSQLiteContext();
@@ -18,7 +19,7 @@ export default function DaySync() {
     isSyncingRef.current = true;
 
     try {
-      await programService.syncDaysWithCloud(db);
+      await enqueueSync(() => programService.syncDaysWithCloud(db));
     } catch (error) {
       console.error("Day cloud sync failed:", error);
     } finally {

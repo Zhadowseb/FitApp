@@ -4,11 +4,24 @@ import { useSQLiteContext } from "expo-sqlite";
 
 import { useAuth } from "../Contexts/AuthContext";
 import { programService } from "../Services";
+import { enqueueSync } from "./syncQueue";
 
 export default function SetSync() {
   const db = useSQLiteContext();
   const { isAuthenticated, isAuthLoading } = useAuth();
   const isSyncingRef = useRef(false);
+  const retryTimeoutRef = useRef(null);
+  const retryCountRef = useRef(0);
+
+  const isRetryableSyncError = (error) => {
+    const message = String(error?.message ?? error ?? "");
+
+    return (
+      message.includes("Network request failed") ||
+      message.includes("Failed to fetch") ||
+      message.includes("NetworkError")
+    );
+  };
 
   const runSync = async () => {
     if (isAuthLoading || !isAuthenticated || isSyncingRef.current) {
@@ -18,9 +31,23 @@ export default function SetSync() {
     isSyncingRef.current = true;
 
     try {
-      await programService.syncSetsWithCloud(db);
+      await enqueueSync(() => programService.syncSetsWithCloud(db));
+      retryCountRef.current = 0;
     } catch (error) {
-      console.error("Set cloud sync failed:", error);
+      console.warn("Set cloud sync failed:", error);
+
+      if (isRetryableSyncError(error) && retryCountRef.current < 3) {
+        retryCountRef.current += 1;
+
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current);
+        }
+
+        retryTimeoutRef.current = setTimeout(() => {
+          retryTimeoutRef.current = null;
+          void runSync();
+        }, 1500 * retryCountRef.current);
+      }
     } finally {
       isSyncingRef.current = false;
     }
@@ -41,6 +68,14 @@ export default function SetSync() {
       subscription.remove();
     };
   }, [db, isAuthenticated, isAuthLoading]);
+
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return null;
 }

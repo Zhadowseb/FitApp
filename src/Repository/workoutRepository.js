@@ -1,4 +1,8 @@
 import { createNextSyncVersion, SQLITE_UUID_SQL } from "../Utils/syncUtils";
+import {
+  normalizeElapsedDurationSeconds,
+  normalizeStoredTimestampSeconds,
+} from "../Utils/timeUtils";
 
 export async function getWorkoutHierarchyIds(db, workoutId) {
   return db.getFirstAsync(
@@ -143,6 +147,8 @@ export async function persistWorkoutTimerState(
   db,
   { workoutId, timerStart, elapsedTime }
 ) {
+  const normalizedTimerStart = normalizeStoredTimestampSeconds(timerStart);
+  const normalizedElapsedTime = normalizeElapsedDurationSeconds(elapsedTime, 0);
   const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Workout_Type_Instance
@@ -153,11 +159,12 @@ export async function persistWorkoutTimerState(
          deleted_at = NULL,
          needs_sync = 1
      WHERE workout_id = ?;`,
-    [timerStart, elapsedTime, syncVersion, workoutId]
+    [normalizedTimerStart, normalizedElapsedTime, syncVersion, workoutId]
   );
 }
 
 export async function updateWorkoutElapsedTime(db, { workoutId, elapsedTime }) {
+  const normalizedElapsedTime = normalizeElapsedDurationSeconds(elapsedTime, 0);
   const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Workout_Type_Instance
@@ -167,7 +174,7 @@ export async function updateWorkoutElapsedTime(db, { workoutId, elapsedTime }) {
          deleted_at = NULL,
          needs_sync = 1
      WHERE workout_id = ?;`,
-    [elapsedTime, syncVersion, workoutId]
+    [normalizedElapsedTime, syncVersion, workoutId]
   );
 }
 
@@ -181,6 +188,7 @@ export async function getWorkoutOriginalStartTime(db, workoutId) {
 }
 
 export async function setWorkoutOriginalStartTime(db, { workoutId, startTime }) {
+  const normalizedStartTime = normalizeStoredTimestampSeconds(startTime);
   const syncVersion = createNextSyncVersion();
   await db.runAsync(
     `UPDATE Workout_Type_Instance
@@ -190,7 +198,7 @@ export async function setWorkoutOriginalStartTime(db, { workoutId, startTime }) 
          deleted_at = NULL,
          needs_sync = 1
      WHERE workout_id = ?;`,
-    [startTime, syncVersion, workoutId]
+    [normalizedStartTime, syncVersion, workoutId]
   );
 }
 

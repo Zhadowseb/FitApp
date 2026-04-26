@@ -14,6 +14,7 @@ import {
   socialService,
   weightliftingService,
 } from "../../Services";
+import { getTodaysDate } from "../../Utils/dateUtils";
 
 import { 
   ThemedView,  
@@ -24,6 +25,7 @@ import { useAuth } from '../../Contexts/AuthContext';
 
 export default function App() {
   const db = useSQLiteContext();
+  const todayDate = getTodaysDate();
   const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
   const [quickAccessStats, setQuickAccessStats] = useState({
     programCount: 0,
@@ -88,12 +90,28 @@ export default function App() {
     setCirclePreviewError("");
 
     try {
-      const nextCirclePreview = await socialService.getCirclePreview({
-        user,
-        limit: 12,
-      });
+      const [nextCirclePreview, todayActivitySummary] = await Promise.all([
+        socialService.getCirclePreview({
+          user,
+          limit: 12,
+        }),
+        programService.getTodayActivitySummary(db, {
+          date: todayDate,
+        }),
+      ]);
 
-      setCirclePreview(nextCirclePreview);
+      setCirclePreview({
+        ...nextCirclePreview,
+        currentUser: nextCirclePreview.currentUser
+          ? {
+              ...nextCirclePreview.currentUser,
+              activityState: todayActivitySummary.activityState,
+              activityDetail: todayActivitySummary.detail,
+              workoutType: todayActivitySummary.workoutType,
+              workoutLabel: todayActivitySummary.workoutLabel,
+            }
+          : null,
+      });
     } catch (error) {
       setCirclePreview({
         currentUser: null,
@@ -105,7 +123,7 @@ export default function App() {
     } finally {
       setIsLoadingCirclePreview(false);
     }
-  }, [user]);
+  }, [db, todayDate, user]);
 
   useFocusEffect(
     useCallback(() => {

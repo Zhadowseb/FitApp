@@ -34,7 +34,8 @@ const ExerciseList = ({
 
       const exercises = await weightliftingRepository.getWorkoutExercises(
         db,
-        workout_id
+        workout_id,
+        { ensureHydrated: true }
       );
       setExercises(exercises);
       setExpandedExercises((prev) => {
@@ -76,7 +77,7 @@ const ExerciseList = ({
 
   useEffect(() => {
     loadExercises();
-  }, [refreshing]);
+  }, [refreshing, workout_id]);
 
   useEffect(() => {
     loadExercises();

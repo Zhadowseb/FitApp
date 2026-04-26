@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.9.7] - Unreleased
+### Changed
+- Updated the HomePage crew activity strip so your own circle now reflects real local workout states with planned, live, done, and rest styling plus status badges.
+
+---
 ## [0.9.6] - Unreleased
 ### Changed
 - Added profile photo upload backed by Supabase Storage, including avatar previews on the profile page, people search, relationship lists, and the HomePage social circle.

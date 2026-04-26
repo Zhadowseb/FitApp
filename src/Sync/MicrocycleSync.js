@@ -4,6 +4,7 @@ import { useSQLiteContext } from "expo-sqlite";
 
 import { useAuth } from "../Contexts/AuthContext";
 import { programService } from "../Services";
+import { enqueueSync } from "./syncQueue";
 
 export default function MicrocycleSync() {
   const db = useSQLiteContext();
@@ -18,7 +19,7 @@ export default function MicrocycleSync() {
     isSyncingRef.current = true;
 
     try {
-      await programService.syncMicrocyclesWithCloud(db);
+      await enqueueSync(() => programService.syncMicrocyclesWithCloud(db));
     } catch (error) {
       console.error("Microcycle cloud sync failed:", error);
     } finally {

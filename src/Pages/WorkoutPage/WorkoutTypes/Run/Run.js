@@ -17,7 +17,13 @@ import {
 } from "../../../../Resources/ThemedComponents";
 import styles from "./RunStyle";
 
-import { formatTime, formatWorkoutStart } from "../../../../Utils/timeUtils";
+import {
+  formatTime,
+  formatWorkoutStart,
+  getCurrentStoredTimestampSeconds,
+  normalizeElapsedDurationSeconds,
+  normalizeStoredTimestampSeconds,
+} from "../../../../Utils/timeUtils";
 import {
   locationService,
   runningService as runningRepository,
@@ -103,7 +109,9 @@ const Run = ({ workout_id, restartRequestKey }) => {
   const [isRunning, set_isRunning] = useState(false);
   const [isControlBusy, set_isControlBusy] = useState(false);
   const [totalDistance, set_totalDistance] = useState(0);
-  const [timerTick, set_timerTick] = useState(() => Date.now());
+  const [timerTick, set_timerTick] = useState(() =>
+    getCurrentStoredTimestampSeconds()
+  );
   const [trackedDebugReport, set_trackedDebugReport] = useState(() =>
     createEmptyTrackedDebugReport()
   );
@@ -121,9 +129,14 @@ const Run = ({ workout_id, restartRequestKey }) => {
   const trackedSummaryLoadingRef = useRef(false);
   const trackedDebugLoadingRef = useRef(false);
 
+  const normalizeTimerStartValue = (value) =>
+    normalizeStoredTimestampSeconds(value);
+
   const currentElapsed =
-    elapsed_time +
-    (timer_start ? Math.floor((timerTick - timer_start) / 1000) : 0);
+    normalizeElapsedDurationSeconds(elapsed_time, 0) +
+    (normalizeTimerStartValue(timer_start) !== null
+      ? Math.max(0, timerTick - normalizeTimerStartValue(timer_start))
+      : 0);
 
   useEffect(() => {
     timerStartRef.current = timer_start;
@@ -161,11 +174,13 @@ const Run = ({ workout_id, restartRequestKey }) => {
   };
 
   const getCurrentElapsedSeconds = useCallback(() => {
-    if (!timerStartRef.current) {
+    const resolvedTimerStart = normalizeTimerStartValue(timerStartRef.current);
+
+    if (resolvedTimerStart === null) {
       return 0;
     }
 
-    return Math.floor((Date.now() - timerStartRef.current) / 1000);
+    return Math.max(0, getCurrentStoredTimestampSeconds() - resolvedTimerStart);
   }, []);
 
   const loadTrackedRunSummary = useCallback(async () => {
@@ -283,20 +298,28 @@ const Run = ({ workout_id, restartRequestKey }) => {
     }
 
     const nextIsDone = Number(row.done) === 1;
+    const resolvedOriginalStartTime = normalizeStoredTimestampSeconds(
+      row.original_start_time
+    );
+    const resolvedTimerStart = normalizeTimerStartValue(row.timer_start);
+    const resolvedElapsedTime = normalizeElapsedDurationSeconds(
+      row.elapsed_time,
+      0
+    );
     const currentElapsed =
-      row.elapsed_time +
-      (row.timer_start
-        ? Math.floor((Date.now() - row.timer_start) / 1000)
+      resolvedElapsedTime +
+      (resolvedTimerStart !== null
+        ? Math.max(0, getCurrentStoredTimestampSeconds() - resolvedTimerStart)
         : 0);
 
-    timerStartRef.current = row.timer_start;
-    elapsedTimeRef.current = row.elapsed_time;
-    set_timerTick(Date.now());
-    set_isRunning(row.timer_start !== null && !nextIsDone);
+    timerStartRef.current = resolvedTimerStart;
+    elapsedTimeRef.current = resolvedElapsedTime;
+    set_timerTick(getCurrentStoredTimestampSeconds());
+    set_isRunning(resolvedTimerStart !== null && !nextIsDone);
     set_isDone(nextIsDone);
-    set_original_start_time(row.original_start_time);
-    set_timer_start(row.timer_start);
-    set_elapsed_time(row.elapsed_time);
+    set_original_start_time(resolvedOriginalStartTime);
+    set_timer_start(resolvedTimerStart);
+    set_elapsed_time(resolvedElapsedTime);
 
     if (requestId !== workoutStateLoadRequestRef.current) {
       return;
@@ -312,7 +335,7 @@ const Run = ({ workout_id, restartRequestKey }) => {
       return;
     }
 
-    if (row.timer_start !== null && !nextIsDone) {
+    if (resolvedTimerStart !== null && !nextIsDone) {
       try {
         await locationService.ensureRunTracking(db, workout_id);
       } catch (error) {
@@ -341,7 +364,7 @@ const Run = ({ workout_id, restartRequestKey }) => {
       }
 
       if (nextAppState === "active") {
-        set_timerTick(Date.now());
+        set_timerTick(getCurrentStoredTimestampSeconds());
         void loadWorkoutState();
       }
     });
@@ -359,12 +382,12 @@ const Run = ({ workout_id, restartRequestKey }) => {
 
   useEffect(() => {
     if (!isRunning) {
-      set_timerTick(Date.now());
+      set_timerTick(getCurrentStoredTimestampSeconds());
       return;
     }
 
     const interval = setInterval(() => {
-      set_timerTick(Date.now());
+      set_timerTick(getCurrentStoredTimestampSeconds());
     }, 1000);
 
     return () => clearInterval(interval);
@@ -401,8 +424,9 @@ const Run = ({ workout_id, restartRequestKey }) => {
   }, [isRunning, loadTrackedRunSummary, loadTrackedRunDebugReport]);
 
   const updateElapsed = async () => {
-    const newElapsed = Math.floor(
-      (elapsedTimeRef.current ?? 0) + getCurrentElapsedSeconds()
+    const newElapsed = normalizeElapsedDurationSeconds(
+      (elapsedTimeRef.current ?? 0) + getCurrentElapsedSeconds(),
+      0
     );
 
     await workoutRepository.persistWorkoutTimerState(db, {
@@ -427,7 +451,7 @@ const Run = ({ workout_id, restartRequestKey }) => {
 
     try {
       const row = await workoutRepository.getWorkoutOriginalStartTime(db, workout_id);
-      const start_time = Date.now();
+      const start_time = getCurrentStoredTimestampSeconds();
       const isFreshStart = row.original_start_time === null;
 
       if (isFreshStart) {

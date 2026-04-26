@@ -7,14 +7,14 @@ import { supabase } from "../Database/supaBaseClient";
 import * as workoutService from "./workoutService";
 import { withTransaction } from "./shared";
 import { createNextSyncVersion, normalizeSyncId } from "../Utils/syncUtils";
+import { enqueueSync, startBackgroundSync } from "./syncScheduler";
 
 async function syncExerciseInstancesInBackground(db) {
   try {
     const programServiceModule = await import("./programService");
-    void programServiceModule.syncExerciseInstancesWithCloud(db).catch(
-      (error) => {
-        console.error("Exercise instance cloud sync failed:", error);
-      }
+    startBackgroundSync(
+      () => programServiceModule.syncExerciseInstancesWithCloud(db),
+      "Exercise instance cloud sync failed:"
     );
   } catch (error) {
     console.error("Failed to start exercise instance cloud sync:", error);
@@ -24,9 +24,10 @@ async function syncExerciseInstancesInBackground(db) {
 async function syncSetsInBackground(db) {
   try {
     const programServiceModule = await import("./programService");
-    void programServiceModule.syncSetsWithCloud(db).catch((error) => {
-      console.error("Set cloud sync failed:", error);
-    });
+    startBackgroundSync(
+      () => programServiceModule.syncSetsWithCloud(db),
+      "Set cloud sync failed:"
+    );
   } catch (error) {
     console.error("Failed to start set cloud sync:", error);
   }
@@ -50,6 +51,12 @@ const MUSCLE_ACTIVATION_TABLE = "Muscle_Activation";
 const MUSCLE_TABLE = "Muscle";
 const PRIMARY_ACTIVATION_LEVEL = "primary";
 const SECONDARY_ACTIVATION_LEVEL = "secondary";
+const EXERCISE_INSTANCE_CLOUD_TABLE = "exercise_instance";
+const EXERCISE_INSTANCE_CLOUD_SELECT =
+  "id, local_exercise_instance_id, sync_id, sync_version, deleted_at, cloud_workout_type_instance_id, exercise_name, sets, visible_columns, note, done";
+const SET_CLOUD_TABLE = "set";
+const SET_CLOUD_SELECT =
+  "id, local_set_id, sync_id, sync_version, deleted_at, cloud_exercise_instance_id, set_number, personal_record, pause, rpe, weight, rm_percentage, reps, done, failed, amrap, note";
 
 function normalizeOptionalNumber(value) {
   if (value === "" || value === null || value === undefined) {
@@ -81,6 +88,40 @@ function formatSignedWeightDisplay(value) {
   return `${sign}${formatWeightDisplay(Math.abs(parsedValue))} kg`;
 }
 
+function normalizeOptionalInteger(value, fallbackValue = null) {
+  if (value === "" || value === null || value === undefined) {
+    return fallbackValue;
+  }
+
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? Math.trunc(numericValue) : fallbackValue;
+}
+
+function normalizeOptionalText(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalizedValue = value.trim();
+  return normalizedValue.length > 0 ? normalizedValue : null;
+}
+
+function normalizeBooleanFlag(value) {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    return value !== 0;
+  }
+
+  if (typeof value === "string") {
+    return ["1", "true", "yes"].includes(value.trim().toLowerCase());
+  }
+
+  return false;
+}
+
 function parseVisibleColumns(value) {
   if (value === null || value === undefined || value === "") {
     return { ...DEFAULT_VISIBLE_COLUMNS };
@@ -109,6 +150,38 @@ function parseVisibleColumns(value) {
   }
 
   return normalizedColumns;
+}
+
+function serializeVisibleColumns(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  let parsedValue = value;
+
+  if (typeof value === "string") {
+    try {
+      parsedValue = JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+
+  if (!parsedValue || typeof parsedValue !== "object" || Array.isArray(parsedValue)) {
+    return null;
+  }
+
+  const normalizedColumns = {};
+
+  for (const key of Object.keys(DEFAULT_VISIBLE_COLUMNS)) {
+    if (Object.prototype.hasOwnProperty.call(parsedValue, key)) {
+      normalizedColumns[key] = Boolean(parsedValue[key]);
+    }
+  }
+
+  return Object.keys(normalizedColumns).length > 0
+    ? JSON.stringify(normalizedColumns)
+    : null;
 }
 
 function normalizeExerciseCatalogEntries(entries) {
@@ -785,7 +858,17 @@ export async function getProgramExerciseNames(db, programId) {
   return weightliftingRepository.getProgramExerciseNames(db, programId);
 }
 
-export async function getWorkoutExercises(db, workoutId) {
+async function getAuthenticatedUserId() {
+  const { data, error } = await supabase.auth.getSession();
+
+  if (error) {
+    throw error;
+  }
+
+  return data.session?.user?.id ?? null;
+}
+
+async function loadWorkoutExercisesFromLocal(db, workoutId) {
   const exercises = await weightliftingRepository.getExercisesByWorkout(
     db,
     workoutId
@@ -802,14 +885,392 @@ export async function getWorkoutExercises(db, workoutId) {
 
   return exercises.map((exercise) => {
     const exerciseSets = setsByExercise[exercise.exercise_id] ?? [];
+    const plannedSetCount = Number(exercise.sets) || 0;
 
     return {
       ...exercise,
+      plannedSetCount,
       sets: exerciseSets,
       setCount: exerciseSets.length,
       visibleColumns: parseVisibleColumns(exercise.visible_columns),
     };
   });
+}
+
+function shouldHydrateWorkoutExerciseData(exercises) {
+  if (exercises.length === 0) {
+    return true;
+  }
+
+  return exercises.some((exercise) => {
+    const expectedSetCount = Number(exercise.plannedSetCount) || 0;
+    return expectedSetCount > 0 && exercise.setCount === 0;
+  });
+}
+
+async function hydrateWorkoutStrengthDataFromCloud(db, workoutId) {
+  const [userId, workoutSyncMetadata, localExercises] = await Promise.all([
+    getAuthenticatedUserId(),
+    programRepository.getWorkoutSyncMetadata(db, workoutId),
+    weightliftingRepository.getExercisesForCloudSync(db),
+  ]);
+  const cloudWorkoutTypeInstanceId = normalizeOptionalInteger(
+    workoutSyncMetadata?.cloud_workout_type_instance_id,
+    null
+  );
+
+  if (!userId || cloudWorkoutTypeInstanceId === null) {
+    return false;
+  }
+
+  const { data: cloudExercises, error: cloudExercisesError } = await supabase
+    .from(EXERCISE_INSTANCE_CLOUD_TABLE)
+    .select(EXERCISE_INSTANCE_CLOUD_SELECT)
+    .eq("user_id", userId)
+    .eq("cloud_workout_type_instance_id", cloudWorkoutTypeInstanceId)
+    .order("id", { ascending: true });
+
+  if (cloudExercisesError) {
+    throw cloudExercisesError;
+  }
+
+  const localExercisesForWorkout = localExercises.filter(
+    (exercise) => Number(exercise.workout_type_instance_id) === Number(workoutId)
+  );
+  const localExercisesByCloudId = new Map();
+  const localExercisesByRemoteLocalId = new Map();
+  const localExercisesByLocalId = new Map();
+
+  for (const exercise of localExercisesForWorkout) {
+    const cloudExerciseInstanceId = normalizeOptionalInteger(
+      exercise.cloud_exercise_instance_id,
+      null
+    );
+    const remoteLocalExerciseInstanceId = normalizeOptionalInteger(
+      exercise.remote_local_exercise_instance_id,
+      null
+    );
+
+    if (cloudExerciseInstanceId !== null) {
+      localExercisesByCloudId.set(cloudExerciseInstanceId, exercise);
+    }
+
+    if (remoteLocalExerciseInstanceId !== null) {
+      localExercisesByRemoteLocalId.set(remoteLocalExerciseInstanceId, exercise);
+    }
+
+    localExercisesByLocalId.set(exercise.exercise_instance_id, exercise);
+  }
+
+  let didHydrate = false;
+
+  await withTransaction(db, async () => {
+    for (const cloudExercise of cloudExercises ?? []) {
+      const cloudExerciseInstanceId = normalizeOptionalInteger(
+        cloudExercise?.id,
+        null
+      );
+      const remoteLocalExerciseInstanceId = normalizeOptionalInteger(
+        cloudExercise?.local_exercise_instance_id,
+        null
+      );
+      const exerciseName = normalizeOptionalText(cloudExercise?.exercise_name);
+
+      if (cloudExerciseInstanceId === null || !exerciseName) {
+        continue;
+      }
+
+      const localExercise =
+        localExercisesByCloudId.get(cloudExerciseInstanceId) ??
+        localExercisesByRemoteLocalId.get(remoteLocalExerciseInstanceId) ??
+        localExercisesByLocalId.get(remoteLocalExerciseInstanceId) ??
+        null;
+
+      if (normalizeOptionalText(cloudExercise?.deleted_at)) {
+        if (!localExercise) {
+          continue;
+        }
+
+        await weightliftingRepository.deleteSetsByExercise(
+          db,
+          localExercise.exercise_instance_id
+        );
+        await weightliftingRepository.deleteExerciseById(
+          db,
+          localExercise.exercise_instance_id
+        );
+        didHydrate = true;
+        continue;
+      }
+
+      const exercisePayload = {
+        cloudExerciseInstanceId,
+        remoteLocalExerciseInstanceId,
+        syncId: normalizeSyncId(cloudExercise?.sync_id),
+        syncVersion: normalizeOptionalInteger(cloudExercise?.sync_version, 0),
+        deletedAt: normalizeOptionalText(cloudExercise?.deleted_at),
+        workoutId,
+        exerciseName,
+        sets: Math.max(0, normalizeOptionalInteger(cloudExercise?.sets, 0) ?? 0),
+        visibleColumns: serializeVisibleColumns(cloudExercise?.visible_columns),
+        note: normalizeOptionalText(cloudExercise?.note),
+        done: normalizeBooleanFlag(cloudExercise?.done),
+      };
+
+      if (!localExercise) {
+        const createdExerciseResult =
+          await weightliftingRepository.createExerciseFromCloud(
+            db,
+            exercisePayload
+          );
+        const createdExercise = {
+          exercise_instance_id: createdExerciseResult.lastInsertRowId,
+          cloud_exercise_instance_id: cloudExerciseInstanceId,
+          remote_local_exercise_instance_id: remoteLocalExerciseInstanceId,
+          workout_type_instance_id: workoutId,
+        };
+
+        localExercisesByCloudId.set(cloudExerciseInstanceId, createdExercise);
+        if (remoteLocalExerciseInstanceId !== null) {
+          localExercisesByRemoteLocalId.set(
+            remoteLocalExerciseInstanceId,
+            createdExercise
+          );
+          localExercisesByLocalId.set(
+            remoteLocalExerciseInstanceId,
+            createdExercise
+          );
+        }
+        localExercisesByLocalId.set(
+          createdExercise.exercise_instance_id,
+          createdExercise
+        );
+        didHydrate = true;
+        continue;
+      }
+
+      await weightliftingRepository.updateExerciseFromCloud(db, {
+        exerciseId: localExercise.exercise_instance_id,
+        ...exercisePayload,
+      });
+      didHydrate = true;
+    }
+  });
+
+  const refreshedExercises = (
+    await weightliftingRepository.getExercisesForCloudSync(db)
+  ).filter(
+    (exercise) => Number(exercise.workout_type_instance_id) === Number(workoutId)
+  );
+  const localExerciseIds = new Set(
+    refreshedExercises.map((exercise) => exercise.exercise_instance_id)
+  );
+  const localExercisesByCloudExerciseId = new Map();
+
+  for (const exercise of refreshedExercises) {
+    const cloudExerciseInstanceId = normalizeOptionalInteger(
+      exercise.cloud_exercise_instance_id,
+      null
+    );
+
+    if (cloudExerciseInstanceId !== null) {
+      localExercisesByCloudExerciseId.set(cloudExerciseInstanceId, exercise);
+    }
+  }
+
+  const cloudExerciseIds = [...localExercisesByCloudExerciseId.keys()];
+
+  if (cloudExerciseIds.length === 0) {
+    return didHydrate;
+  }
+
+  const { data: cloudSets, error: cloudSetsError } = await supabase
+    .from(SET_CLOUD_TABLE)
+    .select(SET_CLOUD_SELECT)
+    .eq("user_id", userId)
+    .in("cloud_exercise_instance_id", cloudExerciseIds)
+    .order("cloud_exercise_instance_id", { ascending: true })
+    .order("id", { ascending: true });
+
+  if (cloudSetsError) {
+    throw cloudSetsError;
+  }
+
+  const localSets = (await weightliftingRepository.getSetsForCloudSync(db)).filter(
+    (set) => localExerciseIds.has(set.exercise_instance_id)
+  );
+  const localSetsByCloudId = new Map();
+  const localSetsByRemoteLocalId = new Map();
+  const localSetsByLocalId = new Map();
+
+  for (const localSet of localSets) {
+    const cloudSetId = normalizeOptionalInteger(localSet.cloud_set_id, null);
+    const remoteLocalSetId = normalizeOptionalInteger(
+      localSet.remote_local_set_id,
+      null
+    );
+
+    if (cloudSetId !== null) {
+      localSetsByCloudId.set(cloudSetId, localSet);
+    }
+
+    if (remoteLocalSetId !== null) {
+      localSetsByRemoteLocalId.set(remoteLocalSetId, localSet);
+    }
+
+    localSetsByLocalId.set(localSet.sets_id, localSet);
+  }
+
+  await withTransaction(db, async () => {
+    for (const cloudSet of cloudSets ?? []) {
+      const cloudSetId = normalizeOptionalInteger(cloudSet?.id, null);
+      const remoteLocalSetId = normalizeOptionalInteger(
+        cloudSet?.local_set_id,
+        null
+      );
+      const cloudExerciseInstanceId = normalizeOptionalInteger(
+        cloudSet?.cloud_exercise_instance_id,
+        null
+      );
+      const parentExercise =
+        localExercisesByCloudExerciseId.get(cloudExerciseInstanceId) ?? null;
+
+      if (
+        cloudSetId === null ||
+        cloudExerciseInstanceId === null ||
+        !parentExercise
+      ) {
+        continue;
+      }
+
+      const localSet =
+        localSetsByCloudId.get(cloudSetId) ??
+        localSetsByRemoteLocalId.get(remoteLocalSetId) ??
+        localSetsByLocalId.get(remoteLocalSetId) ??
+        null;
+
+      if (normalizeOptionalText(cloudSet?.deleted_at)) {
+        if (!localSet) {
+          continue;
+        }
+
+        await weightliftingRepository.deleteSetById(db, localSet.sets_id);
+        didHydrate = true;
+        continue;
+      }
+
+      const setPayload = {
+        cloudSetId,
+        remoteLocalSetId,
+        syncId: normalizeSyncId(cloudSet?.sync_id),
+        syncVersion: normalizeOptionalInteger(cloudSet?.sync_version, 0),
+        deletedAt: normalizeOptionalText(cloudSet?.deleted_at),
+        exerciseId: parentExercise.exercise_instance_id,
+        setNumber: normalizeOptionalInteger(cloudSet?.set_number, 1),
+        personalRecord: normalizeBooleanFlag(cloudSet?.personal_record),
+        pause: normalizeOptionalInteger(cloudSet?.pause, null),
+        rpe: normalizeOptionalInteger(cloudSet?.rpe, null),
+        weight: normalizeOptionalInteger(cloudSet?.weight, null),
+        rmPercentage: normalizeOptionalInteger(cloudSet?.rm_percentage, null),
+        reps: normalizeOptionalInteger(cloudSet?.reps, null),
+        done: normalizeBooleanFlag(cloudSet?.done),
+        failed: normalizeBooleanFlag(cloudSet?.failed),
+        amrap: normalizeBooleanFlag(cloudSet?.amrap),
+        note: normalizeOptionalText(cloudSet?.note),
+      };
+
+      if (!localSet) {
+        await weightliftingRepository.createSetFromCloud(db, setPayload);
+        didHydrate = true;
+        continue;
+      }
+
+      await weightliftingRepository.updateSetFromCloud(db, {
+        setId: localSet.sets_id,
+        ...setPayload,
+      });
+      didHydrate = true;
+    }
+
+    await weightliftingRepository.refreshExerciseDerivedFieldsFromSets(db);
+  });
+
+  return didHydrate;
+}
+
+export async function syncStrengthWorkoutDataFromCloud(db) {
+  const programServiceModule = await import("./programService");
+  return enqueueSync(() => programServiceModule.syncSetsWithCloud(db));
+}
+
+export async function hydrateStrengthWorkoutDataForWorkout(db, workoutId) {
+  let exercises = await loadWorkoutExercisesFromLocal(db, workoutId);
+
+  if (!shouldHydrateWorkoutExerciseData(exercises)) {
+    return exercises;
+  }
+
+  let targetedHydrationError = null;
+
+  try {
+    await hydrateWorkoutStrengthDataFromCloud(db, workoutId);
+    exercises = await loadWorkoutExercisesFromLocal(db, workoutId);
+  } catch (hydrateError) {
+    targetedHydrationError = hydrateError;
+  }
+
+  if (!shouldHydrateWorkoutExerciseData(exercises)) {
+    return exercises;
+  }
+
+  let syncError = null;
+
+  try {
+    await syncStrengthWorkoutDataFromCloud(db);
+    exercises = await loadWorkoutExercisesFromLocal(db, workoutId);
+  } catch (error) {
+    syncError = error;
+  }
+
+  if (shouldHydrateWorkoutExerciseData(exercises)) {
+    if (targetedHydrationError || syncError) {
+      throw new Error(
+        `Targeted workout hydration failed: ${
+          targetedHydrationError?.message ?? "unknown targeted hydration error"
+        }. Global strength sync failed: ${
+          syncError?.message ?? "unknown global sync error"
+        }.`
+      );
+    }
+
+    console.warn(
+      "Workout hydration completed, but the workout is still missing exercise or set data.",
+      { workoutId }
+    );
+  }
+
+  return exercises;
+}
+
+export async function getWorkoutExercises(
+  db,
+  workoutId,
+  { ensureHydrated = false } = {}
+) {
+  let exercises = await loadWorkoutExercisesFromLocal(db, workoutId);
+
+  if (ensureHydrated && shouldHydrateWorkoutExerciseData(exercises)) {
+    try {
+      exercises = await hydrateStrengthWorkoutDataForWorkout(db, workoutId);
+    } catch (error) {
+      console.warn(
+        "Unable to hydrate strength workout exercises from cloud:",
+        error
+      );
+    }
+  }
+
+  return exercises;
 }
 
 export async function addExerciseToWorkout(db, { workoutId, exerciseName }) {

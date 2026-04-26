@@ -4,6 +4,7 @@ import { useSQLiteContext } from "expo-sqlite";
 
 import { useAuth } from "../Contexts/AuthContext";
 import { programService } from "../Services";
+import { enqueueSync } from "./syncQueue";
 
 export default function WorkoutTypeInstanceSync() {
   const db = useSQLiteContext();
@@ -18,7 +19,9 @@ export default function WorkoutTypeInstanceSync() {
     isSyncingRef.current = true;
 
     try {
-      await programService.syncWorkoutTypeInstancesWithCloud(db);
+      await enqueueSync(() =>
+        programService.syncWorkoutTypeInstancesWithCloud(db)
+      );
     } catch (error) {
       console.error("Workout type instance cloud sync failed:", error);
     } finally {

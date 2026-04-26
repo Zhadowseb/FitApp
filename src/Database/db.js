@@ -6,6 +6,7 @@ import {
 import { runningSchemaSql } from './schema/running';
 import { locationSchemaSql } from './schema/location';
 import { SQLITE_UUID_SQL } from "../Utils/syncUtils";
+import { withTransaction } from "./transaction";
 
 const DEFAULT_WORKOUT_TYPES = [
   ["Resistance", "Resistance"],
@@ -81,9 +82,7 @@ function isExerciseInstanceTable(columns) {
 }
 
 async function migrateWeightliftingTableNames(db) {
-  await db.execAsync("BEGIN IMMEDIATE;");
-
-  try {
+  await withTransaction(db, async () => {
     const legacyExerciseColumns = await getTableColumns(db, "Exercise");
     const legacyExerciseStorageColumns = await getTableColumns(db, "Exercise_storage");
     const exerciseInstanceColumns = await getTableColumns(db, "Exercise_Instance");
@@ -111,18 +110,11 @@ async function migrateWeightliftingTableNames(db) {
         );
       }
     }
-
-    await db.execAsync("COMMIT;");
-  } catch (error) {
-    await db.execAsync("ROLLBACK;");
-    throw error;
-  }
+  });
 }
 
 async function migrateWorkoutTableName(db) {
-  await db.execAsync("BEGIN IMMEDIATE;");
-
-  try {
+  await withTransaction(db, async () => {
     const legacyWorkoutColumns = await getTableColumns(db, "Workout");
     const workoutTypeInstanceColumns = await getTableColumns(
       db,
@@ -134,12 +126,7 @@ async function migrateWorkoutTableName(db) {
         ALTER TABLE Workout RENAME TO Workout_Type_Instance;
       `);
     }
-
-    await db.execAsync("COMMIT;");
-  } catch (error) {
-    await db.execAsync("ROLLBACK;");
-    throw error;
-  }
+  });
 }
 
 async function migrateExerciseCatalogSchema(db) {
@@ -169,9 +156,7 @@ async function migrateExerciseCatalogSchema(db) {
     return;
   }
 
-  await db.execAsync("BEGIN IMMEDIATE;");
-
-  try {
+  await withTransaction(db, async () => {
     await db.execAsync(`
       DROP TABLE IF EXISTS Exercise_next;
 
@@ -197,12 +182,7 @@ async function migrateExerciseCatalogSchema(db) {
       DROP TABLE Exercise;
       ALTER TABLE Exercise_next RENAME TO Exercise;
     `);
-
-    await db.execAsync("COMMIT;");
-  } catch (error) {
-    await db.execAsync("ROLLBACK;");
-    throw error;
-  }
+  });
 }
 
 async function migrateExerciseInstanceSchema(db) {
@@ -250,9 +230,7 @@ async function migrateExerciseInstanceSchema(db) {
     return;
   }
 
-  await db.execAsync("BEGIN IMMEDIATE;");
-
-  try {
+  await withTransaction(db, async () => {
     await db.execAsync(`
       DROP TABLE IF EXISTS Exercise_Instance_next;
 
@@ -297,12 +275,7 @@ async function migrateExerciseInstanceSchema(db) {
       DROP TABLE Exercise_Instance;
       ALTER TABLE Exercise_Instance_next RENAME TO Exercise_Instance;
     `);
-
-    await db.execAsync("COMMIT;");
-  } catch (error) {
-    await db.execAsync("ROLLBACK;");
-    throw error;
-  }
+  });
 }
 
 async function migrateSetSchema(db) {
@@ -338,9 +311,7 @@ async function migrateSetSchema(db) {
     return;
   }
 
-  await db.execAsync("BEGIN IMMEDIATE;");
-
-  try {
+  await withTransaction(db, async () => {
     await db.execAsync(`
       DROP TABLE IF EXISTS "Set_next";
 
@@ -412,12 +383,7 @@ async function migrateSetSchema(db) {
       DROP TABLE ${quoteIdentifier(sourceTable)};
       ALTER TABLE "Set_next" RENAME TO "Set";
     `);
-
-    await db.execAsync("COMMIT;");
-  } catch (error) {
-    await db.execAsync("ROLLBACK;");
-    throw error;
-  }
+  });
 }
 
 async function migrateMicrocycleProgramIdRemoval(db) {
@@ -430,9 +396,7 @@ async function migrateMicrocycleProgramIdRemoval(db) {
     return;
   }
 
-  await db.execAsync("BEGIN IMMEDIATE;");
-
-  try {
+  await withTransaction(db, async () => {
     const hasCloudMicrocycleId = hasColumn(
       microcycleColumns,
       "cloud_microcycle_id"
@@ -474,12 +438,7 @@ async function migrateMicrocycleProgramIdRemoval(db) {
       DROP TABLE Microcycle;
       ALTER TABLE Microcycle_next RENAME TO Microcycle;
     `);
-
-    await db.execAsync("COMMIT;");
-  } catch (error) {
-    await db.execAsync("ROLLBACK;");
-    throw error;
-  }
+  });
 }
 
 async function migrateProgramRemoteLocalIdRemoval(db) {
@@ -495,9 +454,7 @@ async function migrateProgramRemoteLocalIdRemoval(db) {
   const hasStatus = hasColumn(programColumns, "status");
   const hasNeedsSync = hasColumn(programColumns, "needs_sync");
 
-  await db.execAsync("BEGIN IMMEDIATE;");
-
-  try {
+  await withTransaction(db, async () => {
     await db.execAsync(`
       DROP TABLE IF EXISTS Program_next;
 
@@ -533,12 +490,7 @@ async function migrateProgramRemoteLocalIdRemoval(db) {
       DROP TABLE Program;
       ALTER TABLE Program_next RENAME TO Program;
     `);
-
-    await db.execAsync("COMMIT;");
-  } catch (error) {
-    await db.execAsync("ROLLBACK;");
-    throw error;
-  }
+  });
 }
 
 async function migrateMesocycleRemoteLocalIdRemoval(db) {
@@ -558,9 +510,7 @@ async function migrateMesocycleRemoteLocalIdRemoval(db) {
   const hasFocus = hasColumn(mesocycleColumns, "focus");
   const hasDone = hasColumn(mesocycleColumns, "done");
 
-  await db.execAsync("BEGIN IMMEDIATE;");
-
-  try {
+  await withTransaction(db, async () => {
     await db.execAsync(`
       DROP TABLE IF EXISTS Mesocycle_next;
 
@@ -602,12 +552,7 @@ async function migrateMesocycleRemoteLocalIdRemoval(db) {
       UPDATE Microcycle
       SET needs_sync = 1;
     `);
-
-    await db.execAsync("COMMIT;");
-  } catch (error) {
-    await db.execAsync("ROLLBACK;");
-    throw error;
-  }
+  });
 }
 
 async function backfillWorkoutTypeInstances(db) {
@@ -640,9 +585,7 @@ async function restoreLocalWorkoutTypeCatalogSchema(db) {
     return;
   }
 
-  await db.execAsync("BEGIN IMMEDIATE;");
-
-  try {
+  await withTransaction(db, async () => {
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS Workout_Type_next (
         workout_type_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -675,12 +618,7 @@ async function restoreLocalWorkoutTypeCatalogSchema(db) {
       DROP TABLE Workout_Type;
       ALTER TABLE Workout_Type_next RENAME TO Workout_Type;
     `);
-
-    await db.execAsync("COMMIT;");
-  } catch (error) {
-    await db.execAsync("ROLLBACK;");
-    throw error;
-  }
+  });
 }
 
 async function initializeWorkoutTypes(db) {
@@ -822,9 +760,7 @@ async function migrateWorkoutTypeInstanceDeleteQueueSchema(db) {
     return;
   }
 
-  await db.execAsync("BEGIN IMMEDIATE;");
-
-  try {
+  await withTransaction(db, async () => {
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS Workout_Type_Instance_Sync_Delete_next (
         workout_type_instance_sync_delete_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -853,12 +789,7 @@ async function migrateWorkoutTypeInstanceDeleteQueueSchema(db) {
       DROP TABLE Workout_Type_Instance_Sync_Delete;
       ALTER TABLE Workout_Type_Instance_Sync_Delete_next RENAME TO Workout_Type_Instance_Sync_Delete;
     `);
-
-    await db.execAsync("COMMIT;");
-  } catch (error) {
-    await db.execAsync("ROLLBACK;");
-    throw error;
-  }
+  });
 }
 
 async function migrateExerciseInstanceDeleteQueueSchema(db) {
@@ -882,9 +813,7 @@ async function migrateExerciseInstanceDeleteQueueSchema(db) {
     return;
   }
 
-  await db.execAsync("BEGIN IMMEDIATE;");
-
-  try {
+  await withTransaction(db, async () => {
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS Exercise_Instance_Sync_Delete_next (
         exercise_instance_sync_delete_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -909,12 +838,7 @@ async function migrateExerciseInstanceDeleteQueueSchema(db) {
       DROP TABLE Exercise_Instance_Sync_Delete;
       ALTER TABLE Exercise_Instance_Sync_Delete_next RENAME TO Exercise_Instance_Sync_Delete;
     `);
-
-    await db.execAsync("COMMIT;");
-  } catch (error) {
-    await db.execAsync("ROLLBACK;");
-    throw error;
-  }
+  });
 }
 
 async function migrateSetDeleteQueueSchema(db) {
@@ -935,9 +859,7 @@ async function migrateSetDeleteQueueSchema(db) {
     return;
   }
 
-  await db.execAsync("BEGIN IMMEDIATE;");
-
-  try {
+  await withTransaction(db, async () => {
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS Set_Sync_Delete_next (
         set_sync_delete_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -962,12 +884,7 @@ async function migrateSetDeleteQueueSchema(db) {
       DROP TABLE Set_Sync_Delete;
       ALTER TABLE Set_Sync_Delete_next RENAME TO Set_Sync_Delete;
     `);
-
-    await db.execAsync("COMMIT;");
-  } catch (error) {
-    await db.execAsync("ROLLBACK;");
-    throw error;
-  }
+  });
 }
 
 async function getAppMetadataValue(db, metadataKey) {
@@ -999,9 +916,7 @@ async function repairCloudParentForeignKeySyncState(db) {
     return;
   }
 
-  await db.execAsync("BEGIN IMMEDIATE;");
-
-  try {
+  await withTransaction(db, async () => {
     await db.execAsync(`
       UPDATE Program
       SET cloud_program_id = NULL,
@@ -1020,11 +935,7 @@ async function repairCloudParentForeignKeySyncState(db) {
     `);
 
     await setAppMetadataValue(db, metadataKey, "done");
-    await db.execAsync("COMMIT;");
-  } catch (error) {
-    await db.execAsync("ROLLBACK;");
-    throw error;
-  }
+  });
 }
 
 export async function initializeDatabase(db) {

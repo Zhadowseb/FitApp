@@ -823,7 +823,11 @@ export async function getWorkoutsByDayId(db, dayId) {
         workout_type,
         COALESCE(label, workout_type) AS label,
         done,
-        day_id
+        day_id,
+        is_active,
+        original_start_time,
+        timer_start,
+        elapsed_time
      FROM Workout_Type_Instance
      WHERE day_id = ?;`,
     [dayId]

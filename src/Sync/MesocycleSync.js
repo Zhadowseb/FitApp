@@ -4,6 +4,7 @@ import { useSQLiteContext } from "expo-sqlite";
 
 import { useAuth } from "../Contexts/AuthContext";
 import { programService } from "../Services";
+import { enqueueSync } from "./syncQueue";
 
 export default function MesocycleSync() {
   const db = useSQLiteContext();
@@ -18,7 +19,7 @@ export default function MesocycleSync() {
     isSyncingRef.current = true;
 
     try {
-      await programService.syncMesocyclesWithCloud(db);
+      await enqueueSync(() => programService.syncMesocyclesWithCloud(db));
     } catch (error) {
       console.error("Mesocycle cloud sync failed:", error);
     } finally {

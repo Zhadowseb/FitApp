@@ -34,7 +34,10 @@ export default StyleSheet.create({
   circleCard: {
     width: 76,
     alignItems: "center",
-    gap: 8,
+    gap: 6,
+  },
+  avatarShell: {
+    position: "relative",
   },
   avatarRing: {
     width: 68,
@@ -44,6 +47,18 @@ export default StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 3,
+  },
+  statusBadge: {
+    position: "absolute",
+    right: -2,
+    bottom: -1,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#0E0F12",
   },
   avatarInner: {
     width: "100%",
@@ -57,11 +72,13 @@ export default StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     lineHeight: 15,
-    minHeight: 30,
+    minHeight: 24,
     textAlign: "center",
   },
   circleBadge: {
-    borderRadius: 999,
+    marginTop: -2,
+    borderRadius: 9999,
+    overflow: "hidden",
     paddingHorizontal: 8,
     paddingVertical: 4,
     minHeight: 22,

@@ -1,6 +1,12 @@
 import * as SQLite from "expo-sqlite";
 
 import { initializeDatabase } from "./db";
+import { withTransaction } from "./transaction";
+import {
+  formatDate,
+  normalizeLocalDateString,
+  parseCustomDate,
+} from "../Utils/dateUtils";
 
 const LEGACY_DATABASE_NAME = "datab.db";
 const ANONYMOUS_DATABASE_NAME = "datab-anon.db";
@@ -52,6 +58,16 @@ function getLocalStorage() {
 function quoteIdentifier(identifier) {
   return `"${String(identifier).replace(/"/g, '""')}"`;
 }
+
+const WEEKDAY_INDEX = new Map([
+  ["Monday", 0],
+  ["Tuesday", 1],
+  ["Wednesday", 2],
+  ["Thursday", 3],
+  ["Friday", 4],
+  ["Saturday", 5],
+  ["Sunday", 6],
+]);
 
 function getStoredValue(key) {
   const storage = getLocalStorage();
@@ -125,6 +141,98 @@ async function databaseHasUserData(db) {
 }
 
 async function copyTableRows(sourceDb, targetDb, tableName) {
+  if (tableName === "Day") {
+    const targetColumns = await targetDb.getAllAsync(
+      `PRAGMA table_info(${quoteIdentifier(tableName)});`
+    );
+    const targetColumnNames = targetColumns.map((column) => column.name);
+    const sourceRows = await sourceDb.getAllAsync(
+      `SELECT
+         d.*,
+         p.start_date AS program_start_date,
+         mc.microcycle_number,
+         m.mesocycle_number
+       FROM Day d
+       JOIN Microcycle mc ON mc.microcycle_id = d.microcycle_id
+       JOIN Mesocycle m ON m.mesocycle_id = mc.mesocycle_id
+       JOIN Program p ON p.program_id = d.program_id
+       ORDER BY d.day_id ASC;`
+    );
+    const mesocycleRows = await sourceDb.getAllAsync(
+      `SELECT program_id, mesocycle_number, weeks
+       FROM Mesocycle
+       ORDER BY program_id ASC, mesocycle_number ASC;`
+    );
+    const weeksBeforeByProgramAndMesocycle = new Map();
+    const cumulativeWeeksByProgram = new Map();
+
+    for (const row of mesocycleRows) {
+      const programId = Number(row.program_id);
+      const mesocycleNumber = Number(row.mesocycle_number);
+      const weeks = Number(row.weeks) || 0;
+      const cumulativeWeeks = cumulativeWeeksByProgram.get(programId) || 0;
+
+      weeksBeforeByProgramAndMesocycle.set(
+        `${programId}:${mesocycleNumber}`,
+        cumulativeWeeks
+      );
+      cumulativeWeeksByProgram.set(programId, cumulativeWeeks + weeks);
+    }
+
+    for (const row of sourceRows) {
+      const normalizedDate = normalizeLocalDateString(row.date);
+      const normalizedStartDate = normalizeLocalDateString(row.program_start_date);
+      const weekdayIndex = WEEKDAY_INDEX.get(String(row.Weekday ?? "").trim());
+      const programId = Number(row.program_id);
+      const mesocycleNumber = Number(row.mesocycle_number);
+      const microcycleNumber = Number(row.microcycle_number);
+
+      let resolvedDate = normalizedDate;
+
+      if (
+        !resolvedDate &&
+        normalizedStartDate &&
+        weekdayIndex !== undefined &&
+        Number.isFinite(programId) &&
+        Number.isFinite(mesocycleNumber) &&
+        Number.isFinite(microcycleNumber)
+      ) {
+        const weeksBefore =
+          weeksBeforeByProgramAndMesocycle.get(
+            `${programId}:${mesocycleNumber}`
+          ) || 0;
+        const date = parseCustomDate(normalizedStartDate);
+        date.setDate(
+          date.getDate() + (weeksBefore + microcycleNumber - 1) * 7 + weekdayIndex
+        );
+        resolvedDate = formatDate(date);
+      }
+
+      if (!resolvedDate) {
+        continue;
+      }
+
+      const sourceColumnNames = targetColumnNames;
+      const columnListSql = sourceColumnNames.map(quoteIdentifier).join(", ");
+      const placeholdersSql = sourceColumnNames.map(() => "?").join(", ");
+      const values = sourceColumnNames.map((columnName) =>
+        columnName === "date"
+          ? resolvedDate
+          : Object.prototype.hasOwnProperty.call(row, columnName)
+            ? row[columnName]
+            : null
+      );
+
+      await targetDb.runAsync(
+        `INSERT OR REPLACE INTO ${quoteIdentifier(tableName)} (${columnListSql})
+         VALUES (${placeholdersSql});`,
+        values
+      );
+    }
+
+    return;
+  }
+
   const [sourceColumns, targetColumns] = await Promise.all([
     sourceDb.getAllAsync(`PRAGMA table_info(${quoteIdentifier(tableName)});`),
     targetDb.getAllAsync(`PRAGMA table_info(${quoteIdentifier(tableName)});`),
@@ -228,18 +336,11 @@ export async function migrateLegacySharedDatabaseToUserDatabase({
       ),
     ];
 
-    await targetDb.execAsync("BEGIN IMMEDIATE;");
-
-    try {
+    await withTransaction(targetDb, async () => {
       for (const tableName of orderedTableNames) {
         await copyTableRows(legacyDb, targetDb, tableName);
       }
-
-      await targetDb.execAsync("COMMIT;");
-    } catch (error) {
-      await targetDb.execAsync("ROLLBACK;");
-      throw error;
-    }
+    });
 
     setStoredValue(LEGACY_DATABASE_OWNER_STORAGE_KEY, userId);
     return true;

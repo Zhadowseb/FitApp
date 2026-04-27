@@ -236,6 +236,41 @@ for delete
 to authenticated
 using (auth.uid() = follower_id);
 
+do $$
+begin
+  if to_regclass('public.workout_type_instance') is not null then
+    execute '
+      create index if not exists workout_type_instance_user_date_idx
+        on public.workout_type_instance (user_id, date)
+    ';
+
+    execute '
+      drop policy if exists "Followed workout activity is viewable" on public.workout_type_instance
+    ';
+
+    execute '
+      create policy "Followed workout activity is viewable"
+      on public.workout_type_instance
+      for select
+      to authenticated
+      using (
+        (select auth.uid()) = user_id
+        or (
+          deleted_at is null
+          and date between current_date - 1 and current_date + 1
+          and exists (
+            select 1
+            from public.user_follows follow
+            where follow.follower_id = (select auth.uid())
+              and follow.following_id = public.workout_type_instance.user_id
+          )
+        )
+      )
+    ';
+  end if;
+end;
+$$;
+
 drop policy if exists "Users can select their own avatar objects" on storage.objects;
 create policy "Users can select their own avatar objects"
 on storage.objects

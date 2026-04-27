@@ -58,10 +58,20 @@ export default function App() {
     setCirclePreviewError("");
 
     try {
+      try {
+        await programService.syncWorkoutTypeInstancesWithCloud(db);
+      } catch (syncError) {
+        console.warn(
+          "Could not refresh workout activity before loading home preview:",
+          syncError
+        );
+      }
+
       const [nextCirclePreview, todayActivitySummary] = await Promise.all([
         socialService.getCirclePreview({
           user,
           limit: 12,
+          date: todayDate,
         }),
         programService.getTodayActivitySummary(db, {
           date: todayDate,

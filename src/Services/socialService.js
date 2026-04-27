@@ -1,5 +1,9 @@
 import { supabase } from "../Database/supaBaseClient";
 import {
+  normalizeIsoDateString,
+  normalizeLocalDateString,
+} from "../Utils/dateUtils";
+import {
   buildFullUsername,
   formatUsernameCode,
   normalizeUsernameBaseInput,
@@ -8,12 +12,19 @@ import {
   USERNAME_CODE_LENGTH,
   USERNAME_BASE_PATTERN,
 } from "../Utils/socialUsername";
+import {
+  normalizeElapsedDurationSeconds,
+  normalizeStoredTimestampSeconds,
+} from "../Utils/timeUtils";
 
 const PROFILES_TABLE = "profiles";
 const USER_FOLLOWS_TABLE = "user_follows";
+const WORKOUT_TYPE_INSTANCE_TABLE = "workout_type_instance";
 const AVATAR_BUCKET = "avatars";
 const PROFILE_SELECT_FIELDS =
   "id, username, username_base, username_code, display_name, bio, avatar_path, created_at, updated_at";
+const WORKOUT_ACTIVITY_SELECT_FIELDS =
+  "id, user_id, workout_type, date, label, done, is_active, timer_start, elapsed_time, deleted_at";
 const SOCIAL_SETUP_MESSAGE =
   "User search and follows are not set up in Supabase yet. Run docs/supabase-social-search.sql in the Supabase SQL editor first.";
 const SOCIAL_AVATAR_SETUP_MESSAGE =
@@ -88,6 +99,186 @@ function mapProfileRow(row, followingIdSet = new Set()) {
     updatedAt,
     isFollowing: followingIdSet.has(row.id),
   };
+}
+
+function isCloudWorkoutLive(workout) {
+  const timerStartSeconds = getCloudWorkoutTimerStartSeconds(workout);
+
+  return (
+    Number(workout?.done) !== 1 &&
+    (Number(workout?.is_active) === 1 || timerStartSeconds !== null)
+  );
+}
+
+function formatCloudWorkoutElapsedDetail(workout) {
+  const storedElapsedSeconds = normalizeElapsedDurationSeconds(
+    workout?.elapsed_time,
+    0
+  );
+  const timerStartSeconds = getCloudWorkoutTimerStartSeconds(workout);
+  const runningElapsedSeconds =
+    timerStartSeconds !== null
+      ? Math.max(0, Math.trunc(Date.now() / 1000) - timerStartSeconds)
+      : 0;
+  const totalElapsedSeconds = storedElapsedSeconds + runningElapsedSeconds;
+  const totalElapsedMinutes = Math.max(1, Math.floor(totalElapsedSeconds / 60));
+
+  return `${totalElapsedMinutes} min in`;
+}
+
+function normalizeCloudTimeString(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmedValue = value.trim();
+  const match = trimmedValue.match(/^(\d{2}):(\d{2})(?::(\d{2}))?/);
+
+  if (!match) {
+    return null;
+  }
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const seconds = Number(match[3] ?? "00");
+
+  if (
+    !Number.isInteger(hours) ||
+    !Number.isInteger(minutes) ||
+    !Number.isInteger(seconds) ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59 ||
+    seconds < 0 ||
+    seconds > 59
+  ) {
+    return null;
+  }
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+    2,
+    "0"
+  )}:${String(seconds).padStart(2, "0")}`;
+}
+
+function getCloudWorkoutTimerStartSeconds(workout) {
+  const storedTimerStartSeconds = normalizeStoredTimestampSeconds(
+    workout?.timer_start
+  );
+
+  if (storedTimerStartSeconds !== null) {
+    return storedTimerStartSeconds;
+  }
+
+  const normalizedDate = normalizeLocalDateString(workout?.date);
+  const normalizedTime = normalizeCloudTimeString(workout?.timer_start);
+
+  if (!normalizedDate || !normalizedTime) {
+    return null;
+  }
+
+  const [day, month, year] = normalizedDate.split(".").map(Number);
+  const [hours, minutes, seconds] = normalizedTime.split(":").map(Number);
+  const date = new Date(year, month - 1, day, hours, minutes, seconds, 0);
+  const timestampMs = date.getTime();
+
+  return Number.isNaN(timestampMs) ? null : Math.trunc(timestampMs / 1000);
+}
+
+function createRestActivityPreview() {
+  return {
+    activityState: "rest",
+    activityDetail: "Rest day",
+    workoutType: null,
+    workoutLabel: null,
+  };
+}
+
+function buildCloudActivityPreview(workouts) {
+  if (!workouts.length) {
+    return createRestActivityPreview();
+  }
+
+  const liveWorkout = workouts.find((workout) => isCloudWorkoutLive(workout));
+
+  if (liveWorkout) {
+    return {
+      activityState: "live",
+      activityDetail: formatCloudWorkoutElapsedDetail(liveWorkout),
+      workoutType: liveWorkout.workout_type ?? null,
+      workoutLabel: liveWorkout.label ?? liveWorkout.workout_type ?? null,
+    };
+  }
+
+  const plannedWorkouts = workouts.filter(
+    (workout) => Number(workout.done) !== 1
+  );
+
+  if (plannedWorkouts.length > 0) {
+    const nextPlannedWorkout = plannedWorkouts[0];
+
+    return {
+      activityState: "planned",
+      activityDetail:
+        plannedWorkouts.length > 1
+          ? `${plannedWorkouts.length} planned`
+          : "Planned",
+      workoutType: nextPlannedWorkout.workout_type ?? null,
+      workoutLabel:
+        nextPlannedWorkout.label ?? nextPlannedWorkout.workout_type ?? null,
+    };
+  }
+
+  const completedWorkout = workouts[workouts.length - 1];
+
+  return {
+    activityState: "done",
+    activityDetail:
+      workouts.length > 1 ? `${workouts.length} done` : "Done today",
+    workoutType: completedWorkout?.workout_type ?? null,
+    workoutLabel:
+      completedWorkout?.label ?? completedWorkout?.workout_type ?? null,
+  };
+}
+
+async function fetchActivityPreviewByUserId({ userIds, date }) {
+  const uniqueUserIds = [...new Set(userIds.filter(Boolean))];
+  const activityDate = normalizeIsoDateString(date);
+
+  if (!uniqueUserIds.length || !activityDate) {
+    return new Map();
+  }
+
+  const { data: workouts, error } = await supabase
+    .from(WORKOUT_TYPE_INSTANCE_TABLE)
+    .select(WORKOUT_ACTIVITY_SELECT_FIELDS)
+    .in("user_id", uniqueUserIds)
+    .eq("date", activityDate)
+    .is("deleted_at", null)
+    .order("user_id", { ascending: true })
+    .order("id", { ascending: true });
+
+  if (error) {
+    throw normalizeSocialError(error);
+  }
+
+  const workoutsByUserId = new Map();
+
+  (workouts ?? []).forEach((workout) => {
+    if (!workoutsByUserId.has(workout.user_id)) {
+      workoutsByUserId.set(workout.user_id, []);
+    }
+
+    workoutsByUserId.get(workout.user_id).push(workout);
+  });
+
+  return new Map(
+    uniqueUserIds.map((userId) => [
+      userId,
+      buildCloudActivityPreview(workoutsByUserId.get(userId) ?? []),
+    ])
+  );
 }
 
 function isMissingSocialSchemaError(error) {
@@ -530,53 +721,32 @@ export async function getFollowing({
   });
 }
 
-export async function getCirclePreview({ user, limit = 12 }) {
+export async function getCirclePreview({ user, limit = 12, date = null }) {
   if (!user?.id) {
     throw new Error("You need to be signed in to load your circle.");
   }
 
-  const currentUserProfile = await ensureOwnProfile(user);
-  const [followingProfiles, followerProfiles] = await Promise.all([
+  const [currentUserProfile, followingProfiles] = await Promise.all([
+    ensureOwnProfile(user),
     getFollowing({
       userId: user.id,
       currentUserId: user.id,
       limit,
     }),
-    getFollowers({
-      userId: user.id,
-      currentUserId: user.id,
-      limit,
-    }),
   ]);
-  const peopleById = new Map();
-
-  followingProfiles.forEach((profile) => {
-    peopleById.set(profile.id, {
-      ...profile,
-      relationshipType: "following",
-    });
-  });
-
-  followerProfiles.forEach((profile) => {
-    const existingProfile = peopleById.get(profile.id);
-
-    if (existingProfile) {
-      peopleById.set(profile.id, {
-        ...existingProfile,
-        relationshipType: "mutual",
-      });
-      return;
-    }
-
-    peopleById.set(profile.id, {
-      ...profile,
-      relationshipType: "follower",
-    });
+  const activityPreviewByUserId = await fetchActivityPreviewByUserId({
+    userIds: followingProfiles.map((profile) => profile.id),
+    date,
   });
 
   return {
     currentUser: currentUserProfile,
-    people: [...peopleById.values()].slice(0, limit),
+    people: followingProfiles.map((profile) => ({
+      ...profile,
+      relationshipType: "following",
+      ...(activityPreviewByUserId.get(profile.id) ??
+        createRestActivityPreview()),
+    })),
   };
 }
 

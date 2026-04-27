@@ -185,9 +185,24 @@ export default StyleSheet.create({
     overflow: "hidden",
   },
 
+  emptyContent: {
+    gap: 14,
+  },
+
   emptyText: {
     textAlign: "center",
     fontSize: 15,
     lineHeight: 21,
+  },
+
+  emptySubtext: {
+    textAlign: "center",
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "700",
+  },
+
+  emptyButton: {
+    marginTop: 2,
   },
 });

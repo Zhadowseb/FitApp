@@ -3,6 +3,7 @@
 ## [0.9.11] - Unreleased
 ### Fixed
 - Fixed today's WeekIndicator workout badges so they use the same rounded-card shape and icon size as workout badges on other days.
+- Fixed HomePage crew activity so it only shows followed users and can read today's workout activity for those users through Supabase follow-based access.
 
 ---
 ## [0.9.10] - Unreleased

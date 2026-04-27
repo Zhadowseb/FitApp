@@ -14,6 +14,7 @@ import { programService } from "../../../../Services";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 import {
   ThemedCard,
+  ThemedButton,
   ThemedText,
   ThemedTitle,
 } from "../../../../Resources/ThemedComponents";
@@ -22,7 +23,7 @@ import {
   getProgramEndDate,
 } from "../../../../Utils/programUtils";
 
-const ProgramList = ({ refreshKey }) => {
+const ProgramList = ({ refreshKey, onCreateProgram }) => {
   const navigation = useNavigation();
   const db = useSQLiteContext();
   const colorScheme = useColorScheme();
@@ -330,9 +331,22 @@ const ProgramList = ({ refreshKey }) => {
               { backgroundColor: theme.primary ?? "#f7742e" },
             ]}
           />
-          <ThemedText style={styles.emptyText} setColor={quietText}>
-            No programs found.
-          </ThemedText>
+          <View style={styles.emptyContent}>
+            <ThemedText style={styles.emptyText} setColor={quietText}>
+              No programs found.
+            </ThemedText>
+
+            <ThemedText style={styles.emptySubtext} setColor={titleColor}>
+              Start by creating your first program.
+            </ThemedText>
+
+            <ThemedButton
+              title="Create first program"
+              onPress={onCreateProgram}
+              fullWidth
+              style={[styles.emptyButton, { backgroundColor: theme.primary }]}
+            />
+          </View>
         </ThemedCard>
       )}
     </ScrollView>

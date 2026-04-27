@@ -61,7 +61,9 @@ export default function App() {
       </ThemedHeader>
 
       <ProgramList
-        refreshKey={refreshKey}/>
+        refreshKey={refreshKey}
+        onCreateProgram={() => set_addProgram_Visible(true)}
+      />
 
       <AddProgram 
         visible={addProgram_Visible}

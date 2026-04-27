@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.9.11] - Unreleased
+### Fixed
+- Fixed today's WeekIndicator workout badges so they use the same rounded-card shape and icon size as workout badges on other days.
+
+---
 ## [0.9.10] - Unreleased
 ### Added
 - Added a Library tab to the bottom navigation that opens the exercise library with a dedicated Library icon.

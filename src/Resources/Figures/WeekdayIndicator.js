@@ -119,7 +119,6 @@ const WeekdayIndicator = ({
                 style={[
                   styles.circle,
                   styles.multiWorkoutCard,
-                  active && styles.activeCircle,
                   index < workoutCards.length - 1 && styles.workoutCardSpacing,
                   {
                     backgroundColor: workoutSurfaceColor,
@@ -129,8 +128,8 @@ const WeekdayIndicator = ({
               >
                 {WorkoutIcon && (
                   <WorkoutIcon
-                    width={active ? 22 : 28}
-                    height={active ? 22 : 28}
+                    width={28}
+                    height={28}
                     color={theme.cardBackground}
                     fill={theme.cardBackground}
                     primaryColor={theme.cardBackground}
@@ -159,7 +158,6 @@ const WeekdayIndicator = ({
         <View
           style={[
             styles.circle,
-            active && styles.activeCircle,
             {
               backgroundColor: overdue
                 ? dangerColor
@@ -176,8 +174,8 @@ const WeekdayIndicator = ({
         >
           {Icon && (
             <Icon
-              width={active ? 22 : 28}
-              height={active ? 22 : 28}
+              width={28}
+              height={28}
               color={theme.cardBackground}
               fill={theme.cardBackground}
               primaryColor={theme.cardBackground}
@@ -266,11 +264,6 @@ const styles = StyleSheet.create({
   },
   workoutCardSpacing: {
     marginBottom: 4,
-  },
-  activeCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
   },
   iconLabel: {
     fontSize: 8,

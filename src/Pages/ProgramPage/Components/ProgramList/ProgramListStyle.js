@@ -167,7 +167,24 @@ export default StyleSheet.create({
     lineHeight: 18,
   },
 
+  dateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
+
   dateRange: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+
+  dateSeparator: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginHorizontal: 8,
+  },
+
+  durationText: {
     fontSize: 13,
     lineHeight: 18,
   },

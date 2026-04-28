@@ -75,6 +75,28 @@ function pluralizeCount(count, singular, plural = `${singular}s`) {
   return `${count} ${count === 1 ? singular : plural}`;
 }
 
+function getProgramDurationLabel(weekCount) {
+  const totalWeeks = Number(weekCount) || 0;
+
+  if (totalWeeks <= 0) {
+    return "";
+  }
+
+  const months = Math.floor(totalWeeks / 4);
+  const weeks = totalWeeks % 4;
+  const parts = [];
+
+  if (months > 0) {
+    parts.push(pluralizeCount(months, "month"));
+  }
+
+  if (weeks > 0) {
+    parts.push(pluralizeCount(weeks, "week"));
+  }
+
+  return parts.join(" ");
+}
+
 const ProgramList = ({ refreshKey, onCreateProgram }) => {
   const navigation = useNavigation();
   const db = useSQLiteContext();
@@ -180,6 +202,7 @@ const ProgramList = ({ refreshKey, onCreateProgram }) => {
             : 0;
         const showProgress = item.status === "ACTIVE" && totalWorkouts > 0;
         const dateRange = getProgramDateRange(item.start_date, item.end_date);
+        const durationLabel = getProgramDurationLabel(item.week_count);
 
         return (
           <ThemedCard
@@ -312,9 +335,27 @@ const ProgramList = ({ refreshKey, onCreateProgram }) => {
               ) : null}
 
               {dateRange ? (
-                <ThemedText style={styles.dateRange} setColor={quietText}>
-                  {dateRange}
-                </ThemedText>
+                <View style={styles.dateRow}>
+                  <ThemedText style={styles.dateRange} setColor={quietText}>
+                    {dateRange}
+                  </ThemedText>
+                  {durationLabel ? (
+                    <>
+                      <ThemedText
+                        style={styles.dateSeparator}
+                        setColor={quietText}
+                      >
+                        -
+                      </ThemedText>
+                      <ThemedText
+                        style={styles.durationText}
+                        setColor={quietText}
+                      >
+                        {durationLabel}
+                      </ThemedText>
+                    </>
+                  ) : null}
+                </View>
               ) : null}
             </TouchableOpacity>
           </ThemedCard>

@@ -345,7 +345,7 @@ const ProgramList = ({ refreshKey, onCreateProgram }) => {
                         style={styles.dateSeparator}
                         setColor={quietText}
                       >
-                        -
+                        |
                       </ThemedText>
                       <ThemedText
                         style={styles.durationText}

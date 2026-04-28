@@ -68,7 +68,7 @@ function getProgramDateRange(startDate, endDate) {
 
   return `${formatProgramDateLabel(startDate, {
     includeYear: showStartYear,
-  })} -> ${formatProgramDateLabel(endDate, { includeYear: true })}`;
+  })} - ${formatProgramDateLabel(endDate, { includeYear: true })}`;
 }
 
 function pluralizeCount(count, singular, plural = `${singular}s`) {

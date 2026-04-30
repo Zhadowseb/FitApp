@@ -3,6 +3,31 @@ import { useColorScheme } from "react-native";
 
 import { Colors } from "../GlobalStyling/colors";
 
+const MONTH_LABELS = [
+  "jan",
+  "feb",
+  "mar",
+  "apr",
+  "maj",
+  "jun",
+  "jul",
+  "aug",
+  "sep",
+  "okt",
+  "nov",
+  "dec",
+];
+
+const getMonthLabel = (monthNumber) => {
+  const monthIndex = Number(monthNumber);
+
+  if (!Number.isInteger(monthIndex) || monthIndex < 1 || monthIndex > 12) {
+    return monthNumber;
+  }
+
+  return MONTH_LABELS[monthIndex - 1];
+};
+
 
 const WeekdayIndicator = ({
   label,
@@ -21,17 +46,25 @@ const WeekdayIndicator = ({
   const hasWorkoutCards = workoutCards.length > 0;
   const hasWorkout = hasWorkoutCards || Boolean(Icon || iconLabel);
   const [dayNumber, monthNumber] = (dateLabel ?? "").split(".");
+  const monthLabel = monthNumber ? getMonthLabel(monthNumber) : null;
   const quietText = theme.quietText ?? theme.iconColor ?? theme.text;
   const titleColor = theme.title ?? theme.text;
   const surfaceColor = theme.uiBackground ?? theme.cardBackground ?? theme.background;
-  const activeSurface = theme.primaryLight ?? surfaceColor;
-  const completedSurface = theme.secondary ?? surfaceColor;
+  const activeSurface =
+    colorScheme === "dark"
+      ? "rgba(247, 116, 46, 0.13)"
+      : theme.primaryLight ?? surfaceColor;
+  const completedSurface =
+    colorScheme === "dark"
+      ? "rgba(96, 218, 172, 0.12)"
+      : theme.secondaryLight ?? surfaceColor;
   const cardBorder = theme.cardBorder ?? theme.iconColor ?? theme.text;
   const activeBorder = theme.primary ?? cardBorder;
   const completedBorder = theme.secondary ?? cardBorder;
   const dangerColor = theme.danger ?? Colors.dark.danger ?? "#ba0000ff";
-  const activeText = theme.primaryDark ?? titleColor;
-  const completedText = theme.cardBackground ?? theme.background ?? titleColor;
+  const activeText = theme.primary ?? titleColor;
+  const completedText = theme.secondary ?? titleColor;
+  const todayBadgeText = theme.textInverted ?? theme.cardBackground ?? "#141414";
   const badgeBackgroundColor = active
     ? activeSurface
     : completed
@@ -48,16 +81,36 @@ const WeekdayIndicator = ({
       ? completedText
       : quietText;
   const badgeDateColor = active
-    ? activeText
+    ? titleColor
     : completed
-      ? completedText
+      ? titleColor
       : titleColor;
   const weekdayTextColor = completed
     ? completedText
-    : theme.title ?? "#fff";
+    : active
+      ? activeText
+      : quietText;
 
   return (
     <View style={styles.container}>
+      {active && (
+        <View pointerEvents="none" style={styles.todayBadgeSlot}>
+          <View
+            style={[
+              styles.todayBadge,
+              {
+                backgroundColor: activeBorder,
+                borderColor: theme.cardBackground ?? theme.background,
+              },
+            ]}
+          >
+            <Text style={[styles.todayBadgeText, { color: todayBadgeText }]}>
+              TODAY
+            </Text>
+          </View>
+        </View>
+      )}
+
       <Pressable
         delayLongPress={600}
         onLongPress={onDayLongPress}
@@ -66,6 +119,7 @@ const WeekdayIndicator = ({
           {
             backgroundColor: badgeBackgroundColor,
             borderColor: badgeBorderColor,
+            borderWidth: active ? 2 : 1,
           },
         ]}
       >
@@ -76,18 +130,18 @@ const WeekdayIndicator = ({
             { color: weekdayTextColor },
           ]}
         >
-          {active ? "Today" : label}
+          {label}
         </Text>
 
         {!!dateLabel && (
-          <View style={styles.dateRow}>
+          <View style={styles.dateStack}>
             <Text style={[styles.dateNumber, { color: badgeDateColor }]}>
               {dayNumber ?? dateLabel}
             </Text>
 
-            {!!monthNumber && (
+            {!!monthLabel && (
               <Text style={[styles.dateMonth, { color: badgeLabelColor }]}>
-                .{monthNumber}
+                {monthLabel}
               </Text>
             )}
           </View>
@@ -206,46 +260,76 @@ export default WeekdayIndicator;
 const styles = StyleSheet.create({
   container: {
     alignItems: "center",
+    paddingTop: 8,
+    position: "relative",
     width: "100%",
   },
   headerBadge: {
-    minWidth: 42,
-    minHeight: 50,
+    width: "92%",
+    maxWidth: 58,
+    minWidth: 44,
+    minHeight: 60,
     paddingHorizontal: 4,
-    paddingVertical: 6,
+    paddingTop: 6,
+    paddingBottom: 6,
     borderWidth: 1,
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 6,
+    marginBottom: 7,
+    position: "relative",
   },
   weekdayLabel: {
     fontSize: 9,
     fontWeight: "700",
     textTransform: "uppercase",
-    letterSpacing: 0.7,
+    letterSpacing: 0,
+    lineHeight: 11,
   },
   weekdayLabelActive: {
     fontSize: 9,
-    letterSpacing: 0.8,
+    letterSpacing: 0,
   },
-  dateRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
+  todayBadgeSlot: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    zIndex: 3,
+  },
+  todayBadge: {
+    width: "80%",
+    maxWidth: 58,
+    minWidth: 42,
+    paddingHorizontal: 2,
+    paddingVertical: 0,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  todayBadgeText: {
+    fontSize: 8,
+    fontWeight: "800",
+    letterSpacing: 0,
+    lineHeight: 10,
+  },
+  dateStack: {
+    alignItems: "center",
     justifyContent: "center",
-    marginTop: 2,
+    marginTop: 1,
   },
   dateNumber: {
-    fontSize: 15,
-    fontWeight: "700",
-    lineHeight: 16,
+    fontSize: 19,
+    fontWeight: "800",
+    lineHeight: 21,
   },
   dateMonth: {
     fontSize: 9,
     fontWeight: "700",
-    marginLeft: 1,
-    marginBottom: 1,
+    lineHeight: 10,
     opacity: 0.8,
+    textTransform: "lowercase",
   },
   circle: {
     width: 40,

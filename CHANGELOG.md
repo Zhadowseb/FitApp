@@ -1,6 +1,11 @@
 # Changelog
 
-## [0.9.13] - Unreleased
+## [0.9.14] - Unreleased
+### Changed
+- Refined the microcycle weekday indicator with a raised TODAY badge and month text labels.
+
+---
+## [0.9.13] - 2026-04-29
 ### Changed
 - Added a Supabase `workout_type` catalog script with `type`, `display_name`, `is_active`, RLS, and a foreign key from `workout_type_instance.workout_type`.
 - Synced active workout types from the cloud catalog into the local picker so visible workout options and display names can be controlled online.
@@ -10,24 +15,24 @@
 - Reworked the Home page today shortcut into a compact start-card that opens the next workout directly.
 
 ---
-## [0.9.12] - Unreleased
+## [0.9.12] - 2026-04-29
 ### Changed
 - Redesigned program cards with compact status, progress, summary metrics and date range styling.
 
 ---
-## [0.9.11] - Unreleased
+## [0.9.11] - 2026-04-29
 ### Fixed
 - Fixed today's WeekIndicator workout badges so they use the same rounded-card shape and icon size as workout badges on other days.
 - Fixed HomePage crew activity so it only shows followed users and can read today's workout activity for those users through Supabase follow-based access.
 
 ---
-## [0.9.10] - Unreleased
+## [0.9.10] - 2026-04-29
 ### Added
 - Added a Library tab to the bottom navigation that opens the exercise library with a dedicated Library icon.
 - Moved the Programs and Exercise Library quick-access cards from the Home page to the Library page, with the Exercise Library card opening a dedicated Catalog screen.
 
 ---
-## [0.9.9] - Unreleased
+## [0.9.9] - 2026-04-29
 ### Changed
 - Redesigned the strength workout timer card with a compact status/header layout, linear set progress, and custom start, pause, continue, and finish actions.
 - Refreshed strength exercise cards with Home-style top progress bars, set dividers, cleaner icon controls, and card-colored toolbar actions.
@@ -36,42 +41,42 @@
 - Reduced workout bottom safe-area spacing so strength and run workout screens no longer leave an empty black bar above the bottom navigation.
 
 ---
-## [0.9.8] - Unreleased
+## [0.9.8] - 2026-04-29
 ### Changed
 - Added drag-and-drop reordering for strength workout exercises with persisted local and cloud ordering.
 
 ---
-## [0.9.7] - Unreleased
+## [0.9.7] - 2026-04-24
 ### Changed
 - Updated the HomePage crew activity strip so your own circle now reflects real local workout states with planned, live, done, and rest styling plus status badges.
 
 ---
-## [0.9.6] - Unreleased
+## [0.9.6] - 2026-04-24
 ### Changed
 - Added profile photo upload backed by Supabase Storage, including avatar previews on the profile page, people search, relationship lists, and the HomePage social circle.
 
 ---
-## [0.9.5] - Unreleased
+## [0.9.5] - 2026-04-24
 ### Changed
 - Added a HomePage social circle strip inspired by the shared `FriendsActivity` reference, using static full rings and generic user icons instead of rotating avatar images or segmented activity rings.
 
 ---
-## [0.9.4] - Unreleased
+## [0.9.4] - 2026-04-24
 ### Changed
 - Added followers and following summary blocks on the profile page, including tappable lists that show which users follow you and which users you follow.
 
 ---
-## [0.9.3] - Unreleased
+## [0.9.3] - 2026-04-24
 ### Changed
 - Reworked social usernames to use an immutable `username_base#1234` format, including signup, profile display, search, and Supabase profile bootstrap logic.
 
 ---
-## [0.9.2] - Unreleased
+## [0.9.2] - 2026-04-24
 ### Changed
 - Added editable profile fields for `display_name` and `bio`, so users can update how they appear in people search directly from the profile page.
 
 ---
-## [0.9.1] - Unreleased
+## [0.9.1] - 2026-04-24
 ### Changed
 - Added a dedicated people search flow in the bottom navigation, including user search plus follow and unfollow actions backed by Supabase profiles and follow relationships.
 

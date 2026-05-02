@@ -922,9 +922,16 @@ export async function getProgramDaysBetweenDates(db, { startIsoDate, endIsoDate 
 
   return db.getAllAsync(
     `SELECT
+        d.day_id,
         d.date,
         ${dayIsoDateSql} AS date_iso,
-        COUNT(DISTINCT d.program_id) AS program_count
+        d.Weekday AS weekday,
+        d.program_id,
+        p.program_name,
+        p.start_date,
+        p.status,
+        mc.microcycle_number,
+        m.mesocycle_number
      FROM Day d
      JOIN Program p ON p.program_id = d.program_id
      JOIN Microcycle mc ON mc.microcycle_id = d.microcycle_id
@@ -934,8 +941,7 @@ export async function getProgramDaysBetweenDates(db, { startIsoDate, endIsoDate 
        AND mc.deleted_at IS NULL
        AND m.deleted_at IS NULL
        AND date(${dayIsoDateSql}) BETWEEN date(?) AND date(?)
-     GROUP BY d.date, date_iso
-     ORDER BY date_iso ASC;`,
+     ORDER BY date_iso ASC, p.program_name COLLATE NOCASE ASC, d.day_id ASC;`,
     [startIsoDate, endIsoDate]
   );
 }

@@ -40,6 +40,7 @@ const WeekdayIndicator = ({
   programActive = false,
   workoutCards = [],
   onWorkoutPress,
+  onDayPress,
   onDayLongPress,
 }) => {
   const colorScheme = useColorScheme();
@@ -114,7 +115,9 @@ const WeekdayIndicator = ({
 
       <Pressable
         delayLongPress={600}
+        onPress={onDayPress}
         onLongPress={onDayLongPress}
+        accessibilityRole={onDayPress ? "button" : undefined}
         style={[
           styles.headerBadge,
           {

@@ -19,20 +19,13 @@ import WeekdayIndicator from "../../Resources/Figures/WeekdayIndicator";
 import {
   ThemedText,
   ThemedTitle,
+  ThemedModal,
   ThemedView,
 } from "../../Resources/ThemedComponents";
 
-const INITIAL_MONTHS_BEFORE_TODAY = 12;
-const INITIAL_MONTHS_AFTER_TODAY = 12;
-const MONTH_PAGE_BATCH_SIZE = 12;
-const MONTH_PAGE_LOAD_THRESHOLD = 2;
-const INITIAL_MONTH_OFFSET_RANGE = {
-  start: -INITIAL_MONTHS_BEFORE_TODAY,
-  end: INITIAL_MONTHS_AFTER_TODAY,
-};
+const ADJACENT_MONTH_COUNT = 1;
 const INITIAL_VISIBLE_MONTH_OFFSET = 0;
-const INITIAL_VISIBLE_MONTH_INDEX =
-  INITIAL_VISIBLE_MONTH_OFFSET - INITIAL_MONTH_OFFSET_RANGE.start;
+const INITIAL_VISIBLE_MONTH_INDEX = ADJACENT_MONTH_COUNT;
 const MONTH_LABELS = [
   "January",
   "February",
@@ -128,6 +121,13 @@ function getMonthPage(baseDate, monthOffset) {
   };
 }
 
+function getMonthOffsetRange(monthOffset) {
+  return {
+    start: monthOffset - ADJACENT_MONTH_COUNT,
+    end: monthOffset + ADJACENT_MONTH_COUNT,
+  };
+}
+
 function getWorkoutType(workout) {
   return workout?.workout_type ?? workout?.label ?? "Resistance";
 }
@@ -150,10 +150,10 @@ const WorkoutCalendarPage = () => {
   const db = useSQLiteContext();
   const navigation = useNavigation();
   const monthPagerRef = useRef(null);
-  const monthOffsetRangeRef = useRef(INITIAL_MONTH_OFFSET_RANGE);
   const visibleMonthOffsetRef = useRef(INITIAL_VISIBLE_MONTH_OFFSET);
   const pendingScrollModeRef = useRef("instant");
   const previousPageWidthRef = useRef(null);
+  const hasSyncedCalendarRef = useRef(false);
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
   const { width } = useWindowDimensions();
@@ -163,8 +163,9 @@ const WorkoutCalendarPage = () => {
   const todayIsoDate = useMemo(() => formatIsoDate(today), [today]);
   const [workouts, setWorkouts] = useState([]);
   const [programDays, setProgramDays] = useState([]);
+  const [selectedProgramDate, setSelectedProgramDate] = useState(null);
   const [monthOffsetRange, setMonthOffsetRange] = useState(
-    INITIAL_MONTH_OFFSET_RANGE
+    () => getMonthOffsetRange(INITIAL_VISIBLE_MONTH_OFFSET)
   );
   const [visibleMonthOffset, setVisibleMonthOffset] = useState(
     INITIAL_VISIBLE_MONTH_OFFSET
@@ -177,6 +178,8 @@ const WorkoutCalendarPage = () => {
   const cardBorder = theme.cardBorder ?? theme.border ?? theme.iconColor ?? theme.text;
   const primaryColor = theme.primary ?? "#f7742e";
   const secondaryColor = theme.secondary ?? "#60daac";
+  const modalCardSurface = theme.uiBackground ?? theme.background;
+  const actionTextColor = theme.textInverted ?? theme.cardBackground ?? "#141414";
   const rawVisibleMonthIndex = visibleMonthOffset - monthOffsetRange.start;
   const monthPages = useMemo(
     () =>
@@ -214,9 +217,32 @@ const WorkoutCalendarPage = () => {
 
     return nextWorkoutsByDate;
   }, [workouts]);
+  const programsByDate = useMemo(() => {
+    const nextProgramsByDate = new Map();
+
+    for (const programDay of programDays) {
+      const date = programDay?.date;
+
+      if (!date) {
+        continue;
+      }
+
+      const datePrograms = nextProgramsByDate.get(date) ?? [];
+      if (
+        !datePrograms.some(
+          (dateProgram) => dateProgram.program_id === programDay.program_id
+        )
+      ) {
+        datePrograms.push(programDay);
+      }
+      nextProgramsByDate.set(date, datePrograms);
+    }
+
+    return nextProgramsByDate;
+  }, [programDays]);
   const programDates = useMemo(
-    () => new Set(programDays.map((programDay) => programDay.date).filter(Boolean)),
-    [programDays]
+    () => new Set(programsByDate.keys()),
+    [programsByDate]
   );
   const visibleMonth = monthPages[visibleMonthIndex] ?? monthPages[0];
   const visibleMonthKey = visibleMonth ? getMonthKey(visibleMonth.monthDate) : "";
@@ -226,10 +252,15 @@ const WorkoutCalendarPage = () => {
   const visibleMonthDoneCount = visibleMonthWorkouts.filter(
     (workout) => Number(workout.done) === 1
   ).length;
-
-  useEffect(() => {
-    monthOffsetRangeRef.current = monthOffsetRange;
-  }, [monthOffsetRange]);
+  const selectedProgramDayRows = selectedProgramDate
+    ? programsByDate.get(selectedProgramDate) ?? []
+    : [];
+  const selectedProgramModalTitle =
+    selectedProgramDayRows.length === 1
+      ? selectedProgramDayRows[0].program_name
+      : selectedProgramDate
+        ? `Programs on ${selectedProgramDate}`
+        : "Programs";
 
   useEffect(() => {
     visibleMonthOffsetRef.current = visibleMonthOffset;
@@ -250,7 +281,12 @@ const WorkoutCalendarPage = () => {
       y: 0,
       animated: scrollMode === "animated" && !pageWidthChanged,
     });
-  }, [monthPages.length, pageWidth, visibleMonthIndex]);
+  }, [
+    monthOffsetRange.end,
+    monthOffsetRange.start,
+    pageWidth,
+    visibleMonthIndex,
+  ]);
 
   const loadCalendarWorkouts = useCallback(async () => {
     if (!calendarRange.startIsoDate || !calendarRange.endIsoDate) {
@@ -261,10 +297,14 @@ const WorkoutCalendarPage = () => {
     setErrorMessage("");
 
     try {
-      try {
-        await programService.syncWorkoutTypeInstancesWithCloud(db);
-      } catch (syncError) {
-        console.warn("Could not refresh workouts before loading calendar:", syncError);
+      if (!hasSyncedCalendarRef.current) {
+        hasSyncedCalendarRef.current = true;
+
+        try {
+          await programService.syncWorkoutTypeInstancesWithCloud(db);
+        } catch (syncError) {
+          console.warn("Could not refresh workouts before loading calendar:", syncError);
+        }
       }
 
       const [workoutRows, programDayRows] = await Promise.all([
@@ -297,64 +337,14 @@ const WorkoutCalendarPage = () => {
     }, [loadCalendarWorkouts])
   );
 
-  const getRangeForMonthOffset = useCallback((monthOffset, range) => {
-    let nextRange = range;
-    const monthsBeforeOffset = monthOffset - nextRange.start;
-    const monthsAfterOffset = nextRange.end - monthOffset;
-
-    if (monthsBeforeOffset <= MONTH_PAGE_LOAD_THRESHOLD) {
-      const monthsToAdd = Math.max(
-        MONTH_PAGE_BATCH_SIZE,
-        MONTH_PAGE_LOAD_THRESHOLD - monthsBeforeOffset + 1
-      );
-      nextRange = {
-        ...nextRange,
-        start: nextRange.start - monthsToAdd,
-      };
-    }
-
-    if (monthsAfterOffset <= MONTH_PAGE_LOAD_THRESHOLD) {
-      const monthsToAdd = Math.max(
-        MONTH_PAGE_BATCH_SIZE,
-        MONTH_PAGE_LOAD_THRESHOLD - monthsAfterOffset + 1
-      );
-      nextRange = {
-        ...nextRange,
-        end: nextRange.end + monthsToAdd,
-      };
-    }
-
-    return nextRange;
-  }, []);
-
-  const setLoadedMonthRange = useCallback(
-    (monthOffset, scrollMode) => {
-      setMonthOffsetRange((currentRange) => {
-        const nextRange = getRangeForMonthOffset(monthOffset, currentRange);
-
-        if (
-          nextRange.start === currentRange.start &&
-          nextRange.end === currentRange.end
-        ) {
-          return currentRange;
-        }
-
-        pendingScrollModeRef.current = scrollMode;
-        monthOffsetRangeRef.current = nextRange;
-        return nextRange;
-      });
-    },
-    [getRangeForMonthOffset]
-  );
-
   const showMonthOffset = useCallback(
     (nextMonthOffset) => {
-      pendingScrollModeRef.current = "animated";
+      pendingScrollModeRef.current = "instant";
       visibleMonthOffsetRef.current = nextMonthOffset;
-      setLoadedMonthRange(nextMonthOffset, "animated");
       setVisibleMonthOffset(nextMonthOffset);
+      setMonthOffsetRange(getMonthOffsetRange(nextMonthOffset));
     },
-    [setLoadedMonthRange]
+    []
   );
 
   const handleScrollEnd = (event) => {
@@ -366,9 +356,10 @@ const WorkoutCalendarPage = () => {
       monthPages.length - 1
     );
     const nextMonthOffset = monthOffsetRange.start + clampedIndex;
+    pendingScrollModeRef.current = "instant";
     visibleMonthOffsetRef.current = nextMonthOffset;
-    setLoadedMonthRange(nextMonthOffset, "instant");
     setVisibleMonthOffset(nextMonthOffset);
+    setMonthOffsetRange(getMonthOffsetRange(nextMonthOffset));
   };
 
   const openWorkout = (workout) => {
@@ -383,6 +374,29 @@ const WorkoutCalendarPage = () => {
       day: workout.weekday,
       date: workout.date,
       program_id: workout.program_id,
+    });
+  };
+
+  const openProgramDayModal = (day) => {
+    const datePrograms = programsByDate.get(day?.dateLabel) ?? [];
+
+    if (datePrograms.length === 0) {
+      return;
+    }
+
+    setSelectedProgramDate(day.dateLabel);
+  };
+
+  const closeProgramDayModal = () => {
+    setSelectedProgramDate(null);
+  };
+
+  const openProgramOverview = (programDay) => {
+    closeProgramDayModal();
+    navigation.navigate("ProgramOverviewPage", {
+      program_id: programDay.program_id,
+      program_name: programDay.program_name,
+      start_date: programDay.start_date,
     });
   };
 
@@ -544,6 +558,11 @@ const WorkoutCalendarPage = () => {
                           programActive={dayHasProgram}
                           workoutCards={workoutCards}
                           onWorkoutPress={openWorkout}
+                          onDayPress={
+                            dayHasProgram
+                              ? () => openProgramDayModal(day)
+                              : undefined
+                          }
                         />
                       </View>
                     );
@@ -568,6 +587,74 @@ const WorkoutCalendarPage = () => {
           </View>
         ))}
       </ScrollView>
+
+      <ThemedModal
+        visible={Boolean(selectedProgramDate)}
+        onClose={closeProgramDayModal}
+        title={selectedProgramModalTitle}
+        style={styles.programDayModal}
+        contentStyle={styles.programDayModalBody}
+      >
+        {selectedProgramDate ? (
+          <ThemedText style={styles.programDayDate} setColor={quietText}>
+            {selectedProgramDate}
+          </ThemedText>
+        ) : null}
+
+        <ScrollView
+          style={styles.programDayList}
+          contentContainerStyle={styles.programDayListContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {selectedProgramDayRows.map((programDay) => (
+            <View
+              key={`${programDay.program_id}-${programDay.day_id}`}
+              style={[
+                styles.programDayCard,
+                {
+                  backgroundColor: modalCardSurface,
+                  borderColor: cardBorder,
+                },
+              ]}
+            >
+              <View style={styles.programDayHeader}>
+                <View
+                  style={[
+                    styles.programDayDot,
+                    { backgroundColor: primaryColor },
+                  ]}
+                />
+                <View style={styles.programDayText}>
+                  <ThemedText style={styles.programDayName} setColor={titleColor}>
+                    {programDay.program_name}
+                  </ThemedText>
+                  <ThemedText style={styles.programDayMeta} setColor={quietText}>
+                    Mesocycle {programDay.mesocycle_number} - Week{" "}
+                    {programDay.microcycle_number}
+                  </ThemedText>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                accessibilityRole="button"
+                activeOpacity={0.82}
+                onPress={() => openProgramOverview(programDay)}
+                style={[
+                  styles.programDayAction,
+                  { backgroundColor: primaryColor },
+                ]}
+              >
+                <ThemedText
+                  style={styles.programDayActionText}
+                  setColor={actionTextColor}
+                >
+                  Open program
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </ScrollView>
+      </ThemedModal>
     </ThemedView>
   );
 };

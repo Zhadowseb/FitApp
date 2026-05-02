@@ -138,4 +138,67 @@ export default StyleSheet.create({
     lineHeight: 18,
     fontWeight: "700",
   },
+  programDayModal: {
+    maxHeight: "78%",
+  },
+  programDayModalBody: {
+    gap: 0,
+  },
+  programDayDate: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "700",
+    textAlign: "center",
+    marginTop: -4,
+    marginBottom: 12,
+  },
+  programDayList: {
+    flexShrink: 1,
+  },
+  programDayListContent: {
+    gap: 10,
+    paddingBottom: 4,
+  },
+  programDayCard: {
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+    gap: 12,
+  },
+  programDayHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  programDayDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    marginTop: 5,
+  },
+  programDayText: {
+    flex: 1,
+  },
+  programDayName: {
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: "800",
+  },
+  programDayMeta: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "700",
+    marginTop: 2,
+  },
+  programDayAction: {
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  programDayActionText: {
+    fontSize: 12,
+    lineHeight: 15,
+    fontWeight: "800",
+  },
 });

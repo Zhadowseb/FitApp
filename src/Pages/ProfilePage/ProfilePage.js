@@ -1,13 +1,14 @@
 import { Pressable, ScrollView, View, useColorScheme } from "react-native";
 import { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
+import { useSQLiteContext } from "expo-sqlite";
 import * as ImagePicker from "expo-image-picker";
 
 import styles from "./ProfilePageStyle";
 import { Colors } from "../../Resources/GlobalStyling/colors";
 import { logout } from "../../Database/supaBaseClient";
 import { useAuth } from "../../Contexts/AuthContext";
-import { socialService } from "../../Services";
+import { localProgramImportService, socialService } from "../../Services";
 import {
   ThemedButton,
   ThemedCard,
@@ -22,6 +23,7 @@ import {
 } from "../../Resources/ThemedComponents";
 
 export default function ProfilePage() {
+  const db = useSQLiteContext();
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
   const { user } = useAuth();
@@ -46,6 +48,13 @@ export default function ProfilePage() {
   });
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState("");
+  const [programImportStatus, setProgramImportStatus] = useState({
+    isTargetUser: false,
+    isImported: false,
+    importedAt: null,
+    counts: null,
+  });
+  const [isImportingPrograms, setIsImportingPrograms] = useState(false);
   const headerEyebrowColor = theme.quietText ?? theme.iconColor;
   const titleColor = theme.title ?? theme.text;
   const quietText = theme.quietText ?? theme.iconColor ?? theme.text;
@@ -74,6 +83,12 @@ export default function ProfilePage() {
     : profile?.avatarUrl
       ? "Change photo"
       : "Upload photo";
+  const importCounts = programImportStatus.counts ?? {};
+  const programImportButtonTitle = isImportingPrograms
+    ? "Importing..."
+    : programImportStatus.isImported
+      ? "Programs imported"
+      : "Import programs";
 
   useFocusEffect(
     useCallback(() => {
@@ -145,12 +160,37 @@ export default function ProfilePage() {
         }
       };
 
+      const loadProgramImportStatus = async () => {
+        try {
+          const nextProgramImportStatus =
+            await localProgramImportService.getZhadowsebProgramImportStatus(
+              db,
+              user
+            );
+
+          if (!isCancelled) {
+            setProgramImportStatus(nextProgramImportStatus);
+          }
+        } catch {
+          if (!isCancelled) {
+            setProgramImportStatus({
+              isTargetUser:
+                localProgramImportService.isZhadowsebProgramImportTarget(user),
+              isImported: false,
+              importedAt: null,
+              counts: null,
+            });
+          }
+        }
+      };
+
       loadProfile();
+      loadProgramImportStatus();
 
       return () => {
         isCancelled = true;
       };
-    }, [user?.id])
+    }, [db, user?.email, user?.id])
   );
 
   const clearProfileFeedback = () => {
@@ -330,6 +370,42 @@ export default function ProfilePage() {
       );
     } finally {
       setIsLoggingOut(false);
+    }
+  };
+
+  const handleImportPrograms = async () => {
+    setIsImportingPrograms(true);
+    setProfileFeedback({
+      status: "idle",
+      message: "",
+    });
+
+    try {
+      const importResult =
+        await localProgramImportService.importZhadowsebProgramsOnce(db, user);
+      const nextProgramImportStatus =
+        await localProgramImportService.getZhadowsebProgramImportStatus(
+          db,
+          user
+        );
+
+      setProgramImportStatus(nextProgramImportStatus);
+      setProfileFeedback({
+        status: "success",
+        message: importResult.alreadyImported
+          ? "Program import has already run on this device."
+          : `Imported ${importResult.counts.programs} programs with ${importResult.counts.workouts} workouts.`,
+      });
+    } catch (error) {
+      setProfileFeedback({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Could not import programs.",
+      });
+    } finally {
+      setIsImportingPrograms(false);
     }
   };
 
@@ -671,6 +747,56 @@ export default function ProfilePage() {
               ) : null}
             </View>
           </ThemedCard>
+
+          {programImportStatus.isTargetUser ? (
+            <ThemedCard
+              style={[
+                styles.accountCard,
+                {
+                  backgroundColor: cardSurface,
+                  borderColor: cardBorder,
+                },
+              ]}
+            >
+              <ThemedText
+                size={12}
+                style={styles.cardEyebrow}
+                setColor={headerEyebrowColor}
+              >
+                One-time import
+              </ThemedText>
+              <ThemedTitle type="h3" style={styles.cardTitle}>
+                Saved programs
+              </ThemedTitle>
+              <ThemedText style={styles.cardBody} setColor={quietText}>
+                {programImportStatus.isImported
+                  ? "The local import has already run on this device."
+                  : `${importCounts.programs ?? 0} programs, ${
+                      importCounts.workouts ?? 0
+                    } workouts and ${importCounts.sets ?? 0} sets are ready.`}
+              </ThemedText>
+
+              <View style={styles.actions}>
+                <ThemedButton
+                  title={programImportButtonTitle}
+                  variant="secondary"
+                  onPress={handleImportPrograms}
+                  fullWidth
+                  disabled={
+                    isImportingPrograms || programImportStatus.isImported
+                  }
+                  height={44}
+                  style={styles.importButton}
+                />
+              </View>
+
+              {programImportStatus.importedAt ? (
+                <ThemedText style={styles.importMetaText} setColor={quietText}>
+                  Imported {programImportStatus.importedAt}
+                </ThemedText>
+              ) : null}
+            </ThemedCard>
+          ) : null}
         </ThemedKeyboardProtection>
       </View>
 

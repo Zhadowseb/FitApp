@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.13.0] - Unreleased
+### Changed
+- Added estimated one-rep-max progression graphs to Personal Records exercise detail views.
+- Added a one-time local program import button for the zhadowseb account.
+
+---
 ## [0.12.3] - Unreleased
 ### Changed
 - Describe pending changes here.

@@ -6,6 +6,16 @@ import {
   View,
   useColorScheme,
 } from "react-native";
+import Svg, {
+  Circle,
+  Defs,
+  G,
+  LinearGradient,
+  Line,
+  Path,
+  Stop,
+  Text as SvgText,
+} from "react-native-svg";
 import { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSQLiteContext } from "expo-sqlite";
@@ -21,6 +31,121 @@ import {
   ThemedView,
 } from "../../Resources/ThemedComponents";
 import { weightliftingService } from "../../Services";
+
+const TREND_CHART_WIDTH = 320;
+const TREND_CHART_HEIGHT = 190;
+const TREND_CHART_PADDING = {
+  top: 18,
+  right: 18,
+  bottom: 34,
+  left: 44,
+};
+
+function formatTrendAxisValue(value) {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    return "--";
+  }
+
+  const roundedValue = Math.round(numericValue * 2) / 2;
+
+  return Number.isInteger(roundedValue)
+    ? String(roundedValue)
+    : roundedValue.toFixed(1);
+}
+
+function buildTrendChartGeometry(points = []) {
+  const validPoints = points.filter((point) =>
+    Number.isFinite(Number(point?.estimatedOneRepMax))
+  );
+
+  if (validPoints.length === 0) {
+    return null;
+  }
+
+  const values = validPoints.map((point) => Number(point.estimatedOneRepMax));
+  const rawMinValue = Math.min(...values);
+  const rawMaxValue = Math.max(...values);
+  const rawRange = rawMaxValue - rawMinValue;
+  const valuePadding =
+    rawRange === 0 ? Math.max(2, rawMaxValue * 0.08) : rawRange * 0.12;
+  const minValue = Math.max(0, rawMinValue - valuePadding);
+  const maxValue = rawMaxValue + valuePadding;
+  const valueRange = maxValue - minValue || 1;
+  const plotWidth =
+    TREND_CHART_WIDTH -
+    TREND_CHART_PADDING.left -
+    TREND_CHART_PADDING.right;
+  const plotHeight =
+    TREND_CHART_HEIGHT -
+    TREND_CHART_PADDING.top -
+    TREND_CHART_PADDING.bottom;
+  const baselineY = TREND_CHART_PADDING.top + plotHeight;
+
+  const chartPoints = validPoints.map((point, index) => {
+    const x =
+      TREND_CHART_PADDING.left +
+      (validPoints.length === 1
+        ? plotWidth / 2
+        : (index / (validPoints.length - 1)) * plotWidth);
+    const y =
+      TREND_CHART_PADDING.top +
+      ((maxValue - Number(point.estimatedOneRepMax)) / valueRange) *
+        plotHeight;
+
+    return {
+      ...point,
+      x,
+      y,
+    };
+  });
+
+  const path = chartPoints
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+    .join(" ");
+  const areaPath =
+    chartPoints.length > 1
+      ? `${path} L ${chartPoints[chartPoints.length - 1].x} ${baselineY} L ${
+          chartPoints[0].x
+        } ${baselineY} Z`
+      : null;
+  const singlePointLine =
+    chartPoints.length === 1
+      ? {
+          x1: Math.max(TREND_CHART_PADDING.left, chartPoints[0].x - 28),
+          x2: Math.min(
+            TREND_CHART_WIDTH - TREND_CHART_PADDING.right,
+            chartPoints[0].x + 28
+          ),
+          y: chartPoints[0].y,
+        }
+      : null;
+  const gridLines = [0, 0.5, 1].map((offset) => {
+    const y = TREND_CHART_PADDING.top + plotHeight * offset;
+    const value = maxValue - valueRange * offset;
+
+    return {
+      y,
+      label: formatTrendAxisValue(value),
+    };
+  });
+
+  return {
+    chartPoints,
+    path,
+    areaPath,
+    singlePointLine,
+    gridLines,
+    baselineY,
+    firstLabel: chartPoints[0]?.dateDisplay ?? "Workout 1",
+    lastLabel:
+      chartPoints.length > 1
+        ? chartPoints[chartPoints.length - 1]?.dateDisplay ??
+          `Workout ${chartPoints.length}`
+        : null,
+  };
+}
 
 const PersonalRecordsPage = () => {
   const db = useSQLiteContext();
@@ -224,6 +349,246 @@ const PersonalRecordsPage = () => {
         </View>
       );
     }
+
+    const renderOneRepMaxTrend = () => {
+      const trend = detail.oneRepMaxTrend;
+      const chartGeometry = buildTrendChartGeometry(trend?.points ?? []);
+      const hasTrend = !!chartGeometry;
+      const bestPoint = trend?.bestPoint ?? null;
+      const latestPoint = trend?.latestPoint ?? null;
+
+      return (
+        <View
+          style={[
+            styles.trendCard,
+            {
+              backgroundColor: cardSurface,
+              borderColor: cardBorder,
+            },
+          ]}
+        >
+          <View style={styles.trendHeader}>
+            <View style={styles.trendHeaderText}>
+              <ThemedText style={styles.trendEyebrow} setColor={primaryColor}>
+                ESTIMATED 1RM
+              </ThemedText>
+              <ThemedText style={styles.trendTitle} setColor={titleColor}>
+                Progression
+              </ThemedText>
+            </View>
+
+            <View
+              style={[
+                styles.trendCountPill,
+                {
+                  backgroundColor: primarySoft,
+                  borderColor: cardBorder,
+                },
+              ]}
+            >
+              <ThemedText style={styles.trendCountValue} setColor={primaryColor}>
+                {trend?.pointCount ?? 0}
+              </ThemedText>
+              <ThemedText style={styles.trendCountLabel} setColor={quietText}>
+                workouts
+              </ThemedText>
+            </View>
+          </View>
+
+          <View style={styles.trendMetrics}>
+            <View style={styles.trendMetric}>
+              <ThemedText style={styles.trendMetricLabel} setColor={quietText}>
+                BEST
+              </ThemedText>
+              <ThemedText style={styles.trendMetricValue} setColor={titleColor}>
+                {bestPoint?.estimatedOneRepMaxDisplay ?? "--"}
+              </ThemedText>
+              <ThemedText
+                style={styles.trendMetricSubvalue}
+                setColor={quietText}
+                numberOfLines={1}
+              >
+                {bestPoint?.setDisplay ?? "No set"}
+              </ThemedText>
+            </View>
+
+            <View style={styles.trendMetric}>
+              <ThemedText style={styles.trendMetricLabel} setColor={quietText}>
+                LATEST
+              </ThemedText>
+              <ThemedText style={styles.trendMetricValue} setColor={titleColor}>
+                {latestPoint?.estimatedOneRepMaxDisplay ?? "--"}
+              </ThemedText>
+              <ThemedText
+                style={styles.trendMetricSubvalue}
+                setColor={quietText}
+                numberOfLines={1}
+              >
+                {latestPoint?.dateDisplay ?? "No workout"}
+              </ThemedText>
+            </View>
+          </View>
+
+          <View
+            style={[
+              styles.trendChartFrame,
+              {
+                backgroundColor: panelSurface,
+                borderColor: cardBorder,
+              },
+            ]}
+          >
+            {hasTrend ? (
+              <Svg
+                width="100%"
+                height={TREND_CHART_HEIGHT}
+                viewBox={`0 0 ${TREND_CHART_WIDTH} ${TREND_CHART_HEIGHT}`}
+              >
+                <Defs>
+                  <LinearGradient
+                    id="personalRecordTrendFill"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <Stop
+                      offset="0"
+                      stopColor={primaryColor}
+                      stopOpacity="0.26"
+                    />
+                    <Stop
+                      offset="1"
+                      stopColor={primaryColor}
+                      stopOpacity="0.01"
+                    />
+                  </LinearGradient>
+                </Defs>
+
+                {chartGeometry.gridLines.map((line, index) => (
+                  <G key={`grid-${index}`}>
+                    <Line
+                      x1={TREND_CHART_PADDING.left}
+                      y1={line.y}
+                      x2={TREND_CHART_WIDTH - TREND_CHART_PADDING.right}
+                      y2={line.y}
+                      stroke={quietText}
+                      strokeOpacity={index === 2 ? 0.22 : 0.12}
+                      strokeWidth={1}
+                    />
+                    <SvgText
+                      x={TREND_CHART_PADDING.left - 8}
+                      y={line.y + 3}
+                      fill={quietText}
+                      fontSize="9"
+                      fontWeight="800"
+                      textAnchor="end"
+                    >
+                      {line.label}
+                    </SvgText>
+                  </G>
+                ))}
+
+                {chartGeometry.areaPath && (
+                  <Path
+                    d={chartGeometry.areaPath}
+                    fill="url(#personalRecordTrendFill)"
+                  />
+                )}
+
+                {chartGeometry.singlePointLine && (
+                  <Line
+                    x1={chartGeometry.singlePointLine.x1}
+                    y1={chartGeometry.singlePointLine.y}
+                    x2={chartGeometry.singlePointLine.x2}
+                    y2={chartGeometry.singlePointLine.y}
+                    stroke={primaryColor}
+                    strokeLinecap="round"
+                    strokeOpacity={0.82}
+                    strokeWidth={3}
+                  />
+                )}
+
+                {chartGeometry.chartPoints.length > 1 && (
+                  <Path
+                    d={chartGeometry.path}
+                    fill="none"
+                    stroke={primaryColor}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={3}
+                  />
+                )}
+
+                {chartGeometry.chartPoints.map((point) => {
+                  const isBestPoint = point.setId === bestPoint?.setId;
+
+                  return (
+                    <Circle
+                      key={point.id}
+                      cx={point.x}
+                      cy={point.y}
+                      r={chartGeometry.chartPoints.length > 24 ? 2.2 : 3.4}
+                      fill={isBestPoint ? secondaryColor : primaryColor}
+                      stroke={panelSurface}
+                      strokeWidth={2}
+                    />
+                  );
+                })}
+
+                <SvgText
+                  x={TREND_CHART_PADDING.left}
+                  y={TREND_CHART_HEIGHT - 12}
+                  fill={quietText}
+                  fontSize="9"
+                  fontWeight="800"
+                  textAnchor="start"
+                >
+                  {chartGeometry.firstLabel}
+                </SvgText>
+
+                {chartGeometry.lastLabel && (
+                  <SvgText
+                    x={TREND_CHART_WIDTH - TREND_CHART_PADDING.right}
+                    y={TREND_CHART_HEIGHT - 12}
+                    fill={quietText}
+                    fontSize="9"
+                    fontWeight="800"
+                    textAnchor="end"
+                  >
+                    {chartGeometry.lastLabel}
+                  </SvgText>
+                )}
+              </Svg>
+            ) : (
+              <View style={styles.trendEmptyState}>
+                <ThemedText style={styles.trendEmptyTitle} setColor={titleColor}>
+                  No trend yet
+                </ThemedText>
+                <ThemedText style={styles.trendEmptyText} setColor={quietText}>
+                  Complete weighted sets to build your progression.
+                </ThemedText>
+              </View>
+            )}
+          </View>
+
+          {!!latestPoint && (
+            <View style={styles.trendFooter}>
+              <ThemedText style={styles.trendFooterLabel} setColor={quietText}>
+                LATEST SET
+              </ThemedText>
+              <ThemedText
+                style={styles.trendFooterValue}
+                setColor={titleColor}
+                numberOfLines={1}
+              >
+                {latestPoint.setDisplay} - {latestPoint.dateDisplay}
+              </ThemedText>
+            </View>
+          )}
+        </View>
+      );
+    };
 
     return (
       <View>
@@ -442,6 +807,8 @@ const PersonalRecordsPage = () => {
             </View>
           ))}
         </View>
+
+        {renderOneRepMaxTrend()}
       </View>
     );
   };

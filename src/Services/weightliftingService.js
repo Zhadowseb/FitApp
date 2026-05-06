@@ -312,7 +312,134 @@ function getIsRecentPersonalRecord(record) {
   return days >= 0 && days <= 14;
 }
 
-function buildPersonalRecordExerciseDetail(exerciseName, rows) {
+function isBetterPersonalRecordTrendSet(candidate, currentBest) {
+  if (!currentBest) {
+    return true;
+  }
+
+  if (candidate.estimatedOneRepMax !== currentBest.estimatedOneRepMax) {
+    return candidate.estimatedOneRepMax > currentBest.estimatedOneRepMax;
+  }
+
+  if (candidate.weight !== currentBest.weight) {
+    return candidate.weight > currentBest.weight;
+  }
+
+  return comparePersonalRecordDate(candidate, currentBest) > 0;
+}
+
+function buildPersonalRecordOneRepMaxTrend(sets) {
+  const bestSetByWorkout = new Map();
+
+  for (const set of sets) {
+    const estimatedOneRepMax = calculatePersonalRecordOneRepMax(
+      set.weight,
+      set.reps
+    );
+
+    if (estimatedOneRepMax === null) {
+      continue;
+    }
+
+    const workoutKey = set.workout_id ?? `set-${set.sets_id}`;
+    const candidate = {
+      ...set,
+      workoutKey,
+      estimatedOneRepMax,
+    };
+    const currentBest = bestSetByWorkout.get(workoutKey);
+
+    if (isBetterPersonalRecordTrendSet(candidate, currentBest)) {
+      bestSetByWorkout.set(workoutKey, candidate);
+    }
+  }
+
+  const points = [...bestSetByWorkout.values()].sort((left, right) => {
+    const dateComparison = comparePersonalRecordDate(left, right);
+
+    if (dateComparison !== 0) {
+      return dateComparison;
+    }
+
+    return String(left.workoutKey).localeCompare(String(right.workoutKey));
+  });
+
+  let bestPoint = null;
+  let minEstimatedOneRepMax = null;
+  let maxEstimatedOneRepMax = null;
+
+  const formattedPoints = points.map((point, index) => {
+    const roundedOneRepMax = Math.round(point.estimatedOneRepMax * 2) / 2;
+
+    if (
+      bestPoint === null ||
+      point.estimatedOneRepMax > bestPoint.estimatedOneRepMax
+    ) {
+      bestPoint = point;
+    }
+
+    if (
+      minEstimatedOneRepMax === null ||
+      point.estimatedOneRepMax < minEstimatedOneRepMax
+    ) {
+      minEstimatedOneRepMax = point.estimatedOneRepMax;
+    }
+
+    if (
+      maxEstimatedOneRepMax === null ||
+      point.estimatedOneRepMax > maxEstimatedOneRepMax
+    ) {
+      maxEstimatedOneRepMax = point.estimatedOneRepMax;
+    }
+
+    return {
+      id: `${point.workoutKey}-${point.sets_id}`,
+      workoutIndex: index + 1,
+      workoutId: point.workout_id,
+      setId: point.sets_id,
+      workoutLabel: point.workout_label,
+      programName: point.program_name,
+      weight: point.weight,
+      reps: point.reps,
+      setDisplay: `${point.reps} x ${formatPersonalRecordNumber(point.weight)} kg`,
+      estimatedOneRepMax: point.estimatedOneRepMax,
+      estimatedOneRepMaxDisplay: `${formatPersonalRecordNumber(
+        roundedOneRepMax
+      )} kg`,
+      performedDate: point.performed_date,
+      performedDateSort: point.performed_date_sort,
+      dateDisplay: formatPersonalRecordDate(point.performed_date),
+      relativeDateLabel: formatPersonalRecordRelativeDate(
+        point.performed_date_sort
+      ),
+    };
+  });
+
+  const bestFormattedPoint = bestPoint
+    ? formattedPoints.find(
+        (point) => point.setId === bestPoint.sets_id
+      ) ?? null
+    : null;
+  const latestPoint =
+    formattedPoints.length > 0
+      ? formattedPoints[formattedPoints.length - 1]
+      : null;
+
+  return {
+    points: formattedPoints,
+    pointCount: formattedPoints.length,
+    bestPoint: bestFormattedPoint,
+    latestPoint,
+    minEstimatedOneRepMax,
+    maxEstimatedOneRepMax,
+  };
+}
+
+function buildPersonalRecordExerciseDetail(
+  exerciseName,
+  rows,
+  { includeTrend = true } = {}
+) {
   const sets = rows
     .map(normalizePersonalRecordSet)
     .filter(
@@ -453,6 +580,9 @@ function buildPersonalRecordExerciseDetail(exerciseName, rows) {
       : "--",
     latestRecordRelativeDateLabel: latestRecord
       ? formatPersonalRecordRelativeDate(latestRecord.performed_date_sort)
+      : null,
+    oneRepMaxTrend: includeTrend
+      ? buildPersonalRecordOneRepMaxTrend(sets)
       : null,
   };
 }
@@ -1036,7 +1166,9 @@ export async function getPersonalRecordExerciseSummaries(db) {
 
   return [...rowsByExercise.entries()]
     .map(([exerciseName, exerciseRows]) =>
-      buildPersonalRecordExerciseDetail(exerciseName, exerciseRows)
+      buildPersonalRecordExerciseDetail(exerciseName, exerciseRows, {
+        includeTrend: false,
+      })
     )
     .sort((left, right) =>
       left.exerciseName.localeCompare(right.exerciseName, undefined, {

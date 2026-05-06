@@ -1,5 +1,6 @@
 export * as locationService from "./locationService";
 export * as feedbackService from "./feedbackService";
+export * as localProgramImportService from "./localProgramImportService";
 export * as programService from "./programService";
 export * as runningService from "./runningService";
 export * as socialService from "./socialService";

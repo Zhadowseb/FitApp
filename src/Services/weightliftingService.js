@@ -292,11 +292,15 @@ function isBetterPersonalRecordSet(candidate, currentBest) {
     return true;
   }
 
-  if (candidate.weight !== currentBest.weight) {
-    return candidate.weight > currentBest.weight;
+  if (candidate.weight > currentBest.weight) {
+    return true;
   }
 
-  return comparePersonalRecordDate(candidate, currentBest) > 0;
+  if (candidate.weight < currentBest.weight) {
+    return false;
+  }
+
+  return comparePersonalRecordDate(candidate, currentBest) < 0;
 }
 
 function getPersonalRecordPreviousBestWeight(sets, record) {
@@ -609,6 +613,99 @@ function buildPersonalRecordExerciseDetail(
       ? buildPersonalRecordOneRepMaxTrend(sets)
       : null,
   };
+}
+
+function getPersonalRecordSetIds(rows) {
+  const sets = rows
+    .map(normalizePersonalRecordSet)
+    .filter(
+      (set) =>
+        set.exercise_name &&
+        Number.isFinite(set.weight) &&
+        Number.isFinite(set.reps) &&
+        set.reps >= 1 &&
+        set.reps <= PERSONAL_RECORD_REPS.length
+    );
+  const setsByRep = new Map();
+
+  for (const set of sets) {
+    const groupKey = `${set.exercise_name.trim().toLowerCase()}::${set.reps}`;
+    const groupSets = setsByRep.get(groupKey) ?? [];
+
+    groupSets.push(set);
+    setsByRep.set(groupKey, groupSets);
+  }
+
+  const recordSetIds = new Set();
+
+  for (const groupSets of setsByRep.values()) {
+    const sortedSets = [...groupSets].sort(comparePersonalRecordDate);
+    let bestWeight = null;
+
+    for (const set of sortedSets) {
+      if (bestWeight === null || set.weight > bestWeight) {
+        const setId = Number(set.sets_id);
+
+        if (Number.isFinite(setId)) {
+          recordSetIds.add(setId);
+        }
+
+        bestWeight = set.weight;
+      }
+    }
+  }
+
+  return recordSetIds;
+}
+
+async function refreshPersonalRecordsForExerciseName(db, exerciseName) {
+  const normalizedExerciseName =
+    typeof exerciseName === "string" ? exerciseName.trim() : "";
+
+  if (!normalizedExerciseName) {
+    return [];
+  }
+
+  const rows =
+    await weightliftingRepository.getCompletedStrengthSetsForPersonalRecords(db, {
+      exerciseName: normalizedExerciseName,
+    });
+  const recordSetIds = getPersonalRecordSetIds(rows);
+  const existingFlags =
+    await weightliftingRepository.getPersonalRecordFlagsByExerciseName(
+      db,
+      normalizedExerciseName
+    );
+
+  for (const row of existingFlags) {
+    const setId = Number(row?.sets_id);
+
+    if (!Number.isFinite(setId)) {
+      continue;
+    }
+
+    const nextPersonalRecord = recordSetIds.has(setId) ? 1 : 0;
+
+    if (Number(row?.personal_record) === nextPersonalRecord) {
+      continue;
+    }
+
+    await weightliftingRepository.updateSetPersonalRecord(db, {
+      setId,
+      personalRecord: nextPersonalRecord,
+    });
+  }
+
+  return [...recordSetIds];
+}
+
+async function refreshPersonalRecordsForSet(db, setId) {
+  const exercise = await weightliftingRepository.getExerciseNameBySetId(
+    db,
+    setId
+  );
+
+  return refreshPersonalRecordsForExerciseName(db, exercise?.exercise_name);
 }
 
 function formatExerciseHistoryRelativeDate(sortDateValue) {
@@ -1784,9 +1881,16 @@ async function loadWorkoutExercisesFromLocal(db, workoutId) {
   return exercises.map((exercise) => {
     const exerciseSets = setsByExercise[exercise.exercise_id] ?? [];
     const plannedSetCount = Number(exercise.sets) || 0;
+    const hasPersonalRecord = exerciseSets.some(
+      (set) =>
+        normalizeBooleanFlag(set?.personal_record) &&
+        normalizeBooleanFlag(set?.done) &&
+        !normalizeBooleanFlag(set?.failed)
+    );
 
     return {
       ...exercise,
+      hasPersonalRecord,
       plannedSetCount,
       sets: exerciseSets,
       setCount: exerciseSets.length,
@@ -2402,8 +2506,11 @@ export async function updateStrengthSetDone(
   db,
   { workoutId, setId, done, failed = 0 }
 ) {
+  let personalRecordSetIds = [];
+
   await withTransaction(db, async () => {
     await weightliftingRepository.updateSetDone(db, { setId, done, failed });
+    personalRecordSetIds = await refreshPersonalRecordsForSet(db, setId);
     await weightliftingRepository.updateExerciseDoneBySet(db, setId);
     await weightliftingRepository.updateWorkoutDoneFromExercises(db, workoutId);
     await workoutService.refreshWorkoutHierarchyCompletion(db, workoutId);
@@ -2411,6 +2518,8 @@ export async function updateStrengthSetDone(
 
   syncExerciseInstancesInBackground(db);
   syncSetsInBackground(db);
+
+  return { personalRecordSetIds };
 }
 
 export async function deleteSet(db, setId) {
@@ -2448,6 +2557,7 @@ export async function deleteSet(db, setId) {
     }
 
     await weightliftingRepository.deleteSetById(db, setId);
+    await refreshPersonalRecordsForExerciseName(db, set.exercise_name);
 
     const sets = await weightliftingRepository.getSetIdsByExercise(
       db,
@@ -2476,8 +2586,20 @@ export async function deleteSet(db, setId) {
 }
 
 export async function updateSetField(db, { field, value, setId }) {
-  await weightliftingRepository.updateSetField(db, { field, value, setId });
+  const result = await withTransaction(db, async () => {
+    await weightliftingRepository.updateSetField(db, { field, value, setId });
+
+    if (field !== "weight" && field !== "reps") {
+      return null;
+    }
+
+    return {
+      personalRecordSetIds: await refreshPersonalRecordsForSet(db, setId),
+    };
+  });
+
   syncSetsInBackground(db);
+  return result;
 }
 
 export async function updateSetRmPercentage(db, { setId, rmPercentage }) {
@@ -2522,6 +2644,7 @@ export async function updateSetRmPercentage(db, { setId, rmPercentage }) {
       rmPercentage: nextRmPercentage,
       weightUpdated: true,
       weight: calculatedWeight,
+      personalRecordSetIds: await refreshPersonalRecordsForSet(db, setId),
     };
   });
 
@@ -2549,6 +2672,7 @@ export async function updateSetWeight(db, { setId, weight }) {
       return {
         weight: null,
         rmPercentage: null,
+        personalRecordSetIds: await refreshPersonalRecordsForSet(db, setId),
       };
     }
 
@@ -2564,6 +2688,7 @@ export async function updateSetWeight(db, { setId, weight }) {
       return {
         weight: nextWeight,
         rmPercentage: null,
+        personalRecordSetIds: await refreshPersonalRecordsForSet(db, setId),
       };
     }
 
@@ -2578,6 +2703,7 @@ export async function updateSetWeight(db, { setId, weight }) {
     return {
       weight: nextWeight,
       rmPercentage: nextRmPercentage,
+      personalRecordSetIds: await refreshPersonalRecordsForSet(db, setId),
     };
   });
 
@@ -2615,6 +2741,8 @@ export async function saveExerciseSets(db, { exerciseId, sets }) {
       db,
       exerciseId
     );
+    const exerciseRecord =
+      await weightliftingRepository.getExerciseNameByExerciseId(db, exerciseId);
 
     for (const set of sets) {
       await weightliftingRepository.updateSetByExerciseAndNumber(db, {
@@ -2632,6 +2760,10 @@ export async function saveExerciseSets(db, { exerciseId, sets }) {
       });
     }
 
+    await refreshPersonalRecordsForExerciseName(
+      db,
+      exerciseRecord?.exercise_name
+    );
     await weightliftingRepository.updateExerciseDoneFromSets(db, exerciseId);
 
     if (exercise?.workout_id) {

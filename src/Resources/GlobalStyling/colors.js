@@ -8,7 +8,11 @@ export const Colors = {
         secondary: "#60daacff",
         secondaryLight: "rgb(178, 214, 200)",
         secondaryDark: "rgb(24, 160, 108)",
+        record: "rgb(3, 111, 252)",
+        recordLight: "rgb(51, 139, 255)",
+        recordDark: "rgb(2, 49, 111)",
         danger: "#ba0000ff",
+        planned: "rgb(255, 221, 0)",
 
         NOT_STARTED: "#9E9E9E",
         ACTIVE: "#f7742eff",
@@ -39,5 +43,9 @@ export const Colors = {
         iconColorFocused: "#201e2b",
         uiBackground: "#d6d5e1",
         libraryMetricBackground: "rgba(26, 32, 45, 0.92)",
+        record: "rgb(33, 41, 150)",
+        recordLight: "rgb(218, 221, 255)",
+        recordDark: "rgb(19, 27, 126)",
+        planned: "rgb(255, 221, 0)",
     }
 }

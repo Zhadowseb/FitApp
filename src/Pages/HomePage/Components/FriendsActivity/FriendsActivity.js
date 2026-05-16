@@ -18,7 +18,7 @@ function getActivityMeta(theme, activityState, workoutType) {
   const darkText = theme.background ?? theme.textInverted ?? "#0E0F12";
   const border = theme.border ?? theme.cardBorder ?? theme.iconColor;
   const quietText = theme.quietText ?? theme.iconColor ?? theme.text;
-  const plannedColor = "#5f91ff";
+  const plannedColor = theme.planned ?? Colors.dark.planned ?? "#ffdd00";
   const workoutIconConfig = workoutType ? getWorkoutIconConfig(workoutType) : null;
   const defaultLiveIconConfig = getWorkoutIconConfig("Resistance");
 
@@ -44,8 +44,9 @@ function getActivityMeta(theme, activityState, workoutType) {
       return {
         ringColor: plannedColor,
         chipBackground: plannedColor,
-        chipTextColor: "#ffffff",
+        chipTextColor: darkText,
         badgeBackground: plannedColor,
+        badgeIconColor: darkText,
         badgeType: "planned",
       };
     default:
@@ -66,6 +67,7 @@ function getCircleMeta(theme, person) {
 function StatusBadge({
   badgeType,
   badgeBackground,
+  badgeIconColor,
   badgeIconConfig,
 }) {
   if (!badgeType || !badgeBackground) {
@@ -79,7 +81,14 @@ function StatusBadge({
       <Checkmark width={12} height={12} color="#0E0F12" thickness={2.3} />
     );
   } else if (badgeType === "planned") {
-    icon = <Calender width={12} height={12} color="#ffffff" thickness={1.8} />;
+    icon = (
+      <Calender
+        width={12}
+        height={12}
+        color={badgeIconColor ?? "#0E0F12"}
+        thickness={1.8}
+      />
+    );
   } else if (badgeType === "workout" && badgeIconConfig?.Icon) {
     const WorkoutIcon = badgeIconConfig.Icon;
     icon =
@@ -119,6 +128,7 @@ function CircleCard({
   avatarUrl,
   badgeType,
   badgeBackground,
+  badgeIconColor,
   badgeIconConfig,
   onPress,
 }) {
@@ -157,6 +167,7 @@ function CircleCard({
         <StatusBadge
           badgeType={badgeType}
           badgeBackground={badgeBackground}
+          badgeIconColor={badgeIconColor}
           badgeIconConfig={badgeIconConfig}
         />
       </View>
@@ -277,6 +288,7 @@ export default function FriendsActivity({
             avatarUrl={currentUser?.avatarUrl}
             badgeType={currentUserMeta.badgeType}
             badgeBackground={currentUserMeta.badgeBackground}
+            badgeIconColor={currentUserMeta.badgeIconColor}
             badgeIconConfig={currentUserMeta.badgeIconConfig}
             onPress={onOpenProfile}
           />
@@ -311,6 +323,7 @@ export default function FriendsActivity({
                   avatarUrl={person.avatarUrl}
                   badgeType={meta.badgeType}
                   badgeBackground={meta.badgeBackground}
+                  badgeIconColor={meta.badgeIconColor}
                   badgeIconConfig={meta.badgeIconConfig}
                   onPress={onSeeAll}
                 />

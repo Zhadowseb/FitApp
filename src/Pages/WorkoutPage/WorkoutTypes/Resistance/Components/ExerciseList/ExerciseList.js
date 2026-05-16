@@ -195,18 +195,61 @@ const ExerciseList = ({
     );
   };
 
+  const applyPersonalRecordFlagsOptimistic = (setsId, personalRecordSetIds) => {
+    if (!Array.isArray(personalRecordSetIds)) {
+      return;
+    }
+
+    const personalRecordIds = new Set(
+      personalRecordSetIds.map((setId) => Number(setId))
+    );
+
+    setExercises((prevExercises) =>
+      prevExercises.map((exercise) => {
+        const ownsSet = (exercise.sets ?? []).some(
+          (set) => Number(set.sets_id) === Number(setsId)
+        );
+
+        if (!ownsSet) {
+          return exercise;
+        }
+
+        const nextSets = (exercise.sets ?? []).map((set) => ({
+          ...set,
+          personal_record: personalRecordIds.has(Number(set.sets_id)) ? 1 : 0,
+        }));
+
+        return {
+          ...exercise,
+          sets: nextSets,
+          hasPersonalRecord: nextSets.some(
+            (set) =>
+              Number(set.personal_record) === 1 &&
+              Number(set.done) === 1 &&
+              Number(set.failed) !== 1
+          ),
+        };
+      })
+    );
+  };
+
   const updateSetDone = async (sets_id, completion) => {
     const { done, failed } = normalizeSetCompletion(completion);
 
     applySetCompletionOptimistic(sets_id, { done, failed });
 
     try {
-      await weightliftingRepository.updateStrengthSetDone(db, {
+      const result = await weightliftingRepository.updateStrengthSetDone(db, {
         workoutId: workout_id,
         setId: sets_id,
         done,
         failed,
       });
+
+      applyPersonalRecordFlagsOptimistic(
+        sets_id,
+        result?.personalRecordSetIds
+      );
 
       //Reloades ui
       loadExercises();

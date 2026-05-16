@@ -29,6 +29,11 @@ const SetList = ({
   onToggleSet,
   updateUI,
   onAddSet,
+  recordColor,
+  recordLightColor,
+  recordDarkColor,
+  recordControlFillColor,
+  recordControlTextColor,
 }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
@@ -47,6 +52,22 @@ const SetList = ({
     ? "rgba(247, 116, 46, 0.17)"
     : "rgba(247, 116, 46, 0.14)";
   const setChipTextColor = theme.primary ?? theme.text;
+  const personalRecordColor =
+    recordColor ?? theme.record ?? Colors.dark.record ?? setChipTextColor;
+  const personalRecordSurface =
+    recordLightColor ??
+    theme.recordLight ??
+    Colors.dark.recordLight ??
+    (isDark ? "rgba(55, 63, 174, 0.38)" : "rgba(55, 63, 174, 0.16)");
+  const personalRecordBorder =
+    recordDarkColor ??
+    theme.recordDark ??
+    Colors.dark.recordDark ??
+    personalRecordColor;
+  const personalRecordControlFill =
+    recordControlFillColor ?? personalRecordBorder;
+  const personalRecordControlText =
+    recordControlTextColor ?? personalRecordSurface;
   const addSetColor = theme.iconColor ?? theme.quietText ?? theme.text;
 
   const db = useSQLiteContext();
@@ -65,6 +86,36 @@ const SetList = ({
 
   const displayedSets = localSets ?? [];
   const hasSets = displayedSets.length > 0;
+  const isPersonalRecordSet = (set) =>
+    Number(set?.personal_record) === 1 &&
+    Number(set?.done) === 1 &&
+    Number(set?.failed) !== 1;
+
+  const applyPersonalRecordSetIds = (setIds) => {
+    if (!Array.isArray(setIds)) {
+      return;
+    }
+
+    const personalRecordSetIds = new Set(setIds.map((setId) => Number(setId)));
+
+    setLocalSets((prev) =>
+      prev.map((set) => ({
+        ...set,
+        personal_record: personalRecordSetIds.has(Number(set.sets_id)) ? 1 : 0,
+      }))
+    );
+
+    set_selectedSet((prev) =>
+      prev
+        ? {
+            ...prev,
+            personal_record: personalRecordSetIds.has(Number(prev.sets_id))
+              ? 1
+              : 0,
+          }
+        : prev
+    );
+  };
 
   const getNextSetCompletion = (set) => {
     const isDone = Number(set.done) === 1;
@@ -185,12 +236,13 @@ const SetList = ({
       prev?.sets_id === setId ? { ...prev, [field]: nextValue } : prev
     );
 
-    await weightliftingRepository.updateSetField(db, {
+    const result = await weightliftingRepository.updateSetField(db, {
       field,
       value: nextValue,
       setId,
     });
 
+    applyPersonalRecordSetIds(result?.personalRecordSetIds);
     updateUI();
   };
 
@@ -224,6 +276,7 @@ const SetList = ({
         : prev
     );
 
+    applyPersonalRecordSetIds(result.personalRecordSetIds);
     updateUI();
   };
 
@@ -255,6 +308,7 @@ const SetList = ({
         : prev
     );
 
+    applyPersonalRecordSetIds(result.personalRecordSetIds);
     updateUI();
   };
 
@@ -337,27 +391,36 @@ const SetList = ({
           onCommit: (value) => updateField("pause", value, set.sets_id),
         });
 
-      case "set":
+      case "set": {
+        const isPersonalRecord = isPersonalRecordSet(set);
+
         return (
           <TouchableOpacity
             activeOpacity={0.82}
             style={[
               styles.set_chip,
               {
-                backgroundColor: setChipBackground,
-                borderColor: cellBorder,
+                backgroundColor: isPersonalRecord
+                  ? personalRecordControlFill
+                  : setChipBackground,
+                borderColor: isPersonalRecord
+                  ? personalRecordControlFill
+                  : cellBorder,
               },
             ]}
             onPress={() => handleOpenSetOptions(set)}
           >
             <ThemedText
               style={styles.set_chip_text}
-              setColor={setChipTextColor}
+              setColor={
+                isPersonalRecord ? personalRecordControlText : setChipTextColor
+              }
             >
               {set.set_number}
             </ThemedText>
           </TouchableOpacity>
         );
+      }
 
       case "reps":
         return renderEditableValue({
@@ -391,17 +454,28 @@ const SetList = ({
           onCommit: (value) => updateWeight(value, set.sets_id),
         });
 
-      case "done":
+      case "done": {
+        const isPersonalRecord = isPersonalRecordSet(set);
+
         return (
           <ThemedBouncyCheckbox
             value={Number(set.done) === 1 || Number(set.failed) === 1}
             onChange={() => onToggleSet(set.sets_id, getNextSetCompletion(set))}
             size={18}
             edgeSize={2}
-            checkmarkColor={theme.cardBackground}
-            fillColor={Number(set.failed) === 1 ? theme.danger : undefined}
+            checkmarkColor={
+              isPersonalRecord ? personalRecordControlText : theme.cardBackground
+            }
+            fillColor={
+              Number(set.failed) === 1
+                ? theme.danger
+                : isPersonalRecord
+                  ? personalRecordControlFill
+                  : undefined
+            }
           />
         );
+      }
 
       default:
         return null;

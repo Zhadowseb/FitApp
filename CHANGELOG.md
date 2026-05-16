@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.14.6] - Unreleased
+### Changed
+- Added record-color highlighting for PR sets, exercises, and completed workout indicators.
+
+---
 ## [0.14.5] - Unreleased
 ### Changed
 - Removed the one-time saved-program import action from the profile page.

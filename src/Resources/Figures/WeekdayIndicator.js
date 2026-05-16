@@ -38,6 +38,7 @@ const WeekdayIndicator = ({
   icon: Icon,
   iconLabel,
   programActive = false,
+  hasPersonalRecord = false,
   workoutCards = [],
   onWorkoutPress,
   onDayPress,
@@ -63,6 +64,9 @@ const WeekdayIndicator = ({
   const cardBorder = theme.cardBorder ?? theme.iconColor ?? theme.text;
   const activeBorder = theme.primary ?? cardBorder;
   const completedBorder = theme.secondary ?? cardBorder;
+  const recordColor =
+    theme.record ?? Colors.dark.record ?? theme.secondary ?? titleColor;
+  const recordBorder = theme.recordDark ?? Colors.dark.recordDark ?? recordColor;
   const dangerColor = theme.danger ?? Colors.dark.danger ?? "#ba0000ff";
   const activeText = theme.primary ?? titleColor;
   const completedText = theme.secondary ?? titleColor;
@@ -166,13 +170,19 @@ const WeekdayIndicator = ({
         <View style={styles.workoutCards}>
           {workoutCards.map((workoutCard, index) => {
             const WorkoutIcon = workoutCard.icon;
+            const isPersonalRecordWorkout =
+              workoutCard.completed && Boolean(workoutCard.hasPersonalRecord);
             const workoutSurfaceColor = workoutCard.overdue
               ? dangerColor
+              : isPersonalRecordWorkout
+                ? recordColor
               : workoutCard.completed
                 ? theme.secondary
                 : theme.primary;
             const workoutBorderColor = workoutCard.overdue
               ? dangerColor
+              : isPersonalRecordWorkout
+                ? recordBorder
               : workoutCard.completed
                 ? theme.secondaryDark
                 : theme.primaryDark;
@@ -229,11 +239,15 @@ const WeekdayIndicator = ({
             {
               backgroundColor: overdue
                 ? dangerColor
+                : completed && hasPersonalRecord
+                  ? recordColor
                 : completed
                   ? theme.secondary
                   : theme.primary,
               borderColor: overdue
                 ? dangerColor
+                : completed && hasPersonalRecord
+                  ? recordBorder
                 : completed
                   ? theme.secondaryDark
                   : theme.primaryDark,

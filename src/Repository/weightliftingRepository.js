@@ -1520,11 +1520,33 @@ export async function updateWorkoutDoneFromExercises(db, workoutId) {
 
 export async function getExerciseAndWorkoutBySetId(db, setId) {
   return db.getFirstAsync(
-    `SELECT s.exercise_instance_id, e.workout_type_instance_id AS workout_id
+    `SELECT
+        s.exercise_instance_id,
+        e.exercise_name,
+        e.workout_type_instance_id AS workout_id
      FROM "Set" s
      JOIN Exercise_Instance e ON e.exercise_instance_id = s.exercise_instance_id
      WHERE s.sets_id = ?;`,
     [setId]
+  );
+}
+
+export async function getExerciseNameBySetId(db, setId) {
+  return db.getFirstAsync(
+    `SELECT e.exercise_name
+     FROM "Set" s
+     JOIN Exercise_Instance e ON e.exercise_instance_id = s.exercise_instance_id
+     WHERE s.sets_id = ?;`,
+    [setId]
+  );
+}
+
+export async function getExerciseNameByExerciseId(db, exerciseId) {
+  return db.getFirstAsync(
+    `SELECT exercise_name
+     FROM Exercise_Instance
+     WHERE exercise_instance_id = ?;`,
+    [exerciseId]
   );
 }
 
@@ -1571,6 +1593,32 @@ export async function updateSetField(db, { field, value, setId }) {
          needs_sync = 1
      WHERE sets_id = ?;`,
     [value, syncVersion, setId]
+  );
+}
+
+export async function getPersonalRecordFlagsByExerciseName(db, exerciseName) {
+  return db.getAllAsync(
+    `SELECT s.sets_id, COALESCE(s.personal_record, 0) AS personal_record
+     FROM "Set" s
+     JOIN Exercise_Instance e ON e.exercise_instance_id = s.exercise_instance_id
+     WHERE e.exercise_name = ?
+       AND COALESCE(s.deleted_at, '') = ''
+       AND COALESCE(e.deleted_at, '') = '';`,
+    [exerciseName]
+  );
+}
+
+export async function updateSetPersonalRecord(db, { setId, personalRecord }) {
+  const syncVersion = createNextSyncVersion();
+  await db.runAsync(
+    `UPDATE "Set"
+     SET personal_record = ?,
+         sync_id = COALESCE(sync_id, ${SQLITE_UUID_SQL}),
+         sync_version = ?,
+         deleted_at = NULL,
+         needs_sync = 1
+     WHERE sets_id = ?;`,
+    [personalRecord ? 1 : 0, syncVersion, setId]
   );
 }
 

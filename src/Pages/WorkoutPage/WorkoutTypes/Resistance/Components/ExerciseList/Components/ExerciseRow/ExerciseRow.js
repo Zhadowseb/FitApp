@@ -205,6 +205,23 @@ const ExerciseRow = ({
   const quietText = theme.quietText ?? theme.iconColor ?? theme.text;
   const titleColor = theme.title ?? theme.text;
   const replayIconColor = theme.primary ?? "#f7742eff";
+  const recordColor = theme.record ?? Colors.dark.record ?? primaryColor;
+  const recordLightColor =
+    theme.recordLight ??
+    Colors.dark.recordLight ??
+    (colorScheme === "dark" ? "rgba(55, 63, 174, 0.38)" : "rgba(55, 63, 174, 0.16)");
+  const recordDarkColor = theme.recordDark ?? Colors.dark.recordDark ?? recordColor;
+  const hasPersonalRecord =
+    Boolean(exercise.hasPersonalRecord) ||
+    exercise.sets.some(
+      (set) =>
+        Number(set?.personal_record) === 1 &&
+        Number(set?.done) === 1 &&
+        Number(set?.failed) !== 1
+    );
+  const isRecordExercise = hasPersonalRecord;
+  const recordExerciseTextColor =
+    isRecordExercise && colorScheme === "light" ? recordLightColor : titleColor;
   const repeatBadgeBackground =
     colorScheme === "dark" ? "rgba(247, 116, 46, 0.24)" : "rgba(247, 116, 46, 0.14)";
   const repeatBadgeBorder =
@@ -215,8 +232,21 @@ const ExerciseRow = ({
     colorScheme === "dark" ? "rgba(36, 41, 56, 0.92)" : "rgba(255, 255, 255, 0.88)";
   const historyChipBorder =
     colorScheme === "dark" ? "rgba(255, 255, 255, 0.08)" : "rgba(32, 30, 43, 0.12)";
-  const exerciseCardBackground = isDone
-    ? "rgba(96, 218, 172, 0.1)"
+  const exerciseCardBackground = isRecordExercise
+    ? recordDarkColor
+    : isDone
+      ? "rgba(96, 218, 172, 0.1)"
+    : cardSurface;
+  const exerciseCardBorderColor = isRecordExercise
+    ? recordColor
+    : isDone
+      ? secondaryColor
+      : cardBorder;
+  const exerciseCheckboxFillColor = isRecordExercise
+    ? recordColor
+    : secondaryColor;
+  const exerciseCheckboxCheckmarkColor = isRecordExercise
+    ? recordExerciseTextColor
     : cardSurface;
   const setProgressTrackColor =
     colorScheme === "dark" ? "rgba(255, 255, 255, 0.08)" : "rgba(32, 30, 43, 0.1)";
@@ -226,11 +256,16 @@ const ExerciseRow = ({
           const set = exercise.sets[index];
           const isSetDone = Number(set?.done) === 1;
           const isSetFailed = Number(set?.failed) === 1;
+          const isPersonalRecord =
+            Number(set?.personal_record) === 1 &&
+            isSetDone &&
+            !isSetFailed;
 
           return {
             index,
             isFilled: isSetDone || isSetFailed,
             isFailed: isSetFailed,
+            isPersonalRecord,
             left: (index / trackerSetCount) * 100,
             width: 100 / trackerSetCount,
           };
@@ -264,6 +299,10 @@ const ExerciseRow = ({
       const normalizedReps = Number.isFinite(repsValue) ? repsValue : null;
       const normalizedWeight = Number.isFinite(weightValue) ? weightValue : null;
       const isAmrap = Number(set.amrap) === 1;
+      const isPersonalRecord =
+        Number(set.personal_record) === 1 &&
+        Number(set.done) === 1 &&
+        Number(set.failed) !== 1;
       const signature = [
         normalizedReps ?? "-",
         normalizedWeight ?? "-",
@@ -274,6 +313,8 @@ const ExerciseRow = ({
 
       if (existingItem) {
         existingItem.count += 1;
+        existingItem.isPersonalRecord =
+          existingItem.isPersonalRecord || isPersonalRecord;
         continue;
       }
 
@@ -283,6 +324,7 @@ const ExerciseRow = ({
         reps: normalizedReps,
         weight: normalizedWeight,
         isAmrap,
+        isPersonalRecord,
       };
 
       itemsBySignature.set(signature, nextItem);
@@ -445,7 +487,7 @@ const ExerciseRow = ({
             styles.exerciseCard,
             {
               backgroundColor: exerciseCardBackground,
-              borderColor: isDone ? secondaryColor : cardBorder,
+              borderColor: exerciseCardBorderColor,
             },
           ]}
         >
@@ -468,7 +510,9 @@ const ExerciseRow = ({
                       width: `${segment.width}%`,
                       backgroundColor: segment.isFailed
                         ? dangerColor
-                        : secondaryColor,
+                        : segment.isPersonalRecord
+                          ? recordColor
+                          : secondaryColor,
                     },
                   ]}
                 />
@@ -504,8 +548,8 @@ const ExerciseRow = ({
                 size={20}
                 edgeSize={2}
                 disabled
-                fillColor={secondaryColor}
-                checkmarkColor={cardSurface}
+                fillColor={exerciseCheckboxFillColor}
+                checkmarkColor={exerciseCheckboxCheckmarkColor}
                 style={styles.checkbox}
               />
             </View>
@@ -513,7 +557,7 @@ const ExerciseRow = ({
             <View style={styles.titleBlock}>
               <ThemedTitle
                 type="h3"
-                style={[styles.exerciseTitle, { color: titleColor }]}
+                style={[styles.exerciseTitle, { color: recordExerciseTextColor }]}
                 numberOfLines={1}
               >
                 {exercise.exercise_name}
@@ -522,7 +566,7 @@ const ExerciseRow = ({
               <ThemedText
                 size={10}
                 style={styles.exerciseMeta}
-                setColor={quietText}
+                setColor={isRecordExercise ? recordExerciseTextColor : quietText}
               >
                 {summaryHeadline}
               </ThemedText>
@@ -717,6 +761,11 @@ const ExerciseRow = ({
               updateWeight={updateWeight}
               updateUI={updateUI}
               onAddSet={addSet}
+              recordColor={recordColor}
+              recordLightColor={recordLightColor}
+              recordDarkColor={recordDarkColor}
+              recordControlFillColor={exerciseCheckboxFillColor}
+              recordControlTextColor={exerciseCheckboxCheckmarkColor}
             />
           </View>
         )}

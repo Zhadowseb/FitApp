@@ -35,6 +35,20 @@ function localDateToIsoSql(dateExpression) {
   END`;
 }
 
+function workoutHasPersonalRecordSql(workoutAlias = "w") {
+  return `EXISTS (
+    SELECT 1
+    FROM Exercise_Instance pr_e
+    JOIN "Set" pr_s ON pr_s.exercise_instance_id = pr_e.exercise_instance_id
+    WHERE pr_e.workout_type_instance_id = ${workoutAlias}.workout_id
+      AND COALESCE(pr_s.personal_record, 0) = 1
+      AND COALESCE(pr_s.done, 0) = 1
+      AND COALESCE(pr_s.failed, 0) = 0
+      AND COALESCE(pr_e.deleted_at, '') = ''
+      AND COALESCE(pr_s.deleted_at, '') = ''
+  )`;
+}
+
 export async function createProgram(db, { programName, startDate, status }) {
   const syncVersion = createNextSyncVersion();
   return db.runAsync(
@@ -914,7 +928,8 @@ export async function getWorkoutsByDayId(db, dayId) {
         w.is_active,
         w.original_start_time,
         w.timer_start,
-        w.elapsed_time
+        w.elapsed_time,
+        ${workoutHasPersonalRecordSql("w")} AS has_personal_record
      FROM Workout_Type_Instance w
      LEFT JOIN Workout_Type wt ON wt.name = w.workout_type
      WHERE w.day_id = ?;`,
@@ -953,7 +968,8 @@ export async function getWorkoutsBetweenDates(db, { startIsoDate, endIsoDate }) 
         w.is_active,
         d.Weekday AS weekday,
         d.program_id,
-        p.program_name
+        p.program_name,
+        ${workoutHasPersonalRecordSql("w")} AS has_personal_record
      FROM Workout_Type_Instance w
      JOIN Day d ON d.day_id = w.day_id
      LEFT JOIN Program p ON p.program_id = d.program_id

@@ -127,6 +127,7 @@ const MicrocycleList = ({
             icon: found?.Icon ?? null,
             iconLabel: found?.short ?? workout.label ?? workoutType,
             completed: workoutCompleted,
+            hasPersonalRecord: Number(workout.has_personal_record) === 1,
             overdue: isPastDay && !workoutCompleted,
             workout,
           };

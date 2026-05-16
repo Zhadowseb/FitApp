@@ -537,6 +537,7 @@ const WorkoutCalendarPage = () => {
                         icon: iconConfig?.Icon,
                         iconLabel: iconConfig?.short ?? getWorkoutIconLabel(workout),
                         completed: isCompleted,
+                        hasPersonalRecord: Number(workout.has_personal_record) === 1,
                         overdue: day.isoDate < todayIsoDate && !isCompleted,
                       };
                     });

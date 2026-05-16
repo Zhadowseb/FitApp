@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PanResponder, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  PanResponder,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useColorScheme } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 
@@ -8,6 +13,7 @@ import styles from "./ExerciseRowStyle.js";
 import SetList from "./SetList/SetList";
 
 import Cogwheel from "../../../../../../../../Resources/Icons/UI-icons/Cogwheel";
+import ReplayHistory from "../../../../../../../../Resources/Icons/UI-icons/ReplayHistory";
 import Note from "../../../../../../../../Resources/Icons/UI-icons/Note";
 import Expand from "../../../../../../../../Resources/Icons/UI-icons/Expand";
 import ArrowUpAndDown from "../../../../../../../../Resources/Icons/UI-icons/ArrowUpAndDown";
@@ -40,6 +46,11 @@ const ExerciseRow = ({
   const [exerciseNote, setExerciseNote] = useState(exercise.note ?? "");
   const [panelModalVisible, setPanelModalVisible] = useState(false);
   const [noteModalVisible, setNoteModalVisible] = useState(false);
+  const [historyVisible, setHistoryVisible] = useState(false);
+  const [historyDetailsExpanded, setHistoryDetailsExpanded] = useState(false);
+  const [exerciseHistory, setExerciseHistory] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyLoadError, setHistoryLoadError] = useState(false);
   const dragActiveRef = useRef(false);
   const onDragStartRef = useRef(onDragStart);
   const onDragMoveRef = useRef(onDragMove);
@@ -95,6 +106,13 @@ const ExerciseRow = ({
     setExerciseNote(exercise.note ?? "");
   }, [exercise.note]);
 
+  useEffect(() => {
+    setHistoryVisible(false);
+    setHistoryDetailsExpanded(false);
+    setExerciseHistory(null);
+    setHistoryLoadError(false);
+  }, [exercise.exercise_id, exercise.exercise_name]);
+
   const deleteExercise = async (exerciseId) => {
     try {
       await weightliftingRepository.deleteExercise(db, exerciseId);
@@ -127,6 +145,48 @@ const ExerciseRow = ({
     setExerciseNote(note);
   };
 
+  const loadExerciseHistory = async () => {
+    if (historyLoading) {
+      return;
+    }
+
+    try {
+      setHistoryLoading(true);
+      setHistoryLoadError(false);
+
+      const history = await weightliftingRepository.getExerciseHistory(db, {
+        exerciseId: exercise.exercise_id,
+        exerciseName: exercise.exercise_name,
+        limit: 3,
+      });
+
+      setExerciseHistory(history);
+    } catch (error) {
+      console.error("Error loading exercise history", error);
+      setHistoryLoadError(true);
+      setExerciseHistory(null);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const toggleExerciseHistory = () => {
+    const nextValue = !historyVisible;
+    setHistoryVisible(nextValue);
+
+    if (nextValue && !exerciseHistory && !historyLoading) {
+      loadExerciseHistory();
+    }
+
+    if (!nextValue) {
+      setHistoryDetailsExpanded(false);
+    }
+  };
+
+  const toggleHistoryDetails = () => {
+    setHistoryDetailsExpanded((currentValue) => !currentValue);
+  };
+
   const isDone = Number(exercise.done) === 1;
   const hasSets = exercise.sets.length > 0;
   const hasNote = exerciseNote.trim().length > 0;
@@ -148,6 +208,13 @@ const ExerciseRow = ({
       : "rgba(247, 116, 46, 0.12)";
   const quietText = theme.quietText ?? theme.iconColor ?? theme.text;
   const titleColor = theme.title ?? theme.text;
+  const replayIconColor = theme.primary ?? "#f7742eff";
+  const historyPanelSurface =
+    colorScheme === "dark" ? "rgba(13, 15, 22, 0.78)" : "rgba(255, 255, 255, 0.72)";
+  const historyChipSurface =
+    colorScheme === "dark" ? "rgba(36, 41, 56, 0.92)" : "rgba(255, 255, 255, 0.88)";
+  const historyChipBorder =
+    colorScheme === "dark" ? "rgba(255, 255, 255, 0.08)" : "rgba(32, 30, 43, 0.12)";
   const exerciseCardBackground = isDone
     ? "rgba(96, 218, 172, 0.1)"
     : cardSurface;
@@ -228,6 +295,132 @@ const ExerciseRow = ({
   const summaryHeadline = hasSets
     ? `${trackerSetCount} ${trackerSetCount === 1 ? "SET" : "SETS"}`
     : "No sets added yet";
+  const historySessions = exerciseHistory?.sessions ?? [];
+  const historySummaryText = historyLoading
+    ? "Loading history"
+    : exerciseHistory?.summaryText ?? "No previous sets";
+
+  const renderHistoryContent = () => {
+    if (historyLoading) {
+      return (
+        <View style={styles.historyStateRow}>
+          <ActivityIndicator size="small" color={replayIconColor} />
+          <ThemedText
+            size={12}
+            style={styles.historyStateText}
+            setColor={quietText}
+          >
+            Loading history
+          </ThemedText>
+        </View>
+      );
+    }
+
+    if (historyLoadError) {
+      return (
+        <ThemedText
+          size={12}
+          style={styles.historyEmptyText}
+          setColor={quietText}
+        >
+          Could not load previous sets.
+        </ThemedText>
+      );
+    }
+
+    if (historySessions.length === 0) {
+      return (
+        <ThemedText
+          size={12}
+          style={styles.historyEmptyText}
+          setColor={quietText}
+        >
+          No previous completed sets for this exercise.
+        </ThemedText>
+      );
+    }
+
+    return historySessions.map((session, sessionIndex) => (
+      <View
+        key={session.id}
+        style={[
+          styles.historySessionRow,
+          sessionIndex === historySessions.length - 1 &&
+            styles.historySessionRowLast,
+        ]}
+      >
+        <View style={styles.historyDateColumn}>
+          <ThemedText
+            size={12}
+            style={styles.historyRelativeDate}
+            setColor={titleColor}
+          >
+            {session.relativeDateLabel ?? "--"}
+          </ThemedText>
+          <ThemedText
+            size={9}
+            style={styles.historyDate}
+            setColor={quietText}
+          >
+            {session.dateDisplay}
+          </ThemedText>
+        </View>
+
+        <View style={styles.historySetChips}>
+          {session.sets.map((set) => (
+            <View
+              key={set.id}
+              style={[
+                styles.historySetChip,
+                {
+                  backgroundColor: historyChipSurface,
+                  borderColor: historyChipBorder,
+                },
+              ]}
+            >
+              <ThemedText
+                size={12}
+                style={styles.historySetChipText}
+                setColor={titleColor}
+              >
+                {set.reps}
+              </ThemedText>
+              <ThemedText
+                size={11}
+                style={styles.historySetChipSeparator}
+                setColor={quietText}
+              >
+                x
+              </ThemedText>
+              <ThemedText
+                size={12}
+                style={styles.historySetChipText}
+                setColor={titleColor}
+              >
+                {set.weightDisplay ?? `${set.weight} kg`}
+              </ThemedText>
+              {set.count > 1 && (
+                <View
+                  style={[
+                    styles.historySetChipCount,
+                    { backgroundColor: replayIconColor },
+                  ]}
+                >
+                  <ThemedText
+                    size={8}
+                    style={styles.historySetChipCountText}
+                    setColor={cardSurface}
+                  >
+                    {set.count}
+                  </ThemedText>
+                </View>
+              )}
+            </View>
+          ))}
+        </View>
+      </View>
+    ));
+  };
 
   return (
     <>
@@ -333,6 +526,16 @@ const ExerciseRow = ({
 
             <TouchableOpacity
               activeOpacity={0.88}
+              accessibilityRole="button"
+              accessibilityLabel="Toggle exercise history summary"
+              style={styles.actionButton}
+              onPress={toggleExerciseHistory}
+            >
+              <ReplayHistory width={18} height={18} color={replayIconColor} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.88}
               style={styles.actionButton}
               onPress={() => {
                 setPanelModalVisible(true);
@@ -359,6 +562,78 @@ const ExerciseRow = ({
             )}
           </View>
         </View>
+
+        {historyVisible && (
+          <View style={styles.historySection}>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              accessibilityRole="button"
+              accessibilityLabel="Toggle exercise history details"
+              onPress={toggleHistoryDetails}
+              style={[
+                styles.historySummaryBar,
+                {
+                  backgroundColor: setListSurface,
+                  borderColor: cardBorder,
+                },
+              ]}
+            >
+              <View style={styles.historySummaryMain}>
+                <ReplayHistory width={14} height={14} color={replayIconColor} />
+                <ThemedText
+                  size={10}
+                  style={styles.historySummaryLabel}
+                  setColor={quietText}
+                >
+                  LAST
+                </ThemedText>
+                <ThemedText
+                  size={12}
+                  style={styles.historySummaryValue}
+                  setColor={titleColor}
+                  numberOfLines={1}
+                >
+                  {historySummaryText}
+                </ThemedText>
+              </View>
+
+              <View style={styles.historySummaryMeta}>
+                {exerciseHistory?.latestRelativeDateLabel && (
+                  <ThemedText
+                    size={10}
+                    style={styles.historySummaryDate}
+                    setColor={quietText}
+                  >
+                    {exerciseHistory.latestRelativeDateLabel}
+                  </ThemedText>
+                )}
+
+                <View
+                  style={[
+                    styles.historyChevron,
+                    historyDetailsExpanded && styles.historyChevronExpanded,
+                  ]}
+                >
+                  <Expand width={14} height={14} color={quietText} />
+                </View>
+              </View>
+            </TouchableOpacity>
+
+            {historyDetailsExpanded && (
+              <View
+                style={[
+                  styles.historyPanel,
+                  {
+                    backgroundColor: historyPanelSurface,
+                    borderColor: cardBorder,
+                  },
+                ]}
+              >
+                {renderHistoryContent()}
+              </View>
+            )}
+          </View>
+        )}
 
         {!isExpanded && (
           <View style={styles.summaryCollapsedRow}>
@@ -417,7 +692,7 @@ const ExerciseRow = ({
                             style={styles.summaryChipText}
                             setColor={titleColor}
                           >
-                            {`${formatSummaryValue(item.reps)} × ${formatSummaryValue(item.weight)}${item.weight !== null ? "kg" : ""}`}
+                            {`${formatSummaryValue(item.reps)} × ${formatSummaryValue(item.weight)}${item.weight !== null ? " kg" : ""}`}
                           </ThemedText>
                         </View>
                       </View>

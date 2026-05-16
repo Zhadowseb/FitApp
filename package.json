@@ -1,6 +1,6 @@
 {
   "name": "programapp",
-  "version": "0.14.2-minor-program-card-layout-refresh.1",
+  "version": "0.14.3-minor-exercise-card-replay-icon.1",
   "main": "index.js",
   "scripts": {
     "start": "expo start --dev-client --scheme exp+programapp-dev",

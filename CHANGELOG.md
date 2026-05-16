@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.14.3] - Unreleased
+### Changed
+- Added an expandable previous-set history panel behind the replay-history icon on resistance exercise cards.
+
+---
 ## [0.14.2] - Unreleased
 ### Changed
 - Redesigned program list cards with status badges, circular progress, completion marks, and workout type badges.

@@ -123,6 +123,90 @@ export async function getCompletedStrengthSetsForPersonalRecords(
   );
 }
 
+export async function getCompletedExerciseHistorySets(
+  db,
+  { exerciseId, exerciseName, limit = 3 }
+) {
+  return db.getAllAsync(
+    `WITH current_exercise AS (
+        SELECT workout_type_instance_id AS current_workout_id
+        FROM Exercise_Instance
+        WHERE exercise_instance_id = ?
+      ),
+      history_exercises AS (
+        SELECT
+          e.exercise_instance_id,
+          e.workout_type_instance_id AS workout_id,
+          COALESCE(d.date, w.date) AS performed_date,
+          CASE
+            WHEN COALESCE(d.date, w.date) LIKE '__.__.____'
+            THEN substr(COALESCE(d.date, w.date), 7, 4) || '-' ||
+                 substr(COALESCE(d.date, w.date), 4, 2) || '-' ||
+                 substr(COALESCE(d.date, w.date), 1, 2)
+            ELSE COALESCE(d.date, w.date)
+          END AS performed_date_sort,
+          MAX(CAST(s.weight AS REAL)) AS top_weight
+        FROM Exercise_Instance e
+        JOIN Workout_Type_Instance w
+          ON w.workout_id = e.workout_type_instance_id
+        LEFT JOIN Day d
+          ON d.day_id = w.day_id
+        JOIN "Set" s
+          ON s.exercise_instance_id = e.exercise_instance_id
+        WHERE e.exercise_name = ? COLLATE NOCASE
+          AND e.exercise_instance_id <> ?
+          AND e.workout_type_instance_id <> COALESCE(
+            (SELECT current_workout_id FROM current_exercise),
+            -1
+          )
+          AND s.done = 1
+          AND COALESCE(s.failed, 0) = 0
+          AND s.weight IS NOT NULL
+          AND s.reps IS NOT NULL
+          AND CAST(s.weight AS REAL) > 0
+          AND CAST(s.reps AS INTEGER) > 0
+          AND COALESCE(s.deleted_at, '') = ''
+          AND COALESCE(e.deleted_at, '') = ''
+          AND COALESCE(w.deleted_at, '') = ''
+          AND COALESCE(d.deleted_at, '') = ''
+        GROUP BY
+          e.exercise_instance_id,
+          e.workout_type_instance_id,
+          COALESCE(d.date, w.date)
+        ORDER BY performed_date_sort DESC, e.exercise_instance_id DESC
+        LIMIT ?
+      )
+     SELECT
+        he.exercise_instance_id,
+        he.workout_id,
+        he.performed_date,
+        he.performed_date_sort,
+        he.top_weight,
+        s.sets_id,
+        s.set_number,
+        s.reps,
+        s.weight,
+        s.amrap,
+        s.personal_record
+     FROM history_exercises he
+     JOIN "Set" s
+       ON s.exercise_instance_id = he.exercise_instance_id
+     WHERE s.done = 1
+       AND COALESCE(s.failed, 0) = 0
+       AND s.weight IS NOT NULL
+       AND s.reps IS NOT NULL
+       AND CAST(s.weight AS REAL) > 0
+       AND CAST(s.reps AS INTEGER) > 0
+       AND COALESCE(s.deleted_at, '') = ''
+     ORDER BY
+       he.performed_date_sort DESC,
+       he.exercise_instance_id DESC,
+       s.set_number ASC,
+       s.sets_id ASC;`,
+    [exerciseId, exerciseName, exerciseId, limit]
+  );
+}
+
 export async function createExerciseStorage(db, exerciseName) {
   await db.runAsync(
     `INSERT INTO Exercise (name, nickname)

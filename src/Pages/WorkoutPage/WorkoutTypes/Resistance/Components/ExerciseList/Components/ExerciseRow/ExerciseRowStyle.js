@@ -99,6 +99,159 @@ export default StyleSheet.create({
     opacity: 0.72,
   },
 
+  historySection: {
+    marginTop: 10,
+  },
+
+  historySummaryBar: {
+    minHeight: 36,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  historySummaryMain: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  historySummaryLabel: {
+    marginLeft: 6,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+  },
+
+  historySummaryValue: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: 8,
+    fontWeight: "800",
+  },
+
+  historySummaryMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: 8,
+  },
+
+  historySummaryDate: {
+    marginLeft: 8,
+    fontWeight: "700",
+  },
+
+  historyChevron: {
+    marginLeft: 6,
+  },
+
+  historyChevronExpanded: {
+    transform: [{ rotate: "180deg" }],
+  },
+
+  historyPanel: {
+    borderWidth: 1,
+    borderRadius: 8,
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+
+  historySessionRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 16,
+  },
+
+  historySessionRowLast: {
+    marginBottom: 0,
+  },
+
+  historyDateColumn: {
+    width: 78,
+    paddingTop: 3,
+  },
+
+  historyRelativeDate: {
+    fontWeight: "800",
+  },
+
+  historyDate: {
+    marginTop: 2,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+  },
+
+  historySetChips: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+
+  historySetChip: {
+    minHeight: 26,
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    marginRight: 5,
+    marginBottom: 5,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
+  },
+
+  historySetChipText: {
+    fontWeight: "800",
+  },
+
+  historySetChipSeparator: {
+    marginHorizontal: 4,
+    fontWeight: "700",
+    opacity: 0.48,
+  },
+
+  historySetChipCount: {
+    position: "absolute",
+    top: -7,
+    right: -5,
+    minWidth: 15,
+    height: 15,
+    borderRadius: 999,
+    paddingHorizontal: 3,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  historySetChipCountText: {
+    fontWeight: "900",
+    lineHeight: 10,
+  },
+
+  historyStateRow: {
+    minHeight: 42,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  historyStateText: {
+    marginLeft: 8,
+    fontWeight: "700",
+  },
+
+  historyEmptyText: {
+    minHeight: 36,
+    textAlign: "center",
+    textAlignVertical: "center",
+    fontWeight: "700",
+  },
+
   summaryCollapsedRow: {
     marginTop: 12,
     flexDirection: "row",

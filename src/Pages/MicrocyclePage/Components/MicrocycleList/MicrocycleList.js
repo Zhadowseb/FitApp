@@ -1,13 +1,20 @@
 import { useState, useEffect } from "react";
-import { View, FlatList, TouchableOpacity } from "react-native";
+import {
+  FlatList,
+  Modal,
+  Pressable,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation } from "@react-navigation/native";
 import { useColorScheme } from "react-native";
+import Svg, { Path } from "react-native-svg";
 import { Colors } from "../../../../Resources/GlobalStyling/colors";
 import ThreeDots from "../../../../Resources/Icons/UI-icons/ThreeDots"
 import Copy from "../../../../Resources/Icons/UI-icons/Copy";
-import PlusCircled from "../../../../Resources/Icons/UI-icons/PlusCircled";
 import CalenderPastePicker from "../../../../Resources/Components/CalenderPastePicker/CalenderPasteModal";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
@@ -27,6 +34,73 @@ import { ThemedCard,
 import { formatDate, parseCustomDate } from "../../../../Utils/dateUtils";
 import Delete from "../../../../Resources/Icons/UI-icons/Delete";
 
+const DAY_CONTEXT_MENU_WIDTH = 266;
+const DAY_CONTEXT_MENU_HEIGHT = 260;
+const DAY_CONTEXT_MENU_MARGIN = 18;
+
+const MenuAddIcon = ({ color }) => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 5v14M5 12h14"
+      stroke={color}
+      strokeLinecap="round"
+      strokeWidth={2}
+    />
+  </Svg>
+);
+
+const MenuCopyIcon = ({ color }) => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M8 8.5c0-1.4 0-2.1.27-2.64a2.5 2.5 0 0 1 1.09-1.09C9.9 4.5 10.6 4.5 12 4.5h3.5c1.4 0 2.1 0 2.64.27a2.5 2.5 0 0 1 1.09 1.09c.27.54.27 1.24.27 2.64V12c0 1.4 0 2.1-.27 2.64a2.5 2.5 0 0 1-1.09 1.09c-.54.27-1.24.27-2.64.27H12c-1.4 0-2.1 0-2.64-.27a2.5 2.5 0 0 1-1.09-1.09C8 14.1 8 13.4 8 12V8.5z"
+      stroke={color}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={1.8}
+    />
+    <Path
+      d="M6 8H5.5c-1.4 0-2.1 0-2.64.27a2.5 2.5 0 0 0-1.09 1.09C1.5 9.9 1.5 10.6 1.5 12v3.5c0 1.4 0 2.1.27 2.64a2.5 2.5 0 0 0 1.09 1.09c.54.27 1.24.27 2.64.27H9c1.4 0 2.1 0 2.64-.27a2.5 2.5 0 0 0 1.09-1.09c.27-.54.27-1.24.27-2.64V15"
+      stroke={color}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={1.8}
+    />
+  </Svg>
+);
+
+const MenuDeleteIcon = ({ color }) => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M5 6h14M9 6V4.75c0-.7.55-1.25 1.25-1.25h3.5c.7 0 1.25.55 1.25 1.25V6M18 9l-.55 8.2c-.09 1.36-.14 2.04-.58 2.46-.43.42-1.12.42-2.49.42H9.62c-1.37 0-2.06 0-2.49-.42-.44-.42-.49-1.1-.58-2.46L6 9M10 11.5v5M14 11.5v5"
+      stroke={color}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={1.8}
+    />
+  </Svg>
+);
+
+const DayContextMenuAction = ({
+  Icon,
+  iconColor,
+  label,
+  onPress,
+  textColor,
+}) => (
+  <TouchableOpacity
+    activeOpacity={0.78}
+    onPress={onPress}
+    style={styles.dayContextAction}
+  >
+    <View style={styles.dayContextActionIcon}>
+      <Icon color={iconColor} />
+    </View>
+    <ThemedText style={styles.dayContextActionText} setColor={textColor}>
+      {label}
+    </ThemedText>
+  </TouchableOpacity>
+);
+
 const MicrocycleList = ({
   program_id,
   mesocycle_id,
@@ -37,6 +111,7 @@ const MicrocycleList = ({
   headerComponent = null,
 }) => {
   const colorScheme = useColorScheme();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const theme = Colors[colorScheme] ?? Colors.light;
   const db = useSQLiteContext();
   const navigation = useNavigation();
@@ -56,6 +131,10 @@ const MicrocycleList = ({
   const [pickWorkoutModalVisible, setPickWorkoutModalVisible] = useState(false);
   const [pickMode, setPickMode] = useState(null);
   const [dayOptionsVisible, setDayOptionsVisible] = useState(false);
+  const [dayOptionsPosition, setDayOptionsPosition] = useState({
+    left: DAY_CONTEXT_MENU_MARGIN,
+    top: 120,
+  });
   const [labelModalVisible, setLabelModalVisible] = useState(false);
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [newDate, setNewDate] = useState(new Date());
@@ -318,9 +397,65 @@ const MicrocycleList = ({
     });
   };
 
-  const handleWeekdayLongPress = (day) => {
+  const handleWeekdayLongPress = (day, event) => {
+    const pageX = event?.nativeEvent?.pageX ?? windowWidth / 2;
+    const pageY = event?.nativeEvent?.pageY ?? 160;
+    const maxLeft = Math.max(
+      DAY_CONTEXT_MENU_MARGIN,
+      windowWidth - DAY_CONTEXT_MENU_WIDTH - DAY_CONTEXT_MENU_MARGIN
+    );
+    const maxTop = Math.max(
+      DAY_CONTEXT_MENU_MARGIN,
+      windowHeight - DAY_CONTEXT_MENU_HEIGHT - DAY_CONTEXT_MENU_MARGIN
+    );
+
     setSelectedDay(day);
+    setDayOptionsPosition({
+      left: Math.min(Math.max(DAY_CONTEXT_MENU_MARGIN, pageX - 42), maxLeft),
+      top: Math.min(Math.max(DAY_CONTEXT_MENU_MARGIN, pageY - 48), maxTop),
+    });
     setDayOptionsVisible(true);
+  };
+
+  const addWorkoutToSelectedDay = () => {
+    setDayOptionsVisible(false);
+    setLabelModalVisible(true);
+  };
+
+  const copySelectedDayWorkout = () => {
+    const workouts = selectedDay?.workouts ?? [];
+
+    if (!workouts.length) {
+      return;
+    }
+
+    if (workouts.length === 1) {
+      setSelectedWorkoutId(workouts[0].workout_id);
+      setDayOptionsVisible(false);
+      setDatePickerVisible(true);
+      return;
+    }
+
+    setDayOptionsVisible(false);
+    setPickMode(PICK_MODE.COPY);
+    setPickWorkoutModalVisible(true);
+  };
+
+  const deleteSelectedDayWorkout = () => {
+    const workouts = selectedDay?.workouts ?? [];
+
+    if (!workouts.length) {
+      return;
+    }
+
+    if (workouts.length === 1) {
+      deleteWorkout(workouts[0].workout_id);
+      return;
+    }
+
+    setDayOptionsVisible(false);
+    setPickMode(PICK_MODE.DELETE);
+    setPickWorkoutModalVisible(true);
   };
 
   const createWorkoutForDay = async (labelId) => {
@@ -411,21 +546,11 @@ const MicrocycleList = ({
 
     const counts =
       workoutCounts[item.microcycle_id] ?? { total: 0, done: 0 };
-    const completionPercent =
-      counts.total > 0
-        ? Math.round((counts.done / counts.total) * 100)
-        : 0;
     const isWeekComplete = counts.total > 0 && counts.done === counts.total;
-    const weekSummaryText =
-      counts.total === 0
-        ? "No workouts scheduled this week"
-        : `${counts.done} of ${counts.total} workouts complete`;
-    const quietText = theme.quietText ?? theme.iconColor;
     const cardBorder = theme.cardBorder ?? theme.iconColor;
-    const softSurface = theme.uiBackground ?? theme.cardBackground;
     const titleColor = theme.title ?? theme.text;
-    const progressTrackColor = softSurface;
-    const progressFillColor = isWeekComplete ? theme.secondary : theme.primary;
+    const badgeTextColor =
+      theme.textInverted ?? theme.cardBackground ?? "#0E0F12";
 
     return (
       <ThemedCard
@@ -439,28 +564,28 @@ const MicrocycleList = ({
       >
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderContent}>
-            <ThemedText
-              size={10}
-              style={styles.cardHeaderEyebrow}
-              setColor={quietText}
-            >
-              Week {item.microcycle_number}
-            </ThemedText>
+            <View style={styles.cardTitleRow}>
+              <View
+                style={[
+                  styles.weekNumberBadge,
+                  { backgroundColor: theme.primary ?? "#f7742e" },
+                ]}
+              >
+                <ThemedText
+                  style={styles.weekNumberBadgeText}
+                  setColor={badgeTextColor}
+                >
+                  {item.microcycle_number}
+                </ThemedText>
+              </View>
 
-            <ThemedTitle
-              type="h3"
-              style={[styles.cardHeaderTitle, { color: titleColor }]}
-            >
-              {item.focus || "No focus set"}
-            </ThemedTitle>
-
-            <ThemedText
-              size={11}
-              style={styles.cardHeaderSummary}
-              setColor={quietText}
-            >
-              {weekSummaryText}
-            </ThemedText>
+              <ThemedTitle
+                type="h3"
+                style={[styles.cardHeaderTitle, { color: titleColor }]}
+              >
+                {item.focus || "No focus set"}
+              </ThemedTitle>
+            </View>
           </View>
 
           <View style={styles.cardHeaderSide}>
@@ -478,25 +603,6 @@ const MicrocycleList = ({
             </TouchableOpacity>
           </View>
         </View>
-
-        {counts.total > 0 && (
-          <View
-            style={[
-              styles.progressTrack,
-              { backgroundColor: progressTrackColor },
-            ]}
-          >
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${completionPercent}%`,
-                  backgroundColor: progressFillColor,
-                },
-              ]}
-            />
-          </View>
-        )}
 
         <View style={styles.weekdaysShell}>
           <View style={styles.weekdaysRow}>
@@ -520,8 +626,8 @@ const MicrocycleList = ({
 
                     navigateToWorkout(workout, day);
                   }}
-                  onDayLongPress={() => {
-                    handleWeekdayLongPress(day);
+                  onDayLongPress={(event) => {
+                    handleWeekdayLongPress(day, event);
                   }}
                 />
               </View>
@@ -655,77 +761,86 @@ const MicrocycleList = ({
       }}
     />
 
-    <ThemedBottomSheet
+    <Modal
       visible={dayOptionsVisible}
-      onClose={() => {
-        setDayOptionsVisible(false);
-      }}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setDayOptionsVisible(false)}
     >
-      <View style={styles.bottomsheet_title}>
-        <ThemedText>{selectedDay?.day}</ThemedText>
-        <ThemedText>{selectedDay?.date}</ThemedText>
-      </View>
+      <View style={styles.dayContextOverlay}>
+        <Pressable
+          style={styles.dayContextBackdrop}
+          onPress={() => setDayOptionsVisible(false)}
+        />
 
-      <View style={styles.bottomsheet_body}>
-        <TouchableOpacity
-          style={[styles.option, { paddingTop: 0 }]}
-          onPress={() => {
-            setDayOptionsVisible(false);
-            setLabelModalVisible(true);
-          }}
+        <View
+          style={[
+            styles.dayContextMenu,
+            {
+              left: dayOptionsPosition.left,
+              top: dayOptionsPosition.top,
+              backgroundColor:
+                colorScheme === "dark"
+                  ? "#151922"
+                  : theme.cardBackground ?? theme.background,
+              borderColor: theme.cardBorder ?? theme.iconColor,
+            },
+          ]}
         >
-          <PlusCircled width={24} height={24} />
-          <ThemedText style={styles.option_text}>
-            Add new workout
-          </ThemedText>
-        </TouchableOpacity>
-
-        {!!selectedDay?.workouts?.length && (
-          <TouchableOpacity
-            style={styles.option}
-            onPress={() => {
-              if (selectedDay.workouts.length === 1) {
-                setSelectedWorkoutId(selectedDay.workouts[0].workout_id);
-                setPickMode(PICK_MODE.COPY);
-                setDayOptionsVisible(false);
-                setDatePickerVisible(true);
-                return;
-              }
-
-              setDayOptionsVisible(false);
-              setPickMode(PICK_MODE.COPY);
-              setPickWorkoutModalVisible(true);
-            }}
+          <View
+            style={[
+              styles.dayContextHeader,
+              { borderBottomColor: theme.cardBorder ?? theme.iconColor },
+            ]}
           >
-            <Copy width={24} height={24} />
-            <ThemedText style={styles.option_text}>
-              Copy workout to a different day
+            <ThemedText
+              style={styles.dayContextMeta}
+              setColor={theme.iconColor ?? theme.quietText}
+            >
+              {selectedDay?.date ?? ""}
             </ThemedText>
-          </TouchableOpacity>
-        )}
 
-        {!!selectedDay?.workouts?.length && (
-          <TouchableOpacity
-            style={styles.option}
-            onPress={() => {
-              if (selectedDay.workouts.length === 1) {
-                deleteWorkout(selectedDay.workouts[0].workout_id);
-                return;
-              }
-
-              setDayOptionsVisible(false);
-              setPickMode(PICK_MODE.DELETE);
-              setPickWorkoutModalVisible(true);
-            }}
-          >
-            <Delete width={24} height={24} />
-            <ThemedText style={styles.option_text}>
-              Delete workout
+            <ThemedText
+              style={styles.dayContextTitle}
+              setColor={theme.title ?? theme.text}
+              numberOfLines={1}
+            >
+              {selectedDay?.day ?? "Day options"}
             </ThemedText>
-          </TouchableOpacity>
-        )}
+          </View>
+
+          <View style={styles.dayContextBody}>
+            <DayContextMenuAction
+              Icon={MenuAddIcon}
+              iconColor={theme.primary ?? "#f7742e"}
+              label="Add new workout"
+              onPress={addWorkoutToSelectedDay}
+              textColor={theme.primary ?? "#f7742e"}
+            />
+
+            {!!selectedDay?.workouts?.length && (
+              <DayContextMenuAction
+                Icon={MenuCopyIcon}
+                iconColor={theme.title ?? theme.text}
+                label="Copy workout to a different day"
+                onPress={copySelectedDayWorkout}
+                textColor={theme.title ?? theme.text}
+              />
+            )}
+
+            {!!selectedDay?.workouts?.length && (
+              <DayContextMenuAction
+                Icon={MenuDeleteIcon}
+                iconColor={theme.danger ?? Colors.dark.danger ?? "#ba0000ff"}
+                label="Delete workout"
+                onPress={deleteSelectedDayWorkout}
+                textColor={theme.danger ?? Colors.dark.danger ?? "#ba0000ff"}
+              />
+            )}
+          </View>
+        </View>
       </View>
-    </ThemedBottomSheet>
+    </Modal>
 
     <AddWorkoutModal
       visible={labelModalVisible}

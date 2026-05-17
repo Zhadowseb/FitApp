@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.14.8] - Unreleased
+### Changed
+- Describe pending changes here.
+
+---
 ## [0.14.7] - Unreleased
 ### Changed
 - Added a home-screen sickness log card draft using the sickness dark artwork.

@@ -8,7 +8,6 @@ import Male from "../../../../Resources/Icons/UI-icons/Male";
 import { getWorkoutIconConfig } from "../../../../Resources/Icons/WorkoutLabels";
 import {
   ThemedText,
-  ThemedTitle,
   UserAvatar,
 } from "../../../../Resources/ThemedComponents";
 
@@ -197,7 +196,6 @@ function CircleCard({
 export default function FriendsActivity({
   currentUser,
   people,
-  isLoading,
   errorMessage,
   onSeeAll,
   onOpenProfile,
@@ -211,23 +209,11 @@ export default function FriendsActivity({
   const avatarBackgroundColor =
     theme.uiBackground ?? theme.inputBackground ?? "rgba(255,255,255,0.08)";
   const iconColor = theme.primary ?? theme.text;
-  const primary = theme.primary ?? "#f7742e";
   const currentUserMeta = getActivityMeta(
     theme,
     currentUser?.activityState,
     currentUser?.workoutType
   );
-  const sectionSubtitle = isLoading
-    ? "Loading your crew..."
-    : currentUser?.activityState === "live"
-      ? "Your workout is live right now"
-      : currentUser?.activityState === "planned"
-        ? "You have training planned today"
-        : currentUser?.activityState === "done"
-          ? "You finished your training today"
-    : people.length > 0
-      ? `${people.length} ${people.length === 1 ? "person" : "people"} in your circle`
-      : "Follow people to build your crew";
   const ownProfileSubtitle =
     currentUser?.displayName
       ? currentUser?.activityState && currentUser.activityState !== "rest"
@@ -237,23 +223,6 @@ export default function FriendsActivity({
 
   return (
     <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <View>
-          <ThemedTitle type="h3" style={styles.sectionTitle}>
-            Crew activity
-          </ThemedTitle>
-          <ThemedText style={styles.sectionSubtitle} setColor={quietText}>
-            {sectionSubtitle}
-          </ThemedText>
-        </View>
-
-        <TouchableOpacity activeOpacity={0.82} onPress={onSeeAll}>
-          <ThemedText style={styles.seeAllText} setColor={primary}>
-            See all
-          </ThemedText>
-        </TouchableOpacity>
-      </View>
-
       {errorMessage ? (
         <View
           style={[

@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.14.7] - Unreleased
+### Changed
+- Added a home-screen sickness log card draft using the sickness dark artwork.
+
+---
 ## [0.14.6] - Unreleased
 ### Changed
 - Added record-color highlighting for PR sets, exercises, and completed workout indicators.

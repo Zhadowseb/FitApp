@@ -9,8 +9,9 @@ import styles from './HomePageStyle';
 import { Colors } from '../../Resources/GlobalStyling/colors';
 import FeedbackModal from './Components/FeedbackModal/FeedbackModal';
 import FriendsActivity from './Components/FriendsActivity/FriendsActivity';
+import HomeImageShortcutCard from './Components/HomeImageShortcutCard/HomeImageShortcutCard';
+import SicknessLogCard from './Components/SicknessLogCard/SicknessLogCard';
 import TodayProgramsShortcut from './Components/TodayProgramsShortcut/TodayProgramsShortcut';
-import Calender from "../../Resources/Icons/UI-icons/Calender";
 import TailArrowUpRight from "../../Resources/Icons/UI-icons/TailArrowUpRight";
 import {
   programService,
@@ -24,6 +25,8 @@ import {
   ThemedTitle,
 } from "../../Resources/ThemedComponents";
 import { useAuth } from '../../Contexts/AuthContext';
+
+const workoutCalendarDarkImage = require("../../Resources/Images/DarkVersion/workout calender dark.png");
 
 const FeedbackGlow = ({
   style,
@@ -59,7 +62,6 @@ export default function App() {
     currentUser: null,
     people: [],
   });
-  const [isLoadingCirclePreview, setIsLoadingCirclePreview] = useState(false);
   const [circlePreviewError, setCirclePreviewError] = useState("");
   const navigation = useNavigation();
   const colorScheme = useColorScheme();
@@ -80,11 +82,9 @@ export default function App() {
         people: [],
       });
       setCirclePreviewError("");
-      setIsLoadingCirclePreview(false);
       return;
     }
 
-    setIsLoadingCirclePreview(true);
     setCirclePreviewError("");
 
     try {
@@ -119,8 +119,6 @@ export default function App() {
       setCirclePreviewError(
         error instanceof Error ? error.message : "Could not load your circle."
       );
-    } finally {
-      setIsLoadingCirclePreview(false);
     }
   }, [db, todayDate, user]);
 
@@ -139,47 +137,24 @@ export default function App() {
       >
         <TodayProgramsShortcut />
 
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={() => navigation.navigate("WorkoutCalendarPage")}
-          style={[
-            styles.calendarShortcut,
-            {
-              backgroundColor: cardSurface,
-              borderColor: cardBorder,
-            },
-          ]}
-        >
-          <View
-            style={[
-              styles.calendarShortcutIcon,
-              { backgroundColor: theme.primaryLight ?? "rgba(247, 116, 46, 0.16)" },
-            ]}
-          >
-            <Calender width={24} height={24} color={primaryColor} thickness={1.8} />
-          </View>
-
-          <View style={styles.calendarShortcutBody}>
-            <ThemedText style={styles.calendarShortcutEyebrow} setColor={primaryColor}>
-              CALENDAR
-            </ThemedText>
-            <ThemedTitle
-              type="h3"
-              style={[styles.calendarShortcutTitle, { color: titleColor }]}
-            >
-              Workout Calendar
-            </ThemedTitle>
-          </View>
-        </TouchableOpacity>
-
         <FriendsActivity
           currentUser={circlePreview.currentUser}
           people={circlePreview.people}
-          isLoading={isLoadingCirclePreview}
           errorMessage={circlePreviewError}
           onSeeAll={() => navigation.navigate("SearchPage")}
           onOpenProfile={() => navigation.navigate("ProfilePage")}
         />
+
+        <View style={styles.homeShortcutRow}>
+          <SicknessLogCard />
+
+          <HomeImageShortcutCard
+            accessibilityLabel="Open workout calendar"
+            imageSource={workoutCalendarDarkImage}
+            onPress={() => navigation.navigate("WorkoutCalendarPage")}
+            title="Workout Calendar"
+          />
+        </View>
 
         <TouchableOpacity
           activeOpacity={0.92}

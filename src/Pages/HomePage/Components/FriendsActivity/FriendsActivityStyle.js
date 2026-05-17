@@ -5,26 +5,6 @@ export default StyleSheet.create({
     marginTop: 12,
     marginBottom: 10,
   },
-  sectionHeader: {
-    marginBottom: 12,
-    marginHorizontal: 18,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  sectionTitle: {
-    lineHeight: 26,
-  },
-  sectionSubtitle: {
-    marginTop: 4,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  seeAllText: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
   scrollContent: {
     paddingHorizontal: 18,
     paddingBottom: 4,

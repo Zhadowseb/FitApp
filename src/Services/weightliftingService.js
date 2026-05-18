@@ -903,6 +903,24 @@ function parseVisibleColumns(value) {
   return normalizedColumns;
 }
 
+function parseOptionalVisibleColumns(value) {
+  const serializedValue = serializeVisibleColumns(value);
+
+  return serializedValue ? parseVisibleColumns(serializedValue) : null;
+}
+
+function resolveVisibleColumns(...columnCandidates) {
+  for (const columnCandidate of columnCandidates) {
+    const parsedColumns = parseOptionalVisibleColumns(columnCandidate);
+
+    if (parsedColumns) {
+      return parsedColumns;
+    }
+  }
+
+  return { ...DEFAULT_VISIBLE_COLUMNS };
+}
+
 function serializeVisibleColumns(value) {
   if (value === null || value === undefined || value === "") {
     return null;
@@ -2120,13 +2138,23 @@ export async function syncExerciseColumnPreferencesWithCloud(db) {
 
 async function loadWorkoutExercisesFromLocal(db, workoutId) {
   const resolvedWorkoutId = normalizeRequiredId(workoutId, "workoutId");
+  const preferenceUserId = await getCurrentExerciseColumnPreferenceUserId();
   const exercises = await weightliftingRepository.getExercisesByWorkout(
     db,
     resolvedWorkoutId
   );
-  const sets = await weightliftingRepository.getSetsByWorkout(
-    db,
-    resolvedWorkoutId
+  const [sets, preferences] = await Promise.all([
+    weightliftingRepository.getSetsByWorkout(db, resolvedWorkoutId),
+    weightliftingRepository.getExerciseColumnPreferencesForUser(
+      db,
+      preferenceUserId
+    ),
+  ]);
+  const preferencesByExerciseName = new Map(
+    preferences.map((preference) => [
+      String(preference.exercise_name ?? "").toLocaleLowerCase(),
+      preference,
+    ])
   );
 
   const setsByExercise = {};
@@ -2139,6 +2167,9 @@ async function loadWorkoutExercisesFromLocal(db, workoutId) {
 
   return exercises.map((exercise) => {
     const exerciseSets = setsByExercise[exercise.exercise_id] ?? [];
+    const preference = preferencesByExerciseName.get(
+      String(exercise.exercise_name ?? "").toLocaleLowerCase()
+    );
     const plannedSetCount = Number(exercise.sets) || 0;
     const hasPersonalRecord = exerciseSets.some(
       (set) =>
@@ -2153,7 +2184,11 @@ async function loadWorkoutExercisesFromLocal(db, workoutId) {
       plannedSetCount,
       sets: exerciseSets,
       setCount: exerciseSets.length,
-      visibleColumns: parseVisibleColumns(exercise.visible_columns),
+      visibleColumns: resolveVisibleColumns(
+        exercise.visible_columns,
+        preference?.visible_columns,
+        exercise.default_visible_columns
+      ),
     };
   });
 }

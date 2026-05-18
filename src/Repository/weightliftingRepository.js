@@ -278,6 +278,23 @@ export async function getExerciseColumnPreference(
   );
 }
 
+export async function getExerciseColumnPreferencesForUser(db, userId) {
+  return db.getAllAsync(
+    `SELECT
+        exercise_column_preference_id,
+        user_id,
+        cloud_exercise_id,
+        exercise_name,
+        visible_columns,
+        needs_sync,
+        updated_at
+     FROM Exercise_Column_Preference
+     WHERE user_id = ?
+     ORDER BY exercise_name COLLATE NOCASE ASC;`,
+    [userId]
+  );
+}
+
 export async function getDirtyExerciseColumnPreferences(db, userId) {
   return db.getAllAsync(
     `SELECT
@@ -618,17 +635,21 @@ export async function getExercisesByWorkout(db, workoutId) {
 
   return db.getAllAsync(
     `SELECT
-        exercise_instance_id AS exercise_id,
-        workout_type_instance_id AS workout_id,
-        exercise_name,
-        exercise_order,
-        sets,
-        done,
-        visible_columns,
-        note
-     FROM Exercise_Instance
-     WHERE workout_type_instance_id = ?
-     ORDER BY exercise_order ASC, exercise_instance_id ASC;`,
+        ei.exercise_instance_id AS exercise_id,
+        ei.workout_type_instance_id AS workout_id,
+        ei.exercise_name,
+        ei.exercise_order,
+        ei.sets,
+        ei.done,
+        ei.visible_columns,
+        ei.note,
+        e.cloud_exercise_id,
+        e.default_visible_columns
+     FROM Exercise_Instance ei
+     LEFT JOIN Exercise e
+       ON e.name = ei.exercise_name COLLATE NOCASE
+     WHERE ei.workout_type_instance_id = ?
+     ORDER BY ei.exercise_order ASC, ei.exercise_instance_id ASC;`,
     [workoutId]
   );
 }

@@ -921,6 +921,20 @@ function resolveVisibleColumns(...columnCandidates) {
   return { ...DEFAULT_VISIBLE_COLUMNS };
 }
 
+function areVisibleColumnsEqual(leftColumns, rightColumns) {
+  return Object.keys(DEFAULT_VISIBLE_COLUMNS).every(
+    (key) => Boolean(leftColumns?.[key]) === Boolean(rightColumns?.[key])
+  );
+}
+
+function isAppDefaultVisibleColumns(value) {
+  const parsedColumns = parseOptionalVisibleColumns(value);
+
+  return parsedColumns
+    ? areVisibleColumnsEqual(parsedColumns, DEFAULT_VISIBLE_COLUMNS)
+    : false;
+}
+
 function serializeVisibleColumns(value) {
   if (value === null || value === undefined || value === "") {
     return null;
@@ -2170,6 +2184,11 @@ async function loadWorkoutExercisesFromLocal(db, workoutId) {
     const preference = preferencesByExerciseName.get(
       String(exercise.exercise_name ?? "").toLocaleLowerCase()
     );
+    const instanceVisibleColumns = isAppDefaultVisibleColumns(
+      exercise.visible_columns
+    )
+      ? null
+      : exercise.visible_columns;
     const plannedSetCount = Number(exercise.sets) || 0;
     const hasPersonalRecord = exerciseSets.some(
       (set) =>
@@ -2186,7 +2205,7 @@ async function loadWorkoutExercisesFromLocal(db, workoutId) {
       setCount: exerciseSets.length,
       visibleColumns: resolveVisibleColumns(
         preference?.visible_columns,
-        exercise.visible_columns,
+        instanceVisibleColumns,
         exercise.default_visible_columns
       ),
     };

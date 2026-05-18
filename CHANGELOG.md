@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.14.10] - Unreleased
+### Changed
+- Describe pending changes here.
+
+---
 ## [0.14.9] - Unreleased
 ### Changed
 - Added day-level sickness marking from the week indicator context menu.

@@ -57,6 +57,13 @@ export const DEFAULT_VISIBLE_COLUMNS = {
 const EXERCISE_LIBRARY_TABLE = "Exercise";
 const EXERCISE_LIBRARY_NAME_COLUMN = "name";
 const EXERCISE_LIBRARY_ID_COLUMN = "id";
+const EXERCISE_LIBRARY_SELECT =
+  `${EXERCISE_LIBRARY_ID_COLUMN}, ${EXERCISE_LIBRARY_NAME_COLUMN}, nickname, default_visible_columns`;
+const EXERCISE_COLUMN_PREFERENCE_CLOUD_TABLE =
+  "exercise_column_preferences";
+const EXERCISE_COLUMN_PREFERENCE_CLOUD_SELECT =
+  "user_id, exercise_id, visible_columns, updated_at";
+const LOCAL_EXERCISE_COLUMN_PREFERENCE_USER_ID = "__local__";
 const MUSCLE_ACTIVATION_TABLE = "Muscle_Activation";
 const MUSCLE_TABLE = "Muscle";
 const MUSCLE_GROUP_TABLE = "muscle_group";
@@ -939,14 +946,23 @@ function normalizeExerciseCatalogEntries(entries) {
       typeof entry?.nickname === "string" && entry.nickname.trim() !== ""
         ? entry.nickname.trim()
         : null;
+    const cloudExerciseId = normalizeOptionalInteger(
+      entry?.cloud_exercise_id ?? entry?.id,
+      null
+    );
+    const defaultVisibleColumns = serializeVisibleColumns(
+      entry?.default_visible_columns
+    );
 
     if (!normalizedName) {
       continue;
     }
 
     exerciseMap.set(normalizedName.toLocaleLowerCase(), {
+      cloud_exercise_id: cloudExerciseId,
       name: normalizedName,
       nickname: normalizedNickname,
+      default_visible_columns: defaultVisibleColumns,
     });
   }
 
@@ -964,8 +980,11 @@ function areExerciseCatalogEntriesEqual(left, right) {
 
   for (let index = 0; index < left.length; index += 1) {
     if (
+      left[index].cloud_exercise_id !== right[index].cloud_exercise_id ||
       left[index].name !== right[index].name ||
-      left[index].nickname !== right[index].nickname
+      left[index].nickname !== right[index].nickname ||
+      left[index].default_visible_columns !==
+        right[index].default_visible_columns
     ) {
       return false;
     }
@@ -1391,8 +1410,10 @@ async function getSelectedProgramBestExerciseNames(db, programId) {
 
 function mapExerciseCatalogForDisplay(entries) {
   return entries.map((entry) => ({
+    cloud_exercise_id: entry.cloud_exercise_id ?? entry.id ?? null,
     exercise_name: entry.name ?? entry.exercise_name,
     nickname: entry.nickname ?? null,
+    default_visible_columns: entry.default_visible_columns ?? null,
     primary_muscle_group_count: Number(entry.primary_muscle_group_count) || 0,
     secondary_muscle_group_count: Number(entry.secondary_muscle_group_count) || 0,
     primary_group_key: entry.primary_group_key ?? null,
@@ -1497,9 +1518,7 @@ export async function getExerciseLibraryEntries(db) {
   try {
     const { data: exerciseRows, error: exerciseError } = await supabase
       .from(EXERCISE_LIBRARY_TABLE)
-      .select(
-        `${EXERCISE_LIBRARY_ID_COLUMN}, ${EXERCISE_LIBRARY_NAME_COLUMN}, nickname`
-      )
+      .select(EXERCISE_LIBRARY_SELECT)
       .in(
         EXERCISE_LIBRARY_NAME_COLUMN,
         localExercises.map((exercise) => exercise.name)
@@ -1565,9 +1584,7 @@ export async function getExerciseLibraryEntries(db) {
 export async function syncExerciseLibraryFromCloud(db) {
   const { data: exerciseRows, error: exerciseError } = await supabase
     .from(EXERCISE_LIBRARY_TABLE)
-    .select(
-      `${EXERCISE_LIBRARY_ID_COLUMN}, ${EXERCISE_LIBRARY_NAME_COLUMN}, nickname`
-    )
+    .select(EXERCISE_LIBRARY_SELECT)
     .order(EXERCISE_LIBRARY_NAME_COLUMN, { ascending: true });
 
   if (exerciseError) {
@@ -1577,18 +1594,17 @@ export async function syncExerciseLibraryFromCloud(db) {
   const cloudExercises = normalizeExerciseCatalogEntries(exerciseRows ?? []);
   const localExerciseRows = await weightliftingRepository.getExerciseStorage(db);
   const localExercises = normalizeExerciseCatalogEntries(localExerciseRows);
+  let catalogChanged = false;
 
-  if (areExerciseCatalogEntriesEqual(localExercises, cloudExercises)) {
-    return {
-      changed: false,
-      exerciseCount: localExercises.length,
-    };
+  if (!areExerciseCatalogEntriesEqual(localExercises, cloudExercises)) {
+    await weightliftingRepository.replaceExerciseCatalog(db, cloudExercises);
+    catalogChanged = true;
   }
 
-  await weightliftingRepository.replaceExerciseCatalog(db, cloudExercises);
+  const preferenceSyncResult = await syncExerciseColumnPreferencesWithCloud(db);
 
   return {
-    changed: true,
+    changed: catalogChanged || Boolean(preferenceSyncResult.changed),
     exerciseCount: cloudExercises.length,
   };
 }
@@ -1857,6 +1873,249 @@ async function getAuthenticatedUserId() {
   }
 
   return data.session?.user?.id ?? null;
+}
+
+function getExerciseColumnPreferenceUserId(userId) {
+  return userId ?? LOCAL_EXERCISE_COLUMN_PREFERENCE_USER_ID;
+}
+
+async function getCurrentExerciseColumnPreferenceUserId() {
+  try {
+    return getExerciseColumnPreferenceUserId(await getAuthenticatedUserId());
+  } catch (error) {
+    console.warn("Unable to resolve authenticated exercise preferences:", error);
+    return LOCAL_EXERCISE_COLUMN_PREFERENCE_USER_ID;
+  }
+}
+
+function deserializeVisibleColumns(value) {
+  const serializedValue = serializeVisibleColumns(value);
+
+  if (!serializedValue) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(serializedValue);
+  } catch {
+    return null;
+  }
+}
+
+function getSerializedDefaultVisibleColumns() {
+  return JSON.stringify(DEFAULT_VISIBLE_COLUMNS);
+}
+
+async function resolveExerciseVisibleColumnsForNewExercise(db, exerciseName) {
+  const normalizedExerciseName = normalizeOptionalText(exerciseName);
+
+  if (!normalizedExerciseName) {
+    return getSerializedDefaultVisibleColumns();
+  }
+
+  const preferenceUserId = await getCurrentExerciseColumnPreferenceUserId();
+  const preference = await weightliftingRepository.getExerciseColumnPreference(
+    db,
+    {
+      userId: preferenceUserId,
+      exerciseName: normalizedExerciseName,
+    }
+  );
+  const preferredVisibleColumns = serializeVisibleColumns(
+    preference?.visible_columns
+  );
+
+  if (preferredVisibleColumns) {
+    return preferredVisibleColumns;
+  }
+
+  const exerciseCatalogEntry =
+    await weightliftingRepository.getExerciseCatalogEntryByName(
+      db,
+      normalizedExerciseName
+    );
+  const defaultVisibleColumns = serializeVisibleColumns(
+    exerciseCatalogEntry?.default_visible_columns
+  );
+
+  return defaultVisibleColumns ?? getSerializedDefaultVisibleColumns();
+}
+
+async function saveExerciseColumnPreference(
+  db,
+  { exerciseName, columns, needsSync = 1 }
+) {
+  const normalizedExerciseName = normalizeOptionalText(exerciseName);
+  const visibleColumns =
+    serializeVisibleColumns(columns) ?? getSerializedDefaultVisibleColumns();
+
+  if (!normalizedExerciseName) {
+    return null;
+  }
+
+  const [preferenceUserId, exerciseCatalogEntry] = await Promise.all([
+    getCurrentExerciseColumnPreferenceUserId(),
+    weightliftingRepository.getExerciseCatalogEntryByName(
+      db,
+      normalizedExerciseName
+    ),
+  ]);
+  const updatedAt = new Date().toISOString();
+
+  await weightliftingRepository.upsertExerciseColumnPreference(db, {
+    userId: preferenceUserId,
+    cloudExerciseId: normalizeOptionalInteger(
+      exerciseCatalogEntry?.cloud_exercise_id,
+      null
+    ),
+    exerciseName: normalizedExerciseName,
+    visibleColumns,
+    needsSync,
+    updatedAt,
+  });
+
+  return {
+    preferenceUserId,
+    exerciseName: normalizedExerciseName,
+    updatedAt,
+  };
+}
+
+function syncExerciseColumnPreferencesInBackground(db) {
+  startBackgroundSync(
+    () => syncExerciseColumnPreferencesWithCloud(db),
+    "Exercise column preference cloud sync failed:"
+  );
+}
+
+export async function syncExerciseColumnPreferencesWithCloud(db) {
+  const userId = await getAuthenticatedUserId();
+
+  if (!userId) {
+    return {
+      changed: false,
+      downloadedCount: 0,
+      uploadedCount: 0,
+    };
+  }
+
+  const preferenceUserId = getExerciseColumnPreferenceUserId(userId);
+  const localExerciseRows = await weightliftingRepository.getExerciseStorage(db);
+  const localExercises = normalizeExerciseCatalogEntries(localExerciseRows);
+  const localExercisesByName = new Map(
+    localExercises.map((exercise) => [
+      exercise.name.toLocaleLowerCase(),
+      exercise,
+    ])
+  );
+  const localExercisesByCloudId = new Map(
+    localExercises
+      .filter((exercise) => exercise.cloud_exercise_id !== null)
+      .map((exercise) => [Number(exercise.cloud_exercise_id), exercise])
+  );
+  const dirtyPreferences =
+    await weightliftingRepository.getDirtyExerciseColumnPreferences(
+      db,
+      preferenceUserId
+    );
+  let uploadedCount = 0;
+  let downloadedCount = 0;
+
+  for (const preference of dirtyPreferences) {
+    const localExercise =
+      localExercisesByCloudId.get(Number(preference.cloud_exercise_id)) ??
+      localExercisesByName.get(
+        String(preference.exercise_name ?? "").toLocaleLowerCase()
+      );
+    const cloudExerciseId = normalizeOptionalInteger(
+      localExercise?.cloud_exercise_id ?? preference.cloud_exercise_id,
+      null
+    );
+    const visibleColumns = deserializeVisibleColumns(
+      preference.visible_columns
+    );
+
+    if (cloudExerciseId === null || !visibleColumns) {
+      continue;
+    }
+
+    const { error } = await supabase
+      .from(EXERCISE_COLUMN_PREFERENCE_CLOUD_TABLE)
+      .upsert(
+        {
+          user_id: userId,
+          exercise_id: cloudExerciseId,
+          visible_columns: visibleColumns,
+          updated_at: preference.updated_at ?? new Date().toISOString(),
+        },
+        { onConflict: "user_id,exercise_id" }
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    await weightliftingRepository.markExerciseColumnPreferenceSynced(db, {
+      userId: preferenceUserId,
+      exerciseName: preference.exercise_name,
+      updatedAt: preference.updated_at,
+    });
+    uploadedCount += 1;
+  }
+
+  const cloudExerciseIds = [...localExercisesByCloudId.keys()];
+
+  if (cloudExerciseIds.length === 0) {
+    return {
+      changed: uploadedCount > 0,
+      downloadedCount,
+      uploadedCount,
+    };
+  }
+
+  const { data: cloudPreferences, error: cloudPreferencesError } =
+    await supabase
+      .from(EXERCISE_COLUMN_PREFERENCE_CLOUD_TABLE)
+      .select(EXERCISE_COLUMN_PREFERENCE_CLOUD_SELECT)
+      .eq("user_id", userId)
+      .in("exercise_id", cloudExerciseIds);
+
+  if (cloudPreferencesError) {
+    throw cloudPreferencesError;
+  }
+
+  for (const cloudPreference of cloudPreferences ?? []) {
+    const cloudExerciseId = normalizeOptionalInteger(
+      cloudPreference?.exercise_id,
+      null
+    );
+    const localExercise = localExercisesByCloudId.get(Number(cloudExerciseId));
+    const visibleColumns = serializeVisibleColumns(
+      cloudPreference?.visible_columns
+    );
+
+    if (!localExercise || !visibleColumns) {
+      continue;
+    }
+
+    await weightliftingRepository.upsertExerciseColumnPreference(db, {
+      userId: preferenceUserId,
+      cloudExerciseId,
+      exerciseName: localExercise.name,
+      visibleColumns,
+      needsSync: 0,
+      updatedAt:
+        normalizeOptionalText(cloudPreference?.updated_at) ??
+        new Date().toISOString(),
+    });
+    downloadedCount += 1;
+  }
+
+  return {
+    changed: uploadedCount > 0 || downloadedCount > 0,
+    downloadedCount,
+    uploadedCount,
+  };
 }
 
 async function loadWorkoutExercisesFromLocal(db, workoutId) {
@@ -2284,6 +2543,11 @@ export async function getWorkoutExercises(
 }
 
 export async function addExerciseToWorkout(db, { workoutId, exerciseName }) {
+  const visibleColumns = await resolveExerciseVisibleColumnsForNewExercise(
+    db,
+    exerciseName
+  );
+
   await withTransaction(db, async () => {
     const nextExerciseOrder =
       await weightliftingRepository.getNextExerciseOrderForWorkout(
@@ -2295,6 +2559,7 @@ export async function addExerciseToWorkout(db, { workoutId, exerciseName }) {
       workoutId,
       exerciseName,
       sets: 0,
+      visibleColumns,
       exerciseOrder: normalizeExerciseOrder(
         nextExerciseOrder?.exercise_order,
         1
@@ -2487,10 +2752,24 @@ export async function updateExerciseVisibleColumns(
   db,
   { exerciseId, columns }
 ) {
+  const exercise = await weightliftingRepository.getExerciseInstanceById(
+    db,
+    exerciseId
+  );
+
   await weightliftingRepository.updateExerciseVisibleColumns(db, {
     exerciseId,
     columns,
   });
+
+  if (exercise?.exercise_name) {
+    await saveExerciseColumnPreference(db, {
+      exerciseName: exercise.exercise_name,
+      columns,
+    });
+    syncExerciseColumnPreferencesInBackground(db);
+  }
+
   syncExerciseInstancesInBackground(db);
 }
 

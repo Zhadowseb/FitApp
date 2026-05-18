@@ -2,8 +2,21 @@ export const weightliftingSchemaSql = `
 
   CREATE TABLE IF NOT EXISTS Exercise (
       exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cloud_exercise_id INTEGER UNIQUE,
       name TEXT NOT NULL UNIQUE,
-      nickname TEXT
+      nickname TEXT,
+      default_visible_columns TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS Exercise_Column_Preference (
+      exercise_column_preference_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL,
+      cloud_exercise_id INTEGER,
+      exercise_name TEXT NOT NULL,
+      visible_columns TEXT NOT NULL,
+      needs_sync INTEGER NOT NULL DEFAULT 1,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(user_id, exercise_name)
   );
 
   CREATE TABLE IF NOT EXISTS Exercise_Instance (
@@ -97,16 +110,31 @@ export async function initializeWeightliftingData(db) {
     'Pull-Up',
     'Dip',
   ];
+  const defaultVisibleColumns = JSON.stringify({
+    note: true,
+    rest: true,
+    set: true,
+    reps: true,
+    rpe: true,
+    rm_percentage: true,
+    weight: true,
+    done: true,
+  });
 
   const checkExercisesInit = await db.getFirstAsync(
     `SELECT COUNT(*) as count FROM Exercise;`
   );
 
   if (checkExercisesInit.count === 0) {
-    const placeholders = standardExercises.map(() => '(?)').join(', ');
+    const placeholders = standardExercises.map(() => '(?, ?)').join(', ');
+    const values = standardExercises.flatMap((exerciseName) => [
+      exerciseName,
+      defaultVisibleColumns,
+    ]);
+
     await db.runAsync(
-      `INSERT INTO Exercise (name) VALUES ${placeholders};`,
-      standardExercises
+      `INSERT INTO Exercise (name, default_visible_columns) VALUES ${placeholders};`,
+      values
     );
   }
 }

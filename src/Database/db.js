@@ -257,11 +257,18 @@ async function migrateExerciseCatalogSchema(db) {
   const hasLegacyNameColumn = hasColumn(exerciseColumns, "exercise_name");
   const hasNameColumn = hasColumn(exerciseColumns, "name");
   const hasNicknameColumn = hasColumn(exerciseColumns, "nickname");
+  const hasCloudExerciseIdColumn = hasColumn(exerciseColumns, "cloud_exercise_id");
+  const hasDefaultVisibleColumnsColumn = hasColumn(
+    exerciseColumns,
+    "default_visible_columns"
+  );
 
   if (
     !hasLegacyNameColumn &&
     hasNameColumn &&
     hasNicknameColumn &&
+    hasCloudExerciseIdColumn &&
+    hasDefaultVisibleColumnsColumn &&
     !hasColumn(exerciseColumns, "primary_muscle_group_count") &&
     !hasColumn(exerciseColumns, "secondary_muscle_group_count")
   ) {
@@ -280,19 +287,25 @@ async function migrateExerciseCatalogSchema(db) {
 
       CREATE TABLE Exercise_next (
         exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cloud_exercise_id INTEGER UNIQUE,
         name TEXT NOT NULL UNIQUE,
-        nickname TEXT
+        nickname TEXT,
+        default_visible_columns TEXT
       );
 
       INSERT OR IGNORE INTO Exercise_next (
         exercise_id,
+        cloud_exercise_id,
         name,
-        nickname
+        nickname,
+        default_visible_columns
       )
       SELECT
         exercise_id,
+        ${hasCloudExerciseIdColumn ? "cloud_exercise_id" : "NULL"},
         ${nameColumn},
-        ${hasNicknameColumn ? "nickname" : "NULL"}
+        ${hasNicknameColumn ? "nickname" : "NULL"},
+        ${hasDefaultVisibleColumnsColumn ? "default_visible_columns" : "NULL"}
       FROM Exercise
       WHERE TRIM(COALESCE(${nameColumn}, '')) <> ''
       ORDER BY exercise_id ASC;
@@ -301,6 +314,50 @@ async function migrateExerciseCatalogSchema(db) {
       ALTER TABLE Exercise_next RENAME TO Exercise;
     `);
   });
+}
+
+async function ensureExerciseColumnPreferenceSchema(db) {
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS Exercise_Column_Preference (
+      exercise_column_preference_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL,
+      cloud_exercise_id INTEGER,
+      exercise_name TEXT NOT NULL,
+      visible_columns TEXT NOT NULL,
+      needs_sync INTEGER NOT NULL DEFAULT 1,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(user_id, exercise_name)
+    );
+  `);
+
+  await ensureTableColumns(db, "Exercise_Column_Preference", [
+    ["user_id", "TEXT NOT NULL DEFAULT ''"],
+    ["cloud_exercise_id", "INTEGER"],
+    ["exercise_name", "TEXT NOT NULL DEFAULT ''"],
+    ["visible_columns", "TEXT NOT NULL DEFAULT '{}'"],
+    ["needs_sync", "INTEGER NOT NULL DEFAULT 1"],
+    ["updated_at", "TEXT NOT NULL DEFAULT (datetime('now'))"],
+  ]);
+
+  await db.execAsync(`
+    CREATE UNIQUE INDEX IF NOT EXISTS exercise_column_preference_user_name_idx
+    ON Exercise_Column_Preference(user_id, exercise_name);
+
+    UPDATE Exercise_Column_Preference
+    SET user_id = COALESCE(NULLIF(TRIM(user_id), ''), '__local__'),
+        exercise_name = TRIM(COALESCE(exercise_name, '')),
+        visible_columns = COALESCE(NULLIF(TRIM(visible_columns), ''), '{}'),
+        needs_sync = COALESCE(needs_sync, 1),
+        updated_at = COALESCE(NULLIF(TRIM(updated_at), ''), datetime('now'))
+    WHERE user_id IS NULL
+       OR TRIM(user_id) = ''
+       OR exercise_name IS NULL
+       OR visible_columns IS NULL
+       OR TRIM(visible_columns) = ''
+       OR needs_sync IS NULL
+       OR updated_at IS NULL
+       OR TRIM(updated_at) = '';
+  `);
 }
 
 async function migrateExerciseInstanceSchema(db) {
@@ -1470,7 +1527,17 @@ export async function initializeDatabase(db) {
   await backfillWorkoutTypeInstances(db);
   await initializeWorkoutTypes(db);
 
-  await ensureTableColumns(db, "Exercise", [["nickname", "TEXT"]]);
+  await ensureTableColumns(db, "Exercise", [
+    ["cloud_exercise_id", "INTEGER"],
+    ["nickname", "TEXT"],
+    ["default_visible_columns", "TEXT"],
+  ]);
+  await db.execAsync(`
+    CREATE UNIQUE INDEX IF NOT EXISTS exercise_cloud_exercise_id_idx
+    ON Exercise(cloud_exercise_id)
+    WHERE cloud_exercise_id IS NOT NULL;
+  `);
+  await ensureExerciseColumnPreferenceSchema(db);
 
   await ensureTableColumns(db, "Exercise_Instance", [
     ["cloud_exercise_instance_id", "INTEGER"],

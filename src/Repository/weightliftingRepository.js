@@ -60,10 +60,26 @@ async function ensureExerciseOrderColumn(db) {
 export async function getExerciseStorage(db) {
   return db.getAllAsync(
     `SELECT
+        cloud_exercise_id,
         name AS exercise_name,
-        nickname
+        nickname,
+        default_visible_columns
      FROM Exercise
      ORDER BY name COLLATE NOCASE ASC;`
+  );
+}
+
+export async function getExerciseCatalogEntryByName(db, exerciseName) {
+  return db.getFirstAsync(
+    `SELECT
+        cloud_exercise_id,
+        name AS exercise_name,
+        nickname,
+        default_visible_columns
+     FROM Exercise
+     WHERE name = ? COLLATE NOCASE
+     LIMIT 1;`,
+    [exerciseName]
   );
 }
 
@@ -209,8 +225,8 @@ export async function getCompletedExerciseHistorySets(
 
 export async function createExerciseStorage(db, exerciseName) {
   await db.runAsync(
-    `INSERT INTO Exercise (name, nickname)
-     VALUES (?, NULL);`,
+    `INSERT INTO Exercise (name, nickname, default_visible_columns)
+     VALUES (?, NULL, NULL);`,
     [exerciseName]
   );
 }
@@ -220,21 +236,123 @@ export async function replaceExerciseCatalog(db, exercises) {
     await db.runAsync(`DELETE FROM Exercise;`);
 
     if (exercises.length > 0) {
-      const placeholders = exercises.map(() => "(?, ?)").join(", ");
+      const placeholders = exercises.map(() => "(?, ?, ?, ?)").join(", ");
       const values = exercises.flatMap((exercise) => [
+        exercise.cloud_exercise_id ?? null,
         exercise.name ?? exercise.exercise_name,
         exercise.nickname ?? null,
+        exercise.default_visible_columns ?? null,
       ]);
 
       await db.runAsync(
         `INSERT INTO Exercise (
+          cloud_exercise_id,
           name,
-          nickname
+          nickname,
+          default_visible_columns
         ) VALUES ${placeholders};`,
         values
       );
     }
   });
+}
+
+export async function getExerciseColumnPreference(
+  db,
+  { userId, exerciseName }
+) {
+  return db.getFirstAsync(
+    `SELECT
+        exercise_column_preference_id,
+        user_id,
+        cloud_exercise_id,
+        exercise_name,
+        visible_columns,
+        needs_sync,
+        updated_at
+     FROM Exercise_Column_Preference
+     WHERE user_id = ?
+       AND exercise_name = ? COLLATE NOCASE
+     LIMIT 1;`,
+    [userId, exerciseName]
+  );
+}
+
+export async function getDirtyExerciseColumnPreferences(db, userId) {
+  return db.getAllAsync(
+    `SELECT
+        p.exercise_column_preference_id,
+        p.user_id,
+        COALESCE(p.cloud_exercise_id, e.cloud_exercise_id) AS cloud_exercise_id,
+        p.exercise_name,
+        p.visible_columns,
+        p.updated_at
+     FROM Exercise_Column_Preference p
+     LEFT JOIN Exercise e
+       ON e.name = p.exercise_name COLLATE NOCASE
+     WHERE p.user_id = ?
+       AND p.needs_sync = 1
+     ORDER BY p.updated_at ASC, p.exercise_column_preference_id ASC;`,
+    [userId]
+  );
+}
+
+export async function upsertExerciseColumnPreference(
+  db,
+  {
+    userId,
+    cloudExerciseId = null,
+    exerciseName,
+    visibleColumns,
+    needsSync = 1,
+    updatedAt = new Date().toISOString(),
+  }
+) {
+  await db.runAsync(
+    `INSERT INTO Exercise_Column_Preference (
+        user_id,
+        cloud_exercise_id,
+        exercise_name,
+        visible_columns,
+        needs_sync,
+        updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id, exercise_name)
+      DO UPDATE SET
+        cloud_exercise_id = excluded.cloud_exercise_id,
+        visible_columns = excluded.visible_columns,
+        needs_sync = excluded.needs_sync,
+        updated_at = excluded.updated_at;`,
+    [
+      userId,
+      cloudExerciseId,
+      exerciseName,
+      visibleColumns,
+      needsSync ? 1 : 0,
+      updatedAt,
+    ]
+  );
+}
+
+export async function markExerciseColumnPreferenceSynced(
+  db,
+  { userId, exerciseName, updatedAt = null }
+) {
+  const params = [userId, exerciseName];
+  const updatedAtFilter = updatedAt ? "AND updated_at = ?" : "";
+
+  if (updatedAt) {
+    params.push(updatedAt);
+  }
+
+  await db.runAsync(
+    `UPDATE Exercise_Column_Preference
+     SET needs_sync = 0
+     WHERE user_id = ?
+       AND exercise_name = ? COLLATE NOCASE
+       ${updatedAtFilter};`,
+    params
+  );
 }
 
 export async function getEstimatedSets(db, programId) {
@@ -927,6 +1045,19 @@ export async function deleteQueuedExerciseInstanceDelete(db, queueId) {
 export async function getWorkoutIdByExercise(db, exerciseId) {
   return db.getFirstAsync(
     `SELECT workout_type_instance_id AS workout_id
+     FROM Exercise_Instance
+     WHERE exercise_instance_id = ?;`,
+    [exerciseId]
+  );
+}
+
+export async function getExerciseInstanceById(db, exerciseId) {
+  return db.getFirstAsync(
+    `SELECT
+        exercise_instance_id,
+        workout_type_instance_id AS workout_id,
+        exercise_name,
+        visible_columns
      FROM Exercise_Instance
      WHERE exercise_instance_id = ?;`,
     [exerciseId]

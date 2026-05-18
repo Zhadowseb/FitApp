@@ -20,6 +20,11 @@ export default function PanelSettingsModal({
 }) {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme] ?? Colors.light;
+  const activeColumnBackground = theme.secondary ?? Colors.dark.secondary;
+  const activeColumnTextColor =
+    theme.textInverted ?? Colors.dark.textInverted ?? "#201e2b";
+  const inactiveColumnBackground =
+    theme.cardBackground ?? theme.uiBackground ?? theme.background;
 
   const [columns, setColumns] = useState(currentColumns);
   const [note, setNote] = useState(currentNote ?? "");
@@ -83,17 +88,17 @@ export default function PanelSettingsModal({
                       styles.columnChip,
                       {
                         backgroundColor: isActive
-                          ? theme.secondary
-                          : theme.cardBackground,
+                          ? activeColumnBackground
+                          : inactiveColumnBackground,
                         borderWidth: 1,
                         borderColor: isActive
-                          ? theme.cardBackground
-                          : theme.secondary,
+                          ? inactiveColumnBackground
+                          : activeColumnBackground,
                       },
                     ]}
                   >
                     <ThemedText
-                      textcolor={isActive ? theme.background : theme.text}
+                      setColor={isActive ? activeColumnTextColor : theme.text}
                       size={10}
                     >
                       {col.label}

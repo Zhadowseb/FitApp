@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.14.11] - Unreleased
+### Changed
+- Reorder workout exercises by long-pressing the exercise card instead of using the corner handle.
+
+---
 ## [0.14.10] - Unreleased
 ### Changed
 - Describe pending changes here.

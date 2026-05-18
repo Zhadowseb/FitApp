@@ -101,21 +101,6 @@ export default StyleSheet.create({
     marginLeft: 1,
   },
 
-  floatingDragHandle: {
-    position: "absolute",
-    top: -0,
-    right: -4,
-    zIndex: 3,
-    width: 26,
-    height: 26,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  dragHandleActive: {
-    opacity: 0.72,
-  },
-
   historySection: {
     marginTop: 10,
   },

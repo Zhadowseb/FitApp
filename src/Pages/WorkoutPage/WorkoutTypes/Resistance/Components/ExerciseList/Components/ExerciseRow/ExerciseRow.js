@@ -16,7 +16,6 @@ import Cogwheel from "../../../../../../../../Resources/Icons/UI-icons/Cogwheel"
 import ReplayHistory from "../../../../../../../../Resources/Icons/UI-icons/ReplayHistory";
 import Note from "../../../../../../../../Resources/Icons/UI-icons/Note";
 import Expand from "../../../../../../../../Resources/Icons/UI-icons/Expand";
-import Reorder from "../../../../../../../../Resources/Icons/UI-icons/Reorder";
 
 import {
   ThemedBouncyCheckbox,
@@ -27,6 +26,10 @@ import {
 import PanelSettingsModal from "./PanelSettingsModal";
 import { weightliftingService as weightliftingRepository } from "../../../../../../../../Services";
 
+const REORDER_LONG_PRESS_DELAY_MS = 320;
+const REORDER_MOVE_CANCEL_DISTANCE = 10;
+const PRESS_SUPPRESSION_MS = 250;
+
 const ExerciseRow = ({
   exercise,
   isExpanded,
@@ -34,7 +37,6 @@ const ExerciseRow = ({
   updateUI,
   onToggleSet,
   updateWeight,
-  isDragging = false,
   onDragStart,
   onDragMove,
   onDragEnd,
@@ -52,6 +54,11 @@ const ExerciseRow = ({
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyLoadError, setHistoryLoadError] = useState(false);
   const dragActiveRef = useRef(false);
+  const dragStartPageYRef = useRef(null);
+  const latestTouchPageYRef = useRef(null);
+  const longPressTimeoutRef = useRef(null);
+  const pressSuppressionTimeoutRef = useRef(null);
+  const suppressNextPressRef = useRef(false);
   const onDragStartRef = useRef(onDragStart);
   const onDragMoveRef = useRef(onDragMove);
   const onDragEndRef = useRef(onDragEnd);
@@ -64,37 +71,171 @@ const ExerciseRow = ({
     onDragEndRef.current = onDragEnd;
   }, [onDragEnd, onDragMove, onDragStart]);
 
+  const getTouchPageY = (event) => {
+    const nativeEvent = event?.nativeEvent;
+    const touch = nativeEvent?.touches?.[0] ?? nativeEvent?.changedTouches?.[0];
+    const pageY = nativeEvent?.pageY ?? touch?.pageY;
+
+    return typeof pageY === "number" ? pageY : null;
+  };
+
+  const clearLongPressTimeout = () => {
+    if (!longPressTimeoutRef.current) {
+      return;
+    }
+
+    clearTimeout(longPressTimeoutRef.current);
+    longPressTimeoutRef.current = null;
+  };
+
+  const clearPressSuppressionTimeout = () => {
+    if (!pressSuppressionTimeoutRef.current) {
+      return;
+    }
+
+    clearTimeout(pressSuppressionTimeoutRef.current);
+    pressSuppressionTimeoutRef.current = null;
+  };
+
+  const markNextPressSuppressed = () => {
+    suppressNextPressRef.current = true;
+    clearPressSuppressionTimeout();
+    pressSuppressionTimeoutRef.current = setTimeout(() => {
+      suppressNextPressRef.current = false;
+      pressSuppressionTimeoutRef.current = null;
+    }, PRESS_SUPPRESSION_MS);
+  };
+
+  const shouldIgnorePressAfterDrag = () => {
+    if (!suppressNextPressRef.current) {
+      return false;
+    }
+
+    suppressNextPressRef.current = false;
+    clearPressSuppressionTimeout();
+    return true;
+  };
+
+  const handleCardPress = (handler) => {
+    if (shouldIgnorePressAfterDrag()) {
+      return;
+    }
+
+    handler?.();
+  };
+
+  const updateCardDragPosition = (pageY) => {
+    const startPageY = dragStartPageYRef.current;
+
+    if (
+      !dragActiveRef.current ||
+      typeof pageY !== "number" ||
+      typeof startPageY !== "number"
+    ) {
+      return;
+    }
+
+    onDragMoveRef.current?.(pageY - startPageY);
+  };
+
+  const startCardDrag = () => {
+    longPressTimeoutRef.current = null;
+
+    if (!onDragStartRef.current || dragActiveRef.current) {
+      return;
+    }
+
+    const didStart = onDragStartRef.current() !== false;
+
+    if (!didStart) {
+      dragStartPageYRef.current = null;
+      latestTouchPageYRef.current = null;
+      return;
+    }
+
+    dragActiveRef.current = true;
+    updateCardDragPosition(latestTouchPageYRef.current);
+  };
+
+  const finishCardDrag = () => {
+    clearLongPressTimeout();
+
+    if (dragActiveRef.current) {
+      onDragEndRef.current?.();
+      markNextPressSuppressed();
+    }
+
+    dragActiveRef.current = false;
+    dragStartPageYRef.current = null;
+    latestTouchPageYRef.current = null;
+  };
+
+  const handleCardTouchStart = (event) => {
+    if (!onDragStartRef.current) {
+      return;
+    }
+
+    const pageY = getTouchPageY(event);
+    dragStartPageYRef.current = pageY;
+    latestTouchPageYRef.current = pageY;
+    clearLongPressTimeout();
+    longPressTimeoutRef.current = setTimeout(
+      startCardDrag,
+      REORDER_LONG_PRESS_DELAY_MS
+    );
+  };
+
+  const handleCardTouchMove = (event) => {
+    const pageY = getTouchPageY(event);
+
+    if (typeof pageY !== "number") {
+      return;
+    }
+
+    latestTouchPageYRef.current = pageY;
+
+    if (!dragActiveRef.current) {
+      const startPageY = dragStartPageYRef.current;
+
+      if (
+        typeof startPageY === "number" &&
+        Math.abs(pageY - startPageY) > REORDER_MOVE_CANCEL_DISTANCE
+      ) {
+        clearLongPressTimeout();
+      }
+
+      return;
+    }
+
+    updateCardDragPosition(pageY);
+  };
+
+  const stopCardDragPropagation = (event) => {
+    event?.stopPropagation?.();
+  };
+
   const dragPanResponder = useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: () => Boolean(onDragStartRef.current),
-        onMoveShouldSetPanResponder: () => Boolean(onDragStartRef.current),
-        onPanResponderGrant: () => {
-          dragActiveRef.current = onDragStartRef.current?.() !== false;
+        onStartShouldSetPanResponder: () => false,
+        onStartShouldSetPanResponderCapture: () => false,
+        onMoveShouldSetPanResponder: () => dragActiveRef.current,
+        onMoveShouldSetPanResponderCapture: () => dragActiveRef.current,
+        onPanResponderMove: (event) => {
+          updateCardDragPosition(getTouchPageY(event));
         },
-        onPanResponderMove: (_event, gestureState) => {
-          if (!dragActiveRef.current) {
-            return;
-          }
-
-          onDragMoveRef.current?.(gestureState.dy);
-        },
-        onPanResponderRelease: () => {
-          if (dragActiveRef.current) {
-            onDragEndRef.current?.();
-          }
-
-          dragActiveRef.current = false;
-        },
+        onPanResponderRelease: finishCardDrag,
         onPanResponderTerminationRequest: () => false,
-        onPanResponderTerminate: () => {
-          if (dragActiveRef.current) {
-            onDragEndRef.current?.();
-          }
-
-          dragActiveRef.current = false;
-        },
+        onPanResponderTerminate: finishCardDrag,
       }),
+    []
+  );
+
+  useEffect(
+    () => () => {
+      clearLongPressTimeout();
+      clearPressSuppressionTimeout();
+    },
     []
   );
 
@@ -470,19 +611,12 @@ const ExerciseRow = ({
   return (
     <>
       <View style={styles.exerciseCardFrame}>
-        {onDragStart && (
-          <View
-            {...dragPanResponder.panHandlers}
-            style={[
-              styles.floatingDragHandle,
-              isDragging && styles.dragHandleActive,
-            ]}
-          >
-            <Reorder width={18} height={18} stroke={quietText} />
-          </View>
-        )}
-
         <View
+          {...dragPanResponder.panHandlers}
+          onTouchStart={handleCardTouchStart}
+          onTouchMove={handleCardTouchMove}
+          onTouchEnd={finishCardDrag}
+          onTouchCancel={finishCardDrag}
           style={[
             styles.exerciseCard,
             {
@@ -537,7 +671,7 @@ const ExerciseRow = ({
         <View style={styles.headerRow}>
           <TouchableOpacity
             activeOpacity={0.88}
-            onPress={onToggleExpanded}
+            onPress={() => handleCardPress(onToggleExpanded)}
             style={styles.headerMain}
           >
             <View
@@ -573,7 +707,10 @@ const ExerciseRow = ({
             </View>
           </TouchableOpacity>
 
-          <View style={styles.actionsRow}>
+          <View
+            onTouchStart={stopCardDragPropagation}
+            style={styles.actionsRow}
+          >
             {hasNote && (
               <TouchableOpacity
                 activeOpacity={0.88}
@@ -613,7 +750,7 @@ const ExerciseRow = ({
               activeOpacity={0.9}
               accessibilityRole="button"
               accessibilityLabel="Toggle exercise history details"
-              onPress={toggleHistoryDetails}
+              onPress={() => handleCardPress(toggleHistoryDetails)}
               style={[
                 styles.historySummaryBar,
                 {
@@ -683,7 +820,7 @@ const ExerciseRow = ({
           <View style={styles.summaryCollapsedRow}>
             <TouchableOpacity
               activeOpacity={0.88}
-              onPress={onToggleExpanded}
+              onPress={() => handleCardPress(onToggleExpanded)}
               style={styles.summaryRow}
             >
               <View style={styles.summaryTextBlock}>
@@ -738,7 +875,7 @@ const ExerciseRow = ({
 
             <TouchableOpacity
               activeOpacity={0.88}
-              onPress={onToggleExpanded}
+              onPress={() => handleCardPress(onToggleExpanded)}
               style={[
                 styles.summaryExpandButton,
                 {
@@ -752,7 +889,10 @@ const ExerciseRow = ({
         )}
 
         {isExpanded && (
-          <View style={styles.expandedSection}>
+          <View
+            onTouchStart={stopCardDragPropagation}
+            style={styles.expandedSection}
+          >
             <SetList
               sets={exercise.sets}
               exerciseName={exercise.exercise_name}

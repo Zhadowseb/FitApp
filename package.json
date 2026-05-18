@@ -1,6 +1,6 @@
 {
   "name": "programapp",
-  "version": "0.14.10-minor-exercise-column-preferences.1",
+  "version": "0.14.11-minor-exercise-card-long-press-reorder.1",
   "main": "index.js",
   "scripts": {
     "start": "expo start --dev-client --scheme exp+programapp-dev",

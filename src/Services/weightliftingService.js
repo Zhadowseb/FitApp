@@ -1633,7 +1633,15 @@ export async function syncExerciseLibraryFromCloud(db) {
     catalogChanged = true;
   }
 
-  const preferenceSyncResult = await syncExerciseColumnPreferencesWithCloud(db);
+  let preferenceSyncResult = {
+    changed: false,
+  };
+
+  try {
+    preferenceSyncResult = await syncExerciseColumnPreferencesWithCloud(db);
+  } catch (error) {
+    console.warn("Exercise column preference cloud sync failed:", error);
+  }
 
   return {
     changed: catalogChanged || Boolean(preferenceSyncResult.changed),
@@ -1898,13 +1906,19 @@ export async function getProgramExerciseNames(db, programId) {
 }
 
 async function getAuthenticatedUserId() {
-  const { data, error } = await supabase.auth.getSession();
+  const { data, error } = await supabase.auth.getUser();
 
   if (error) {
+    const errorMessage = String(error?.message ?? "");
+
+    if (errorMessage.toLowerCase().includes("auth session missing")) {
+      return null;
+    }
+
     throw error;
   }
 
-  return data.session?.user?.id ?? null;
+  return data.user?.id ?? null;
 }
 
 function getExerciseColumnPreferenceUserId(userId) {

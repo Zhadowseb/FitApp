@@ -122,7 +122,7 @@ const ExerciseLibraryPage = () => {
       eyebrow: "EXERCISE LIBRARY",
       title: "Browse your catalog",
       description:
-        "Filter by muscle groups, explore what each movement trains, and create your own exercises.",
+        "Search the shared catalog, filter by broad training groups, and create your own exercises.",
       accent: secondaryColor,
       actionBorder: "rgba(96, 218, 172, 0.28)",
       onPress: () => navigation.navigate("ExerciseCatalogPage"),

@@ -65,11 +65,8 @@ const EXERCISE_COLUMN_PREFERENCE_CLOUD_SELECT =
   "user_id, exercise_id, visible_columns, updated_at";
 const LOCAL_EXERCISE_COLUMN_PREFERENCE_USER_ID = "__local__";
 const MUSCLE_ACTIVATION_TABLE = "Muscle_Activation";
-const MUSCLE_TABLE = "Muscle";
 const MUSCLE_GROUP_TABLE = "muscle_group";
 const MUSCLE_GROUP_ASSIGNMENT_TABLE = "muscle_group_assignment";
-const PRIMARY_ACTIVATION_LEVEL = "primary";
-const SECONDARY_ACTIVATION_LEVEL = "secondary";
 const EXERCISE_INSTANCE_CLOUD_TABLE = "exercise_instance";
 const EXERCISE_INSTANCE_CLOUD_SELECT =
   "id, local_exercise_instance_id, sync_id, sync_version, deleted_at, last_updated, is_deleting, delete_requested_at, local_watchers, cloud_workout_type_instance_id, exercise_name, exercise_order, sets, visible_columns, note, done";
@@ -1025,75 +1022,6 @@ function areExerciseCatalogEntriesEqual(left, right) {
   return true;
 }
 
-function buildExerciseActivationCounts(exercises, activations) {
-  const activationMap = new Map(
-    exercises.map((exercise) => [
-      exercise.id,
-      {
-        primary: new Set(),
-        secondary: new Set(),
-      },
-    ])
-  );
-
-  for (const activation of activations) {
-    const activationBucket = activationMap.get(activation.exercise_id);
-
-    if (!activationBucket) {
-      continue;
-    }
-
-    const activationLevel =
-      typeof activation.activation_level === "string"
-        ? activation.activation_level.trim().toLocaleLowerCase()
-        : "";
-
-    if (activationLevel === PRIMARY_ACTIVATION_LEVEL) {
-      activationBucket.primary.add(activation.muscle_id);
-      continue;
-    }
-
-    if (activationLevel === SECONDARY_ACTIVATION_LEVEL) {
-      activationBucket.secondary.add(activation.muscle_id);
-    }
-  }
-
-  return exercises
-    .map((exercise) => {
-      const rawName = exercise?.name ?? exercise?.exercise_name;
-      const name = typeof rawName === "string" ? rawName.trim() : "";
-
-      if (!name) {
-        return null;
-      }
-
-      const counts = activationMap.get(exercise.id);
-
-      return {
-        id: exercise.id,
-        name,
-        nickname:
-          typeof exercise.nickname === "string" && exercise.nickname.trim() !== ""
-            ? exercise.nickname.trim()
-            : null,
-        primary_muscle_group_count: counts?.primary.size ?? 0,
-        secondary_muscle_group_count: counts?.secondary.size ?? 0,
-      };
-    })
-    .filter(Boolean)
-    .sort((left, right) =>
-      left.name.localeCompare(right.name, undefined, {
-        sensitivity: "base",
-      })
-    );
-}
-
-function normalizeActivationLevel(activationLevel) {
-  return typeof activationLevel === "string"
-    ? activationLevel.trim().toLocaleLowerCase()
-    : "";
-}
-
 function normalizeMuscleGroupKey(value) {
   return typeof value === "string"
     ? value.trim().toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-")
@@ -1148,11 +1076,6 @@ function buildExerciseGroupMetadata({
       continue;
     }
 
-    const activationLevel = normalizeActivationLevel(activation.activation_level);
-    const activationPercent = Number(activation.activation_percent) || 0;
-    const activationWeight =
-      activationLevel === PRIMARY_ACTIVATION_LEVEL ? 2 : 1;
-    const score = Math.max(1, activationPercent) * activationWeight;
     const exerciseBucket = exerciseBuckets.get(exerciseId) ?? new Map();
 
     for (const group of muscleGroups) {
@@ -1161,7 +1084,7 @@ function buildExerciseGroupMetadata({
         score: 0,
       };
 
-      groupBucket.score += score;
+      groupBucket.score += 1;
       exerciseBucket.set(group.key, groupBucket);
     }
 
@@ -1446,8 +1369,6 @@ function mapExerciseCatalogForDisplay(entries) {
     exercise_name: entry.name ?? entry.exercise_name,
     nickname: entry.nickname ?? null,
     default_visible_columns: entry.default_visible_columns ?? null,
-    primary_muscle_group_count: Number(entry.primary_muscle_group_count) || 0,
-    secondary_muscle_group_count: Number(entry.secondary_muscle_group_count) || 0,
     primary_group_key: entry.primary_group_key ?? null,
     primary_group_name: entry.primary_group_name ?? null,
     group_keys: Array.isArray(entry.group_keys) ? entry.group_keys : [],
@@ -1569,7 +1490,7 @@ export async function getExerciseLibraryEntries(db) {
     if (exerciseIds.length > 0) {
       const { data, error } = await supabase
         .from(MUSCLE_ACTIVATION_TABLE)
-        .select("exercise_id, muscle_id, activation_level")
+        .select("exercise_id, muscle_id")
         .in("exercise_id", exerciseIds);
 
       if (error) {
@@ -1583,23 +1504,35 @@ export async function getExerciseLibraryEntries(db) {
       exerciseIds,
       activationRows,
     });
-    const cloudExercisesWithCounts = buildExerciseActivationCounts(
-      exerciseRows ?? [],
-      activationRows
-    );
     const cloudExerciseMap = new Map(
-      cloudExercisesWithCounts.map((exercise) => {
+      (exerciseRows ?? []).map((exercise) => {
+        const rawName = exercise?.[EXERCISE_LIBRARY_NAME_COLUMN];
+        const name = typeof rawName === "string" ? rawName.trim() : "";
+        const nickname =
+          typeof exercise?.nickname === "string" &&
+          exercise.nickname.trim() !== ""
+            ? exercise.nickname.trim()
+            : null;
         const groupData =
           groupMetadata.exerciseGroupMap.get(exercise.id) ?? {};
 
         return [
-          exercise.name.toLocaleLowerCase(),
+          name.toLocaleLowerCase(),
           {
             ...exercise,
+            cloud_exercise_id: normalizeOptionalInteger(
+              exercise?.[EXERCISE_LIBRARY_ID_COLUMN],
+              null
+            ),
+            name,
+            nickname,
+            default_visible_columns: serializeVisibleColumns(
+              exercise?.default_visible_columns
+            ),
             ...groupData,
           },
         ];
-      })
+      }).filter(([name]) => name)
     );
 
     return mapExerciseCatalogForDisplay(
@@ -1647,86 +1580,6 @@ export async function syncExerciseLibraryFromCloud(db) {
     changed: catalogChanged || Boolean(preferenceSyncResult.changed),
     exerciseCount: cloudExercises.length,
   };
-}
-
-export async function getExerciseLibraryMuscleDetails(exerciseName) {
-  const normalizedExerciseName =
-    typeof exerciseName === "string" ? exerciseName.trim() : "";
-
-  if (!normalizedExerciseName) {
-    return [];
-  }
-
-  const { data: exerciseRow, error: exerciseError } = await supabase
-    .from(EXERCISE_LIBRARY_TABLE)
-    .select(`${EXERCISE_LIBRARY_ID_COLUMN}, ${EXERCISE_LIBRARY_NAME_COLUMN}`)
-    .eq(EXERCISE_LIBRARY_NAME_COLUMN, normalizedExerciseName)
-    .maybeSingle();
-
-  if (exerciseError) {
-    throw exerciseError;
-  }
-
-  if (!exerciseRow?.[EXERCISE_LIBRARY_ID_COLUMN]) {
-    return [];
-  }
-
-  const { data: activationRows, error: activationError } = await supabase
-    .from(MUSCLE_ACTIVATION_TABLE)
-    .select("muscle_id, activation_percent, activation_level")
-    .eq("exercise_id", exerciseRow[EXERCISE_LIBRARY_ID_COLUMN])
-    .order("activation_percent", { ascending: false });
-
-  if (activationError) {
-    throw activationError;
-  }
-
-  const muscleIds = [...new Set((activationRows ?? []).map((row) => row.muscle_id))];
-
-  if (muscleIds.length === 0) {
-    return [];
-  }
-
-  const { data: muscleRows, error: muscleError } = await supabase
-    .from(MUSCLE_TABLE)
-    .select("id, name, nickname")
-    .in("id", muscleIds);
-
-  if (muscleError) {
-    throw muscleError;
-  }
-
-  const muscleMap = new Map((muscleRows ?? []).map((row) => [row.id, row]));
-
-  return (activationRows ?? [])
-    .map((row) => {
-      const muscle = muscleMap.get(row.muscle_id);
-
-      if (!muscle) {
-        return null;
-      }
-
-      const fullName = muscle.name?.trim() || "Unknown muscle";
-      const nickname = muscle.nickname?.trim() || fullName;
-
-      return {
-        muscle_id: row.muscle_id,
-        nickname,
-        muscle_name: fullName,
-        activation_percent: Number(row.activation_percent) || 0,
-        activation_level: normalizeActivationLevel(row.activation_level),
-      };
-    })
-    .filter(Boolean)
-    .sort((left, right) => {
-      if (right.activation_percent !== left.activation_percent) {
-        return right.activation_percent - left.activation_percent;
-      }
-
-      return left.nickname.localeCompare(right.nickname, undefined, {
-        sensitivity: "base",
-      });
-    });
 }
 
 export async function getEstimatedSets(db, programId) {

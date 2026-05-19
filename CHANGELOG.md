@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.14.12] - Unreleased
+### Changed
+- Remove exercise catalog muscle activation percentages and the related detail modal.
+
+---
 ## [0.14.11] - Unreleased
 ### Changed
 - Reorder workout exercises by long-pressing the exercise card instead of using the corner handle.

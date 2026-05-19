@@ -143,13 +143,6 @@ export default StyleSheet.create({
     fontWeight: "800",
     textTransform: "uppercase",
   },
-  tableHeaderMuscles: {
-    width: 112,
-    fontSize: 11,
-    fontWeight: "800",
-    textAlign: "right",
-    textTransform: "uppercase",
-  },
   listScroll: {
     height: LIST_VIEWPORT_HEIGHT,
     flexGrow: 0,
@@ -190,33 +183,6 @@ export default StyleSheet.create({
     lineHeight: 14,
     marginTop: 2,
     textTransform: "uppercase",
-  },
-  muscleSummary: {
-    width: 112,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 6,
-  },
-  muscleBadge: {
-    minWidth: 34,
-    minHeight: 17,
-    borderRadius: 999,
-    paddingHorizontal: 6,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  muscleBadgeText: {
-    fontSize: 10,
-    fontWeight: "900",
-    lineHeight: 12,
-  },
-  rowChevron: {
-    width: 10,
-    fontSize: 14,
-    fontWeight: "800",
-    lineHeight: 16,
-    textAlign: "right",
   },
   emptyState: {
     flex: 1,

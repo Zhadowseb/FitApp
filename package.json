@@ -1,6 +1,6 @@
 {
   "name": "programapp",
-  "version": "0.14.11-minor-exercise-card-long-press-reorder.1",
+  "version": "0.14.12-minor-remove-exercise-muscle-percentages.1",
   "main": "index.js",
   "scripts": {
     "start": "expo start --dev-client --scheme exp+programapp-dev",
